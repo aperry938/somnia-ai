@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Somnia.ai | Intelligent Alarm & Dream Journal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&family=Quattrocento:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root[data-theme='day'] {
+            --bg-start: #F0F4F8; --bg-end: #D9E2EC; --text-primary: #1E293B;
+            --text-secondary: #475569; --accent-primary: #6366F1;
+            --card-bg: rgba(255, 255, 255, 0.65); --border-color: rgba(0, 0, 0, 0.08);
+            --shadow-color: rgba(100, 116, 139, 0.12); --input-bg: rgba(255, 255, 255, 0.8);
+        }
+        :root[data-theme='night'] {
+            --bg-start: #0F172A; --bg-end: #1E293B; --text-primary: #E2E8F0;
+            --text-secondary: #94A3B8; --accent-primary: #818CF8;
+            --card-bg: rgba(30, 41, 59, 0.65); --border-color: rgba(255, 255, 255, 0.1);
+            --shadow-color: rgba(0, 0, 0, 0.2); --input-bg: rgba(30, 41, 59, 0.8);
+        }
+        html, body { height: 100%; overflow: hidden; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(180deg, var(--bg-start) 0%, var(--bg-end) 100%);
+            color: var(--text-primary); display: flex; flex-direction: column;
+            transition: background 0.5s ease;
+        }
+        .font-quatrecento { font-family: 'Quattrocento', serif; }
+        .main-content { flex-grow: 1; overflow-y: auto; }
+        .page { display: none; }
+        .page.active { display: block; animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .nav-item.active svg, .nav-item.active span { color: var(--accent-primary); }
+        .nav-item.active span { font-weight: 500; }
+        #current-time, #current-date, .page-title { color: var(--text-primary); }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(100, 116, 139, 0.3); border-radius: 6px; }
+
+        .glass-card {
+            background: var(--card-bg); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+            border: 1px solid var(--border-color); box-shadow: 0 8px 32px 0 var(--shadow-color);
+            transition: background 0.5s ease, border-color 0.5s ease;
+        }
+        
+        .toggle-checkbox:checked + .toggle-label { background-color: var(--accent-primary); }
+        .toggle-checkbox:checked + .toggle-label:after { transform: translateX(1.1rem); }
+        .toggle-label { width: 2.75rem; height: 1.5rem; }
+        .toggle-label:after { content: ''; position: absolute; top: 2px; left: 2px; width: 1.25rem; height: 1.25rem; background-color: white; border-radius: 50%; transition: transform 0.2s; }
+
+        .modal { background-color: rgba(240, 244, 248, 0.5); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+        :root[data-theme='night'] .modal { background-color: rgba(15, 23, 42, 0.5); }
+        
+        .accordion-button { color: var(--text-primary); }
+        .accordion-button:hover { color: var(--accent-primary); }
+        .accordion-icon { color: var(--accent-primary); }
+        .accordion-content p { color: var(--text-secondary); }
+        .accordion-item { border-bottom: 1px solid var(--border-color); }
+
+        .sound-card.playing { box-shadow: 0 0 15px 5px var(--accent-primary); border-color: var(--accent-primary); }
+        .sound-card svg, .achievement-icon, .breathing-guide-icon { width: 48px; height: 48px; stroke-width: 1.5; color: var(--accent-primary); }
+        .input-field { background-color: var(--input-bg); border-color: var(--border-color); color: var(--text-primary); }
+        .select-field { background-color: var(--input-bg); border-color: var(--border-color); color: var(--text-primary); }
+        .sleep-quality-rating svg { width: 2rem; height: 2rem; cursor: pointer; transition: all 0.2s ease; color: var(--border-color); }
+        .sleep-quality-rating svg.selected, .sleep-quality-rating:hover svg:hover ~ svg { color: var(--border-color); }
+        .sleep-quality-rating:hover svg:hover, .sleep-quality-rating svg.selected ~ svg { color: var(--accent-primary); }
+        .sleep-quality-rating svg:hover, .sleep-quality-rating svg.selected { color: var(--accent-primary); transform: scale(1.1);}
+
+        
+        .breathing-visualizer { width: 150px; height: 150px; border-radius: 50%; background: var(--accent-primary); will-change: transform; }
+        .breathing-visualizer.breathe-in { transform: scale(1.5); }
+        .breathing-visualizer.breathe-out { transform: scale(1); }
+        
+        #box-breathing-visualizer { position: relative; width: 150px; height: 150px; }
+        #box-path { stroke-dasharray: 600; stroke-dashoffset: 600; animation: drawBox 16s linear infinite; }
+        @keyframes drawBox { to { stroke-dashoffset: 0; } }
+    </style>
+</head>
+<body class="antialiased">
+
+    <main class="main-content custom-scrollbar p-4 md:p-6">
+        <div id="alarms-page" class="page active">
+            <header class="text-center mb-8">
+                <h1 id="current-time" class="font-quatrecento text-6xl md:text-8xl font-bold tracking-tight"></h1>
+                <p id="current-date" class="text-md mt-2 tracking-wide"></p>
+            </header>
+            <div id="alarms-list" class="space-y-3 max-w-md mx-auto"></div>
+            <button id="add-alarm-btn" class="fixed bottom-24 right-6 bg-indigo-500 text-white rounded-full p-4 shadow-lg shadow-indigo-500/30 hover:bg-indigo-600 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+            </button>
+        </div>
+
+        <div id="sleep-page" class="page">
+            <h1 class="font-quatrecento page-title text-4xl text-center mb-8">Sleep Gateway</h1>
+            <div class="max-w-2xl mx-auto">
+                <div class="glass-card p-5 rounded-xl cursor-pointer hover:shadow-xl transition-shadow mb-6" onclick="window.openAICoach()">
+                     <div class="flex items-center gap-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg>
+                        <div>
+                             <h2 class="font-quatrecento text-xl font-bold">AI Sleep Coach</h2>
+                             <p class="text-sm text-secondary">Chat for personalized guidance and relaxation techniques.</p>
+                        </div>
+                    </div>
+                </div>
+                <h2 class="font-quatrecento page-title text-2xl text-center my-6">Soundscapes</h2>
+                <div id="sound-list" class="grid grid-cols-2 md:grid-cols-3 gap-4"></div>
+                <h2 class="font-quatrecento page-title text-2xl text-center my-8">Guided Relaxation</h2>
+                <div id="guided-relaxation-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                <h2 class="font-quatrecento page-title text-2xl text-center my-8">Sleep Preparation</h2>
+                <div id="sleep-checklist" class="space-y-3"></div>
+            </div>
+        </div>
+
+        <div id="chronicle-page" class="page">
+             <h1 class="font-quatrecento page-title text-4xl text-center mb-8">The Chronicle</h1>
+             <div id="chronicle-list" class="space-y-4 max-w-2xl mx-auto"></div>
+        </div>
+
+        <div id="observatory-page" class="page">
+            <h1 class="font-quatrecento page-title text-4xl text-center mb-8">Observatory</h1>
+            <div class="space-y-8 max-w-2xl mx-auto">
+                <div class="glass-card p-4 rounded-xl text-center">
+                    <h2 class="font-quatrecento text-2xl">Somnia Lvl. <span id="dreamer-level">1</span></h2>
+                    <div class="mt-4 grid grid-cols-2 gap-4">
+                        <div><p class="text-2xl font-bold" id="dream-count">0</p><p class="text-sm text-secondary">Dreams Logged</p></div>
+                        <div><p class="text-2xl font-bold" id="avg-sleep-quality">-</p><p class="text-sm text-secondary">Avg. Sleep</p></div>
+                    </div>
+                </div>
+                <div class="glass-card p-4 rounded-xl"><h2 class="font-quatrecento text-xl mb-4">Dream Themes</h2><div id="dream-themes-chart-container" class="flex justify-center items-center h-64"></div></div>
+                <div class="glass-card p-4 rounded-xl"><h2 class="font-quatrecento text-xl mb-4">Achievements</h2><div id="achievements-grid" class="grid grid-cols-4 gap-4"></div></div>
+                <div class="glass-card p-4 rounded-xl"><h2 class="font-quatrecento text-xl mb-4">Recurring Symbols</h2><div id="recurring-symbols" class="flex flex-wrap gap-2"></div></div>
+                <div class="glass-card p-4 rounded-xl"><h2 class="font-quatrecento text-xl mb-4">Recent Sleep Quality</h2><div id="sleep-quality-chart" class="h-48 flex items-end justify-around gap-2"></div></div>
+                <div class="glass-card p-4 rounded-xl">
+                    <h2 class="font-quatrecento text-xl mb-4">Biometrics & Personalization</h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="user-age" class="text-sm">Age</label>
+                            <input type="number" id="user-age" class="input-field w-full p-2 mt-1 border rounded text-center" placeholder="e.g., 30">
+                        </div>
+                         <div>
+                            <label for="user-gender" class="text-sm">Gender</label>
+                            <select id="user-gender" class="select-field w-full p-2 mt-1 border rounded">
+                                <option>Prefer not to say</option>
+                                <option>Male</option>
+                                <option>Female</option>
+                                <option>Non-binary</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-card p-4 rounded-xl"><h2 class="font-quatrecento text-xl mb-4">Preferences</h2>
+                    <div class="flex items-center justify-between">
+                        <label for="smart-widget-hours" class="text-sm">Smart Display Activation</label>
+                        <input type="number" id="smart-widget-hours" class="input-field w-20 p-2 border rounded text-center" value="5" min="1" max="12">
+                    </div>
+                    <p class="text-xs text-secondary mt-2">Automatically display the dream scribe after the selected number of hours of phone inactivity.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="dream-detail-page" class="page"></div>
+    </main>
+
+    <nav class="flex justify-around items-center p-2 glass-card rounded-t-lg border-t">
+        <button data-page="alarms-page" class="nav-item active flex flex-col items-center w-20 py-1 rounded-lg text-secondary"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><span class="text-xs mt-1">Alarms</span></button>
+        <button data-page="sleep-page" class="nav-item flex flex-col items-center w-20 py-1 rounded-lg text-secondary"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg><span class="text-xs mt-1">Sleep</span></button>
+        <button data-page="chronicle-page" class="nav-item flex flex-col items-center w-20 py-1 rounded-lg text-secondary"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v11.494m-9-5.747h18" /></svg><span class="text-xs mt-1">Chronicle</span></button>
+        <button data-page="observatory-page" class="nav-item flex flex-col items-center w-20 py-1 rounded-lg text-secondary"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.196-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.783-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg><span class="text-xs mt-1">Profile</span></button>
+    </nav>
+    <div id="modal-container"></div>
+
+<script type="module">
+// --- STATE MANAGEMENT ---
+let alarms = JSON.parse(localStorage.getItem('somnia_alarms')) || [];
+let dreams = JSON.parse(localStorage.getItem('somnia_dreams')) || [];
+let coachHistory = JSON.parse(localStorage.getItem('somnia_coach_history')) || [];
+let preferences = JSON.parse(localStorage.getItem('somnia_preferences')) || { smartWidgetHours: 5, userAge: '', userGender: 'Prefer not to say' };
+let currentEditingAlarmId = null, currentEditingDreamId = null;
+let audioContext, oscillator, gainNode;
+let sleepAudioContext, sleepGainNode, sleepSourceNode, sleepTimeout;
+let snoozeTimeout;
+let recognition;
+let lastPlayedSound = null;
+let lastBreathingExercise = null;
+
+// --- DOM ELEMENTS ---
+const pages = document.querySelectorAll('.page');
+const navButtons = document.querySelectorAll('.nav-item');
+const currentTimeEl = document.getElementById('current-time');
+const currentDateEl = document.getElementById('current-date');
+const modalContainer = document.getElementById('modal-container');
+
+// --- FUNCTION DEFINITIONS ---
+
+function updateClock() {
+    const now = new Date();
+    const hours = now.getHours();
+    const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).replace(" AM", "").replace(" PM", "");
+    const dateString = now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+    currentTimeEl.textContent = timeString;
+    currentDateEl.textContent = dateString;
+    const theme = (hours >= 6 && hours < 19) ? 'day' : 'night';
+    document.documentElement.dataset.theme = theme;
+    checkAlarms(now);
+}
+
+function navigateTo(pageId) {
+    pages.forEach(p => p.classList.remove('active'));
+    document.getElementById(pageId).classList.add('active');
+    navButtons.forEach(b => b.classList.toggle('active', b.dataset.page === pageId));
+    stopSleepSound();
+    if (pageId === 'chronicle-page') renderChronicle();
+    if (pageId === 'observatory-page') renderObservatory();
+    if (pageId === 'alarms-page') renderAlarms();
+    if (pageId === 'sleep-page') renderSleepPage();
+}
+
+function renderModal(content, onCancel, onSave) {
+    modalContainer.innerHTML = `<div class="modal fixed inset-0 flex items-center justify-center p-4 z-50"><div class="glass-card w-full max-w-lg p-6 rounded-2xl animate-fadeIn custom-scrollbar" style="max-height: 90vh; overflow-y: auto;">${content}</div></div>`;
+    const cancelButton = modalContainer.querySelector('.cancel-btn');
+    if(cancelButton) cancelButton.addEventListener('click', onCancel || closeModal);
+    const saveButton = modalContainer.querySelector('.save-btn');
+    if(saveButton) saveButton.addEventListener('click', onSave);
+}
+
+function closeModal() { modalContainer.innerHTML = ''; }
+
+function checkAlarms(now) {
+    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    alarms.forEach(alarm => { if (alarm.time === currentTime && alarm.isActive && !alarm.isRinging) triggerAlarm(alarm); });
+}
+
+function triggerAlarm(alarm) {
+    alarm.isRinging = true;
+    const content = `<div class="text-center"><h2 class="font-quatrecento text-4xl text-indigo-500 animate-pulse">The Ascent</h2><p class="text-secondary mt-2 mb-8">Your inner world awaits.</p><div class="space-y-3"><button id="record-dream-btn" class="w-full py-3 bg-indigo-500 text-white font-bold rounded-full text-lg">Record Dream</button><button id="snooze-btn" class="w-full py-2 bg-white/50 border rounded-full">Snooze (5 min)</button><button id="awake-btn" class="w-full py-2 bg-white/50 border rounded-full">Awake</button></div></div>`;
+    renderModal(content);
+    document.getElementById('record-dream-btn').addEventListener('click', openScribe);
+    document.getElementById('snooze-btn').addEventListener('click', snoozeAlarm);
+    document.getElementById('awake-btn').addEventListener('click', stopAlarm);
+    playAlarmSound();
+}
+
+function playAlarmSound() {
+    if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    oscillator = audioContext.createOscillator();
+    gainNode = audioContext.createGain();
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    const now = audioContext.currentTime;
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(300, now);
+    gainNode.gain.setValueAtTime(0.001, now);
+    
+    // Ramp up volume and frequency over 30 seconds
+    gainNode.gain.exponentialRampToValueAtTime(0.5, now + 30);
+    oscillator.frequency.exponentialRampToValueAtTime(800, now + 30);
+    
+    oscillator.start(now);
+}
+
+function stopAlarmSound() {
+    if (gainNode) {
+        const now = audioContext.currentTime;
+        gainNode.gain.cancelScheduledValues(now);
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
+    }
+    if (oscillator) {
+        oscillator.stop(audioContext.currentTime + 0.5);
+        oscillator = null;
+        gainNode = null;
+    }
+}
+
+function stopAlarm() {
+    const ringingAlarm = alarms.find(a => a.isRinging);
+    if (ringingAlarm) { ringingAlarm.isRinging = false; ringingAlarm.isActive = false; saveAlarms(); renderAlarms(); }
+    clearTimeout(snoozeTimeout); stopAlarmSound(); closeModal();
+}
+
+function snoozeAlarm() {
+    stopAlarmSound(); closeModal();
+    const ringingAlarm = alarms.find(a => a.isRinging);
+    if (ringingAlarm) snoozeTimeout = setTimeout(() => triggerAlarm(ringingAlarm), 5 * 60 * 1000);
+}
+
+function saveAlarms() { localStorage.setItem('somnia_alarms', JSON.stringify(alarms)); }
+
+function openAlarmModal(alarm = null) {
+    currentEditingAlarmId = alarm ? alarm.id : null;
+    const timeValue = alarm ? alarm.time : '';
+    const content = `<h2 class="font-quatrecento text-2xl text-center mb-6">Set Alarm</h2><input type="time" id="alarm-time-input" value="${timeValue}" class="w-full p-4 input-field border rounded-lg text-2xl text-center"><div class="flex justify-center gap-4 mt-6"><button class="cancel-btn py-2 px-6 bg-slate-200 rounded-full">Cancel</button><button class="save-btn py-2 px-6 bg-indigo-500 text-white font-bold rounded-full">Save</button></div>${alarm ? '<button id="delete-alarm-btn" class="w-full mt-4 py-2 text-red-500">Delete Alarm</button>' : ''}`;
+    renderModal(content, closeModal, saveAlarm);
+    if (alarm) document.getElementById('delete-alarm-btn').addEventListener('click', deleteAlarm);
+}
+
+function saveAlarm() {
+    const time = document.getElementById('alarm-time-input').value; if (!time) return;
+    if (currentEditingAlarmId) {
+        const alarm = alarms.find(a => a.id === currentEditingAlarmId);
+        if (alarm) alarm.time = time;
+    } else {
+        alarms.push({ id: Date.now(), time: time, isActive: true, isRinging: false });
+    }
+    saveAlarms(); renderAlarms(); closeModal();
+}
+
+function deleteAlarm() {
+    if (!currentEditingAlarmId) return;
+    alarms = alarms.filter(a => a.id !== currentEditingAlarmId);
+    saveAlarms(); renderAlarms(); closeModal();
+}
+
+function toggleAlarmActive(id) {
+    const alarm = alarms.find(a => a.id === id);
+    if (alarm) { alarm.isActive = !alarm.isActive; saveAlarms(); }
+}
+
+function setupSpeechRecognition() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+    recognition = new SpeechRecognition();
+    recognition.continuous = true; recognition.interimResults = true; recognition.lang = 'en-US';
+    recognition.onresult = (event) => {
+        let finalTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) finalTranscript += event.results[i][0].transcript;
+        const dreamInput = document.getElementById('dream-input');
+        if (dreamInput) dreamInput.value += finalTranscript;
+    };
+    recognition.onerror = (event) => console.error('Speech recognition error:', event.error);
+    recognition.onend = () => {
+        const statusEl = document.getElementById('recording-status');
+        if (statusEl) statusEl.classList.add('hidden');
+    };
+}
+
+function toggleVoiceRecognition() {
+    if (!recognition) return;
+    const statusEl = document.getElementById('recording-status');
+    const isRecording = statusEl && !statusEl.classList.contains('hidden');
+    if (isRecording) { recognition.stop(); } else { recognition.start(); if(statusEl) statusEl.classList.remove('hidden'); }
+}
+
+function openScribe() {
+    stopAlarm();
+    const content = `<h2 class="font-quatrecento text-2xl text-center mb-4">The Dream Scribe</h2><div class="relative"><textarea id="dream-input" class="w-full h-40 p-4 pr-12 input-field border rounded-lg focus:ring-2 focus:ring-indigo-400 focus:outline-none transition-all" placeholder="Speak or write your dream here..."></textarea><button id="voice-record-btn" class="absolute top-3 right-3 text-secondary hover:text-indigo-500 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg></button></div><div id="recording-status" class="hidden flex items-center justify-center gap-2 text-sm text-red-500 mt-2"><div class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div><span>Recording...</span></div><div class="my-4"><p class="text-center text-secondary mb-2">How was your sleep?</p><div id="sleep-quality-rating" class="sleep-quality-rating flex justify-center gap-2">${getSleepQualityIconsHTML()}</div></div><div class="flex justify-center gap-4 mt-4"><button class="cancel-btn py-2 px-6 bg-slate-200 text-slate-800 rounded-full">Cancel</button><button class="save-btn py-2 px-6 bg-indigo-500 text-white font-bold rounded-full">Save & Illuminate</button></div>`;
+    renderModal(content, closeModal, saveAndAnalyzeDream);
+    document.getElementById('voice-record-btn').addEventListener('click', toggleVoiceRecognition);
+    document.querySelectorAll('.sleep-quality-rating svg').forEach(svg => {
+        svg.addEventListener('click', (e) => {
+            const value = e.currentTarget.dataset.value;
+            document.getElementById('sleep-quality-rating').dataset.selectedValue = value;
+            renderStars(value);
+        });
+    });
+}
+
+function openEditScribeModal(dreamId) {
+    currentEditingDreamId = dreamId;
+    const dream = dreams.find(d => d.id === dreamId);
+    if (!dream) return;
+    const content = `<h2 class="font-quatrecento text-2xl text-center mb-4">Edit Dream Entry</h2><textarea id="dream-input" class="w-full h-40 p-4 input-field border rounded-lg">${dream.dreamText}</textarea><div class="my-4"><p class="text-center text-secondary mb-2">How was your sleep?</p><div id="sleep-quality-rating" class="sleep-quality-rating flex justify-center gap-2">${getSleepQualityIconsHTML(dream.sleepQuality)}</div></div><div class="flex justify-center gap-4 mt-4"><button class="cancel-btn py-2 px-6 bg-slate-200 text-slate-800 rounded-full">Cancel</button><button class="save-btn py-2 px-6 bg-indigo-500 text-white font-bold rounded-full">Save Changes</button></div>`;
+    renderModal(content, closeModal, saveDreamEdits);
+    document.getElementById('sleep-quality-rating').dataset.selectedValue = dream.sleepQuality;
+    document.querySelectorAll('.sleep-quality-rating svg').forEach(svg => {
+        svg.addEventListener('click', (e) => {
+            const value = e.currentTarget.dataset.value;
+            document.getElementById('sleep-quality-rating').dataset.selectedValue = value;
+            renderStars(value);
+        });
+    });
+}
+function saveDreamEdits() {
+    const dream = dreams.find(d => d.id === currentEditingDreamId);
+    if (!dream) return;
+    dream.dreamText = document.getElementById('dream-input').value.trim();
+    dream.sleepQuality = parseInt(document.getElementById('sleep-quality-rating').dataset.selectedValue) || dream.sleepQuality;
+    localStorage.setItem('somnia_dreams', JSON.stringify(dreams));
+    closeModal();
+    renderDreamDetail(currentEditingDreamId);
+}
+async function saveAndAnalyzeDream() {
+    const dreamText = document.getElementById('dream-input').value.trim();
+    if (!dreamText) return;
+    const sleepQuality = document.getElementById('sleep-quality-rating').dataset.selectedValue;
+    const checklistItems = Array.from(document.querySelectorAll('#sleep-checklist input:checked')).map(cb => cb.dataset.key);
+    const newDream = { id: Date.now(), timestamp: new Date().toISOString(), dreamText: dreamText, sleepQuality: parseInt(sleepQuality) || null, title: "Untitled Dream", imageUrl: null, aiAnalysis: null, chatHistory: [], sleepAids: { sound: lastPlayedSound, guided: lastBreathingExercise, checklist: checklistItems }};
+    dreams.unshift(newDream);
+    localStorage.setItem('somnia_dreams', JSON.stringify(dreams));
+    lastPlayedSound = null; // Reset after logging
+    lastBreathingExercise = null;
+    closeModal();
+    navigateTo('dream-detail-page');
+    renderDreamDetail(newDream.id);
+    await getAndDisplayAnalysis(newDream.id);
+}
+
+async function callGeminiAPI(history, expectJson=false, useTts=false) {
+    const apiKey = "";
+    const model = useTts ? 'gemini-2.5-flash-preview-tts' : 'gemini-2.5-flash-preview-05-20';
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    
+    const payload = {
+        contents: history,
+        safetySettings: [
+            { "category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE" },
+            { "category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE" },
+            { "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE" },
+            { "category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE" }
+        ]
+    };
+
+    if (expectJson) payload.generationConfig = { responseMimeType: "application/json" };
+    if (useTts) {
+        payload.generationConfig = { responseModalities: ["AUDIO"] };
+        payload.speechConfig = { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Schedar" } } };
+    }
+
+    let response; let delay = 1000;
+    for (let i = 0; i < 3; i++) {
+        try {
+            response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (response.ok) {
+                const result = await response.json();
+                if (useTts) {
+                    return result.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+                }
+                return result.candidates?.[0]?.content?.parts?.[0]?.text;
+            }
+        } catch (e) { if (i === 2) throw e; }
+        await new Promise(resolve => setTimeout(resolve, delay));
+        delay *= 2;
+    }
+}
+async function callImageGenerationAPI(prompt) {
+    const apiKey = "";
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${apiKey}`;
+    const payload = { contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseModalities: ['TEXT', 'IMAGE'] } };
+    let response; let delay = 1000;
+    for (let i = 0; i < 3; i++) {
+        try {
+            response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (response.ok) {
+                const result = await response.json();
+                return result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+            }
+        } catch (e) { if (i === 2) throw e; }
+        await new Promise(resolve => setTimeout(resolve, delay));
+        delay *= 2;
+    }
+}
+function createInitialAnalysisPrompt(dreamText) {
+    return `You are The Oneironaut... Your entire response must be a single, valid JSON object with three top-level keys: "title", "analysis", and "integration". - "title": A short, evocative title for the dream (e.g., "The Lion in the Hallway"). - "analysis": An array of objects, each representing a thematic insight. Each object must have "title" (a short heading) and "content" (a paragraph of analysis). - "integration": An object with "title" (always "The Integration") and "content" (a single, empowering question or ritual). MANDATORY JSON STRUCTURE: { "title": "Generated Dream Title", "analysis": [ { "title": "Insightful Title 1", "content": "Analysis here..." } ], "integration": { "title": "The Integration", "content": "Empowering question here..." } } --- USER'S DREAM --- ${dreamText} ---`;
+}
+function createImagePrompt(dreamText) {
+    return `Photorealistic surrealism, a dream of: "${dreamText}". Ethereal lighting, atmospheric, emotionally resonant, sophisticated, cinematic, trending on artstation, style of Salvador Dalí and Remedios Varo.`;
+}
+async function getAndDisplayAnalysis(dreamId) {
+    const dream = dreams.find(d => d.id === dreamId);
+    if (!dream) return;
+    const loader = document.getElementById(`loader-${dreamId}`);
+    if (loader) loader.style.display = 'block';
+    try {
+        const textPrompt = createInitialAnalysisPrompt(dream.dreamText);
+        const imagePrompt = createImagePrompt(dream.dreamText);
+        
+        const [textResponse, imageResponse] = await Promise.all([
+            callGeminiAPI([{ role: 'user', parts: [{ text: textPrompt }] }], true),
+            callImageGenerationAPI(imagePrompt)
+        ]);
+
+        let responseText = textResponse;
+        const jsonMatch = responseText.match(/```(json)?\s*([\s\S]*?)\s*```/);
+        if (jsonMatch && jsonMatch[2]) responseText = jsonMatch[2];
+        const analysisData = JSON.parse(responseText);
+        
+        dream.aiAnalysis = analysisData;
+        dream.title = analysisData.title || dream.title;
+        if (imageResponse) {
+            dream.imageUrl = `data:image/png;base64,${imageResponse}`;
+        }
+        
+        localStorage.setItem('somnia_dreams', JSON.stringify(dreams));
+        renderDreamDetail(dreamId);
+        renderChronicle(); // Update chronicle to show new thumbnail
+    } catch (error) {
+        console.error("Analysis failed:", error);
+        const container = document.getElementById(`analysis-container-${dreamId}`);
+        if(container) container.innerHTML = `<p class="text-red-500 text-center">Sorry, the analysis could not be completed.</p>`;
+    } finally {
+        if (loader) loader.style.display = 'none';
+    }
+}
+function createCoachSystemPrompt() {
+    return `You are an expert AI Sleep Coach... Start the conversation by gently asking how you can help them prepare for a restful night.`;
+}
+
+async function openAICoach() {
+    if (coachHistory.length === 0) {
+        coachHistory.push({ role: 'user', parts: [{ text: createCoachSystemPrompt() }] });
+        const firstResponse = await callGeminiAPI(coachHistory);
+        coachHistory.push({ role: 'model', parts: [{ text: firstResponse }] });
+        localStorage.setItem('somnia_coach_history', JSON.stringify(coachHistory));
+    }
+    renderCoachModal();
+}
+
+function renderCoachModal() {
+    const historyHtml = coachHistory.slice(1)
+        .map(msg => `<div class="my-2 p-3 rounded-lg ${msg.role === 'user' ? 'bg-indigo-100 text-right' : 'glass-card text-primary'}">${msg.parts[0].text.replace(/\n/g, '<br>')}</div>`)
+        .join('');
+    const content = `<h2 class="font-quatrecento text-2xl text-center mb-4">AI Sleep Coach</h2><div id="coach-chat-box" class="h-64 overflow-y-auto custom-scrollbar p-2 mb-4 border rounded-lg">${historyHtml}</div><div class="flex gap-2"><input id="coach-input" type="text" placeholder="Ask for sleep advice..." class="flex-grow p-2 border rounded-full input-field"><button id="coach-send-btn" class="bg-indigo-500 text-white rounded-full px-4">Send</button></div><div class="text-center mt-4"><button class="cancel-btn text-sm">Close</button></div>`;
+    renderModal(content);
+    const chatBox = document.getElementById('coach-chat-box');
+    chatBox.scrollTop = chatBox.scrollHeight;
+    document.getElementById('coach-send-btn').onclick = sendCoachMessage;
+    document.getElementById('coach-input').onkeydown = (e) => { if (e.key === 'Enter') sendCoachMessage(); };
+}
+
+async function sendCoachMessage() {
+    const inputEl = document.getElementById('coach-input');
+    const userText = inputEl.value.trim();
+    if (!userText) return;
+    coachHistory.push({ role: 'user', parts: [{ text: userText }] });
+    inputEl.value = '';
+    renderCoachModal();
+    const responseText = await callGeminiAPI(coachHistory);
+    coachHistory.push({ role: 'model', parts: [{ text: responseText }] });
+    localStorage.setItem('somnia_coach_history', JSON.stringify(coachHistory));
+    renderCoachModal();
+}
+
+const soundscapes = [
+    { id: 'white_noise', name: 'White Noise', type: 'noise', params: { type: 'white' }, icon: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" /></svg>`, description: "Covering all audible frequencies, White Noise creates a 'sonic wall,' masking sudden sounds like traffic or doors closing that can disrupt sleep. It's highly effective for light sleepers or noisy environments." },
+    { id: 'pink_noise', name: 'Pink Noise', type: 'noise', params: { type: 'pink' }, icon: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4 8h16M4 16h16" /><path stroke-linecap="round" stroke-linejoin="round" d="M8 4l4 4 4-4" /><path stroke-linecap="round" stroke-linejoin="round" d="M8 12l4 4 4-4" /></svg>`, description: "Deeper and more balanced than white noise, Pink Noise emphasizes lower frequencies, resembling sounds like steady rain or wind. Studies suggest it can increase stable, deep sleep time." },
+    { id: 'brown_noise', name: 'Brown Noise', type: 'noise', params: { type: 'brown' }, icon: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10h18V7M5 7L12 13L19 7" /></svg>`, description: "With the lowest, most powerful frequencies, Brown Noise is often compared to a strong waterfall or thunderous roar. It's excellent for blocking out low-frequency noise and promoting deep relaxation." },
+    { id: 'delta_waves', name: 'Delta Waves', type: 'binaural', params: { base: 100, diff: 3 }, icon: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 01-2 2H3.055a1 1 0 01-.707-1.707l1.414-1.414a1 1 0 010-1.414l-1.414-1.414A1 1 0 013.055 11z" /><path stroke-linecap="round" stroke-linejoin="round" d="M20.945 11H19a2 2 0 00-2 2v1a2 2 0 002 2h1.945a1 1 0 00.707-1.707l-1.414-1.414a1 1 0 000-1.414l1.414-1.414a1 1 0 00-.707-1.707z" /></svg>`, description: "Binaural beats at a Delta frequency (1-4 Hz) are associated with the deepest stages of sleep. Listening may help encourage your brainwaves to sync with this frequency, promoting restorative, non-REM sleep." },
+    { id: 'theta_waves', name: 'Theta Waves', type: 'binaural', params: { base: 150, diff: 6 }, icon: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17 14v6m-5-12v12m-5-6v6" /></svg>`, description: "Theta brainwaves (4-8 Hz) are linked to REM sleep, meditation, and creativity. Theta binaural beats can help calm the mind and are ideal for pre-sleep meditation to ease anxiety." },
+    { id: 'alpha_waves', name: 'Alpha Waves', type: 'binaural', params: { base: 200, diff: 10 }, icon: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>`, description: "Alpha waves (8-12 Hz) are present during quiet, wakeful relaxation. These binaural beats are excellent for stress reduction and achieving a state of calm focus before sleep." },
+];
+
+const guidedRelaxations = [
+    { id: '478_breathing', name: '4-7-8 Breathing', icon: `<svg xmlns="http://www.w3.org/2000/svg" class="breathing-guide-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>`, description: "A powerful technique to calm the nervous system. Inhale for 4s, hold for 7s, exhale for 8s." },
+    { id: 'box_breathing', name: 'Box Breathing', icon: `<svg xmlns="http://www.w3.org/2000/svg" class="breathing-guide-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6z" /></svg>`, description: "Used by elite performers to manage stress. Inhale, hold, exhale, and hold, each for 4 seconds." }
+];
+
+const sleepChecklistItems = [
+    { key: 'dim_lights', text: 'Dimmed lights 1 hour before bed' },
+    { key: 'no_screens', text: 'No screens 30 minutes before bed' },
+    { key: 'cool_room', text: 'Room is cool and comfortable' },
+    { key: 'quiet_room', text: 'Room is quiet and dark' },
+    { key: 'no_caffeine', text: 'No caffeine in last 8 hours' },
+    { key: 'no_late_meals', text: 'Avoided late meals (2-3 hrs before bed)' }
+];
+
+function renderSleepPage() {
+    renderSoundscapes();
+    renderGuidedRelaxation();
+    renderSleepChecklist();
+}
+
+function renderSoundscapes() {
+    document.getElementById('sound-list').innerHTML = soundscapes.map(sound => `<div id="sound-${sound.id}" class="sound-card glass-card p-4 rounded-xl text-center cursor-pointer transition-all" onclick="window.openSoundDescriptionModal('${sound.id}')"><div class="flex justify-center items-center h-12">${sound.icon}</div><p class="mt-2 font-medium">${sound.name}</p></div>`).join('');
+}
+
+function renderGuidedRelaxation() {
+    document.getElementById('guided-relaxation-list').innerHTML = guidedRelaxations.map(item => `
+        <div class="glass-card p-4 rounded-xl cursor-pointer" onclick="window.openGuidedBreathingModal('${item.id}')">
+            <div class="flex flex-col items-center text-center">
+                ${item.icon}
+                <h3 class="font-quatrecento text-lg mt-2">${item.name}</h3>
+                <p class="text-xs text-secondary mt-1">${item.description}</p>
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderSleepChecklist() {
+    document.getElementById('sleep-checklist').innerHTML = sleepChecklistItems.map(item => `
+        <div class="glass-card p-4 rounded-lg flex items-center">
+            <input type="checkbox" id="check-${item.key}" data-key="${item.key}" class="h-5 w-5 rounded text-indigo-500 focus:ring-indigo-400 border-gray-300">
+            <label for="check-${item.key}" class="ml-3 text-sm">${item.text}</label>
+        </div>
+    `).join('');
+}
+
+function openGuidedBreathingModal(techniqueId) {
+    const technique = guidedRelaxations.find(t => t.id === techniqueId);
+    if (!technique) return;
+    lastBreathingExercise = technique.name;
+    let content = '';
+    const stopSession = () => { clearInterval(window.breathingInterval); closeModal(); };
+
+    if (technique.id === '478_breathing') {
+        content = `<h2 class="font-quatrecento text-2xl text-center mb-4">${technique.name}</h2><div class="flex justify-center my-8"><div id="breathing-visualizer" class="breathing-visualizer"></div></div><p id="breathing-instruction" class="text-center text-xl font-medium"></p><div class="text-center mt-6"><button class="cancel-btn text-sm">End Session</button></div>`;
+        renderModal(content, stopSession);
+        const visualizer = document.getElementById('breathing-visualizer');
+        const instruction = document.getElementById('breathing-instruction');
+        const cycle = ['Inhale through nose', 'Hold', 'Exhale through mouth'];
+        const duration = [4000, 7000, 8000];
+        let step = 0;
+        function doBreathStep() {
+            let count = duration[step] / 1000;
+            instruction.textContent = `${cycle[step]} (${count})`;
+            const countdown = setInterval(() => { count--; if(count > 0) instruction.textContent = `${cycle[step]} (${count})`; else clearInterval(countdown); }, 1000);
+            visualizer.style.transition = `transform ${duration[step]}ms ease-in-out`;
+            if (step === 0) { visualizer.classList.add('breathe-in'); playBreathSound('in', 4); }
+            if (step === 2) { visualizer.classList.remove('breathe-in'); playBreathSound('out', 8); }
+            window.breathingInterval = setTimeout(() => { step = (step + 1) % 3; doBreathStep(); }, duration[step]);
+        }
+        doBreathStep();
+    } else if (technique.id === 'box_breathing') {
+        content = `<h2 class="font-quatrecento text-2xl text-center mb-4">${technique.name}</h2><div class="flex justify-center my-8"><div id="box-breathing-visualizer"><svg width="150" height="150" viewBox="0 0 150 150"><rect x="0" y="0" width="150" height="150" fill="none" stroke="var(--border-color)" stroke-width="2"/><rect id="box-path" x="0" y="0" width="150" height="150" fill="none" stroke="var(--accent-primary)" stroke-width="4"/></svg></div></div><p id="breathing-instruction" class="text-center text-xl font-medium"></p><div class="text-center mt-6"><button class="cancel-btn text-sm">End Session</button></div>`;
+        renderModal(content, stopSession);
+        const instruction = document.getElementById('breathing-instruction');
+        const cycle = ['Inhale (nose)', 'Hold', 'Exhale (mouth)', 'Hold'];
+        let step = 0;
+        function doBreathStep() {
+            let count = 4;
+            instruction.textContent = `${cycle[step]} (${count})`;
+            const countdown = setInterval(() => { count--; if(count > 0) instruction.textContent = `${cycle[step]} (${count})`; else clearInterval(countdown); }, 1000);
+            if (step === 0) playBreathSound('in', 4);
+            if (step === 2) playBreathSound('out', 4);
+            window.breathingInterval = setTimeout(() => { step = (step + 1) % 4; doBreathStep(); }, 4000);
+        }
+        doBreathStep();
+    }
+}
+
+
+function openSoundDescriptionModal(soundId) {
+    const sound = soundscapes.find(s => s.id === soundId);
+    if (!sound) return;
+    const content = `<div class="text-center">${sound.icon}</div><h2 class="font-quatrecento text-2xl text-center mt-2">${sound.name}</h2><p class="text-secondary text-center my-4">${sound.description}</p><div class="flex items-center gap-2"><input type="number" id="sound-duration-input" class="w-full p-3 input-field border rounded-lg text-center" placeholder="Custom mins" min="1" max="180"><button id="play-custom-duration" class="bg-indigo-500 text-white rounded-lg p-3">Play</button></div><div class="grid grid-cols-3 gap-2 mt-2"><button class="duration-btn py-2 border rounded-lg" data-duration="15">15m</button><button class="duration-btn py-2 border rounded-lg" data-duration="30">30m</button><button class="duration-btn py-2 border rounded-lg" data-duration="60">60m</button></div><div class="text-center mt-4"><button class="cancel-btn text-sm">Close</button></div>`;
+    renderModal(content);
+    document.querySelectorAll('.duration-btn').forEach(btn => {
+        btn.onclick = () => { playSleepSound(soundId, parseInt(btn.dataset.duration)); closeModal(); };
+    });
+    document.getElementById('play-custom-duration').onclick = () => {
+        const customDuration = document.getElementById('sound-duration-input').value;
+        if (customDuration) { playSleepSound(soundId, parseInt(customDuration)); closeModal(); }
+    };
+}
+
+function playSleepSound(soundId, duration) {
+    const sound = soundscapes.find(s => s.id === soundId);
+    if (!sound) return;
+    if (!sleepAudioContext) sleepAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+    stopSleepSound();
+    lastPlayedSound = sound.name; // Log the sound being played
+    sleepGainNode = sleepAudioContext.createGain();
+    sleepGainNode.gain.setValueAtTime(0, sleepAudioContext.currentTime);
+    sleepGainNode.gain.linearRampToValueAtTime(0.5, sleepAudioContext.currentTime + 2);
+    sleepGainNode.connect(sleepAudioContext.destination);
+    
+    if (sound.type === 'binaural') {
+        const { base, diff } = sound.params;
+        const oscLeft = sleepAudioContext.createOscillator(); const oscRight = sleepAudioContext.createOscillator();
+        const merger = sleepAudioContext.createChannelMerger(2);
+        oscLeft.frequency.value = base - diff / 2; oscRight.frequency.value = base + diff / 2;
+        oscLeft.connect(merger, 0, 0); oscRight.connect(merger, 0, 1);
+        merger.connect(sleepGainNode);
+        oscLeft.start(); oscRight.start();
+        sleepSourceNode = { oscLeft, oscRight };
+    } else if (sound.type === 'noise') {
+        const bufferSize = sleepAudioContext.sampleRate * 2;
+        const buffer = sleepAudioContext.createBuffer(1, bufferSize, sleepAudioContext.sampleRate);
+        const output = buffer.getChannelData(0);
+        let lastOut = 0;
+        for (let i = 0; i < bufferSize; i++) {
+            const white = Math.random() * 2 - 1;
+            switch (sound.params.type) {
+                case 'white': output[i] = white; break;
+                case 'pink': 
+                    const b0 = 0.99886 * lastOut + white * 0.0555179;
+                    const b1 = 0.99332 * lastOut + white * 0.0750759;
+                    const b2 = 0.96900 * lastOut + white * 0.1538520;
+                    lastOut = b0 + b1 + b2 + white * 0.1848;
+                    output[i] = lastOut * 0.11;
+                    break;
+                case 'brown': 
+                     lastOut = (lastOut + (0.02 * white)) / 1.02;
+                     output[i] = lastOut * 3.5;
+                     break;
+            }
+        }
+        const noiseNode = sleepAudioContext.createBufferSource();
+        noiseNode.buffer = buffer; noiseNode.loop = true;
+        noiseNode.connect(sleepGainNode); noiseNode.start();
+        sleepSourceNode = noiseNode;
+    } else if (sound.type === 'tone') {
+        const osc = sleepAudioContext.createOscillator();
+        osc.type = 'sine'; osc.frequency.setValueAtTime(256, sleepAudioContext.currentTime);
+        osc.connect(sleepGainNode); osc.start();
+        sleepSourceNode = osc;
+    }
+
+    document.getElementById(`sound-${sound.id}`).classList.add('playing');
+    if (duration > 0) sleepTimeout = setTimeout(stopSleepSound, duration * 60 * 1000);
+}
+
+function stopSleepSound() {
+    clearTimeout(sleepTimeout);
+    if (sleepSourceNode) {
+        sleepGainNode.gain.linearRampToValueAtTime(0, sleepAudioContext.currentTime + 1);
+        if (sleepSourceNode.oscLeft) {
+            sleepSourceNode.oscLeft.stop(sleepAudioContext.currentTime + 1);
+            sleepSourceNode.oscRight.stop(sleepAudioContext.currentTime + 1);
+        } else {
+            sleepSourceNode.stop(sleepAudioContext.currentTime + 1);
+        }
+        sleepSourceNode = null;
+    }
+    document.querySelectorAll('.sound-card').forEach(c => c.classList.remove('playing'));
+}
+
+function playBreathSound(direction, duration) {
+    if (!sleepAudioContext) sleepAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const gain = sleepAudioContext.createGain();
+    gain.connect(sleepAudioContext.destination);
+    const bufferSize = sleepAudioContext.sampleRate * duration;
+    const buffer = sleepAudioContext.createBuffer(1, bufferSize, sleepAudioContext.sampleRate);
+    const output = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
+    const whiteNoise = sleepAudioContext.createBufferSource();
+    whiteNoise.buffer = buffer;
+    const bandpass = sleepAudioContext.createBiquadFilter();
+    bandpass.type = 'bandpass';
+    bandpass.frequency.value = direction === 'in' ? 1500 : 800;
+    bandpass.Q.value = 1.5;
+    whiteNoise.connect(bandpass).connect(gain);
+    gain.gain.setValueAtTime(0, sleepAudioContext.currentTime);
+    gain.gain.linearRampToValueAtTime(0.2, sleepAudioContext.currentTime + 0.5);
+    gain.gain.linearRampToValueAtTime(0, sleepAudioContext.currentTime + duration);
+    whiteNoise.start();
+    whiteNoise.stop(sleepAudioContext.currentTime + duration);
+}
+
+function playChimeSound() {
+     if (!sleepAudioContext) sleepAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+     const osc = sleepAudioContext.createOscillator();
+     const gain = sleepAudioContext.createGain();
+     osc.type = 'sine';
+     osc.frequency.setValueAtTime(880, sleepAudioContext.currentTime); // A5
+     gain.gain.setValueAtTime(0, sleepAudioContext.currentTime);
+     gain.gain.linearRampToValueAtTime(0.5, sleepAudioContext.currentTime + 0.1);
+     gain.gain.exponentialRampToValueAtTime(0.0001, sleepAudioContext.currentTime + 2);
+     osc.connect(gain).connect(sleepAudioContext.destination);
+     osc.start();
+     osc.stop(sleepAudioContext.currentTime + 2);
+}
+
+function renderAlarms() {
+    const alarmsListEl = document.getElementById('alarms-list');
+    alarmsListEl.innerHTML = alarms.map(alarm => `<div class="glass-card flex items-center justify-between p-4 rounded-lg"><div class="cursor-pointer" onclick="window.openAlarmModalHandler(${alarm.id})"><p class="text-3xl font-light">${alarm.time}</p></div><div class="relative inline-block w-11 mr-2 align-middle select-none"><input type="checkbox" id="toggle-${alarm.id}" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" ${alarm.isActive ? 'checked' : ''}><label for="toggle-${alarm.id}" class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer"></label></div></div>`).join('') || `<p class="text-center text-secondary">No alarms set.</p>`;
+    alarms.forEach(alarm => {
+        document.getElementById(`toggle-${alarm.id}`).addEventListener('change', () => toggleAlarmActive(alarm.id));
+    });
+}
+
+function renderChronicle() {
+    const chronicleListEl = document.getElementById('chronicle-list');
+    chronicleListEl.innerHTML = dreams.map(dream => {
+        const imageHtml = dream.imageUrl 
+            ? `<img src="${dream.imageUrl}" class="w-20 h-20 object-cover rounded-md flex-shrink-0">`
+            : `<div class="w-20 h-20 rounded-md bg-slate-200 flex-shrink-0"></div>`;
+        return `
+        <div class="glass-card p-4 rounded-lg cursor-pointer hover:shadow-xl transition-shadow flex gap-4" onclick="window.navigateTo('dream-detail-page'); window.renderDreamDetail(${dream.id});">
+            ${imageHtml}
+            <div class="overflow-hidden">
+                <p class="font-quatrecento text-lg font-bold truncate">${dream.title || 'Untitled Dream'}</p>
+                <p class="text-sm text-secondary mb-2">${new Date(dream.timestamp).toLocaleDateString([], { month: 'long', day: 'numeric' })}</p>
+                <p class="text-sm line-clamp-2">${dream.dreamText}</p>
+            </div>
+        </div>`}).join('') || `<p class="text-center text-secondary">Your dream journal is empty.</p>`;
+}
+
+function renderDreamDetail(dreamId) {
+    const dream = dreams.find(d => d.id === dreamId);
+    if (!dream) return;
+    const detailPage = document.getElementById('dream-detail-page');
+    const date = new Date(dream.timestamp);
+    let analysisHTML = `<div id="loader-${dream.id}" class="mt-6 text-center text-indigo-500" style="display: block;"><svg class="animate-spin h-8 w-8 text-indigo-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><p class="mt-2">Illuminating...</p></div><div class="mt-8 pt-6 border-t" id="analysis-container-${dream.id}"></div>`;
+    const imageHTML = dream.imageUrl ? `<img src="${dream.imageUrl}" class="w-full h-64 object-cover rounded-lg mb-6 cursor-pointer" onclick="window.openImageModal('${dream.imageUrl}')">` : `<div id="image-placeholder-${dream.id}" class="w-full h-64 rounded-lg bg-slate-200 mb-6 animate-pulse"></div>`;
+    
+    detailPage.innerHTML = `<div class="max-w-2xl mx-auto"><div class="flex justify-between items-center mb-6"><button onclick="window.navigateTo('chronicle-page')" class="text-indigo-500">&larr; Back to Chronicle</button><button onclick="window.openEditScribeModal(${dream.id})" class="text-sm text-secondary hover:text-indigo-500">Edit</button></div>${imageHTML}<p class="text-secondary">${date.toLocaleString()}</p><h2 class="font-quatrecento text-3xl mt-2 mb-6">${dream.title || 'Dream Entry'}</h2><p class="text-lg leading-relaxed whitespace-pre-wrap">${dream.dreamText}</p>${analysisHTML}</div>`;
+    
+    if (dream.aiAnalysis) {
+        document.getElementById(`loader-${dream.id}`).style.display = 'none';
+        const container = document.getElementById(`analysis-container-${dream.id}`);
+        container.innerHTML = '';
+        dream.aiAnalysis.analysis.forEach((item, i) => container.appendChild(createAccordionItem(item.title, item.content, i === 0)));
+        container.appendChild(createAccordionItem(dream.aiAnalysis.integration.title, dream.aiAnalysis.integration.content));
+        
+        const deepenButton = document.createElement('button');
+        deepenButton.className = "w-full mt-4 py-2 bg-indigo-100 text-indigo-700 font-bold rounded-full";
+        deepenButton.textContent = "Deepen Analysis with AI";
+        deepenButton.onclick = () => openDreamChat(dreamId);
+        container.appendChild(deepenButton);
+    }
+}
+function createAccordionItem(title, content, isOpen = false) {
+    const itemDiv = document.createElement('div');
+    itemDiv.className = 'accordion-item';
+    itemDiv.innerHTML = `<button class="accordion-button w-full flex justify-between items-center py-4 text-left font-quatrecento text-xl"><span>${title}</span><span class="accordion-icon ${isOpen ? 'open' : ''}">+</span></button><div class="accordion-content ${isOpen ? 'open' : ''}"><p class="pb-4">${content}</p></div>`;
+    itemDiv.querySelector('.accordion-button').addEventListener('click', (e) => {
+        const button = e.currentTarget;
+        const contentDiv = button.nextElementSibling;
+        const icon = button.querySelector('.accordion-icon');
+        contentDiv.classList.toggle('open');
+        icon.classList.toggle('open');
+    });
+    return itemDiv;
+}
+function getSleepQualityIconsHTML(selectedValue = 0) {
+    let starsHTML = '';
+    for(let i=1; i<=5; i++) {
+        starsHTML += `<svg data-value="${i}" class="${selectedValue >= i ? 'selected' : ''}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`;
+    }
+    return starsHTML;
+}
+
+function renderStars(value) {
+    const stars = document.querySelectorAll('.sleep-quality-rating svg');
+    stars.forEach(star => {
+        star.classList.toggle('selected', star.dataset.value <= value);
+    });
+}
+
+function base64ToArrayBuffer(base64) {
+    const binary_string = window.atob(base64);
+    const len = binary_string.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+        bytes[i] = binary_string.charCodeAt(i);
+    }
+    return bytes.buffer;
+}
+function pcmBase64ToUrl(base64Data, sampleRate = 24000) {
+    const pcmData = base64ToArrayBuffer(base64Data);
+    const pcm16 = new Int16Array(pcmData);
+    const wavBlob = pcmToWav(pcm16, sampleRate);
+    return URL.createObjectURL(wavBlob);
+}
+function pcmToWav(pcmData, sampleRate) {
+    const numChannels = 1;
+    const bitsPerSample = 16;
+    const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
+    const blockAlign = numChannels * (bitsPerSample / 8);
+    const dataSize = pcmData.length * (bitsPerSample / 8);
+    const buffer = new ArrayBuffer(44 + dataSize);
+    const view = new DataView(buffer);
+    writeString(view, 0, 'RIFF'); view.setUint32(4, 36 + dataSize, true); writeString(view, 8, 'WAVE');
+    writeString(view, 12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true);
+    view.setUint16(22, numChannels, true); view.setUint32(24, sampleRate, true); view.setUint32(28, byteRate, true);
+    view.setUint16(32, blockAlign, true); view.setUint16(34, bitsPerSample, true);
+    writeString(view, 36, 'data'); view.setUint32(40, dataSize, true);
+    for (let i = 0; i < pcmData.length; i++) view.setInt16(44 + i * 2, pcmData[i], true);
+    return new Blob([view], { type: 'audio/wav' });
+}
+function writeString(view, offset, string) {
+    for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i));
+}
+
+function renderObservatory() {
+    document.getElementById('dream-count').textContent = dreams.length;
+    const level = Math.floor(dreams.length / 5) + 1;
+    document.getElementById('dreamer-level').textContent = level;
+    const dreamsWithQuality = dreams.filter(d => d.sleepQuality);
+    const avgQuality = dreamsWithQuality.length > 0 ? (dreamsWithQuality.reduce((sum, d) => sum + d.sleepQuality, 0) / dreamsWithQuality.length).toFixed(1) : '-';
+    document.getElementById('avg-sleep-quality').textContent = avgQuality;
+    const achievements = [
+        { name: 'First Entry', unlocked: dreams.length >= 1, icon: `<svg xmlns="http://www.w3.org/2000/svg" class="achievement-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`},
+        { name: 'Symbol Seeker', unlocked: dreams.length >= 3, icon: `<svg xmlns="http://www.w3.org/2000/svg" class="achievement-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>` },
+        { name: 'Weekly Chronicler', unlocked: dreams.length >= 7, icon: `<svg xmlns="http://www.w3.org/2000/svg" class="achievement-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>`},
+        { name: 'Night Owl', unlocked: dreams.some(d => new Date(d.timestamp).getHours() < 4), icon: `<svg xmlns="http://www.w3.org/2000/svg" class="achievement-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>`},
+        { name: 'Monthly Archivist', unlocked: dreams.length >= 15, icon: `<svg xmlns="http://www.w3.org/2000/svg" class="achievement-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v11.494m-9-5.747h18" /></svg>`},
+        { name: 'Pattern Recognizer', unlocked: dreams.length >= 30, icon: `<svg xmlns="http://www.w3.org/2000/svg" class="achievement-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>`},
+        { name: 'Lucid Explorer', unlocked: dreams.some(d => d.dreamText.toLowerCase().includes('lucid')), icon: `<svg xmlns="http://www.w3.org/2000/svg" class="achievement-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>`},
+        { name: 'Zenith Sleeper', unlocked: dreams.some(d => d.sleepQuality === 5), icon: `<svg xmlns="http://www.w3.org/2000/svg" class="achievement-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>`},
+    ];
+    document.getElementById('achievements-grid').innerHTML = achievements.map(ach => `<div class="text-center ${ach.unlocked ? 'text-indigo-500' : 'opacity-30 text-secondary'}" title="${ach.name}${ach.unlocked ? '' : ' (Locked)'}">${ach.icon}<p class="text-xs mt-1">${ach.name}</p></div>`).join('');
+    
+    renderDreamThemesChart();
+    
+    const recurringSymbolsEl = document.getElementById('recurring-symbols');
+    const sleepQualityChartEl = document.getElementById('sleep-quality-chart');
+    const allText = dreams.map(d => d.dreamText).join(' ');
+    const words = allText.toLowerCase().match(/\b(\w{4,})\b/g) || [];
+    const stopWords = new Set(['this', 'that', 'with', 'from', 'they', 'what', 'then', 'there', 'about', 'were', 'have', 'said', 'like', 'just']);
+    const frequencies = words.reduce((acc, word) => { if (!stopWords.has(word)) acc[word] = (acc[word] || 0) + 1; return acc; }, {});
+    const sortedSymbols = Object.entries(frequencies).sort((a, b) => b[1] - a[1]).slice(0, 10);
+    recurringSymbolsEl.innerHTML = sortedSymbols.map(([word, count]) => `<span class="bg-indigo-100 text-indigo-700 text-sm font-medium px-3 py-1 rounded-full">${word} (${count})</span>`).join('') || `<p class="text-secondary">Not enough data yet.</p>`;
+    const recentDreams = dreams.slice(0, 7).reverse();
+    sleepQualityChartEl.innerHTML = recentDreams.map(dream => {
+        const height = dream.sleepQuality ? (dream.sleepQuality / 5) * 100 : 0;
+        const date = new Date(dream.timestamp);
+        return `<div class="flex-1 flex flex-col items-center justify-end h-full group"><div class="w-3/5 h-full flex items-end"><div class="w-full bg-indigo-300/50 rounded-t-md group-hover:bg-indigo-400/80 transition-all" style="height: ${height}%"></div></div><p class="text-xs text-secondary mt-1">${date.getMonth()+1}/${date.getDate()}</p></div>`;
+    }).join('') || `<p class="text-secondary w-full text-center self-center">No sleep quality data recorded.</p>`;
+    
+    const widgetInput = document.getElementById('smart-widget-hours');
+    widgetInput.value = preferences.smartWidgetHours;
+    widgetInput.onchange = (e) => { preferences.smartWidgetHours = parseInt(e.target.value) || 5; localStorage.setItem('somnia_preferences', JSON.stringify(preferences)); };
+    
+    const ageInput = document.getElementById('user-age');
+    ageInput.value = preferences.userAge;
+    ageInput.onchange = (e) => { preferences.userAge = e.target.value; localStorage.setItem('somnia_preferences', JSON.stringify(preferences)); };
+
+    const genderInput = document.getElementById('user-gender');
+    genderInput.value = preferences.userGender;
+    genderInput.onchange = (e) => { preferences.userGender = e.target.value; localStorage.setItem('somnia_preferences', JSON.stringify(preferences)); };
+}
+
+function renderDreamThemesChart() {
+    const container = document.getElementById('dream-themes-chart-container');
+    const themes = {
+        'Anxiety': ['fear', 'anxious', 'scared', 'running', 'chased', 'falling'],
+        'Discovery': ['found', 'realized', 'discovered', 'new', 'secret', 'map'],
+        'Conflict': ['fight', 'argument', 'yelling', 'angry', 'battle'],
+        'Joy': ['happy', 'laughing', 'flying', 'celebrate', 'wonderful'],
+        'Confusion': ['lost', 'confused', 'maze', 'weird', 'strange'],
+        'Transformation': ['changing', 'became', 'transformed', 'grew', 'shrunk']
+    };
+    
+    const themeCounts = Object.keys(themes).reduce((acc, theme) => { acc[theme] = 0; return acc; }, {});
+    
+    let totalMatches = 0;
+    dreams.forEach(dream => {
+        const text = dream.dreamText.toLowerCase();
+        for (const theme in themes) {
+            themes[theme].forEach(keyword => {
+                if (text.includes(keyword)) { themeCounts[theme]++; totalMatches++; }
+            });
+        }
+    });
+
+    if (totalMatches < 3) {
+        container.innerHTML = `<p class="text-secondary text-center">Log more dreams to see your theme analysis.</p>`;
+        return;
+    }
+
+    const labels = Object.keys(themeCounts);
+    const data = Object.values(themeCounts);
+    const maxVal = Math.max(...data, 1);
+    
+    const size = 250;
+    const center = size / 2;
+    const radius = size * 0.4;
+    
+    const points = data.map((value, i) => {
+        const angle = (Math.PI * 2 * i) / labels.length - Math.PI / 2;
+        const x = center + (radius * value / maxVal) * Math.cos(angle);
+        const y = center + (radius * value / maxVal) * Math.sin(angle);
+        return `${x},${y}`;
+    }).join(' ');
+
+    const axisLines = labels.map((_, i) => {
+        const angle = (Math.PI * 2 * i) / labels.length - Math.PI / 2;
+        const x = center + radius * Math.cos(angle);
+        const y = center + radius * Math.sin(angle);
+        return `<line x1="${center}" y1="${center}" x2="${x}" y2="${y}" stroke="var(--border-color)" stroke-width="1"/>`;
+    }).join('');
+    
+    const axisLabels = labels.map((label, i) => {
+        const angle = (Math.PI * 2 * i) / labels.length - Math.PI / 2;
+        const x = center + (radius + 15) * Math.cos(angle);
+        const y = center + (radius + 15) * Math.sin(angle);
+        return `<text x="${x}" y="${y}" fill="var(--text-secondary)" font-size="10" text-anchor="middle" dominant-baseline="middle">${label}</text>`;
+    }).join('');
+
+    container.innerHTML = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><g>${axisLines}</g><polygon points="${points}" fill="rgba(99, 102, 241, 0.4)" stroke="var(--accent-primary)" stroke-width="2"/><g>${axisLabels}</g></svg>`;
+}
+
+function openImageModal(imageUrl) {
+    const content = `<div class="flex justify-center items-center"><img src="${imageUrl}" class="max-w-full max-h-[80vh] object-contain"></div><div class="text-center mt-4"><button class="cancel-btn text-sm">Close</button></div>`;
+    renderModal(content);
+}
+
+function openDreamChat(dreamId) {
+    const dream = dreams.find(d => d.id === dreamId);
+    if (!dream) return;
+    if (!dream.chatHistory || dream.chatHistory.length === 0) {
+        dream.chatHistory = [{
+            role: 'user',
+            parts: [{ text: `You are The Oneironaut. The user wants to discuss the following dream and its analysis. This is your only context. Dream: "${dream.dreamText}". Initial Analysis: ${JSON.stringify(dream.aiAnalysis)}. Begin the conversation by asking what they'd like to explore further.` }]
+        }, {
+            role: 'model',
+            parts: [{ text: "I see the landscape of your dream. What symbols or feelings from this vision would you like to explore more deeply?"}]
+        }];
+    }
+    renderDreamChatModal(dreamId);
+}
+
+function renderDreamChatModal(dreamId) {
+    const dream = dreams.find(d => d.id === dreamId);
+    if (!dream) return;
+    const historyHtml = dream.chatHistory.slice(1).map(msg => `<div class="my-2 p-3 rounded-lg ${msg.role === 'user' ? 'bg-indigo-100 text-right' : 'bg-slate-100 text-primary'}">${msg.parts[0].text.replace(/\n/g, '<br>')}</div>`).join('');
+    const content = `<h2 class="font-quatrecento text-2xl text-center mb-4">Deepen Analysis</h2><div id="dream-chat-box" class="h-64 overflow-y-auto custom-scrollbar p-2 mb-4 border rounded-lg">${historyHtml}</div><div class="flex gap-2"><input id="dream-chat-input" type="text" placeholder="Ask about your dream..." class="flex-grow p-2 border rounded-full input-field"><button id="dream-chat-send-btn" class="bg-indigo-500 text-white rounded-full px-4">Send</button></div><div class="text-center mt-4"><button class="cancel-btn text-sm">Close</button></div>`;
+    renderModal(content);
+    const chatBox = document.getElementById('dream-chat-box');
+    chatBox.scrollTop = chatBox.scrollHeight;
+    document.getElementById('dream-chat-send-btn').onclick = () => sendDreamChatMessage(dreamId);
+    document.getElementById('dream-chat-input').onkeydown = (e) => { if (e.key === 'Enter') sendDreamChatMessage(dreamId); };
+}
+
+async function sendDreamChatMessage(dreamId) {
+    const dream = dreams.find(d => d.id === dreamId);
+    if (!dream) return;
+    const inputEl = document.getElementById('dream-chat-input');
+    const userText = inputEl.value.trim();
+    if (!userText) return;
+    dream.chatHistory.push({ role: 'user', parts: [{ text: userText }] });
+    inputEl.value = '';
+    renderDreamChatModal(dreamId);
+    const responseText = await callGeminiAPI(dream.chatHistory);
+    dream.chatHistory.push({ role: 'model', parts: [{ text: responseText }] });
+    localStorage.setItem('somnia_dreams', JSON.stringify(dreams));
+    renderDreamChatModal(dreamId);
+}
+
+// --- INITIALIZATION & GLOBAL EXPOSURE ---
+document.addEventListener('DOMContentLoaded', () => {
+    updateClock();
+    setInterval(updateClock, 1000);
+    renderAlarms();
+    navButtons.forEach(button => button.addEventListener('click', () => navigateTo(button.dataset.page)));
+    document.getElementById('add-alarm-btn').addEventListener('click', () => openAlarmModal());
+    setupSpeechRecognition();
+});
+
+window.navigateTo = navigateTo;
+window.renderDreamDetail = renderDreamDetail;
+window.openEditScribeModal = openEditScribeModal;
+window.openSoundDescriptionModal = openSoundDescriptionModal;
+window.openAICoach = openAICoach;
+window.openGuidedBreathingModal = openGuidedBreathingModal;
+window.openImageModal = openImageModal;
+window.openDreamChat = openDreamChat;
+window.openAlarmModalHandler = (id) => { const alarm = alarms.find(a => a.id === id); if(alarm) openAlarmModal(alarm); }
+
+</script>
+</body>
+</html>
