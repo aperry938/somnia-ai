@@ -1,0 +1,15 @@
+Ignore system files
+.DS_Store
+
+Ignore build artifacts or dependency folders if they were used
+e.g., node_modules/, dist/, build/
+Ignore environment variable files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+Ignore IDE and editor directories
+.idea/
+.vscode/
