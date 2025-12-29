@@ -6,6 +6,7 @@ import { SoundscapeModal } from '../modals/SoundscapeModal';
 import { GuidedRelaxationModal } from '../modals/GuidedRelaxationModal';
 import { useAppContext } from '../../contexts/AppContext';
 import { stopSleepSound } from '../../services/audioService';
+import { REALITY_CHECKS, LUCID_TECHNIQUES } from '../../constants/lucidDreaming';
 
 const DayRating: React.FC<{ rating: number | null; onRate: (rating: number) => void; }> = ({ rating, onRate }) => {
     return (
@@ -200,6 +201,29 @@ export const SleepPage: React.FC = () => {
                                     <label htmlFor={`check-${item.key}`} className="ml-3 text-sm">{item.text}</label>
                                 </div>
                             ))}
+                        </div>
+                    </div>
+
+                    {/* Lucid Dreaming Tips */}
+                    <div>
+                        <h2 className="font-serif text-2xl text-center my-8">Lucid Dreaming</h2>
+                        <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">
+                            <h3 className="font-medium mb-3">Tonight's Reality Check</h3>
+                            <div className="p-3 bg-day-accent/10 dark:bg-night-accent/10 rounded-lg">
+                                <p className="font-medium text-day-accent dark:text-night-accent">{REALITY_CHECKS[new Date().getDay()].check}</p>
+                                <p className="text-sm text-day-text-secondary dark:text-night-text-secondary mt-1">{REALITY_CHECKS[new Date().getDay()].description}</p>
+                            </div>
+                            <div className="mt-4 space-y-2">
+                                {LUCID_TECHNIQUES.slice(0, 2).map(t => (
+                                    <div key={t.id} className="p-3 bg-white/50 dark:bg-black/20 rounded-lg">
+                                        <div className="flex justify-between items-start">
+                                            <span className="font-medium text-sm">{t.name}</span>
+                                            <span className="text-xs px-2 py-0.5 bg-day-accent/20 dark:bg-night-accent/20 text-day-accent dark:text-night-accent rounded-full">{t.difficulty}</span>
+                                        </div>
+                                        <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-1">{t.description}</p>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
                     <div className="pt-4 pb-8">

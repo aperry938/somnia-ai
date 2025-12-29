@@ -197,6 +197,30 @@ export const generateDreamImage = async (dreamText: string, style: DreamArtStyle
     }
 };
 
+/**
+ * Generate a creative title for a dream entry
+ */
+export const generateDreamTitle = async (dreamText: string): Promise<string> => {
+    try {
+        const ai = getAi();
+        const prompt = `Generate a short, evocative title (3-6 words) for this dream:
+
+"${dreamText.slice(0, 500)}"
+
+Return ONLY the title, nothing else. No quotes, no explanation.`;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: [{ parts: [{ text: prompt }] }],
+        });
+
+        const title = response.text?.trim();
+        return title || 'Untitled Dream';
+    } catch (error) {
+        console.error("Error generating dream title:", error);
+        return 'Untitled Dream';
+    }
+};
 
 const createCoachSystemPrompt = () => ({
     role: 'model' as const,

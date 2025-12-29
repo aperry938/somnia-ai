@@ -159,7 +159,38 @@ CSS custom properties handle notched devices (iPhone X+, Android with camera cut
 
 **Implementation:** `index.html` → CSS env(safe-area-inset-*) + `.safe-area-*` classes
 
+### 3.14 Related Dreams (Dream Threading)
+
+Automatic discovery of related dreams via shared tags. Shows up to 3 related entries when viewing a dream.
+
+**Implementation:** `DreamDetailPage.tsx` → filters dreams by shared `tags[]`
+
+### 3.15 AI Coach Memory
+
+Sleep coach conversations persist across sessions. Saves last 20 messages with "Clear History" option.
+
+**Implementation:** `AICoachModal.tsx` → LocalStorage key `somnia_coach_history`
+
+### 3.16 Dream Image Art Styles
+
+5 configurable art style presets for dream visualization: Surrealist, Watercolor, Anime, Cosmic, Vintage Film.
+
+**Implementation:** `geminiService.ts` → `DREAM_ART_STYLES` + `DreamArtStyle` type
+
+### 3.17 Keyboard Navigation
+
+Power-user shortcuts: 1-4 keys navigate to pages. Modals close with Escape.
+
+**Implementation:** `App.tsx` → `handleKeyNav` effect
+
+### 3.18 Accessibility Focus Styles
+
+Focus-visible outlines for keyboard navigation. Skip-link for screen readers.
+
+**Implementation:** `index.html` → CSS `:focus-visible` + `.skip-link`
+
 ---
+
 
 ## 4. MECHANISMS (Technical Engine)
 

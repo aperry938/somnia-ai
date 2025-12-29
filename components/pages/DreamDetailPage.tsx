@@ -1,11 +1,12 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
-import { analyzeDream, generateDreamImage, DreamArtStyle, DREAM_ART_STYLES } from '../../services/geminiService';
+import { analyzeDream, generateDreamImage, generateDreamTitle, DreamArtStyle, DREAM_ART_STYLES } from '../../services/geminiService';
 import { DreamChatModal } from '../modals/DreamChatModal';
 import { ImageModal } from '../modals/ImageModal';
 import { SleepAids } from '../../types';
 import { AnalysisLoading, ImageGenerationLoading } from '../shared/LoadingStates';
 import { TagInput, COMMON_DREAM_TAGS } from '../shared/TagInput';
+import { findDreamSymbols, DreamSymbol } from '../../constants/dreamSymbols';
 
 // Evening Reflection Display Component
 const EveningReflectionDisplay: React.FC<{ aids: SleepAids }> = ({ aids }) => {
@@ -96,6 +97,12 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
     const [isImageModalOpen, setIsImageModalOpen] = useState(false);
     const [selectedArtStyle, setSelectedArtStyle] = useState<DreamArtStyle>('surrealist');
 
+    // Detect dream symbols in the dream text
+    const detectedSymbols = useMemo(() => {
+        if (!dream) return [];
+        return findDreamSymbols(dream.dreamText);
+    }, [dream]);
+
 
     const performAnalysis = useCallback(async () => {
         if (!dream || dream.aiAnalysis) {
@@ -172,8 +179,8 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                                     key={style}
                                     onClick={() => setSelectedArtStyle(style)}
                                     className={`px-3 py-1.5 rounded-full text-sm transition-colors ${selectedArtStyle === style
-                                            ? 'bg-day-accent dark:bg-night-accent text-white'
-                                            : 'bg-white/50 dark:bg-black/20 hover:bg-white/70 dark:hover:bg-black/30'
+                                        ? 'bg-day-accent dark:bg-night-accent text-white'
+                                        : 'bg-white/50 dark:bg-black/20 hover:bg-white/70 dark:hover:bg-black/30'
                                         }`}
                                 >
                                     {DREAM_ART_STYLES[style].name}
@@ -186,7 +193,21 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                 )}
 
                 <p className="text-day-text-secondary dark:text-night-text-secondary">{date.toLocaleString()}</p>
-                <h2 className="font-serif text-3xl mt-2 mb-4">{dream.title}</h2>
+                <div className="flex items-center gap-2 mt-2 mb-4">
+                    <h2 className="font-serif text-3xl">{dream.title}</h2>
+                    <button
+                        onClick={async () => {
+                            const newTitle = await generateDreamTitle(dream.dreamText);
+                            updateDream({ id: dream.id, title: newTitle });
+                        }}
+                        className="text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent transition-colors"
+                        title="Regenerate title with AI"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                    </button>
+                </div>
 
                 {dream.sleepAids && <EveningReflectionDisplay aids={dream.sleepAids} />}
                 {dream.sleepAids && <SleepAidsDisplay aids={dream.sleepAids} />}
@@ -201,7 +222,12 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                         <button onClick={handleSaveEdit} className="mt-2 px-4 py-2 bg-day-accent text-white rounded-full">Save Changes</button>
                     </div>
                 ) : (
-                    <p className="text-lg leading-relaxed whitespace-pre-wrap">{dream.dreamText}</p>
+                    <>
+                        <p className="text-lg leading-relaxed whitespace-pre-wrap">{dream.dreamText}</p>
+                        <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-3">
+                            {dream.dreamText.split(/\s+/).filter(w => w.length > 0).length} words • {dream.dreamText.length} characters
+                        </p>
+                    </>
                 )}
 
                 {/* Dream Tags Section */}
@@ -214,6 +240,32 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                         placeholder="Add tags (flying, lucid, recurring...)"
                     />
                 </div>
+
+                {/* Dream Symbols Section */}
+                {detectedSymbols.length > 0 && (
+                    <div className="mt-6 bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border p-4 rounded-xl">
+                        <h3 className="font-serif text-lg mb-3 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                            </svg>
+                            Detected Symbols
+                        </h3>
+                        <div className="space-y-3">
+                            {detectedSymbols.slice(0, 4).map(symbol => (
+                                <div key={symbol.symbol} className="text-sm">
+                                    <span className="font-medium text-day-accent dark:text-night-accent">{symbol.symbol}</span>
+                                    <span className="mx-2 text-day-text-secondary dark:text-night-text-secondary">—</span>
+                                    <span className="text-day-text-secondary dark:text-night-text-secondary">{symbol.meaning}</span>
+                                </div>
+                            ))}
+                        </div>
+                        {detectedSymbols.length > 4 && (
+                            <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-3">
+                                +{detectedSymbols.length - 4} more symbols detected
+                            </p>
+                        )}
+                    </div>
+                )}
 
                 <div className="mt-8 pt-6 border-t border-day-border dark:border-night-border">
                     {analysisState === 'loading' && (
