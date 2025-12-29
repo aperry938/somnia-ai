@@ -7,6 +7,7 @@ import { SleepAids } from '../../types';
 import { AnalysisLoading, ImageGenerationLoading } from '../shared/LoadingStates';
 import { TagInput, COMMON_DREAM_TAGS } from '../shared/TagInput';
 import { findDreamSymbols, DreamSymbol } from '../../constants/dreamSymbols';
+import { useToast } from '../shared/Toast';
 
 // Evening Reflection Display Component
 const EveningReflectionDisplay: React.FC<{ aids: SleepAids }> = ({ aids }) => {
@@ -89,6 +90,7 @@ const AccordionItem: React.FC<{ title: string; content: string; isOpenDefault?: 
 // Main Dream Detail Component
 export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => void; }> = ({ dreamId, onBack }) => {
     const { getDreamById, updateDream, biometrics, dreams } = useAppContext();
+    const { showToast } = useToast();
     const dream = dreamId ? getDreamById(dreamId) : null;
     const [analysisState, setAnalysisState] = useState<'pending' | 'loading' | 'success' | 'error'>('pending');
     const [isChatOpen, setIsChatOpen] = useState(false);
@@ -96,6 +98,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
     const [editedText, setEditedText] = useState(dream?.dreamText || '');
     const [isImageModalOpen, setIsImageModalOpen] = useState(false);
     const [selectedArtStyle, setSelectedArtStyle] = useState<DreamArtStyle>('surrealist');
+    const [isRegeneratingTitle, setIsRegeneratingTitle] = useState(false);
 
     // Detect dream symbols in the dream text
     const detectedSymbols = useMemo(() => {
@@ -197,14 +200,23 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                     <h2 className="font-serif text-3xl">{dream.title}</h2>
                     <button
                         onClick={async () => {
-                            const newTitle = await generateDreamTitle(dream.dreamText);
-                            updateDream({ id: dream.id, title: newTitle });
+                            setIsRegeneratingTitle(true);
+                            try {
+                                const newTitle = await generateDreamTitle(dream.dreamText);
+                                updateDream({ id: dream.id, title: newTitle });
+                                showToast('Title regenerated!');
+                            } catch {
+                                showToast('Failed to regenerate title', 'error');
+                            } finally {
+                                setIsRegeneratingTitle(false);
+                            }
                         }}
-                        className="text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent transition-colors"
+                        disabled={isRegeneratingTitle}
+                        className="text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent transition-colors disabled:opacity-50"
                         title="Regenerate title with AI"
                         aria-label="Regenerate title with AI"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 ${isRegeneratingTitle ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
                     </button>
@@ -244,15 +256,20 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
 
                 {/* Dream Symbols Section */}
                 {detectedSymbols.length > 0 && (
-                    <div className="mt-6 bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border p-4 rounded-xl">
-                        <h3 className="font-serif text-lg mb-3 flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    <details className="mt-6 bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-xl group">
+                        <summary className="p-4 cursor-pointer flex items-center justify-between list-none">
+                            <h3 className="font-serif text-lg flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                </svg>
+                                Detected Symbols ({detectedSymbols.length})
+                            </h3>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-day-text-secondary dark:text-night-text-secondary transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                             </svg>
-                            Detected Symbols
-                        </h3>
-                        <div className="space-y-3">
-                            {detectedSymbols.slice(0, 4).map(symbol => (
+                        </summary>
+                        <div className="px-4 pb-4 space-y-3">
+                            {detectedSymbols.map(symbol => (
                                 <div key={symbol.symbol} className="text-sm">
                                     <span className="font-medium text-day-accent dark:text-night-accent">{symbol.symbol}</span>
                                     <span className="mx-2 text-day-text-secondary dark:text-night-text-secondary">—</span>
@@ -260,12 +277,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                                 </div>
                             ))}
                         </div>
-                        {detectedSymbols.length > 4 && (
-                            <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-3">
-                                +{detectedSymbols.length - 4} more symbols detected
-                            </p>
-                        )}
-                    </div>
+                    </details>
                 )}
 
                 <div className="mt-8 pt-6 border-t border-day-border dark:border-night-border">
