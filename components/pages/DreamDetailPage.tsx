@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
-import { analyzeDream, generateDreamImage } from '../../services/geminiService';
+import { analyzeDream, generateDreamImage, DreamArtStyle, DREAM_ART_STYLES } from '../../services/geminiService';
 import { DreamChatModal } from '../modals/DreamChatModal';
 import { ImageModal } from '../modals/ImageModal';
 import { SleepAids } from '../../types';
@@ -94,6 +94,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
     const [isEditing, setIsEditing] = useState(false);
     const [editedText, setEditedText] = useState(dream?.dreamText || '');
     const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+    const [selectedArtStyle, setSelectedArtStyle] = useState<DreamArtStyle>('surrealist');
 
 
     const performAnalysis = useCallback(async () => {
@@ -105,7 +106,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
         try {
             const [analysisData, imageB64] = await Promise.all([
                 analyzeDream(dream.dreamText, dream.sleepAids, biometrics),
-                generateDreamImage(dream.dreamText)
+                generateDreamImage(dream.dreamText, selectedArtStyle)
             ]);
 
             updateDream({
@@ -158,8 +159,28 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                     <button onClick={() => setIsImageModalOpen(true)} className="w-full">
                         <img src={dream.imageUrl} alt={dream.title} className="w-full h-64 object-cover rounded-lg mb-6" />
                     </button>
-                ) : analysisState === 'loading' || analysisState === 'pending' ? (
-                    <div className="w-full h-64 rounded-lg bg-gray-200 dark:bg-gray-700 mb-6 animate-pulse"></div>
+                ) : analysisState === 'loading' ? (
+                    <div className="w-full h-64 rounded-lg bg-gray-200 dark:bg-gray-700 mb-6 animate-pulse flex items-center justify-center text-day-text-secondary">
+                        Generating in {DREAM_ART_STYLES[selectedArtStyle].name} style...
+                    </div>
+                ) : analysisState === 'pending' ? (
+                    <div className="w-full rounded-lg bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border p-4 mb-6">
+                        <p className="text-sm text-day-text-secondary dark:text-night-text-secondary mb-3">Choose art style for dream image:</p>
+                        <div className="flex flex-wrap gap-2">
+                            {(Object.keys(DREAM_ART_STYLES) as DreamArtStyle[]).map(style => (
+                                <button
+                                    key={style}
+                                    onClick={() => setSelectedArtStyle(style)}
+                                    className={`px-3 py-1.5 rounded-full text-sm transition-colors ${selectedArtStyle === style
+                                            ? 'bg-day-accent dark:bg-night-accent text-white'
+                                            : 'bg-white/50 dark:bg-black/20 hover:bg-white/70 dark:hover:bg-black/30'
+                                        }`}
+                                >
+                                    {DREAM_ART_STYLES[style].name}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                 ) : (
                     <div className="w-full h-64 rounded-lg bg-gray-200 dark:bg-gray-700 mb-6 flex items-center justify-center text-day-text-secondary">Image failed to load</div>
                 )}

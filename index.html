@@ -94,6 +94,31 @@
             background-color: rgba(148, 163, 184, 0.3);
         }
 
+        /* Focus-visible for keyboard navigation accessibility */
+        :focus-visible {
+            outline: 2px solid #6366F1;
+            outline-offset: 2px;
+        }
+
+        .dark :focus-visible {
+            outline-color: #818CF8;
+        }
+
+        /* Skip link for screen readers */
+        .skip-link {
+            position: absolute;
+            left: -9999px;
+            top: 0;
+            padding: 0.5rem 1rem;
+            background: #6366F1;
+            color: white;
+            z-index: 100;
+        }
+
+        .skip-link:focus {
+            left: 0;
+        }
+
         .line-clamp-2 {
             display: -webkit-box;
             -webkit-line-clamp: 2;

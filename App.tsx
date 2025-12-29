@@ -42,6 +42,23 @@ const App: React.FC = () => {
         };
     }, []);
 
+    // Keyboard shortcuts for navigation (1-4)
+    useEffect(() => {
+        const handleKeyNav = (e: KeyboardEvent) => {
+            // Don't trigger shortcuts when typing in inputs
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+            switch (e.key) {
+                case '1': setCurrentPage('alarms'); break;
+                case '2': setCurrentPage('sleep'); break;
+                case '3': setCurrentPage('chronicle'); break;
+                case '4': setCurrentPage('insights'); break;
+            }
+        };
+        window.addEventListener('keydown', handleKeyNav);
+        return () => window.removeEventListener('keydown', handleKeyNav);
+    }, []);
+
     const navigateToDreamDetail = (dreamId: number) => {
         setSelectedDreamId(dreamId);
         setCurrentPage('dream-detail');

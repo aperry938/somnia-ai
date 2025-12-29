@@ -151,7 +151,21 @@ export const SleepPage: React.FC = () => {
                     </div>
 
                     <div>
-                        <h2 className="font-serif text-2xl text-center my-6">Soundscapes</h2>
+                        <div className="flex items-center justify-center gap-4 my-6">
+                            <h2 className="font-serif text-2xl text-center">Soundscapes</h2>
+                            <button
+                                onClick={() => {
+                                    const randomIndex = Math.floor(Math.random() * SOUNDSCAPES.length);
+                                    openSoundscapeModal(SOUNDSCAPES[randomIndex]);
+                                }}
+                                className="px-3 py-1 text-sm bg-day-accent/10 dark:bg-night-accent/10 text-day-accent dark:text-night-accent rounded-full hover:bg-day-accent/20 dark:hover:bg-night-accent/20 transition-colors flex items-center gap-1"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                Surprise Me
+                            </button>
+                        </div>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                             {SOUNDSCAPES.map(sound => (
                                 <div key={sound.id} onClick={() => openSoundscapeModal(sound)} className={`sound-card bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border  p-4 rounded-xl text-center cursor-pointer transition-all hover:border-day-accent dark:hover:border-night-accent ${playingSoundId === sound.id ? 'border-day-accent dark:border-night-accent shadow-lg' : 'border-day-border dark:border-night-border'}`}>
