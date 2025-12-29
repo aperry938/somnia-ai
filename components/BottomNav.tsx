@@ -104,6 +104,14 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, setCurrentPag
             ))}
             <div className="border-l border-day-border dark:border-night-border h-8 mx-1" />
             <ThemeToggle />
+            <button
+                onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: '?' }))}
+                className="w-8 h-8 flex items-center justify-center text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent opacity-50 hover:opacity-100 transition-opacity"
+                title="Keyboard shortcuts"
+                aria-label="Show keyboard shortcuts"
+            >
+                <span className="text-xs font-mono">?</span>
+            </button>
         </nav>
     );
 };
