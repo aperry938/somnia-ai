@@ -199,10 +199,18 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
                             onTagClick={handleTagClick}
                         />
                     ))
-                ) : activeTagFilter ? (
-                    <p className="text-center text-day-text-secondary dark:text-night-text-secondary">
-                        No dreams with tag #{activeTagFilter}
-                    </p>
+                ) : hasFilters ? (
+                    <div className="text-center py-8">
+                        <p className="text-day-text-secondary dark:text-night-text-secondary mb-2">
+                            No dreams match your filters
+                        </p>
+                        <button
+                            onClick={clearFilters}
+                            className="text-day-accent dark:text-night-accent hover:underline text-sm"
+                        >
+                            Clear all filters
+                        </button>
+                    </div>
                 ) : (
                     <p className="text-center text-day-text-secondary dark:text-night-text-secondary">Your dream journal is empty.</p>
                 )}

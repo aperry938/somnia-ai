@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0F172A"/>
+      <stop offset="100%" style="stop-color:#1E293B"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="32" fill="url(#bg)"/>
+  <circle cx="96" cy="96" r="50" fill="none" stroke="#818CF8" stroke-width="4" opacity="0.3"/>
+  <circle cx="96" cy="96" r="35" fill="none" stroke="#818CF8" stroke-width="3" opacity="0.5"/>
+  <circle cx="96" cy="96" r="20" fill="#818CF8" opacity="0.8"/>
+  <path d="M96 56 L96 76" stroke="#818CF8" stroke-width="3" stroke-linecap="round"/>
+  <path d="M96 116 L96 136" stroke="#818CF8" stroke-width="3" stroke-linecap="round"/>
+  <path d="M56 96 L76 96" stroke="#818CF8" stroke-width="3" stroke-linecap="round"/>
+  <path d="M116 96 L136 96" stroke="#818CF8" stroke-width="3" stroke-linecap="round"/>
+  <text x="96" y="170" text-anchor="middle" fill="#E2E8F0" font-family="system-ui" font-size="16" font-weight="600">Somnia</text>
+</svg>

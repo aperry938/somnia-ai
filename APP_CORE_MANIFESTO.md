@@ -141,6 +141,24 @@ Graceful error handling with retry capability. AI-specific boundary with context
 
 **Implementation:** `components/shared/ErrorBoundary.tsx` wrapping `<App />`
 
+### 3.11 Chronicle Discovery System
+
+Full-text search across dream titles, content, and tags. Clickable tag filter pills for rapid categorization. Results update in real-time.
+
+**Implementation:** `components/pages/ChroniclePage.tsx` → `searchQuery`, `activeTagFilter` states
+
+### 3.12 PWA Installability
+
+Progressive Web App configuration enables "Add to Home Screen" on mobile. Includes manifest, theme colors, and Apple-specific meta tags for native app feel.
+
+**Implementation:** `public/manifest.json` + `index.html` meta tags
+
+### 3.13 Safe Area Support
+
+CSS custom properties handle notched devices (iPhone X+, Android with camera cutouts). BottomNav respects home indicator area.
+
+**Implementation:** `index.html` → CSS env(safe-area-inset-*) + `.safe-area-*` classes
+
 ---
 
 ## 4. MECHANISMS (Technical Engine)
