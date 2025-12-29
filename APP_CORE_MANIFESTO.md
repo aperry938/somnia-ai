@@ -243,7 +243,32 @@ Context-based toast notifications for user feedback. Auto-dismiss after 3 second
 
 **Implementation:** `components/shared/Toast.tsx` → ToastProvider + useToast hook
 
+### 3.27 Data Portability
+
+Full import/export cycle for dream journal backup. JSON export with date-stamped filename. Import handles ID collision by reassigning IDs.
+
+**Implementation:** `exportService.ts` → `exportDreamsAsJSON()` + `importDreamsFromJSON()`
+
+### 3.28 Dream Deletion
+
+Delete dreams with native browser confirmation. Returns to Chronicle after deletion with toast feedback.
+
+**Implementation:** `AppContext` → `deleteDream()` + `DreamDetailPage` delete button
+
+### 3.29 Navigation Badge
+
+Chronicle nav item shows dream count badge. Capped at 99+ for visual overflow.
+
+**Implementation:** `BottomNav.tsx` → conditional badge render
+
+### 3.30 Smart Tag Sorting
+
+Tags in Chronicle filter bar sorted by frequency (most used first) for better discovery.
+
+**Implementation:** `ChroniclePage.tsx` → Map-based tag counting + sort
+
 ---
+
 
 
 
