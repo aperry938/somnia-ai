@@ -5,6 +5,7 @@ import { exportDreamJournalToPDF, exportDreamsAsJSON, importDreamsFromJSON } fro
 import { Biometrics, DreamSynthesis, SleepHabitAnalysis } from '../../types';
 import { SleepQualityChart } from '../charts/SleepQualityChart';
 import { useToast } from '../shared/Toast';
+import { detectRecurringPatterns, formatPatternName } from '../../constants/dreamPatterns';
 
 const AnalysisCard: React.FC<{ title: string; description: string; buttonText: string; onAnalyze: () => void; isLoading: boolean; children: React.ReactNode; }> =
     ({ title, description, buttonText, onAnalyze, isLoading, children }) => (
@@ -108,6 +109,9 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
             }))
             .reverse(); // Show oldest to newest
     }, [dreams]);
+
+    // Detect recurring patterns
+    const patterns = useMemo(() => detectRecurringPatterns(dreams), [dreams]);
 
     const handleSynthesizeDreams = async () => {
         setIsDreamSynthLoading(true);
@@ -216,6 +220,36 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                         <div className="w-full h-48">
                             <SleepQualityChart data={chartData} />
                         </div>
+                    </div>
+                )}
+
+                {/* Recurring Patterns Section */}
+                {patterns.length > 0 && (
+                    <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">
+                        <h2 className="font-serif text-2xl mb-2">Recurring Patterns</h2>
+                        <p className="text-day-text-secondary dark:text-night-text-secondary text-sm mb-4">
+                            Themes that appear across multiple dreams
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                            {patterns.slice(0, 8).map(p => (
+                                <div
+                                    key={p.pattern}
+                                    className="px-3 py-1.5 bg-day-accent/10 dark:bg-night-accent/10 rounded-full text-sm flex items-center gap-1.5"
+                                >
+                                    <span className="font-medium text-day-accent dark:text-night-accent">
+                                        {formatPatternName(p.pattern)}
+                                    </span>
+                                    <span className="text-xs text-day-text-secondary dark:text-night-text-secondary">
+                                        ×{p.occurrences}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                        {patterns.length > 8 && (
+                            <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-2">
+                                +{patterns.length - 8} more patterns detected
+                            </p>
+                        )}
                     </div>
                 )}
 
