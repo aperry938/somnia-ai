@@ -1,0 +1,7 @@
+{
+  "name": "Copy of Somnia AI: Intelligent Dream Journal",
+  "description": "An intelligent sleep and dream wellness application featuring an adaptive alarm, AI-powered dream analysis and visualization, and a suite of science-backed relaxation tools to enhance your sleep and explore your subconscious.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
