@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
 import { analyzeSleepHabits, synthesizeDreamThemes } from '../../services/geminiService';
-import { exportDreamJournalToPDF, exportDreamsAsJSON } from '../../services/exportService';
+import { exportDreamJournalToPDF, exportDreamsAsJSON, importDreamsFromJSON } from '../../services/exportService';
 import { Biometrics, DreamSynthesis, SleepHabitAnalysis } from '../../types';
 import { SleepQualityChart } from '../charts/SleepQualityChart';
+import { useToast } from '../shared/Toast';
 
 const AnalysisCard: React.FC<{ title: string; description: string; buttonText: string; onAnalyze: () => void; isLoading: boolean; children: React.ReactNode; }> =
     ({ title, description, buttonText, onAnalyze, isLoading, children }) => (
@@ -73,7 +74,9 @@ const BiometricsCard: React.FC = () => {
 
 
 export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = ({ onDreamSelect }) => {
-    const { dreams } = useAppContext();
+    const { dreams, importDreams } = useAppContext();
+    const { showToast } = useToast();
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const [dreamSynthesis, setDreamSynthesis] = useState<DreamSynthesis | null>(null);
     const [isDreamSynthLoading, setIsDreamSynthLoading] = useState(false);
     const [dreamSynthError, setDreamSynthError] = useState<string | null>(null);
@@ -81,6 +84,20 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
     const [habitAnalysis, setHabitAnalysis] = useState<SleepHabitAnalysis | null>(null);
     const [isHabitLoading, setIsHabitLoading] = useState(false);
     const [habitError, setHabitError] = useState<string | null>(null);
+
+    const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+            const imported = await importDreamsFromJSON(file, dreams);
+            importDreams(imported);
+            showToast(`Imported ${imported.length} dreams!`);
+        } catch (error) {
+            showToast('Failed to import dreams', 'error');
+        }
+        // Reset file input
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
 
     const chartData = useMemo(() => {
         return dreams
@@ -284,6 +301,26 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                             </svg>
                             JSON Backup
+                        </button>
+                    </div>
+
+                    {/* Import Section */}
+                    <div className="mt-4 pt-4 border-t border-day-border dark:border-night-border">
+                        <input
+                            type="file"
+                            accept=".json"
+                            ref={fileInputRef}
+                            onChange={handleImport}
+                            className="hidden"
+                        />
+                        <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="w-full py-2 border-2 border-dashed border-day-border dark:border-night-border text-day-text-secondary dark:text-night-text-secondary font-medium rounded-lg hover:border-day-accent dark:hover:border-night-accent transition-colors flex items-center justify-center gap-2"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                            </svg>
+                            Import from JSON Backup
                         </button>
                     </div>
                 </div>

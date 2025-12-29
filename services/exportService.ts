@@ -200,3 +200,44 @@ export const exportDreamsAsJSON = (dreams: Dream[]): void => {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 };
+
+/**
+ * Import dreams from JSON backup file
+ * Returns array of imported dreams with new IDs to avoid collisions
+ */
+export const importDreamsFromJSON = (
+    file: File,
+    existingDreams: Dream[]
+): Promise<Dream[]> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+
+        reader.onload = (e) => {
+            try {
+                const content = e.target?.result as string;
+                const imported = JSON.parse(content) as Dream[];
+
+                // Validate basic structure
+                if (!Array.isArray(imported)) {
+                    throw new Error('Invalid format: expected array of dreams');
+                }
+
+                // Get max existing ID to avoid collisions
+                const maxExistingId = Math.max(0, ...existingDreams.map(d => d.id));
+
+                // Re-assign IDs to avoid collisions
+                const withNewIds = imported.map((dream, index) => ({
+                    ...dream,
+                    id: maxExistingId + index + 1
+                }));
+
+                resolve(withNewIds);
+            } catch (error) {
+                reject(new Error('Failed to parse JSON file'));
+            }
+        };
+
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsText(file);
+    });
+};

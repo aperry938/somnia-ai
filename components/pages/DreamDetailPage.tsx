@@ -89,7 +89,7 @@ const AccordionItem: React.FC<{ title: string; content: string; isOpenDefault?: 
 
 // Main Dream Detail Component
 export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => void; }> = ({ dreamId, onBack }) => {
-    const { getDreamById, updateDream, biometrics, dreams } = useAppContext();
+    const { getDreamById, updateDream, deleteDream, biometrics, dreams } = useAppContext();
     const { showToast } = useToast();
     const dream = dreamId ? getDreamById(dreamId) : null;
     const [analysisState, setAnalysisState] = useState<'pending' | 'loading' | 'success' | 'error'>('pending');
@@ -160,9 +160,23 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
             <div className="max-w-2xl mx-auto">
                 <div className="flex justify-between items-center mb-6">
                     <button onClick={onBack} className="text-day-accent dark:text-night-accent">&larr; Back to Chronicle</button>
-                    <button onClick={() => setIsEditing(!isEditing)} className="text-sm text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent">
-                        {isEditing ? 'Cancel' : 'Edit'}
-                    </button>
+                    <div className="flex gap-3">
+                        <button onClick={() => setIsEditing(!isEditing)} className="text-sm text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent">
+                            {isEditing ? 'Cancel' : 'Edit'}
+                        </button>
+                        <button
+                            onClick={() => {
+                                if (window.confirm('Are you sure you want to delete this dream? This cannot be undone.')) {
+                                    deleteDream(dream.id);
+                                    showToast('Dream deleted');
+                                    onBack();
+                                }
+                            }}
+                            className="text-sm text-red-500 hover:text-red-700"
+                        >
+                            Delete
+                        </button>
+                    </div>
                 </div>
 
                 {dream.imageUrl ? (

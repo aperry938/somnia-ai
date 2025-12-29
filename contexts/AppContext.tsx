@@ -14,6 +14,8 @@ interface AppContextType {
     addDream: (dreamText: string, sleepQuality: number | null) => number;
     updateDream: (updatedDream: Partial<Dream> & { id: number }) => void;
     getDreamById: (id: number) => Dream | undefined;
+    deleteDream: (id: number) => void;
+    importDreams: (dreams: Dream[]) => void;
     setActiveSleepAid: (type: keyof SleepAids, value: string | null) => void;
     clearActiveSleepAids: () => void;
     setPendingSleepData: (data: SleepAids | null) => void;
@@ -89,6 +91,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return newDream.id;
     };
 
+    const importDreams = (dreamsToImport: Dream[]) => {
+        setDreams(prev => [...dreamsToImport, ...prev]);
+    };
+
+    const deleteDream = (id: number) => {
+        setDreams(prev => prev.filter(d => d.id !== id));
+    };
+
     const updateDream = useCallback((updatedDreamPart: Partial<Dream> & { id: number }) => {
         setDreams(prev => prev.map(d => d.id === updatedDreamPart.id ? { ...d, ...updatedDreamPart } : d));
     }, [setDreams]);
@@ -118,6 +128,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         addDream,
         updateDream,
         getDreamById,
+        deleteDream,
+        importDreams,
         setActiveSleepAid,
         clearActiveSleepAids,
         setPendingSleepData,
