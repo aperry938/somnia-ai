@@ -267,7 +267,32 @@ Tags in Chronicle filter bar sorted by frequency (most used first) for better di
 
 **Implementation:** `ChroniclePage.tsx` → Map-based tag counting + sort
 
+### 3.31 Recurring Pattern Detection
+
+Automatic detection of themes appearing in 2+ dreams. 30+ common dream keywords tracked.
+
+**Implementation:** `constants/dreamPatterns.ts` → `detectRecurringPatterns()`
+
+### 3.32 Pattern Insights Display
+
+Recurring patterns shown as pills with occurrence counts in Insights page.
+
+**Implementation:** `InsightsPage.tsx` → patterns section
+
+### 3.33 Keyboard Help Modal
+
+Press "?" to show all keyboard shortcuts. Also accessible via "?" button in nav.
+
+**Implementation:** `components/shared/KeyboardHelp.tsx`
+
+### 3.34 Time-Based Dream Grouping
+
+Chronicle organizes dreams into "This Week", "Earlier This Month", and "Older" sections.
+
+**Implementation:** `ChroniclePage.tsx` → `groupedDreams` useMemo
+
 ---
+
 
 
 
