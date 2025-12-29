@@ -6,16 +6,17 @@ import { useAlarmManager } from './hooks/useAlarmManager';
 import { initAudioContext } from './services/audioService';
 
 import { AlarmsPage } from './components/pages/AlarmsPage';
-import { SleepPage } from './components/pages/SleepPage';
-import { ChroniclePage } from './components/pages/ChroniclePage';
-import { DreamDetailPage } from './components/pages/DreamDetailPage';
 import { BottomNav } from './components/BottomNav';
 import { AlarmRingModal } from './components/modals/AlarmRingModal';
 import { DreamScribeModal } from './components/modals/DreamScribeModal';
 import { PageLoading } from './components/shared/LoadingStates';
 
-// Lazy load InsightsPage (contains Recharts - large library)
+// Lazy load heavy pages for better code splitting
+const SleepPage = lazy(() => import('./components/pages/SleepPage').then(m => ({ default: m.SleepPage })));
+const ChroniclePage = lazy(() => import('./components/pages/ChroniclePage').then(m => ({ default: m.ChroniclePage })));
 const InsightsPage = lazy(() => import('./components/pages/InsightsPage').then(m => ({ default: m.InsightsPage })));
+const DreamDetailPage = lazy(() => import('./components/pages/DreamDetailPage').then(m => ({ default: m.DreamDetailPage })));
+
 
 
 const App: React.FC = () => {
@@ -98,7 +99,8 @@ const App: React.FC = () => {
 
     return (
         <div className="flex flex-col h-screen overflow-hidden bg-gradient-to-b from-day-bg-start to-day-bg-end dark:from-night-bg-start dark:to-night-bg-end text-day-text-primary dark:text-night-text-primary transition-colors duration-500">
-            <main className="flex-grow overflow-y-auto custom-scrollbar p-4 md:p-6">
+            <a href="#main-content" className="skip-link">Skip to main content</a>
+            <main id="main-content" className="flex-grow overflow-y-auto custom-scrollbar p-4 md:p-6">
                 <div className="animate-fadeIn">
                     {renderPage()}
                 </div>
