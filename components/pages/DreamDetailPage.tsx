@@ -87,7 +87,7 @@ const AccordionItem: React.FC<{ title: string; content: string; isOpenDefault?: 
 
 // Main Dream Detail Component
 export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => void; }> = ({ dreamId, onBack }) => {
-    const { getDreamById, updateDream, biometrics } = useAppContext();
+    const { getDreamById, updateDream, biometrics, dreams } = useAppContext();
     const dream = dreamId ? getDreamById(dreamId) : null;
     const [analysisState, setAnalysisState] = useState<'pending' | 'loading' | 'success' | 'error'>('pending');
     const [isChatOpen, setIsChatOpen] = useState(false);
@@ -222,6 +222,40 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                     )}
                 </div>
             </div>
+
+            {/* Related Dreams Section */}
+            {dream?.tags && dream.tags.length > 0 && (() => {
+                const relatedDreams = dreams.filter(d =>
+                    d.id !== dream.id &&
+                    d.tags?.some(t => dream.tags?.includes(t))
+                ).slice(0, 3);
+
+                if (relatedDreams.length === 0) return null;
+
+                return (
+                    <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-4 rounded-xl mt-6">
+                        <h3 className="font-serif text-lg mb-3">Related Dreams</h3>
+                        <div className="space-y-2">
+                            {relatedDreams.map(rd => {
+                                const sharedTags = rd.tags?.filter(t => dream.tags?.includes(t)) || [];
+                                return (
+                                    <div
+                                        key={rd.id}
+                                        className="p-3 bg-white/50 dark:bg-black/20 rounded-lg"
+                                    >
+                                        <p className="font-medium truncate">{rd.title || 'Untitled'}</p>
+                                        <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">
+                                            {new Date(rd.timestamp).toLocaleDateString()} •
+                                            {sharedTags.map(t => ` #${t}`).join('')}
+                                        </p>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                );
+            })()}
+
             {isChatOpen && dream && <DreamChatModal dream={dream} onClose={() => setIsChatOpen(false)} />}
             {isImageModalOpen && dream?.imageUrl && <ImageModal src={dream.imageUrl} onClose={() => setIsImageModalOpen(false)} />}
         </>

@@ -14,7 +14,7 @@ const CircleVisualizer: React.FC<{ animationClass: string; animKey: number }> = 
 
 
 const BoxVisualizer: React.FC<{ animKey: number }> = ({ animKey }) => (
-     <div key={animKey} className="w-40 h-40 flex justify-center items-center">
+    <div key={animKey} className="w-40 h-40 flex justify-center items-center">
         <svg width="120" height="120" viewBox="0 0 120 120" className="-rotate-90">
             <path
                 d="M0 0 H120 V120 H0 Z"
@@ -40,6 +40,14 @@ type CycleStep = {
     duration: number;
     anim: string;
     sound?: 'in' | 'out';
+    vibrate?: number; // Vibration duration in ms (for inhale/exhale cues)
+};
+
+// Haptic feedback helper
+const triggerHaptic = (pattern: number | number[]) => {
+    if ('vibrate' in navigator) {
+        navigator.vibrate(pattern);
+    }
 };
 
 export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onClose: () => void }> = ({ relaxation, onClose }) => {
@@ -54,32 +62,32 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
     const cycle: CycleStep[] = useMemo(() => {
         if (relaxation.id === 'box_breathing') {
             return [
-                { text: 'Inhale (nose)', duration: 4000, sound: 'in', anim: 'animate-box-breathing-16s' },
+                { text: 'Inhale (nose)', duration: 4000, sound: 'in', anim: 'animate-box-breathing-16s', vibrate: 100 },
                 { text: 'Hold', duration: 4000, anim: 'animate-box-breathing-16s' },
-                { text: 'Exhale (mouth)', duration: 4000, sound: 'out', anim: 'animate-box-breathing-16s' },
+                { text: 'Exhale (mouth)', duration: 4000, sound: 'out', anim: 'animate-box-breathing-16s', vibrate: 200 },
                 { text: 'Hold', duration: 4000, anim: 'animate-box-breathing-16s' },
             ];
         } else if (relaxation.id === '478_breathing') {
             return [
-                { text: 'Inhale (nose)', duration: 4000, anim: 'animate-inhale-4s', sound: 'in' },
+                { text: 'Inhale (nose)', duration: 4000, anim: 'animate-inhale-4s', sound: 'in', vibrate: 100 },
                 { text: 'Hold', duration: 7000, anim: 'scale-[1.6] opacity-100' },
-                { text: 'Exhale (mouth)', duration: 8000, anim: 'animate-exhale-8s', sound: 'out' },
+                { text: 'Exhale (mouth)', duration: 8000, anim: 'animate-exhale-8s', sound: 'out', vibrate: 200 },
             ];
         }
         return [];
     }, [relaxation.id]);
-    
+
     // Effect for the main cycle
     useEffect(() => {
         if (sessionState !== 'running') return;
 
         const currentStep = cycle[stepIndex];
         if (!currentStep) return;
-        
+
         // 1. Update UI
         setInstruction(currentStep.text);
         setCountdown(currentStep.duration / 1000);
-        
+
         if (relaxation.id === '478_breathing') {
             setAnimationClass(currentStep.anim);
             // Only increment key (to restart animation) if it's an actual animation class
@@ -88,15 +96,18 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
             }
         } else if (relaxation.id === 'box_breathing') {
             setAnimationClass('animate-box-breathing-16s');
-             // Restart the box animation at the beginning of each cycle
+            // Restart the box animation at the beginning of each cycle
             if (stepIndex === 0) {
                 setAnimationKey(k => k + 1);
             }
         }
 
-        // 2. Play Sound
+        // 2. Play Sound and Haptic
         if (currentStep.sound) {
             playBreathSound(currentStep.sound, currentStep.duration / 1000);
+        }
+        if (currentStep.vibrate) {
+            triggerHaptic(currentStep.vibrate);
         }
 
         // 3. Countdown timer for UI
@@ -131,7 +142,7 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
     const startSession = () => {
         setSessionState('starting');
     };
-    
+
     const endSession = () => {
         setSessionState('ready');
         setStepIndex(0);
@@ -145,7 +156,7 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
         setActiveSleepAid('relaxation', relaxation.name);
         return () => setActiveSleepAid('relaxation', null);
     }, [relaxation.name, setActiveSleepAid]);
-    
+
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.key === 'Escape') endSession();
@@ -153,22 +164,22 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
-    
+
     return (
         <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={endSession}>
             <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-sm animate-fadeIn text-center" onClick={(e) => e.stopPropagation()}>
                 <h2 className="font-serif text-2xl mb-4">{relaxation.name}</h2>
-                
+
                 {sessionState === 'ready' ? (
                     <div className="animate-fadeIn">
-                         <p className="text-day-text-secondary dark:text-night-text-secondary my-8">{relaxation.description}</p>
-                         <button onClick={startSession} className="w-full py-3 bg-day-accent dark:bg-night-accent text-white font-bold rounded-full text-lg shadow-lg">Start Session</button>
-                         <button onClick={onClose} className="w-full mt-3 py-2 text-day-text-secondary dark:text-night-text-secondary">Close</button>
+                        <p className="text-day-text-secondary dark:text-night-text-secondary my-8">{relaxation.description}</p>
+                        <button onClick={startSession} className="w-full py-3 bg-day-accent dark:bg-night-accent text-white font-bold rounded-full text-lg shadow-lg">Start Session</button>
+                        <button onClick={onClose} className="w-full mt-3 py-2 text-day-text-secondary dark:text-night-text-secondary">Close</button>
                     </div>
                 ) : (
                     <div className="animate-fadeIn">
                         <div className="flex justify-center items-center my-8 h-40">
-                            {relaxation.id === 'box_breathing' 
+                            {relaxation.id === 'box_breathing'
                                 ? <BoxVisualizer animKey={animationKey} />
                                 : <CircleVisualizer animationClass={animationClass} animKey={animationKey} />
                             }

@@ -141,15 +141,42 @@ export const analyzeDream = async (dreamText: string, sleepAids?: SleepAids, bio
     }
 };
 
-function createImagePrompt(dreamText: string): string {
-    return `Photorealistic surrealism, a dream of: "${dreamText}". Ethereal lighting, atmospheric, emotionally resonant, sophisticated, cinematic, trending on artstation, style of Salvador Dalí and Remedios Varo.`;
+// Art style presets for dream imagery
+export type DreamArtStyle = 'surrealist' | 'watercolor' | 'anime' | 'cosmic' | 'vintage';
+
+export const DREAM_ART_STYLES: Record<DreamArtStyle, { name: string; prompt: string }> = {
+    surrealist: {
+        name: 'Surrealist',
+        prompt: 'Photorealistic surrealism, ethereal lighting, atmospheric, style of Salvador Dalí and Remedios Varo'
+    },
+    watercolor: {
+        name: 'Watercolor',
+        prompt: 'Soft watercolor painting, dreamy washes, flowing colors, delicate brushstrokes, studio ghibli inspired'
+    },
+    anime: {
+        name: 'Anime',
+        prompt: 'Anime art style, vibrant colors, detailed background, Makoto Shinkai lighting, ethereal atmosphere'
+    },
+    cosmic: {
+        name: 'Cosmic',
+        prompt: 'Cosmic dreamscape, nebulas and stars, deep space colors, celestial, mystical, astronomically beautiful'
+    },
+    vintage: {
+        name: 'Vintage Film',
+        prompt: 'Vintage film photography, grainy texture, warm muted tones, nostalgic, Polaroid aesthetic, dreamy haze'
+    }
+};
+
+function createImagePrompt(dreamText: string, style: DreamArtStyle = 'surrealist'): string {
+    const styleData = DREAM_ART_STYLES[style];
+    return `A dream of: "${dreamText}". ${styleData.prompt}, emotionally resonant, sophisticated, cinematic, trending on artstation.`;
 }
 
 
-export const generateDreamImage = async (dreamText: string): Promise<string> => {
+export const generateDreamImage = async (dreamText: string, style: DreamArtStyle = 'surrealist'): Promise<string> => {
     try {
         const ai = getAi();
-        const prompt = createImagePrompt(dreamText);
+        const prompt = createImagePrompt(dreamText, style);
         const response: GenerateContentResponse = await ai.models.generateContent({
             model: 'gemini-2.5-flash-image',
             contents: { parts: [{ text: prompt }] },
