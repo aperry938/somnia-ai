@@ -213,6 +213,30 @@ Word and character count displayed after dream text for tracking recall improvem
 
 **Implementation:** `DreamDetailPage.tsx` → inline word/char count
 
+### 3.23 Advanced Code Splitting
+
+4 lazy-loaded chunks reduce initial bundle from 539KB to 223KB (59% reduction).
+
+**Lazy Chunks:**
+- ChroniclePage: 5.5KB
+- DreamDetailPage: 21KB  
+- SleepPage: 25KB
+- InsightsPage: 347KB (Recharts)
+
+**Implementation:** `App.tsx` → `React.lazy()` imports
+
+### 3.24 Skip Link Accessibility
+
+Hidden link appears on Tab focus for screen reader users to skip navigation.
+
+**Implementation:** `App.tsx` + CSS `.skip-link` class
+
+### 3.25 Open Graph Social Sharing
+
+Full OG and Twitter card meta tags for rich social media previews.
+
+**Implementation:** `index.html` → og:title, og:description, twitter:card
+
 ---
 
 
