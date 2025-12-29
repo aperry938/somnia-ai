@@ -248,24 +248,33 @@ Return ONLY the title, nothing else. No quotes, no explanation.`;
     }
 };
 
-const createCoachSystemPrompt = () => ({
-    role: 'model' as const,
-    parts: [{
-        text: `You are an expert AI Sleep Coach named Somnia. Your tone is calm, empathetic, and scientific. You provide actionable, evidence-based advice for improving sleep hygiene and relaxation.
-    Ethical Mandate: If the user expresses themes of severe psychological distress, gently state your limitations as an AI and recommend they speak with a qualified human professional.
-    Start the conversation by gently asking how you can help the user prepare for a restful night.` }]
-});
+const createCoachSystemPrompt = (personality: 'mystical' | 'scientific') => {
+    const tones = {
+        mystical: "You are The Oneironaut, a wise and mystical dream guide. Your tone is poetic, insightful, and compassionate. You blend Jungian psychology with mythology. Focus on the symbolic meaning of sleep and dreams.",
+        scientific: "You are Dr. Somnia, a data-driven sleep scientist. Your tone is professional, encouraging, and evidence-based. You focus on sleep hygiene, circadian rhythms, and CBT-I principles. Avoid mysticism."
+    };
+
+    return {
+        role: 'model' as const,
+        parts: [{
+            text: `${tones[personality]}
+        Ethical Mandate: If the user expresses themes of severe psychological distress, gently state your limitations as an AI and recommend they speak with a qualified human professional.
+        Start the conversation by gently asking how you can help the user prepare for a restful night or interpret their sleep patterns.` }]
+    };
+};
 
 /**
  * functionality for the AI Sleep Coach.
  * Generates a response based on chat history.
  * 
  * @param history - Array of previous chat messages
+ * @param history - Array of previous chat messages
+ * @param personality - The personality mode ('mystical' | 'scientific')
  * @returns Promise<string> - The AI coach's response
  */
-export const getCoachResponse = async (history: ChatMessage[]): Promise<string> => {
+export const getCoachResponse = async (history: ChatMessage[], personality: 'mystical' | 'scientific' = 'mystical'): Promise<string> => {
     const cleanHistory = history.map(({ id, isError, ...rest }) => rest);
-    const chatHistory = [createCoachSystemPrompt(), ...cleanHistory];
+    const chatHistory = [createCoachSystemPrompt(personality), ...cleanHistory];
     try {
         const ai = getAi();
         const response: GenerateContentResponse = await ai.models.generateContent({

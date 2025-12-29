@@ -167,7 +167,7 @@ const getAudioBuffer = async (context: AudioContext, src: string): Promise<Audio
  * @param sound - The Soundscape configuration object
  * @param durationMinutes - Duration to play in minutes (0 for infinite)
  */
-export const playSleepSound = async (sound: Soundscape, durationMinutes: number) => {
+export const playSleepSound = async (sound: Soundscape, durationMinutes: number, volume: number = 0.5) => {
     stopAlarmSound(); // Ensure alarm is stopped
     const context = getAudioContext();
 
@@ -179,7 +179,7 @@ export const playSleepSound = async (sound: Soundscape, durationMinutes: number)
 
     sleepGainNode = context.createGain();
     sleepGainNode.gain.setValueAtTime(0, context.currentTime);
-    sleepGainNode.gain.linearRampToValueAtTime(0.5, context.currentTime + 2); // Fade in
+    sleepGainNode.gain.linearRampToValueAtTime(volume, context.currentTime + 2); // Fade in to target volume
     sleepGainNode.connect(context.destination);
 
     if (sound.type === 'noise') {
@@ -209,34 +209,38 @@ export const playSleepSound = async (sound: Soundscape, durationMinutes: number)
     }
 
     if (durationMinutes > 0) {
-        sleepTimeout = window.setTimeout(stopSleepSound, durationMinutes * 60 * 1000);
+        // Use a gentle 30-second fade out when the timer expires naturally
+        sleepTimeout = window.setTimeout(() => stopSleepSound(30), durationMinutes * 60 * 1000);
     }
 };
 
 /**
  * Stops the currently playing sleep sound.
- * Fades out volume over 2 seconds.
+ * Fades out volume over specified duration (default 2s).
  * Cleans up audio nodes and oscillators.
  */
-export const stopSleepSound = () => {
+export const stopSleepSound = (fadeDuration: number = 2) => {
     if (sleepTimeout) {
         clearTimeout(sleepTimeout);
         sleepTimeout = null;
     }
     const context = audioContext;
     if (sleepGainNode && context) {
-        sleepGainNode.gain.cancelScheduledValues(context.currentTime);
-        sleepGainNode.gain.linearRampToValueAtTime(0, context.currentTime + 2); // Fade out
+        const now = context.currentTime;
+        sleepGainNode.gain.cancelScheduledValues(now);
+        // Ramp down to near-zero first to avoid popping, then disconnect
+        sleepGainNode.gain.linearRampToValueAtTime(0, now + fadeDuration);
+
         // Disconnect after fade-out is complete
         setTimeout(() => {
             if (sleepGainNode) {
                 sleepGainNode.disconnect();
                 sleepGainNode = null;
             }
-        }, 2100);
+        }, (fadeDuration * 1000) + 100);
     }
     if (sleepSourceNode && context) {
-        const stopTime = context.currentTime + 2;
+        const stopTime = context.currentTime + fadeDuration;
         if (sleepSourceNode instanceof AudioBufferSourceNode) {
             try { sleepSourceNode.stop(stopTime); } catch (e) { /* ignore */ }
         }
@@ -251,10 +255,23 @@ export const stopSleepSound = () => {
                 sleepSourceNode.disconnect();
                 sleepSourceNode = null;
             }
-        }, 2100);
+        }, (fadeDuration * 1000) + 100);
     }
 };
 
+
+
+/**
+ * Adjusts the volume of the currently playing sleep sound in real-time.
+ * 
+ * @param volume - Target volume level (0-1)
+ */
+export const setLiveVolume = (volume: number) => {
+    if (sleepGainNode && audioContext) {
+        // Smooth transition to new volume
+        sleepGainNode.gain.setTargetAtTime(volume, audioContext.currentTime, 0.1);
+    }
+};
 
 // --- BREATHING CUE FUNCTIONS ---
 

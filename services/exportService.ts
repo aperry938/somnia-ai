@@ -252,3 +252,83 @@ export const importDreamsFromJSON = (
         reader.readAsText(file);
     });
 };
+
+/**
+ * Exports dreams as an encrypted JSON file.
+ * Helper that prompts the user for a password before exporting.
+ */
+import { encryptDataWithPassword, decryptDataWithPassword } from './securityService';
+
+export const exportDreamsEncrypted = async (dreams: Dream[]): Promise<void> => {
+    const password = prompt("Set a password for this encrypted backup:");
+    if (!password) return; // User cancelled
+
+    const data = JSON.stringify(dreams);
+    const { encrypted, iv, salt } = await encryptDataWithPassword(data, password);
+
+    const backupPayload = {
+        version: 1,
+        type: 'somnia-encrypted',
+        payload: encrypted,
+        iv,
+        salt
+    };
+
+    const blob = new Blob([JSON.stringify(backupPayload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `somnia-secure-backup-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+};
+
+export const importDreamsEncrypted = async (
+    file: File,
+    existingDreams: Dream[]
+): Promise<Dream[]> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const content = e.target?.result as string;
+                const json = JSON.parse(content);
+
+                if (json.type !== 'somnia-encrypted') {
+                    // Fallback to normal import if not encrypted
+                    if (Array.isArray(json)) return resolve(importDreamsFromJSON(file, existingDreams));
+                    throw new Error('Invalid file format. Expected Somnia Encrypted Backup.');
+                }
+
+                const password = prompt("Enter password to decrypt backup:");
+                if (!password) throw new Error("Password required");
+
+                const decryptedJson = await decryptDataWithPassword(json.payload, json.iv, json.salt, password);
+                const importedDreams = JSON.parse(decryptedJson) as Dream[];
+
+                // Get max existing ID to avoid collisions
+                const maxExistingId = Math.max(0, ...existingDreams.map((d: Dream) => d.id));
+
+                // Re-assign IDs to avoid collisions
+                const withNewIds = importedDreams.map((dream: Dream, index: number) => ({
+                    ...dream,
+                    id: maxExistingId + index + 1
+                }));
+
+                resolve(withNewIds);
+
+            } catch (err) {
+                console.error(err);
+                reject(err);
+            }
+        };
+        reader.onerror = () => reject(new Error("Failed to read file"));
+        reader.readAsText(file);
+    });
+};
+
+
+

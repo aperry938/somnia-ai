@@ -16,7 +16,7 @@ const NavItem: React.FC<NavItemProps> = ({ page, label, icon, currentPage, setCu
     return (
         <button
             onClick={() => setCurrentPage(page)}
-            className={`flex flex-col items-center w-16 py-1 rounded-lg transition-colors duration-300 ${isActive ? 'text-day-accent dark:text-night-accent' : 'text-day-text-secondary dark:text-night-text-secondary'}`}
+            className={`flex flex-col items-center w-16 py-1 min-h-[48px] rounded-lg transition-colors duration-300 ${isActive ? 'text-day-accent dark:text-night-accent' : 'text-day-text-secondary dark:text-night-text-secondary'}`}
         >
             {icon}
             <span className={`text-xs mt-1 ${isActive ? 'font-medium' : ''}`}>{label}</span>
@@ -61,6 +61,7 @@ const ThemeToggle: React.FC = () => {
             onClick={cycleTheme}
             className="flex flex-col items-center w-12 py-1 rounded-lg transition-colors duration-300 text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent"
             title={`Theme: ${label}`}
+            aria-label={`Switch to ${label === 'Auto' ? 'Day' : label === 'Day' ? 'Night' : 'Auto'} Theme`}
         >
             {icon}
             <span className="text-[10px] mt-0.5 opacity-70">{label}</span>
@@ -106,7 +107,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, setCurrentPag
             <ThemeToggle />
             <button
                 onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: '?' }))}
-                className="w-8 h-8 flex items-center justify-center text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent opacity-50 hover:opacity-100 transition-opacity"
+                className="w-11 h-11 flex items-center justify-center text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent opacity-50 hover:opacity-100 transition-opacity rounded-full active:bg-black/5 dark:active:bg-white/5"
                 title="Keyboard shortcuts"
                 aria-label="Show keyboard shortcuts"
             >

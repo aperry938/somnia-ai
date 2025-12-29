@@ -6,11 +6,14 @@ export interface Alarm {
     id: number;
     time: string;
     isActive: boolean;
+    smartWake?: boolean; // If true, wake up during light sleep
+    smartWindow?: number; // Minutes before alarm to check (default 30)
 }
 
 export interface SleepAids {
     sound?: string;
     soundDuration?: number; // Duration in minutes the soundscape was used
+    volume?: number; // Volume level (0-1)
     relaxation?: string;
     checklist?: string[];
     dayRating?: number | null;
@@ -43,14 +46,23 @@ export interface ChatMessage {
     isError?: boolean;
 }
 
-export interface Soundscape {
-    id: string;
-    name: string;
-    description: string;
-    icon: ReactElement;
-    type: 'noise' | 'binaural' | 'file';
-    params: any;
+export interface NoiseParams {
+    type: 'white' | 'pink' | 'brown';
 }
+
+export interface BinauralParams {
+    base: number;
+    diff: number;
+}
+
+export interface FileParams {
+    src: string;
+}
+
+export type Soundscape =
+    | { id: string; name: string; description: string; icon: ReactElement; type: 'noise'; params: NoiseParams }
+    | { id: string; name: string; description: string; icon: ReactElement; type: 'binaural'; params: BinauralParams }
+    | { id: string; name: string; description: string; icon: ReactElement; type: 'file'; params: FileParams };
 
 export interface GuidedRelaxation {
     id: string;
@@ -93,3 +105,17 @@ export interface Biometrics {
     gender: string;
     avgSleep: number | null;
 }
+
+// Sync Types
+export type SyncActionType = 'ADD_DREAM' | 'UPDATE_DREAM' | 'DELETE_DREAM' | 'ADD_ALARM' | 'UPDATE_ALARM' | 'DELETE_ALARM';
+
+export interface SyncAction {
+    id: string; // UUID
+    type: SyncActionType;
+    payload: any;
+    timestamp: number;
+    status: 'PENDING' | 'SYNCED' | 'FAILED';
+    retryCount: number;
+}
+
+export type CoachPersonality = 'mystical' | 'scientific';

@@ -7,6 +7,11 @@ import { SleepQualityChart } from '../charts/SleepQualityChart';
 import { useToast } from '../shared/Toast';
 import { detectRecurringPatterns, formatPatternName } from '../../constants/dreamPatterns';
 import { WeeklyDigest } from '../insights/WeeklyDigest';
+import { GlobalTrendsCard } from '../insights/GlobalTrendsCard';
+import { SentimentChart } from '../insights/SentimentChart';
+import { calculateUserStats } from '../../services/userStatsService';
+
+
 
 const AnalysisCard: React.FC<{ title: string; description: string; buttonText: string; onAnalyze: () => void; isLoading: boolean; children: React.ReactNode; }> =
     ({ title, description, buttonText, onAnalyze, isLoading, children }) => (
@@ -140,53 +145,8 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
         }
     };
 
-    const dreamerLevel = Math.floor(dreams.length / 5) + 1;
-
-    // Calculate dream streak (consecutive days with logged dreams)
-    const calculateStreak = useMemo(() => {
-        if (dreams.length === 0) return { current: 0, best: 0 };
-
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        // Get unique days with dreams (sorted newest first)
-        const dreamDates = [...new Set(
-            dreams.map(d => {
-                const date = new Date(d.timestamp);
-                date.setHours(0, 0, 0, 0);
-                return date.getTime();
-            })
-        )].sort((a, b) => b - a);
-
-        // Calculate current streak
-        let currentStreak = 0;
-        const oneDayMs = 24 * 60 * 60 * 1000;
-        let expectedDate = today.getTime();
-
-        for (const dateTime of dreamDates) {
-            if (dateTime === expectedDate || dateTime === expectedDate - oneDayMs) {
-                currentStreak++;
-                expectedDate = dateTime - oneDayMs;
-            } else if (dateTime < expectedDate - oneDayMs) {
-                break;
-            }
-        }
-
-        // Calculate best streak
-        let bestStreak = 0;
-        let tempStreak = 1;
-        for (let i = 0; i < dreamDates.length - 1; i++) {
-            if (dreamDates[i] - dreamDates[i + 1] === oneDayMs) {
-                tempStreak++;
-            } else {
-                bestStreak = Math.max(bestStreak, tempStreak);
-                tempStreak = 1;
-            }
-        }
-        bestStreak = Math.max(bestStreak, tempStreak);
-
-        return { current: currentStreak, best: bestStreak };
-    }, [dreams]);
+    // Use centralized stats calculation
+    const stats = useMemo(() => calculateUserStats(dreams), [dreams]);
 
     return (
         <div>
@@ -196,25 +156,34 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                 <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-4 rounded-xl">
                     <div className="grid grid-cols-3 gap-4 text-center">
                         <div>
-                            <p className="text-3xl font-bold text-day-accent dark:text-night-accent">{dreamerLevel}</p>
+                            <p className="text-3xl font-bold text-day-accent dark:text-night-accent">{stats.level}</p>
                             <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">Somnia Level</p>
                         </div>
                         <div>
-                            <p className="text-3xl font-bold">{calculateStreak.current}</p>
+                            <p className="text-3xl font-bold">{stats.currentStreak}</p>
                             <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">Day Streak</p>
                         </div>
                         <div>
-                            <p className="text-3xl font-bold">{calculateStreak.best}</p>
+                            <p className="text-3xl font-bold">{stats.bestStreak}</p>
                             <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">Best Streak</p>
                         </div>
                     </div>
-                    <p className="text-center text-sm text-day-text-secondary dark:text-night-text-secondary mt-3">
-                        {dreams.length} Dream{dreams.length !== 1 ? 's' : ''} Logged
-                    </p>
+                    <div className="mt-3">
+                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mb-1">
+                            <div className="bg-day-accent dark:bg-night-accent h-1.5 rounded-full transition-all duration-500" style={{ width: `${stats.nextLevelProgress}%` }}></div>
+                        </div>
+                        <p className="text-center text-xs text-day-text-secondary dark:text-night-text-secondary">
+                            {stats.totalDreams} Dreams • {Math.ceil((100 - stats.nextLevelProgress) / 20)} dreams to next level
+                        </p>
+                    </div>
                 </div>
 
                 <WeeklyDigest dreams={dreams} />
                 <BiometricsCard />
+
+                <div className="mt-8 mb-8 animate-fadeIn">
+                    <GlobalTrendsCard />
+                </div>
 
                 {chartData.length > 1 && (
                     <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">
@@ -222,6 +191,12 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                         <div className="w-full h-48">
                             <SleepQualityChart data={chartData} />
                         </div>
+                    </div>
+                )}
+
+                {dreams.length >= 2 && (
+                    <div className="animate-fadeIn">
+                        <SentimentChart dreams={dreams} />
                     </div>
                 )}
 

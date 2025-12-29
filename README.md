@@ -25,6 +25,8 @@ Somnia.ai is a comprehensive wellness application designed to transform our rela
 - **Adaptive Progressive Alarm:** A gentle yet effective alarm that starts with low-frequency tones and gradually increases in volume and complexity.
 - **Smart Snooze:** 5-minute snooze that actually re-triggers the alarm after the delay.
 - **The Dream Scribe:** Immediate dream capture via text or voice-to-text transcription powered by the browser's SpeechRecognition API.
+- **Voice Control:** Hands-free commands (e.g., "Log Dream") to trigger key actions without touching the screen.
+- **Morning Briefing:** Automated Text-to-Speech summary upon alarm dismissal, greeting you and reminding you to log your dreams.
 - **Sleep Quality Rating:** A star-rating system to log subjective sleep quality for data correlation.
 
 ### 🔮 The Chronicle: Explore Your Inner World
@@ -43,6 +45,10 @@ Somnia.ai is a comprehensive wellness application designed to transform our rela
 ### 🎨 Theme System
 - **Auto Day/Night:** Theme automatically switches based on time of day (6am-7pm = day mode).
 - **Manual Override:** Toggle between Auto, Day, and Night modes from the navigation bar.
+
+### 🔗 Hardware Integration (Beta)
+- **Bluetooth Sync:** Connect compatible sleep wearables (e.g., LucidMask) to import biometric data.
+- **Biometric Correlation:** Analyzes heart rate and movement data to refine sleep stages (mock implementation).
 
 ---
 

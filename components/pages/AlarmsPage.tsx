@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
 import { Alarm } from '../../types';
+import { DailyBriefingWidget } from '../widgets/DailyBriefingWidget';
 
 // Memoized component for a single alarm item
 const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = React.memo(({ alarm, onEdit }) => {
@@ -13,13 +14,13 @@ const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = Re
                 <div className="cursor-pointer" onClick={() => onEdit(alarm)}>
                     <p className="text-4xl font-light">{alarm.time}</p>
                 </div>
-                 <div className="relative inline-block w-11 mr-2 align-middle select-none">
-                    <input type="checkbox" id={id} className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" checked={alarm.isActive} onChange={() => toggleAlarmActive(alarm.id)}/>
+                <div className="relative inline-block w-11 mr-2 align-middle select-none">
+                    <input type="checkbox" id={id} className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" checked={alarm.isActive} onChange={() => toggleAlarmActive(alarm.id)} />
                     <label htmlFor={id} className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 dark:bg-gray-700 cursor-pointer transition-colors"></label>
                 </div>
             </div>
             <div className="text-sm text-day-text-secondary dark:text-night-text-secondary">
-                 <p>Ring once</p>
+                <p>Ring once</p>
             </div>
         </div>
     );
@@ -68,11 +69,11 @@ const AnalogClock: React.FC<{ initialTime: string; onChange: (time: string) => v
                     </div>
                 ))}
                 {selecting === 'minute' && Array.from({ length: 12 }, (_, i) => i * 5).map(m => (
-                     <div key={m} style={{ transform: `rotate(${m * 6}deg) translate(90px) rotate(-${m * 6}deg)` }} className="absolute top-1/2 left-1/2 -m-4 w-8 h-8">
-                        <button onClick={() => handleMinuteSelect(m)} className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${minute === m ? 'bg-day-accent text-white dark:bg-night-accent' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}>{String(m).padStart(2,'0')}</button>
+                    <div key={m} style={{ transform: `rotate(${m * 6}deg) translate(90px) rotate(-${m * 6}deg)` }} className="absolute top-1/2 left-1/2 -m-4 w-8 h-8">
+                        <button onClick={() => handleMinuteSelect(m)} className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${minute === m ? 'bg-day-accent text-white dark:bg-night-accent' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}>{String(m).padStart(2, '0')}</button>
                     </div>
                 ))}
-                 <div className="absolute top-1/2 left-1/2 w-2 h-2 bg-day-accent dark:bg-night-accent rounded-full -m-1"></div>
+                <div className="absolute top-1/2 left-1/2 w-2 h-2 bg-day-accent dark:bg-night-accent rounded-full -m-1"></div>
             </div>
         </div>
     );
@@ -82,6 +83,7 @@ const AnalogClock: React.FC<{ initialTime: string; onChange: (time: string) => v
 const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void }> = ({ alarmToEdit, onClose }) => {
     const { addAlarm, updateAlarm, deleteAlarm } = useAppContext();
     const [time, setTime] = useState(alarmToEdit?.time || '07:00');
+    const [smartWake, setSmartWake] = useState(alarmToEdit?.smartWake || false);
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose(); };
@@ -91,13 +93,13 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void }> =
 
     const handleSave = () => {
         if (alarmToEdit) {
-            updateAlarm(alarmToEdit.id, time);
+            updateAlarm(alarmToEdit.id, time, smartWake);
         } else {
-            addAlarm(time);
+            addAlarm(time, smartWake);
         }
         onClose();
     };
-    
+
     const handleDelete = () => {
         if (alarmToEdit) deleteAlarm(alarmToEdit.id);
         onClose();
@@ -108,6 +110,22 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void }> =
             <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-sm animate-fadeIn" onClick={(e) => e.stopPropagation()}>
                 <h2 className="font-serif text-2xl text-center mb-6">{alarmToEdit ? "Edit Alarm" : "Set Alarm"}</h2>
                 <AnalogClock initialTime={time} onChange={setTime} />
+
+                <div className="flex items-center justify-between mt-4 px-2">
+                    <span className="text-sm font-medium">Smart Wake</span>
+                    <div className="relative inline-block w-11 h-6 align-middle select-none transition duration-200 ease-in">
+                        <input
+                            type="checkbox"
+                            name="smartWake"
+                            id="smartWakeToggle"
+                            className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
+                            checked={smartWake}
+                            onChange={(e) => setSmartWake(e.target.checked)}
+                        />
+                        <label htmlFor="smartWakeToggle" className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 dark:bg-gray-700 cursor-pointer"></label>
+                    </div>
+                </div>
+
                 <div className="flex justify-center gap-4 mt-6">
                     <button onClick={onClose} className="py-2 px-6 bg-gray-200 dark:bg-gray-700 rounded-full">Cancel</button>
                     <button onClick={handleSave} className="py-2 px-6 bg-day-accent dark:bg-night-accent text-white font-bold rounded-full">Save</button>
@@ -139,6 +157,9 @@ export const AlarmsPage: React.FC<{ timeString: string, dateString: string }> = 
                 <header className="text-center mb-8 pt-8">
                     <h1 className="font-serif text-6xl md:text-8xl font-bold tracking-tight">{timeString}</h1>
                     <p className="text-md mt-2 tracking-wide">{dateString}</p>
+                    <div className="mt-6">
+                        <DailyBriefingWidget />
+                    </div>
                 </header>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto w-full">
                     {alarms.length > 0 ? (

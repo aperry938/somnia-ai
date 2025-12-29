@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode, useCallback } from 'react';
-import { Alarm, Dream, SleepAids, Biometrics, Theme } from '../types';
+import { Alarm, Dream, SleepAids, Biometrics, Theme, CoachPersonality } from '../types';
+import { enqueueAction } from '../services/syncService';
 
 interface AppContextType {
     alarms: Alarm[];
@@ -7,8 +8,8 @@ interface AppContextType {
     biometrics: Biometrics;
     activeSleepAids: SleepAids;
     pendingSleepData: SleepAids | null;
-    addAlarm: (time: string) => void;
-    updateAlarm: (id: number, time: string) => void;
+    addAlarm: (time: string, smartWake: boolean) => void;
+    updateAlarm: (id: number, time: string, smartWake: boolean) => void;
     toggleAlarmActive: (id: number) => void;
     deleteAlarm: (id: number) => void;
     addDream: (dreamText: string, sleepQuality: number | null) => number;
@@ -22,6 +23,12 @@ interface AppContextType {
     setBiometrics: (data: Biometrics) => void;
     themeOverride: Theme | 'auto';
     setThemeOverride: (theme: Theme | 'auto') => void;
+    isScribeOpen: boolean;
+    setIsScribeOpen: (isOpen: boolean) => void;
+    coachPersonality: CoachPersonality;
+    setCoachPersonality: (personality: CoachPersonality) => void;
+    volume: number;
+    setVolume: (volume: number) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -56,22 +63,36 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [activeSleepAids, setActiveSleepAids] = useState<SleepAids>({});
     const [pendingSleepData, setPendingSleepData] = useLocalStorage<SleepAids | null>('somnia_pending_sleep_data', null);
     const [themeOverride, setThemeOverride] = useLocalStorage<Theme | 'auto'>('somnia_theme_override', 'auto');
+    const [coachPersonality, setCoachPersonality] = useLocalStorage<CoachPersonality>('somnia_coach_personality', 'mystical');
+    const [volume, setVolume] = useLocalStorage<number>('somnia_volume', 0.5);
+    const [isScribeOpen, setIsScribeOpen] = useState(false);
 
-    const addAlarm = (time: string) => {
-        const newAlarm: Alarm = { id: Date.now(), time, isActive: true };
+    const addAlarm = (time: string, smartWake: boolean = false) => {
+        const newAlarm: Alarm = {
+            id: Date.now(),
+            time,
+            isActive: true,
+            smartWake,
+            smartWindow: 30
+        };
         setAlarms(prev => [...prev, newAlarm]);
+        enqueueAction('ADD_ALARM', newAlarm);
     };
 
-    const updateAlarm = (id: number, time: string) => {
-        setAlarms(prev => prev.map(a => a.id === id ? { ...a, time } : a));
+    const updateAlarm = (id: number, time: string, smartWake: boolean) => {
+        setAlarms(prev => prev.map(a => a.id === id ? { ...a, time, smartWake } : a));
+        enqueueAction('UPDATE_ALARM', { id, time, smartWake });
     };
 
     const toggleAlarmActive = (id: number) => {
         setAlarms(prev => prev.map(a => a.id === id ? { ...a, isActive: !a.isActive } : a));
+        // Toggle is effectively an update, but simplified for sync for now
+        enqueueAction('UPDATE_ALARM', { id, isActive: 'TOGGLE' });
     };
 
     const deleteAlarm = (id: number) => {
         setAlarms(prev => prev.filter(a => a.id !== id));
+        enqueueAction('DELETE_ALARM', { id });
     };
 
     const addDream = (dreamText: string, sleepQuality: number | null): number => {
@@ -88,19 +109,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         };
         setDreams(prev => [newDream, ...prev]);
         setPendingSleepData(null); // Clear pending data after it has been used
+        enqueueAction('ADD_DREAM', newDream);
         return newDream.id;
     };
 
     const importDreams = (dreamsToImport: Dream[]) => {
         setDreams(prev => [...dreamsToImport, ...prev]);
+        // Import is local-heavy, maybe don't sync all at once or handle batch?
+        // For simple queue, let's sync them individually or create a BATCH type later.
+        // For now: Skip queuing imports to prevent spamming the queue.
     };
 
     const deleteDream = (id: number) => {
         setDreams(prev => prev.filter(d => d.id !== id));
+        enqueueAction('DELETE_DREAM', { id });
     };
 
     const updateDream = useCallback((updatedDreamPart: Partial<Dream> & { id: number }) => {
         setDreams(prev => prev.map(d => d.id === updatedDreamPart.id ? { ...d, ...updatedDreamPart } : d));
+        enqueueAction('UPDATE_DREAM', updatedDreamPart);
     }, [setDreams]);
 
     const getDreamById = useCallback((id: number) => {
@@ -136,6 +163,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setBiometrics,
         themeOverride,
         setThemeOverride,
+        isScribeOpen,
+        setIsScribeOpen,
+        coachPersonality,
+        setCoachPersonality,
+        volume,
+        setVolume,
     };
 
     return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

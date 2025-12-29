@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getCoachResponse } from '../../services/geminiService';
+import { useAppContext } from '../../contexts/AppContext';
 import { ChatMessage } from '../../types';
 
 const COACH_HISTORY_KEY = 'somnia_coach_history';
 const MAX_SAVED_MESSAGES = 20; // Limit saved history to prevent storage bloat
 
 export const AICoachModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+    const { coachPersonality, setCoachPersonality } = useAppContext();
     const [history, setHistory] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(true);
@@ -41,7 +43,7 @@ export const AICoachModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
     const fetchInitialResponse = async () => {
         setIsLoading(true);
         try {
-            const responseText = await getCoachResponse([]);
+            const responseText = await getCoachResponse([], coachPersonality);
             setHistory([{ id: Date.now(), role: 'model', parts: [{ text: responseText }] }]);
         } catch (e) {
             console.error(e);
@@ -74,7 +76,7 @@ export const AICoachModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
         setIsLoading(true);
 
         try {
-            const responseText = await getCoachResponse(newHistory);
+            const responseText = await getCoachResponse(newHistory, coachPersonality);
             setHistory(prev => [...prev, { id: Date.now(), role: 'model', parts: [{ text: responseText }] }]);
         } catch (e) {
             setHistory(prev => [...prev, { id: Date.now(), role: 'model', parts: [{ text: "Sorry, I couldn't get a response." }], isError: true }]);
@@ -106,7 +108,23 @@ export const AICoachModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
         <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={onClose}>
             <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-lg animate-fadeIn flex flex-col h-[80vh]" onClick={(e) => e.stopPropagation()}>
                 <div className="flex justify-between items-center mb-4 flex-shrink-0">
-                    <h2 className="font-serif text-2xl">AI Sleep Coach</h2>
+                    <div>
+                        <h2 className="font-serif text-2xl">AI Sleep Coach</h2>
+                        <div className="flex gap-2 mt-1">
+                            <button
+                                onClick={() => { setCoachPersonality('mystical'); handleClearHistory(); }}
+                                className={`text-xs px-2 py-0.5 rounded-full border ${coachPersonality === 'mystical' ? 'bg-indigo-500 text-white border-indigo-500' : 'border-day-border dark:border-night-border text-day-text-secondary dark:text-night-text-secondary'}`}
+                            >
+                                Mystical
+                            </button>
+                            <button
+                                onClick={() => { setCoachPersonality('scientific'); handleClearHistory(); }}
+                                className={`text-xs px-2 py-0.5 rounded-full border ${coachPersonality === 'scientific' ? 'bg-teal-600 text-white border-teal-600' : 'border-day-border dark:border-night-border text-day-text-secondary dark:text-night-text-secondary'}`}
+                            >
+                                Scientific
+                            </button>
+                        </div>
+                    </div>
                     {history.length > 1 && (
                         <button
                             onClick={handleClearHistory}

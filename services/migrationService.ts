@@ -1,0 +1,64 @@
+
+import { Dream } from '../types';
+
+const MIGRATION_VERSION = 1;
+
+interface MigrationLog {
+    version: number;
+    timestamp: string;
+    details: string;
+}
+
+export const checkAndMigrateData = () => {
+    console.log("Checking data integrity...");
+    try {
+        const dreamsRaw = localStorage.getItem('somnia_dreams');
+        if (!dreamsRaw) return;
+
+        let dreams: any[] = JSON.parse(dreamsRaw);
+        if (!Array.isArray(dreams)) return;
+
+        let hasChanges = false;
+
+        // Migration 1: Ensure SleepAids object exists
+        const migrated = dreams.map(dream => {
+            let d = { ...dream };
+
+            // Fix 1: Add ID if missing (shouldn't happen but valid for stability)
+            if (!d.id) {
+                d.id = Date.now() + Math.random();
+                hasChanges = true;
+            }
+
+            // Fix 2: Ensure SleepAids object
+            if (!d.sleepAids) {
+                d.sleepAids = {};
+                hasChanges = true;
+            }
+
+            // Fix 3: Ensure tags array
+            if (!d.tags) {
+                d.tags = [];
+                hasChanges = true;
+            }
+
+            return d;
+        });
+
+        if (hasChanges) {
+            console.log("Migrating data to schema v1...");
+            localStorage.setItem('somnia_dreams', JSON.stringify(migrated));
+            localStorage.setItem('somnia_migration_log', JSON.stringify({
+                version: MIGRATION_VERSION,
+                timestamp: new Date().toISOString(),
+                details: "Backfilled missing IDs, sleepAids, and tags."
+            }));
+            console.log("Migration complete.");
+        } else {
+            console.log("Data integrity clean.");
+        }
+
+    } catch (e) {
+        console.error("Migration failed:", e);
+    }
+};

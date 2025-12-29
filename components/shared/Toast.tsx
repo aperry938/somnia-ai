@@ -4,12 +4,12 @@ type ToastType = 'success' | 'error' | 'info';
 
 interface Toast {
     id: number;
-    message: string;
+    message: React.ReactNode;
     type: ToastType;
 }
 
 interface ToastContextType {
-    showToast: (message: string, type?: ToastType) => void;
+    showToast: (message: React.ReactNode, type?: ToastType) => void;
 }
 
 const ToastContext = createContext<ToastContextType | null>(null);
@@ -25,7 +25,7 @@ let toastId = 0;
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [toasts, setToasts] = useState<Toast[]>([]);
 
-    const showToast = useCallback((message: string, type: ToastType = 'success') => {
+    const showToast = useCallback((message: React.ReactNode, type: ToastType = 'success') => {
         const id = ++toastId;
         setToasts(prev => [...prev, { id, message, type }]);
 
@@ -44,8 +44,8 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                     <div
                         key={toast.id}
                         className={`px-4 py-2 rounded-lg shadow-lg animate-fadeIn pointer-events-auto text-sm ${toast.type === 'success' ? 'bg-green-500 text-white' :
-                                toast.type === 'error' ? 'bg-red-500 text-white' :
-                                    'bg-day-accent dark:bg-night-accent text-white'
+                            toast.type === 'error' ? 'bg-red-500 text-white' :
+                                'bg-day-accent dark:bg-night-accent text-white'
                             }`}
                     >
                         {toast.message}

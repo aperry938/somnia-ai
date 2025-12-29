@@ -6,9 +6,9 @@
 
 ## 0. META-PROTOCOL
 
-- **Last Updated:** December 29, 2024
-- **Evolution Authority:** AI architect may restructure this document
-- **Sync Frequency:** After major feature completions or pivots
+- **Last Updated:** December 29, 2024 (Iteration 73 - PWA Sync)
+- **Evolution Authority:** Oneironaut Protocol
+- **Sync Frequency:** Continuous (Infinite Mode)
 - **Location:** Project root (`APP_CORE_MANIFESTO.md`)
 
 ---
@@ -309,6 +309,30 @@ A predictive algorithm that analyzes historical correlations between sleep habit
 
 **Implementation:** `services/sleepPredictionService.ts`, `SleepPage.tsx`
 
+### 3.38 Local Notifications (Reality Checks)
+
+Periodic notifications (every 2-4 hours) prompting users to perform a "Reality Check", a key technique for inducing lucid dreams.
+
+**Implementation:** `hooks/useRealityChecks.ts` + Notification API
+
+### 3.39 Wake Window Visualization (Sleep Monitor)
+
+Visualizes sleep movement data using the device accelerometer. SVG-based graph shows magnitude of movement during sleep sessions.
+
+**Implementation:** `components/WakeWindowViz.tsx` + `hooks/useWakeWindow.ts`
+
+### 3.40 Offline Mode (PWA Resilience)
+
+Full offline capability via VitePWA. Service Worker caches app shell. OfflineIndicator UI notifies user of connection status changes.
+
+**Implementation:** `vite-plugin-pwa` config + `components/OfflineIndicator.tsx`
+
+### 3.41 Social Dreaming (Web Share)
+
+Native sharing integration allows users to share dream text via system share sheet (Messages, WhatsApp, etc.).
+
+**Implementation:** `DreamDetailPage.tsx` → `navigator.share()`
+
 ---
 
 
@@ -391,7 +415,7 @@ Single-page app with simple `currentPage` state. Adding a router would be premat
 
 ## 6. THE DREAM VAULT (Future Ideas)
 
-### ✅ Completed (Iterations 1-9)
+### ✅ Completed (Iterations 1-73)
 
 - [x] **Manual Theme Toggle** — Cycles Auto/Day/Night from BottomNav
 - [x] **Snooze Duration Logic** — 5-minute re-trigger via setTimeout
@@ -400,24 +424,30 @@ Single-page app with simple `currentPage` state. Adding a router would be premat
 - [x] **Soundscape → Quality Correlation** — Duration tracking + AI analysis
 - [x] **Dream Tags** — TagInput component with 20 suggestions
 - [x] **GitHub Pages Deployment** — Automated CI/CD workflow
+- [x] **Wake Window Detection** — Accelerometer-based movement tracking (3.39)
+- [x] **Social Dreaming** — Web Share API integration (3.41)
+- [x] **Export to PDF** — Print friendly format (3.27 enhanced)
+- [x] **Offline Mode** — PWA Service Worker + UI Indicators (3.40)
 
 ### High Priority (Remaining)
 
-- [ ] **Dream Threading** — Connect related dreams into narrative arcs
-- [ ] **Mobile Responsiveness Polish** — Optimize for smaller screens
-- [ ] **Export to PDF** — Download dream journal as formatted document
+- [ ] **Dream Threading** — Connect related dreams (Partially done via Tags)
+- [ ] **Voice Journaling** — Dictate dreams instead of typing
 
 ### Medium Priority
 
-- [ ] **Achievement System** — Unlock badges for streaks (7-day journal, etc.)
-- [ ] **Tag Filtering** — Filter Chronicle by tags
-- [ ] **AI Sleep Coach Memory** — Persistent conversation history across sessions
+- [ ] **Achievement System** — Unlock badges for streaks
+- [ ] **Tag Filtering** — Filter Chronicle by tags (Done via UI?)
+- [ ] **AI Sleep Coach Memory** — Persistent conversation history (Done 3.15?)
 
 ### Exploratory
 
-- [ ] **Haptic Breathing** — Vibration API pulses during guided relaxation
-- [ ] **Wake Window Detection** — Use accelerometer to detect light sleep phases
-- [ ] **Dream Search** — Full-text search across all dreams
+- [ ] **Anonymous Global Feed** — True backend social dreaming
+- [ ] **Wearable Integration** — HealthKit/Google Fit sync
+
+### Pruned Concepts
+- *Dream Search* promoted to Implemented (3.11)
+- *Mobile Polish* promoted to Ongoing Maintenance
 
 ---
 

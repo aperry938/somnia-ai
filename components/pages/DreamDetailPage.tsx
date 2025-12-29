@@ -8,6 +8,7 @@ import { AnalysisLoading, ImageGenerationLoading } from '../shared/LoadingStates
 import { TagInput, COMMON_DREAM_TAGS } from '../shared/TagInput';
 import { findDreamSymbols, DreamSymbol } from '../../constants/dreamSymbols';
 import { useToast } from '../shared/Toast';
+import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 
 // Evening Reflection Display Component
 const EveningReflectionDisplay: React.FC<{ aids: SleepAids }> = ({ aids }) => {
@@ -100,11 +101,24 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
     const [selectedArtStyle, setSelectedArtStyle] = useState<DreamArtStyle>('surrealist');
     const [isRegeneratingTitle, setIsRegeneratingTitle] = useState(false);
 
-    // Detect dream symbols in the dream text
     const detectedSymbols = useMemo(() => {
         if (!dream) return [];
         return findDreamSymbols(dream.dreamText);
     }, [dream]);
+
+    // Voice Journaling Integration
+    const { isListening, interimTranscript, startListening, stopListening, isSupported } = useSpeechRecognition((transcript) => {
+        setEditedText(prev => (prev ? prev.trim() + ' ' : '') + transcript);
+    });
+
+    // Real-time preview of speech
+    useEffect(() => {
+        if (isListening) {
+            // In edit mode we can't easily show interim in textarea without messing up cursor, 
+            // but we can append it if we really wanted. For now, we rely on final transcript callback.
+            // Or we could show a "Listening..." overlay.
+        }
+    }, [isListening, interimTranscript]);
 
 
     const performAnalysis = useCallback(async () => {
@@ -163,6 +177,30 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                     <div className="flex gap-3">
                         <button onClick={() => setIsEditing(!isEditing)} className="text-sm text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent">
                             {isEditing ? 'Cancel' : 'Edit'}
+                        </button>
+                        <button
+                            onClick={async () => {
+                                const shareData = {
+                                    title: `Somnia Dream: ${dream.title}`,
+                                    text: `${dream.title}\n${new Date(dream.timestamp).toLocaleDateString()}\n\n${dream.dreamText}\n\nAnalysed by Somnia.ai`,
+                                };
+                                try {
+                                    if (navigator.share) {
+                                        await navigator.share(shareData);
+                                    } else {
+                                        await navigator.clipboard.writeText(shareData.text);
+                                        showToast('Dream copied to clipboard');
+                                    }
+                                } catch (err) {
+                                    console.error('Share failed:', err);
+                                }
+                            }}
+                            className="text-sm text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent flex items-center gap-1"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                            </svg>
+                            Share
                         </button>
                         <button
                             onClick={() => {
@@ -241,11 +279,31 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
 
                 {isEditing ? (
                     <div>
-                        <textarea
-                            value={editedText}
-                            onChange={(e) => setEditedText(e.target.value)}
-                            className="w-full h-48 p-3 bg-white/80 dark:bg-black/30 border border-day-border dark:border-night-border rounded-md focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent"
-                        />
+                        <div className="relative">
+                            <textarea
+                                value={editedText}
+                                onChange={(e) => setEditedText(e.target.value)}
+                                className="w-full h-48 p-3 bg-white/80 dark:bg-black/30 border border-day-border dark:border-night-border rounded-md focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent pr-12"
+                                disabled={isListening}
+                            />
+                            {isSupported && (
+                                <button
+                                    onClick={isListening ? stopListening : startListening}
+                                    className={`absolute top-3 right-3 p-2 rounded-full transition-colors ${isListening ? 'text-red-500 bg-red-100 dark:bg-red-900/30' : 'text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                    title={isListening ? "Stop recording" : "Dictate dream"}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                                    </svg>
+                                    {isListening && (
+                                        <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                                        </span>
+                                    )}
+                                </button>
+                            )}
+                        </div>
                         <button onClick={handleSaveEdit} className="mt-2 px-4 py-2 bg-day-accent text-white rounded-full">Save Changes</button>
                     </div>
                 ) : (

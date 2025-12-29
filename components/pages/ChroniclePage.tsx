@@ -2,8 +2,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
 import { Dream } from '../../types';
+import { exportDreamsAsJSON, exportDreamJournalToPDF, exportDreamsEncrypted, importDreamsEncrypted } from '../../services/exportService';
 
-const DreamItem: React.FC<{ dream: Dream; onSelect: (id: number) => void; onTagClick: (tag: string) => void }> = ({ dream, onSelect, onTagClick }) => {
+const DreamItem: React.FC<{ dream: Dream; onSelect: (id: number) => void; onTagClick: (tag: string) => void }> = React.memo(({ dream, onSelect, onTagClick }) => {
     return (
         <div
             className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-4 rounded-lg cursor-pointer hover:shadow-xl transition-shadow flex gap-4"
@@ -44,7 +45,7 @@ const DreamItem: React.FC<{ dream: Dream; onSelect: (id: number) => void; onTagC
             </div>
         </div>
     );
-};
+});
 
 // Tag filter pill component
 const TagFilter: React.FC<{
@@ -74,7 +75,7 @@ const TagFilter: React.FC<{
 
 
 export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = ({ onDreamSelect }) => {
-    const { dreams } = useAppContext();
+    const { dreams, importDreams } = useAppContext();
     const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -155,9 +156,70 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
         return groups;
     }, [filteredDreams]);
 
+    const [showExportMenu, setShowExportMenu] = useState(false);
+
     return (
         <div>
-            <h1 className="font-serif page-title text-4xl text-center mb-6">The Chronicle</h1>
+            <div className="relative mb-6">
+                <h1 className="font-serif page-title text-4xl text-center">The Chronicle</h1>
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 mr-2">
+                    <button
+                        onClick={() => setShowExportMenu(!showExportMenu)}
+                        className="p-2 text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent transition-colors"
+                        title="Export options"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                    </button>
+                    {showExportMenu && (
+                        <div className="absolute right-0 mt-2 w-48 bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-lg shadow-xl z-10 overflow-hidden animate-fadeIn">
+                            <button
+                                onClick={() => { exportDreamsAsJSON(dreams); setShowExportMenu(false); }}
+                                className="w-full text-left px-4 py-3 text-sm hover:bg-black/5 dark:hover:bg-white/5 flex items-center gap-2"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                                Backup (JSON)
+                            </button>
+                            <button
+                                onClick={() => { exportDreamJournalToPDF(dreams); setShowExportMenu(false); }}
+                                className="w-full text-left px-4 py-3 text-sm hover:bg-black/5 dark:hover:bg-white/5 flex items-center gap-2 border-t border-day-border dark:border-night-border"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                                Print Journal
+                            </button>
+                            <button
+                                onClick={() => { exportDreamsEncrypted(dreams); setShowExportMenu(false); }}
+                                className="w-full text-left px-4 py-3 text-sm hover:bg-black/5 dark:hover:bg-white/5 flex items-center gap-2 border-t border-day-border dark:border-night-border text-indigo-500"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                                Secure Backup
+                            </button>
+                            <label className="w-full text-left px-4 py-3 text-sm hover:bg-black/5 dark:hover:bg-white/5 flex items-center gap-2 border-t border-day-border dark:border-night-border cursor-pointer text-green-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                Restore Encrypted
+                                <input
+                                    type="file"
+                                    accept=".json"
+                                    className="hidden"
+                                    onChange={async (e) => {
+                                        if (e.target.files?.[0]) {
+                                            try {
+                                                const imported = await importDreamsEncrypted(e.target.files[0], dreams);
+                                                importDreams(imported);
+                                                alert(`Successfully restored ${imported.length} dreams!`);
+                                            } catch (err) {
+                                                alert(`Restore failed: ${(err as Error).message}`);
+                                            }
+                                            setShowExportMenu(false);
+                                        }
+                                    }}
+                                />
+                            </label>
+                        </div>
+                    )}
+                </div>
+            </div>
 
             {/* Search bar */}
             <div className="max-w-2xl mx-auto mb-4">

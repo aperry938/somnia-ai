@@ -110,3 +110,22 @@ export const AIErrorBoundary: React.FC<{ children: ReactNode }> = ({ children })
         </ErrorBoundary>
     );
 };
+
+// Test Component for verifying Error Boundary
+export const BuggyButton: React.FC = () => {
+    const [shouldError, setShouldError] = React.useState(false);
+
+    if (shouldError) {
+        throw new Error("Simulated Crash for Stress Test!");
+    }
+
+    return (
+        <button
+            onClick={() => setShouldError(true)}
+            className="fixed bottom-4 left-4 text-[10px] text-red-500/20 hover:text-red-500 bg-transparent hover:bg-red-500/10 p-1 rounded z-50 transition-all font-mono"
+            title="Stress Test: Trigger Crash"
+        >
+            CRASH
+        </button>
+    );
+};

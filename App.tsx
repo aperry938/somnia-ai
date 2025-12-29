@@ -1,9 +1,14 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect, Suspense, lazy, useCallback } from 'react';
 import { Page } from './types';
 import { useClock } from './hooks/useClock';
 import { useAppContext } from './contexts/AppContext';
 import { useAlarmManager } from './hooks/useAlarmManager';
 import { initAudioContext } from './services/audioService';
+import { useRealityChecks } from './hooks/useRealityChecks';
+import { calculateUserStats } from './services/userStatsService';
+import { useToast } from './components/shared/Toast';
+import { speakText, getBriefingContent } from './services/ttsService';
+import { checkAndMigrateData } from './services/migrationService';
 
 import { AlarmsPage } from './components/pages/AlarmsPage';
 import { BottomNav } from './components/BottomNav';
@@ -11,6 +16,10 @@ import { AlarmRingModal } from './components/modals/AlarmRingModal';
 import { DreamScribeModal } from './components/modals/DreamScribeModal';
 import { PageLoading } from './components/shared/LoadingStates';
 import { KeyboardShortcutsHelp, useKeyboardHelp } from './components/shared/KeyboardHelp';
+import { OfflineIndicator } from './components/OfflineIndicator';
+import { VoiceCommandFab } from './components/shared/VoiceCommandFab';
+import { ThemeToggle } from './components/shared/ThemeToggle';
+import { BuggyButton } from './components/shared/ErrorBoundary';
 
 // Lazy load heavy pages for better code splitting
 const SleepPage = lazy(() => import('./components/pages/SleepPage').then(m => ({ default: m.SleepPage })));
@@ -21,12 +30,11 @@ const DreamDetailPage = lazy(() => import('./components/pages/DreamDetailPage').
 
 
 const App: React.FC = () => {
-    const { addDream } = useAppContext();
+    const { addDream, isScribeOpen, setIsScribeOpen } = useAppContext();
     const [currentPage, setCurrentPage] = useState<Page>('alarms');
     const [selectedDreamId, setSelectedDreamId] = useState<number | null>(null);
     const { timeString, dateString } = useClock();
     const { ringingAlarm, stopRinging, snooze } = useAlarmManager();
-    const [isScribeOpen, setIsScribeOpen] = useState(false);
     const { isHelpOpen, closeHelp } = useKeyboardHelp();
 
     useEffect(() => {
@@ -38,6 +46,9 @@ const App: React.FC = () => {
         };
         document.addEventListener('click', resumeAudio);
         document.addEventListener('keydown', resumeAudio);
+
+        // Check data integrity
+        checkAndMigrateData();
 
         return () => {
             document.removeEventListener('click', resumeAudio);
@@ -62,21 +73,53 @@ const App: React.FC = () => {
         return () => window.removeEventListener('keydown', handleKeyNav);
     }, []);
 
-    const navigateToDreamDetail = (dreamId: number) => {
+    const navigateToDreamDetail = useCallback((dreamId: number) => {
         setSelectedDreamId(dreamId);
         setCurrentPage('dream-detail');
-    };
+    }, []);
 
-    const handleRecordDream = () => {
+    const handleRecordDream = useCallback(() => {
         stopRinging();
         setIsScribeOpen(true);
-    };
+    }, [stopRinging, setIsScribeOpen]);
 
-    const handleScribeSave = (dreamText: string, sleepQuality: number | null) => {
+    const handleAwake = useCallback(() => {
+        stopRinging();
+        const text = getBriefingContent("Dreamer");
+        speakText(text);
+    }, [stopRinging]);
+
+    const { showToast } = useToast();
+    const { dreams } = useAppContext();
+
+    const handleScribeSave = useCallback((dreamText: string, sleepQuality: number | null) => {
+        // Calculate pre-save stats
+        const oldStats = calculateUserStats(dreams);
+
         const newDreamId = addDream(dreamText, sleepQuality);
+
+        // Calculate post-save stats (addDream updates state but we can predict or use updated state if available, 
+        // but addDream is sync in AppContext logic, however the 'dreams' var from context is closure-bound.
+        // We need to fetch updated dreams? Or just predict.
+        // Since we know we added 1 dream, and logic is purely length based for now:
+        const predictedNewDreams = [...dreams, { id: 0, timestamp: new Date().toISOString() } as any];
+        const newStats = calculateUserStats(predictedNewDreams);
+
+        if (newStats.level > oldStats.level) {
+            showToast(
+                <div className="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-300" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <span>LEVELED UP! Level {newStats.level}: Oneironaut</span>
+                </div>,
+                "success"
+            );
+        }
+
         setIsScribeOpen(false);
         navigateToDreamDetail(newDreamId);
-    }
+    }, [dreams, addDream, showToast, navigateToDreamDetail, setIsScribeOpen]);
 
     const renderPage = () => {
         switch (currentPage) {
@@ -108,10 +151,30 @@ const App: React.FC = () => {
                 </div>
             </main>
             <BottomNav currentPage={currentPage} setCurrentPage={setCurrentPage} />
-            {ringingAlarm && <AlarmRingModal onSnooze={snooze} onAwake={stopRinging} onRecordDream={handleRecordDream} />}
+            {ringingAlarm && <AlarmRingModal onSnooze={snooze} onAwake={handleAwake} onRecordDream={handleRecordDream} />}
             {isScribeOpen && <DreamScribeModal onSave={handleScribeSave} onClose={() => setIsScribeOpen(false)} />}
             <KeyboardShortcutsHelp isOpen={isHelpOpen} onClose={closeHelp} />
+            <RealityCheckManager />
+            <OfflineIndicator />
+            <VoiceCommandFab />
+            <ThemeToggle />
+            <BuggyButton />
         </div>
+    );
+};
+
+// Internal component for Reality Checks (could be moved)
+const RealityCheckManager = () => {
+    const { permission, requestPermission } = useRealityChecks();
+    if (permission === 'granted') return null;
+    return (
+        <button
+            onClick={requestPermission}
+            className="fixed bottom-20 left-4 text-xs bg-white/10 backdrop-blur px-2 py-1 rounded text-white/50 hover:bg-white/20 transition-all z-50"
+            title="Enable Reality Check Notifications"
+        >
+            RC
+        </button>
     );
 };
 
