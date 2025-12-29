@@ -144,7 +144,7 @@ const generatePrintableHTML = (dreams: Dream[]): string => {
 </head>
 <body>
     <div class="header">
-        <h1>🌙 Dream Journal</h1>
+        <h1>Somnia Dream Journal</h1>
         <p>Exported from Somnia.ai • ${new Date().toLocaleDateString()}</p>
         <p>${dreams.length} dream${dreams.length !== 1 ? 's' : ''} recorded</p>
     </div>

@@ -179,7 +179,7 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                         </div>
                         <div>
                             <p className="text-3xl font-bold">{calculateStreak.current}</p>
-                            <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">Day Streak 🔥</p>
+                            <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">Day Streak</p>
                         </div>
                         <div>
                             <p className="text-3xl font-bold">{calculateStreak.best}</p>

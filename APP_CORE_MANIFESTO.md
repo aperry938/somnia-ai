@@ -189,6 +189,30 @@ Focus-visible outlines for keyboard navigation. Skip-link for screen readers.
 
 **Implementation:** `index.html` → CSS `:focus-visible` + `.skip-link`
 
+### 3.19 Dream Symbol Dictionary
+
+27 common dream symbols with psychological interpretations. Automatic detection from dream text.
+
+**Implementation:** `constants/dreamSymbols.ts` → `findDreamSymbols()` function, displayed in DreamDetailPage
+
+### 3.20 Lucid Dreaming Toolkit
+
+Reality checks (7 techniques) and lucid induction methods (MILD, WBTB, WILD). Daily rotating reality check prompt.
+
+**Implementation:** `constants/lucidDreaming.ts` + Sleep page section
+
+### 3.21 AI Title Generation
+
+Standalone function to generate evocative dream titles. Regenerate button in DreamDetailPage.
+
+**Implementation:** `geminiService.ts` → `generateDreamTitle()` + refresh button UI
+
+### 3.22 Dream Statistics
+
+Word and character count displayed after dream text for tracking recall improvement over time.
+
+**Implementation:** `DreamDetailPage.tsx` → inline word/char count
+
 ---
 
 
