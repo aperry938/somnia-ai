@@ -134,6 +134,27 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
 
     const hasFilters = activeTagFilter || searchQuery.trim();
 
+    // Group dreams by time period
+    const groupedDreams = useMemo(() => {
+        const now = new Date();
+        const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+        const groups: { label: string; dreams: typeof filteredDreams }[] = [];
+        const thisWeek = filteredDreams.filter(d => new Date(d.timestamp) >= oneWeekAgo);
+        const thisMonth = filteredDreams.filter(d => {
+            const date = new Date(d.timestamp);
+            return date < oneWeekAgo && date >= oneMonthAgo;
+        });
+        const older = filteredDreams.filter(d => new Date(d.timestamp) < oneMonthAgo);
+
+        if (thisWeek.length > 0) groups.push({ label: 'This Week', dreams: thisWeek });
+        if (thisMonth.length > 0) groups.push({ label: 'Earlier This Month', dreams: thisMonth });
+        if (older.length > 0) groups.push({ label: 'Older', dreams: older });
+
+        return groups;
+    }, [filteredDreams]);
+
     return (
         <div>
             <h1 className="font-serif page-title text-4xl text-center mb-6">The Chronicle</h1>
@@ -203,15 +224,24 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
                 </div>
             )}
 
-            <div className="space-y-4 max-w-2xl mx-auto">
+            <div className="space-y-6 max-w-2xl mx-auto">
                 {filteredDreams.length > 0 ? (
-                    filteredDreams.map(dream => (
-                        <DreamItem
-                            key={dream.id}
-                            dream={dream}
-                            onSelect={onDreamSelect}
-                            onTagClick={handleTagClick}
-                        />
+                    groupedDreams.map(group => (
+                        <div key={group.label}>
+                            <h2 className="font-serif text-lg text-day-text-secondary dark:text-night-text-secondary mb-3 border-b border-day-border dark:border-night-border pb-2">
+                                {group.label}
+                            </h2>
+                            <div className="space-y-4">
+                                {group.dreams.map(dream => (
+                                    <DreamItem
+                                        key={dream.id}
+                                        dream={dream}
+                                        onSelect={onDreamSelect}
+                                        onTagClick={handleTagClick}
+                                    />
+                                ))}
+                            </div>
+                        </div>
                     ))
                 ) : hasFilters ? (
                     <div className="text-center py-8">

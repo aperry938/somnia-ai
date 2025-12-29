@@ -10,6 +10,7 @@ import { BottomNav } from './components/BottomNav';
 import { AlarmRingModal } from './components/modals/AlarmRingModal';
 import { DreamScribeModal } from './components/modals/DreamScribeModal';
 import { PageLoading } from './components/shared/LoadingStates';
+import { KeyboardShortcutsHelp, useKeyboardHelp } from './components/shared/KeyboardHelp';
 
 // Lazy load heavy pages for better code splitting
 const SleepPage = lazy(() => import('./components/pages/SleepPage').then(m => ({ default: m.SleepPage })));
@@ -26,6 +27,7 @@ const App: React.FC = () => {
     const { timeString, dateString } = useClock();
     const { ringingAlarm, stopRinging, snooze } = useAlarmManager();
     const [isScribeOpen, setIsScribeOpen] = useState(false);
+    const { isHelpOpen, closeHelp } = useKeyboardHelp();
 
     useEffect(() => {
         const resumeAudio = () => {
@@ -108,6 +110,7 @@ const App: React.FC = () => {
             <BottomNav currentPage={currentPage} setCurrentPage={setCurrentPage} />
             {ringingAlarm && <AlarmRingModal onSnooze={snooze} onAwake={stopRinging} onRecordDream={handleRecordDream} />}
             {isScribeOpen && <DreamScribeModal onSave={handleScribeSave} onClose={() => setIsScribeOpen(false)} />}
+            <KeyboardShortcutsHelp isOpen={isHelpOpen} onClose={closeHelp} />
         </div>
     );
 };
