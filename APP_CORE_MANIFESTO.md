@@ -237,7 +237,14 @@ Full OG and Twitter card meta tags for rich social media previews.
 
 **Implementation:** `index.html` → og:title, og:description, twitter:card
 
+### 3.26 Toast Notification System
+
+Context-based toast notifications for user feedback. Auto-dismiss after 3 seconds.
+
+**Implementation:** `components/shared/Toast.tsx` → ToastProvider + useToast hook
+
 ---
+
 
 
 ## 4. MECHANISMS (Technical Engine)
