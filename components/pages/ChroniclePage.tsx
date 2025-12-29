@@ -87,13 +87,18 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
         return () => clearTimeout(timer);
     }, [searchQuery]);
 
-    // Extract all unique tags from dreams
+    // Extract all unique tags from dreams with frequency count
     const allTags = useMemo(() => {
-        const tagSet = new Set<string>();
+        const tagCounts = new Map<string, number>();
         dreams.forEach(dream => {
-            dream.tags?.forEach(tag => tagSet.add(tag));
+            dream.tags?.forEach(tag => {
+                tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+            });
         });
-        return Array.from(tagSet).sort();
+        // Sort by frequency (most used first), then alphabetically
+        return Array.from(tagCounts.entries())
+            .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+            .map(([tag]) => tag);
     }, [dreams]);
 
     // Filter dreams by active tag and search query
