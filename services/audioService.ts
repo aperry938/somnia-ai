@@ -14,6 +14,10 @@ let sleepTimeout: number | null = null;
 // Cache for decoded audio files to prevent re-fetching
 const audioBufferCache: { [src: string]: AudioBuffer } = {};
 
+/**
+ * Initializes the global AudioContext.
+ * Must be called after a user interaction (click/touch) to resume from suspended state.
+ */
 export const initAudioContext = () => {
     if (!audioContext) {
         audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -34,6 +38,11 @@ const getAudioContext = (): AudioContext => {
 
 // --- ALARM FUNCTIONS ---
 
+/**
+ * Plays the progressive smart alarm.
+ * Starts with low volume and frequency, ramping up over 30 seconds.
+ * Automatically stops any playing sleep sounds.
+ */
 export const playProgressiveAlarm = () => {
     stopSleepSound(); // Ensure sleep sounds are stopped
     const context = getAudioContext();
@@ -59,6 +68,10 @@ export const playProgressiveAlarm = () => {
     alarmOscillator.start(now);
 };
 
+/**
+ * Stops the alarm sound immediately.
+ * Fades out volume over 0.5s to prevent clicking artifacts.
+ */
 export const stopAlarmSound = () => {
     if (alarmGainNode && alarmOscillator && audioContext) {
         const now = audioContext.currentTime;
@@ -124,7 +137,7 @@ const createBinauralNode = (context: AudioContext, baseFreq: number, diff: numbe
 
     oscLeft.connect(merger, 0, 0);
     oscRight.connect(merger, 0, 1);
-    
+
     oscLeft.start();
     oscRight.start();
 
@@ -148,21 +161,27 @@ const getAudioBuffer = async (context: AudioContext, src: string): Promise<Audio
     return audioBuffer;
 };
 
+/**
+ * Plays a sleep soundscape (white noise, binaural beats, or audio file).
+ * 
+ * @param sound - The Soundscape configuration object
+ * @param durationMinutes - Duration to play in minutes (0 for infinite)
+ */
 export const playSleepSound = async (sound: Soundscape, durationMinutes: number) => {
     stopAlarmSound(); // Ensure alarm is stopped
     const context = getAudioContext();
-    
+
     if (context.state === 'suspended') {
         await context.resume();
     }
-    
+
     stopSleepSound(); // Stop any currently playing sleep sound
 
     sleepGainNode = context.createGain();
     sleepGainNode.gain.setValueAtTime(0, context.currentTime);
     sleepGainNode.gain.linearRampToValueAtTime(0.5, context.currentTime + 2); // Fade in
     sleepGainNode.connect(context.destination);
-    
+
     if (sound.type === 'noise') {
         sleepSourceNode = createNoiseNode(context, sound.params.type);
         sleepSourceNode.connect(sleepGainNode);
@@ -188,12 +207,17 @@ export const playSleepSound = async (sound: Soundscape, durationMinutes: number)
             return;
         }
     }
-    
+
     if (durationMinutes > 0) {
         sleepTimeout = window.setTimeout(stopSleepSound, durationMinutes * 60 * 1000);
     }
 };
 
+/**
+ * Stops the currently playing sleep sound.
+ * Fades out volume over 2 seconds.
+ * Cleans up audio nodes and oscillators.
+ */
 export const stopSleepSound = () => {
     if (sleepTimeout) {
         clearTimeout(sleepTimeout);
@@ -219,7 +243,7 @@ export const stopSleepSound = () => {
         // For binaural beats, stop the attached oscillators
         if ((sleepSourceNode as any).oscillators) {
             (sleepSourceNode as any).oscillators.forEach((osc: OscillatorNode) => {
-                 try { osc.stop(stopTime); } catch (e) { /* ignore */ }
+                try { osc.stop(stopTime); } catch (e) { /* ignore */ }
             });
         }
         setTimeout(() => {
@@ -234,10 +258,16 @@ export const stopSleepSound = () => {
 
 // --- BREATHING CUE FUNCTIONS ---
 
+/**
+ * Plays a subtle breath cue sound (band-passed white noise).
+ * 
+ * @param direction - 'in' (higher pitch) or 'out' (lower pitch)
+ * @param duration - Length of the breath in seconds
+ */
 export const playBreathSound = (direction: 'in' | 'out', duration: number) => {
     const context = getAudioContext();
     if (!context) return;
-    
+
     const gain = context.createGain();
     gain.connect(context.destination);
 
@@ -245,7 +275,7 @@ export const playBreathSound = (direction: 'in' | 'out', duration: number) => {
     const buffer = context.createBuffer(1, bufferSize, context.sampleRate);
     const output = buffer.getChannelData(0);
     for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
-    
+
     const whiteNoise = context.createBufferSource();
     whiteNoise.buffer = buffer;
 
@@ -255,7 +285,7 @@ export const playBreathSound = (direction: 'in' | 'out', duration: number) => {
     bandpass.Q.value = 1.5;
 
     whiteNoise.connect(bandpass).connect(gain);
-    
+
     const now = context.currentTime;
     gain.gain.setValueAtTime(0, now);
     gain.gain.linearRampToValueAtTime(0.15, now + 0.5); // Fade in cue

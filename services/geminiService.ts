@@ -80,6 +80,15 @@ ${dreamText}
 ---`;
 }
 
+/**
+ * Analyzes a dream using Gemini AI to extract themes, insights, and integration steps.
+ * 
+ * @param dreamText - The full text content of the dream
+ * @param sleepAids - Optional context about sleep aids used (sound, relaxation, etc.)
+ * @param biometrics - Optional user biometric data (age, gender, sleep duration)
+ * @returns Promise<DreamAnalysis> - The structured analysis of the dream
+ * @throws Error if AI analysis fails
+ */
 export const analyzeDream = async (dreamText: string, sleepAids?: SleepAids, biometrics?: Biometrics): Promise<DreamAnalysis> => {
     try {
         const ai = getAi();
@@ -144,6 +153,10 @@ export const analyzeDream = async (dreamText: string, sleepAids?: SleepAids, bio
 // Art style presets for dream imagery
 export type DreamArtStyle = 'surrealist' | 'watercolor' | 'anime' | 'cosmic' | 'vintage';
 
+/**
+ * Presets for AI image generation styles.
+ * Each style includes a user-friendly name and a specific prompt modifier.
+ */
 export const DREAM_ART_STYLES: Record<DreamArtStyle, { name: string; prompt: string }> = {
     surrealist: {
         name: 'Surrealist',
@@ -173,6 +186,13 @@ function createImagePrompt(dreamText: string, style: DreamArtStyle = 'surrealist
 }
 
 
+/**
+ * Generates an image visualization of a dream using Gemini Pro Vision.
+ * 
+ * @param dreamText - The text description of the dream
+ * @param style - The artistic style to use (default: 'surrealist')
+ * @returns Promise<string> - The base64 encoded image data
+ */
 export const generateDreamImage = async (dreamText: string, style: DreamArtStyle = 'surrealist'): Promise<string> => {
     try {
         const ai = getAi();
@@ -199,6 +219,12 @@ export const generateDreamImage = async (dreamText: string, style: DreamArtStyle
 
 /**
  * Generate a creative title for a dream entry
+ */
+/**
+ * Generate a creative, poetic title for a dream entry.
+ * 
+ * @param dreamText - The dream content
+ * @returns Promise<string> - A short title (3-6 words)
  */
 export const generateDreamTitle = async (dreamText: string): Promise<string> => {
     try {
@@ -230,6 +256,13 @@ const createCoachSystemPrompt = () => ({
     Start the conversation by gently asking how you can help the user prepare for a restful night.` }]
 });
 
+/**
+ * functionality for the AI Sleep Coach.
+ * Generates a response based on chat history.
+ * 
+ * @param history - Array of previous chat messages
+ * @returns Promise<string> - The AI coach's response
+ */
 export const getCoachResponse = async (history: ChatMessage[]): Promise<string> => {
     const cleanHistory = history.map(({ id, isError, ...rest }) => rest);
     const chatHistory = [createCoachSystemPrompt(), ...cleanHistory];
@@ -257,6 +290,14 @@ const createDreamChatSystemPrompt = (dream: Dream) => ({
     }]
 });
 
+/**
+ * Continues a conversation about a specific dream.
+ * Maintains the persona of 'The Oneironaut'.
+ * 
+ * @param dream - The dream object being discussed
+ * @param history - Chat history for this specific dream
+ * @returns Promise<string> - The AI's response
+ */
 export const getDreamChatResponse = async (dream: Dream, history: ChatMessage[]): Promise<string> => {
     const cleanHistory = history.map(({ id, isError, ...rest }) => rest);
     const chatHistory = [createDreamChatSystemPrompt(dream), ...cleanHistory];
@@ -284,6 +325,13 @@ const createDreamSynthesisPrompt = (dreams: Dream[]): string => {
     ${dreamLog}`;
 };
 
+/**
+ * Analyzes a collection of dreams to identify recurring patterns and themes.
+ * Uses a more powerful model (Flash 2.5) for synthesis.
+ * 
+ * @param dreams - Array of dreams to analyze
+ * @returns Promise<DreamSynthesis> - Structured analysis of themes and patterns
+ */
 export const synthesizeDreamThemes = async (dreams: Dream[]): Promise<DreamSynthesis> => {
     try {
         const ai = getAi();
@@ -352,6 +400,12 @@ const createSleepHabitAnalysisPrompt = (dreams: Dream[]): string => {
     ${sleepData}`;
 };
 
+/**
+ * Analyzes correlations between sleep habits, daily context, and sleep quality.
+ * 
+ * @param dreams - Array of dreams containing sleep data
+ * @returns Promise<SleepHabitAnalysis> - Insights about correlations
+ */
 export const analyzeSleepHabits = async (dreams: Dream[]): Promise<SleepHabitAnalysis> => {
     try {
         const ai = getAi();

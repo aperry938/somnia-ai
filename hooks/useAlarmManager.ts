@@ -6,6 +6,10 @@ import { useAppContext } from '../contexts/AppContext';
 
 const SNOOZE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 
+/**
+ * Manages alarm state, snooze logic, and ringing checks.
+ * Polling happens every second via dependent update loop.
+ */
 export const useAlarmManager = () => {
     const { alarms, toggleAlarmActive } = useAppContext();
     const { date } = useClock();

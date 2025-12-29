@@ -160,7 +160,10 @@ const generatePrintableHTML = (dreams: Dream[]): string => {
 };
 
 /**
- * Opens dream journal in new window for printing/saving as PDF
+ * Generates a printable HTML view of the dream journal and opens the print dialog.
+ * Creates a beautiful, serif-formatted document suitable for physical archiving.
+ * 
+ * @param dreams - Array of dreams to include in the PDF/Print view
  */
 export const exportDreamJournalToPDF = (dreams: Dream[]): void => {
     if (dreams.length === 0) {
@@ -185,7 +188,10 @@ export const exportDreamJournalToPDF = (dreams: Dream[]): void => {
 };
 
 /**
- * Export dreams as JSON for backup
+ * Exports dreams as a JSON file for data backup and portability.
+ * Filename includes the current date (e.g., somnia-dreams-2024-01-01.json).
+ * 
+ * @param dreams - Array of dreams to export
  */
 export const exportDreamsAsJSON = (dreams: Dream[]): void => {
     const data = JSON.stringify(dreams, null, 2);
@@ -202,8 +208,13 @@ export const exportDreamsAsJSON = (dreams: Dream[]): void => {
 };
 
 /**
- * Import dreams from JSON backup file
- * Returns array of imported dreams with new IDs to avoid collisions
+ * Imports dreams from a JSON backup file.
+ * Automatically re-assigns IDs to prevent collisions with existing dreams.
+ * Validates the JSON structure before processing.
+ * 
+ * @param file - The JSON file selected by the user
+ * @param existingDreams - Current dreams in state (used for ID generation)
+ * @returns Promise<Dream[]> - Array of validated dreams with new unique IDs
  */
 export const importDreamsFromJSON = (
     file: File,

@@ -31,7 +31,7 @@ interface SpeechRecognitionAlternative {
 interface SpeechRecognitionStatic {
     new(): SpeechRecognition;
 }
-  
+
 interface SpeechRecognition extends EventTarget {
     continuous: boolean;
     grammars: any;
@@ -62,6 +62,12 @@ declare global {
     }
 }
 
+/**
+ * Wrapper for Web Speech API (speech-to-text).
+ * Handles browser support checks, continuous listening, and error states.
+ * 
+ * @param onFinalTranscript - Callback fired when a sentence is fully recognized
+ */
 export const useSpeechRecognition = (onFinalTranscript: (transcript: string) => void) => {
     const [isListening, setIsListening] = useState(false);
     const [interimTranscript, setInterimTranscript] = useState('');
@@ -107,7 +113,7 @@ export const useSpeechRecognition = (onFinalTranscript: (transcript: string) => 
             }
             setInterimTranscript(interim);
         };
-        
+
         recognitionRef.current = recognition;
 
         return () => {

@@ -3,6 +3,11 @@ import { useState, useEffect } from 'react';
 import { Theme } from '../types';
 import { useAppContext } from '../contexts/AppContext';
 
+/**
+ * Provides current time, date, and derived theme (day/night).
+ * Updates every second.
+ * Handles automatic theme toggling based on hour (6am-7pm = day).
+ */
 export const useClock = () => {
     const { themeOverride } = useAppContext();
     const [date, setDate] = useState(new Date());

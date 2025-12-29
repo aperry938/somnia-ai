@@ -6,6 +6,7 @@ import { Biometrics, DreamSynthesis, SleepHabitAnalysis } from '../../types';
 import { SleepQualityChart } from '../charts/SleepQualityChart';
 import { useToast } from '../shared/Toast';
 import { detectRecurringPatterns, formatPatternName } from '../../constants/dreamPatterns';
+import { WeeklyDigest } from '../insights/WeeklyDigest';
 
 const AnalysisCard: React.FC<{ title: string; description: string; buttonText: string; onAnalyze: () => void; isLoading: boolean; children: React.ReactNode; }> =
     ({ title, description, buttonText, onAnalyze, isLoading, children }) => (
@@ -212,6 +213,7 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                     </p>
                 </div>
 
+                <WeeklyDigest dreams={dreams} />
                 <BiometricsCard />
 
                 {chartData.length > 1 && (

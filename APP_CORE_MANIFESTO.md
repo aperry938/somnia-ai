@@ -291,7 +291,26 @@ Chronicle organizes dreams into "This Week", "Earlier This Month", and "Older" s
 
 **Implementation:** `ChroniclePage.tsx` → `groupedDreams` useMemo
 
+### 3.35 Weekly Summary Digest
+
+A rolling 7-day dashboard card showing dream count, average sleep quality, and top recurring themes with week-over-week trend indicators.
+
+**Implementation:** `components/insights/WeeklyDigest.tsx`
+
+### 3.36 Comprehensive Service Documentation
+
+ rigorous JSDoc documentation for all core services (`geminiService`, `audioService`, `exportService`) and hooks to ensure long-term maintainability.
+
+**Implementation:** `services/*.ts`, `hooks/*.ts`
+
+### 3.37 Sleep Quality Prediction Engine
+
+A predictive algorithm that analyzes historical correlations between sleep habits (day rating, soundscapes) and sleep quality to forecast tonight's rest quality before the user goes to sleep.
+
+**Implementation:** `services/sleepPredictionService.ts`, `SleepPage.tsx`
+
 ---
+
 
 
 

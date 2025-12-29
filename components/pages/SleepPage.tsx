@@ -7,6 +7,7 @@ import { GuidedRelaxationModal } from '../modals/GuidedRelaxationModal';
 import { useAppContext } from '../../contexts/AppContext';
 import { stopSleepSound } from '../../services/audioService';
 import { REALITY_CHECKS, LUCID_TECHNIQUES } from '../../constants/lucidDreaming';
+import { predictSleepQuality, SleepPrediction } from '../../services/sleepPredictionService';
 
 const DayRating: React.FC<{ rating: number | null; onRate: (rating: number) => void; }> = ({ rating, onRate }) => {
     return (
@@ -34,8 +35,20 @@ export const SleepPage: React.FC = () => {
     const [isSleeping, setIsSleeping] = useState(false);
     const [dayRating, setDayRating] = useState<number | null>(null);
     const [dayNotes, setDayNotes] = useState('');
+    const [prediction, setPrediction] = useState<SleepPrediction | null>(null);
 
-    const { setActiveSleepAid, activeSleepAids, setPendingSleepData } = useAppContext();
+    const { setActiveSleepAid, activeSleepAids, setPendingSleepData, dreams } = useAppContext();
+
+    // Update prediction when dayRating or activeSleepAids change
+    useEffect(() => {
+        const currentContext: SleepAids = {
+            ...activeSleepAids,
+            dayRating,
+            dayNotes
+        };
+        const result = predictSleepQuality(currentContext, dreams);
+        setPrediction(result);
+    }, [dayRating, dayNotes, activeSleepAids, dreams]);
 
     useEffect(() => {
         // Stop any playing sounds when navigating away from the page.
@@ -226,6 +239,33 @@ export const SleepPage: React.FC = () => {
                             </div>
                         </div>
                     </div>
+
+
+                    {/* Sleep Quality Prediction */}
+                    {prediction && (
+                        <div className="bg-gradient-to-r from-indigo-900/40 to-purple-900/40 border border-indigo-500/30 p-4 rounded-xl mb-4 animate-fadeIn">
+                            <div className="flex items-start gap-3">
+                                <span className="text-2xl">🔮</span>
+                                <div>
+                                    <h3 className="font-serif font-bold text-lg text-indigo-300">Sleep Forecast</h3>
+                                    <div className="flex items-baseline gap-2 mt-1">
+                                        <span className="text-sm opacity-80">Predicted Quality:</span>
+                                        <div className="flex text-yellow-400">
+                                            {'★'.repeat(prediction.predictedQuality)}
+                                            <span className="opacity-30">{'★'.repeat(5 - prediction.predictedQuality)}</span>
+                                        </div>
+                                    </div>
+                                    <p className="text-sm mt-2 italic opacity-90">"{prediction.recommendation}"</p>
+                                    {prediction.factors.length > 0 && (
+                                        <ul className="mt-2 text-xs opacity-70 space-y-1 list-disc pl-4">
+                                            {prediction.factors.map((f, i) => <li key={i}>{f}</li>)}
+                                        </ul>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="pt-4 pb-8">
                         <button
                             onClick={handleBeginSleep}
@@ -234,24 +274,28 @@ export const SleepPage: React.FC = () => {
                             Initiate Sleep Gateway
                         </button>
                     </div>
-                </div>
+                </div >
             )}
             {activeModal === 'coach' && <AICoachModal onClose={closeModal} />}
-            {activeModal === 'soundscape' && selectedSound && (
-                <SoundscapeModal
-                    sound={selectedSound}
-                    onClose={closeModal}
-                    onPlay={handlePlaySound}
-                    onStop={handleStopSound}
-                    isPlaying={playingSoundId === selectedSound.id}
-                />
-            )}
-            {activeModal === 'relaxation' && selectedRelaxation && (
-                <GuidedRelaxationModal
-                    relaxation={selectedRelaxation}
-                    onClose={closeModal}
-                />
-            )}
+            {
+                activeModal === 'soundscape' && selectedSound && (
+                    <SoundscapeModal
+                        sound={selectedSound}
+                        onClose={closeModal}
+                        onPlay={handlePlaySound}
+                        onStop={handleStopSound}
+                        isPlaying={playingSoundId === selectedSound.id}
+                    />
+                )
+            }
+            {
+                activeModal === 'relaxation' && selectedRelaxation && (
+                    <GuidedRelaxationModal
+                        relaxation={selectedRelaxation}
+                        onClose={closeModal}
+                    />
+                )
+            }
         </>
     );
 };
