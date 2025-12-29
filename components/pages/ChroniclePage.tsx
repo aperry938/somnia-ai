@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
 import { Dream } from '../../types';
 
@@ -77,6 +77,15 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
     const { dreams } = useAppContext();
     const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+
+    // Debounce search query for performance
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchQuery);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
 
     // Extract all unique tags from dreams
     const allTags = useMemo(() => {
@@ -96,9 +105,9 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
             result = result.filter(dream => dream.tags?.includes(activeTagFilter));
         }
 
-        // Then filter by search query
-        if (searchQuery.trim()) {
-            const query = searchQuery.toLowerCase();
+        // Then filter by debounced search query
+        if (debouncedSearch.trim()) {
+            const query = debouncedSearch.toLowerCase();
             result = result.filter(dream =>
                 dream.title?.toLowerCase().includes(query) ||
                 dream.dreamText.toLowerCase().includes(query) ||
@@ -107,7 +116,7 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
         }
 
         return result;
-    }, [dreams, activeTagFilter, searchQuery]);
+    }, [dreams, activeTagFilter, debouncedSearch]);
 
     const handleTagClick = (tag: string) => {
         setActiveTagFilter(tag === activeTagFilter ? null : tag);

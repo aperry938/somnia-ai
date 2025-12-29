@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Page } from './types';
 import { useClock } from './hooks/useClock';
 import { useAppContext } from './contexts/AppContext';
@@ -8,11 +8,14 @@ import { initAudioContext } from './services/audioService';
 import { AlarmsPage } from './components/pages/AlarmsPage';
 import { SleepPage } from './components/pages/SleepPage';
 import { ChroniclePage } from './components/pages/ChroniclePage';
-import { InsightsPage } from './components/pages/InsightsPage';
 import { DreamDetailPage } from './components/pages/DreamDetailPage';
 import { BottomNav } from './components/BottomNav';
 import { AlarmRingModal } from './components/modals/AlarmRingModal';
 import { DreamScribeModal } from './components/modals/DreamScribeModal';
+import { PageLoading } from './components/shared/LoadingStates';
+
+// Lazy load InsightsPage (contains Recharts - large library)
+const InsightsPage = lazy(() => import('./components/pages/InsightsPage').then(m => ({ default: m.InsightsPage })));
 
 
 const App: React.FC = () => {
@@ -22,7 +25,7 @@ const App: React.FC = () => {
     const { timeString, dateString } = useClock();
     const { ringingAlarm, stopRinging, snooze } = useAlarmManager();
     const [isScribeOpen, setIsScribeOpen] = useState(false);
-    
+
     useEffect(() => {
         const resumeAudio = () => {
             initAudioContext();
@@ -32,7 +35,7 @@ const App: React.FC = () => {
         };
         document.addEventListener('click', resumeAudio);
         document.addEventListener('keydown', resumeAudio);
-    
+
         return () => {
             document.removeEventListener('click', resumeAudio);
             document.removeEventListener('keydown', resumeAudio);
@@ -64,7 +67,11 @@ const App: React.FC = () => {
             case 'chronicle':
                 return <ChroniclePage onDreamSelect={navigateToDreamDetail} />;
             case 'insights':
-                return <InsightsPage onDreamSelect={navigateToDreamDetail} />;
+                return (
+                    <Suspense fallback={<PageLoading message="Loading insights..." />}>
+                        <InsightsPage onDreamSelect={navigateToDreamDetail} />
+                    </Suspense>
+                );
             case 'dream-detail':
                 return <DreamDetailPage dreamId={selectedDreamId} onBack={() => setCurrentPage('chronicle')} />;
             default:
