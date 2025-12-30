@@ -1,9 +1,20 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { SleepQualityRating } from '../shared/SleepQualityRating';
+import { DreamMood } from '../../types';
+
+const MOODS: { value: DreamMood; emoji: string; label: string }[] = [
+    { value: 'joyful', emoji: '😊', label: 'Joyful' },
+    { value: 'peaceful', emoji: '😌', label: 'Peaceful' },
+    { value: 'neutral', emoji: '😐', label: 'Neutral' },
+    { value: 'confused', emoji: '😕', label: 'Confused' },
+    { value: 'anxious', emoji: '😰', label: 'Anxious' },
+    { value: 'sad', emoji: '😢', label: 'Sad' },
+    { value: 'fearful', emoji: '😨', label: 'Fearful' },
+];
 
 interface DreamScribeModalProps {
-    onSave: (dreamText: string, sleepQuality: number | null) => void;
+    onSave: (dreamText: string, sleepQuality: number | null, mood?: DreamMood) => void;
     onClose: () => void;
     initialText?: string;
 }
@@ -11,6 +22,7 @@ interface DreamScribeModalProps {
 export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onClose, initialText = '' }) => {
     const [dreamText, setDreamText] = useState(initialText);
     const [sleepQuality, setSleepQuality] = useState<number | null>(null);
+    const [mood, setMood] = useState<DreamMood | null>(null);
 
     const handleFinalTranscript = useCallback((transcript: string) => {
         setDreamText(prev => (prev ? prev.trim() + ' ' : '') + transcript);
@@ -32,7 +44,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
 
     const handleSave = () => {
         if (!dreamText.trim() || isListening) return;
-        onSave(dreamText, sleepQuality);
+        onSave(dreamText, sleepQuality, mood || undefined);
     };
 
     const displayText = isListening
@@ -41,7 +53,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
 
     return (
         <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={onClose}>
-            <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-lg animate-fadeIn" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-lg animate-fadeIn max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                 <h2 className="font-serif text-2xl text-center mb-4">The Dream Scribe</h2>
                 <div className="relative">
                     <textarea
@@ -63,10 +75,34 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                         <span>Recording...</span>
                     </div>
                 )}
+
+                {/* Sleep Quality Rating */}
                 <div className="my-4">
                     <p className="text-center text-day-text-secondary dark:text-night-text-secondary mb-2">How was your sleep?</p>
                     <SleepQualityRating rating={sleepQuality} onRate={setSleepQuality} />
                 </div>
+
+                {/* Mood Selector */}
+                <div className="my-4">
+                    <p className="text-center text-day-text-secondary dark:text-night-text-secondary mb-2">How did the dream feel?</p>
+                    <div className="flex flex-wrap justify-center gap-2">
+                        {MOODS.map(({ value, emoji, label }) => (
+                            <button
+                                key={value}
+                                onClick={() => setMood(mood === value ? null : value)}
+                                className={`px-3 py-1.5 rounded-full text-sm transition-all flex items-center gap-1 ${mood === value
+                                    ? 'bg-day-accent dark:bg-night-accent text-white scale-105'
+                                    : 'bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border hover:border-day-accent dark:hover:border-night-accent'
+                                    }`}
+                                title={label}
+                            >
+                                <span>{emoji}</span>
+                                <span className="hidden sm:inline">{label}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
                 <div className="flex justify-center gap-4 mt-4">
                     <button onClick={onClose} className="py-2 px-6 bg-gray-200 dark:bg-gray-700 text-slate-800 dark:text-slate-200 rounded-full">Cancel</button>
                     <button

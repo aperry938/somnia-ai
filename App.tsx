@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Suspense, lazy, useCallback } from 'react';
-import { Page } from './types';
+import { Page, DreamMood } from './types';
 import { useClock } from './hooks/useClock';
 import { useAppContext } from './contexts/AppContext';
 import { useAlarmManager } from './hooks/useAlarmManager';
@@ -115,11 +115,11 @@ const App: React.FC = () => {
     const { showToast } = useToast();
     const { dreams } = useAppContext();
 
-    const handleScribeSave = useCallback((dreamText: string, sleepQuality: number | null) => {
+    const handleScribeSave = useCallback((dreamText: string, sleepQuality: number | null, mood?: DreamMood) => {
         // Calculate pre-save stats
         const oldStats = calculateUserStats(dreams);
 
-        const newDreamId = addDream(dreamText, sleepQuality);
+        const newDreamId = addDream(dreamText, sleepQuality, mood);
 
         // Calculate post-save stats (addDream updates state but we can predict or use updated state if available, 
         // but addDream is sync in AppContext logic, however the 'dreams' var from context is closure-bound.

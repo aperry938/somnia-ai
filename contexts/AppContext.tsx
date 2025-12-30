@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode, useCallback } from 'react';
-import { Alarm, Dream, SleepAids, Biometrics, Theme, CoachPersonality, AnalysisPersonality } from '../types';
+import { Alarm, Dream, SleepAids, Biometrics, Theme, CoachPersonality, AnalysisPersonality, DreamMood } from '../types';
 import { enqueueAction } from '../services/syncService';
 
 interface AppContextType {
@@ -12,7 +12,7 @@ interface AppContextType {
     updateAlarm: (id: number, time: string, smartWake: boolean) => void;
     toggleAlarmActive: (id: number) => void;
     deleteAlarm: (id: number) => void;
-    addDream: (dreamText: string, sleepQuality: number | null) => number;
+    addDream: (dreamText: string, sleepQuality: number | null, mood?: DreamMood) => number;
     updateDream: (updatedDream: Partial<Dream> & { id: number }) => void;
     getDreamById: (id: number) => Dream | undefined;
     deleteDream: (id: number) => void;
@@ -98,7 +98,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         enqueueAction('DELETE_ALARM', { id });
     };
 
-    const addDream = (dreamText: string, sleepQuality: number | null): number => {
+    const addDream = (dreamText: string, sleepQuality: number | null, mood?: DreamMood): number => {
         const newDream: Dream = {
             id: Date.now(),
             timestamp: new Date().toISOString(),
@@ -109,6 +109,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             aiAnalysis: null,
             chatHistory: [],
             sleepAids: pendingSleepData ?? {},
+            mood,
         };
         setDreams(prev => [newDream, ...prev]);
         setPendingSleepData(null); // Clear pending data after it has been used
