@@ -6,7 +6,7 @@
 
 ## 0. META-PROTOCOL
 
-- **Last Updated:** December 30, 2024 (Iteration 85 - AI Dream Narrator)
+- **Last Updated:** December 30, 2024 (Iteration 88 - Dream Mood Tracker)
 - **Evolution Authority:** Oneironaut Protocol
 - **Sync Frequency:** Continuous (Infinite Mode)
 - **Location:** Project root (`APP_CORE_MANIFESTO.md`)
@@ -382,6 +382,15 @@ Auto-theme based on sunset/sunrise times using geolocation + sunrise-sunset.org 
 
 **Implementation:** `hooks/useSunTimes.ts` → integrated into `useTheme.ts`
 
+### 3.52 Dream Mood Tracker
+
+Emotional pattern tracking across dreams. Users select mood when logging dreams via emoji selector (joyful, peaceful, neutral, confused, anxious, sad, fearful). InsightsGrid displays MoodTracker component with dominant mood, distribution bars, and recent emotion trend.
+
+**Implementation:**
+- `types.ts` → `DreamMood` type + `mood` field on Dream interface
+- `components/insights/MoodTracker.tsx` → Visualization component
+- `components/modals/DreamScribeModal.tsx` → Mood selector UI
+
 ---
 
 
@@ -496,7 +505,7 @@ Single-page app with simple `currentPage` state. Adding a router would be premat
 ### High Priority (Remaining)
 
 - [ ] **Weekly Dream Digest** — Summarized email of weekly dreams
-- [ ] **Dream Mood Tracker** — Track emotional patterns over time
+- [x] **Dream Mood Tracker** — Track emotional patterns over time (3.52)
 
 ### Exploratory
 
