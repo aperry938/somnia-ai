@@ -142,6 +142,7 @@ export const InsightsGrid: React.FC<InsightsGridProps> = ({ dreams }) => {
                 {activeTab === 'Emotions' && (
                     <>
                         <MoodTracker dreams={dreams} />
+                        <JoyDreams dreams={dreams} />
                         <FearDreams dreams={dreams} />
                         <AngerDreams dreams={dreams} />
                         <SadnessDreams dreams={dreams} />
