@@ -191,7 +191,7 @@ const App: React.FC = () => {
             </main>
             <BottomNav currentPage={currentPage} setCurrentPage={setCurrentPage} />
             {ringingAlarm && <AlarmRingModal onSnooze={snooze} onAwake={handleAwake} onRecordDream={handleRecordDream} />}
-            {isScribeOpen && <DreamScribeModal onSave={handleScribeSave} onClose={() => setIsScribeOpen(false)} />}
+            {isScribeOpen && <DreamScribeModal onSave={handleScribeSave} onClose={() => { setIsScribeOpen(false); setWakeQuickNote(''); }} initialText={wakeQuickNote} />}
             <KeyboardShortcutsHelp isOpen={isHelpOpen} onClose={closeHelp} />
             <RealityCheckManager />
             <StreakNotificationManager />
