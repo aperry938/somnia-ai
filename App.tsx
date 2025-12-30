@@ -19,13 +19,16 @@ import { KeyboardShortcutsHelp, useKeyboardHelp } from './components/shared/Keyb
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { VoiceCommandFab } from './components/shared/VoiceCommandFab';
 import { ThemeToggle } from './components/shared/ThemeToggle';
-import { BuggyButton } from './components/shared/ErrorBoundary';
+import { OnboardingCarousel } from './components/onboarding/OnboardingCarousel';
+
 
 // Lazy load heavy pages for better code splitting
 const SleepPage = lazy(() => import('./components/pages/SleepPage').then(m => ({ default: m.SleepPage })));
 const ChroniclePage = lazy(() => import('./components/pages/ChroniclePage').then(m => ({ default: m.ChroniclePage })));
 const InsightsPage = lazy(() => import('./components/pages/InsightsPage').then(m => ({ default: m.InsightsPage })));
 const DreamDetailPage = lazy(() => import('./components/pages/DreamDetailPage').then(m => ({ default: m.DreamDetailPage })));
+const PrivacyPage = lazy(() => import('./components/pages/PrivacyPage').then(m => ({ default: m.PrivacyPage })));
+const TermsPage = lazy(() => import('./components/pages/TermsPage').then(m => ({ default: m.TermsPage })));
 
 
 
@@ -33,6 +36,9 @@ const App: React.FC = () => {
     const { addDream, isScribeOpen, setIsScribeOpen } = useAppContext();
     const [currentPage, setCurrentPage] = useState<Page>('alarms');
     const [selectedDreamId, setSelectedDreamId] = useState<number | null>(null);
+    const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(() => {
+        return localStorage.getItem('somnia_onboarding_complete') === 'true';
+    });
     const { timeString, dateString } = useClock();
     const { ringingAlarm, stopRinging, snooze } = useAlarmManager();
     const { isHelpOpen, closeHelp } = useKeyboardHelp();
@@ -72,6 +78,13 @@ const App: React.FC = () => {
         window.addEventListener('keydown', handleKeyNav);
         return () => window.removeEventListener('keydown', handleKeyNav);
     }, []);
+
+    // Listen for openDreamScribe event from Chronicle empty state
+    useEffect(() => {
+        const handleOpenScribe = () => setIsScribeOpen(true);
+        window.addEventListener('openDreamScribe', handleOpenScribe);
+        return () => window.removeEventListener('openDreamScribe', handleOpenScribe);
+    }, [setIsScribeOpen]);
 
     const navigateToDreamDetail = useCallback((dreamId: number) => {
         setSelectedDreamId(dreamId);
@@ -137,10 +150,32 @@ const App: React.FC = () => {
                 );
             case 'dream-detail':
                 return <DreamDetailPage dreamId={selectedDreamId} onBack={() => setCurrentPage('chronicle')} />;
+            case 'privacy':
+                return (
+                    <Suspense fallback={<PageLoading message="Loading..." />}>
+                        <PrivacyPage onBack={() => setCurrentPage('alarms')} />
+                    </Suspense>
+                );
+            case 'terms':
+                return (
+                    <Suspense fallback={<PageLoading message="Loading..." />}>
+                        <TermsPage onBack={() => setCurrentPage('alarms')} />
+                    </Suspense>
+                );
             default:
                 return <AlarmsPage timeString={timeString} dateString={dateString} />;
         }
     };
+
+    const handleOnboardingComplete = useCallback(() => {
+        localStorage.setItem('somnia_onboarding_complete', 'true');
+        setHasCompletedOnboarding(true);
+    }, []);
+
+    // Show onboarding for first-time users
+    if (!hasCompletedOnboarding) {
+        return <OnboardingCarousel onComplete={handleOnboardingComplete} />;
+    }
 
     return (
         <div className="flex flex-col h-screen overflow-hidden bg-gradient-to-b from-day-bg-start to-day-bg-end dark:from-night-bg-start dark:to-night-bg-end text-day-text-primary dark:text-night-text-primary transition-colors duration-500">
@@ -158,7 +193,7 @@ const App: React.FC = () => {
             <OfflineIndicator />
             <VoiceCommandFab />
             <ThemeToggle />
-            <BuggyButton />
+
         </div>
     );
 };

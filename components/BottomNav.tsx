@@ -113,6 +113,19 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, setCurrentPag
             >
                 <span className="text-xs font-mono">?</span>
             </button>
+            <div className="border-l border-day-border dark:border-night-border h-8 mx-1" />
+            <button
+                onClick={() => setCurrentPage('privacy')}
+                className="text-[10px] text-day-text-secondary/50 dark:text-night-text-secondary/50 hover:text-day-accent dark:hover:text-night-accent transition-colors"
+            >
+                Privacy
+            </button>
+            <button
+                onClick={() => setCurrentPage('terms')}
+                className="text-[10px] text-day-text-secondary/50 dark:text-night-text-secondary/50 hover:text-day-accent dark:hover:text-night-accent transition-colors"
+            >
+                Terms
+            </button>
         </nav>
     );
 };

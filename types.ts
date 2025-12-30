@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 
-export type Page = 'alarms' | 'sleep' | 'chronicle' | 'insights' | 'dream-detail';
+export type Page = 'alarms' | 'sleep' | 'chronicle' | 'insights' | 'dream-detail' | 'privacy' | 'terms';
 
 export interface Alarm {
     id: number;

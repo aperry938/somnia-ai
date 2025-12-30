@@ -318,7 +318,24 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
                         </button>
                     </div>
                 ) : (
-                    <p className="text-center text-day-text-secondary dark:text-night-text-secondary">Your dream journal is empty.</p>
+                    <div className="text-center py-12">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-day-text-secondary/30 dark:text-night-text-secondary/30 mb-4\" fill="none\" viewBox="0 0 24 24\" stroke="currentColor">
+                            <path strokeLinecap="round\" strokeLinejoin="round\" strokeWidth={1.5} d="M12 6.253v11.494m-9-5.747h18\" />
+                        </svg>
+                        <h3 className="font-serif text-xl mb-2">Your Dream Journal Awaits</h3>
+                        <p className="text-day-text-secondary dark:text-night-text-secondary mb-6 max-w-xs mx-auto">
+                            Begin your journey into the subconscious. Set an alarm and record your first dream upon waking.
+                        </p>
+                        <button
+                            onClick={() => window.dispatchEvent(new CustomEvent('openDreamScribe'))}
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-day-accent dark:bg-night-accent text-white rounded-full font-medium hover:opacity-90 transition-opacity"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg\" className="h-5 w-5\" fill="none\" viewBox="0 0 24 24\" stroke="currentColor">
+                                <path strokeLinecap="round\" strokeLinejoin="round\" strokeWidth={2} d="M12 4v16m8-8H4\" />
+                            </svg>
+                            Log Your First Dream
+                        </button>
+                    </div>
                 )}
             </div>
         </div>
