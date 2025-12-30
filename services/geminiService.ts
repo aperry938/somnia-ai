@@ -1,6 +1,16 @@
 import { GoogleGenAI, GenerateContentResponse, Modality, Type } from "@google/genai";
 import { ChatMessage, Dream, DreamAnalysis, DreamSynthesis, SleepHabitAnalysis, SleepAids, Biometrics } from '../types';
-import { requirePremium } from './subscriptionService';
+import { requirePremium, canUseAiAnalysis, useAiCredit, getRemainingCredits } from './subscriptionService';
+
+/**
+ * Error thrown when user has no AI credits remaining
+ */
+export class NoCreditsError extends Error {
+    constructor() {
+        super('No AI credits remaining this month. Upgrade to Premium for unlimited analyses.');
+        this.name = 'NoCreditsError';
+    }
+}
 
 let aiInstance: GoogleGenAI | null = null;
 
@@ -91,6 +101,11 @@ ${dreamText}
  * @throws Error if AI analysis fails
  */
 export const analyzeDream = async (dreamText: string, sleepAids?: SleepAids, biometrics?: Biometrics): Promise<DreamAnalysis> => {
+    // Check if user can use AI analysis (premium or has credits)
+    if (!canUseAiAnalysis()) {
+        throw new NoCreditsError();
+    }
+
     try {
         const ai = getAi();
         const prompt = createInitialAnalysisPrompt(dreamText, sleepAids, biometrics);
@@ -144,7 +159,12 @@ export const analyzeDream = async (dreamText: string, sleepAids?: SleepAids, bio
             },
         });
         const rawJson = response.text.trim();
-        return JSON.parse(rawJson) as DreamAnalysis;
+        const result = JSON.parse(rawJson) as DreamAnalysis;
+
+        // Consume credit only after successful analysis
+        useAiCredit();
+
+        return result;
     } catch (error) {
         console.error("Error analyzing dream:", error);
         throw new Error("Failed to analyze dream.");
