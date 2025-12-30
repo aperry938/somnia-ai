@@ -6,7 +6,7 @@
 
 ## 0. META-PROTOCOL
 
-- **Last Updated:** December 30, 2024 (Iteration 77 - Streak Notifications)
+- **Last Updated:** December 30, 2024 (Iteration 78 - Dream Vault Audit)
 - **Evolution Authority:** Oneironaut Protocol
 - **Sync Frequency:** Continuous (Infinite Mode)
 - **Location:** Project root (`APP_CORE_MANIFESTO.md`)
@@ -463,14 +463,16 @@ Single-page app with simple `currentPage` state. Adding a router would be premat
 - [x] **AI Coach Premium Gating** — Gate AI Sleep Coach behind credits/premium
 - [x] **Achievement System** — 6 achievements with badge UI in InsightsPage (3.44)
 - [x] **Streak Notifications** — Local push notifications for streak maintenance (3.45)
+- [x] **Tag Filtering** — Advanced filter UX in Chronicle with search + tag pills
 
 ### High Priority (Remaining)
 
-- [ ] **Tag Filtering Refinement** — Enhanced filter UX in Chronicle
+- [ ] **Dreamer Persona Selector** — Choose AI personality for dream analysis
+- [ ] **Sleep Quality Predictions** — AI predicts quality based on habits
 
 ### Medium Priority
 
-- [ ] **Tag Filtering Refinement** — Enhanced filter UX in Chronicle
+- [ ] **Dream Comparison Tool** — Compare two dreams side-by-side
 
 ### Exploratory
 
