@@ -12,7 +12,7 @@ import { predictSleepQuality, SleepPrediction } from '../../services/sleepPredic
 import { useWakeWindow } from '../../hooks/useWakeWindow';
 import { WakeWindowViz } from '../WakeWindowViz';
 import { PremiumBadge } from '../shared/PremiumBadge';
-import { isPremium } from '../../services/subscriptionService';
+import { isPremium } from '../../services/secureSubscriptionService';
 import { SleepDetectionSettingsCard } from '../settings/SleepDetectionSettingsCard';
 
 const DayRating: React.FC<{ rating: number | null; onRate: (rating: number) => void; }> = ({ rating, onRate }) => {

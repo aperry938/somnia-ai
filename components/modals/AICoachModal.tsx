@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { getCoachResponse } from '../../services/geminiService';
 import { useAppContext } from '../../contexts/AppContext';
 import { ChatMessage } from '../../types';
-import { canUseAiAnalysis, useAiCredit, isPremium, getRemainingCredits } from '../../services/subscriptionService';
+import { canUseAiAnalysis, useAiCredit, isPremium, getRemainingCredits } from '../../services/secureSubscriptionService';
 
 const COACH_HISTORY_KEY = 'somnia_coach_history';
 const MAX_SAVED_MESSAGES = 20; // Limit saved history to prevent storage bloat

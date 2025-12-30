@@ -1,6 +1,6 @@
 import { GoogleGenAI, GenerateContentResponse, Modality, Type } from "@google/genai";
 import { ChatMessage, Dream, DreamAnalysis, DreamSynthesis, SleepHabitAnalysis, SleepAids, Biometrics, AnalysisPersonality } from '../types';
-import { requirePremium, canUseAiAnalysis, useAiCredit, getRemainingCredits } from './subscriptionService';
+import { requirePremium, canUseAiAnalysis, useAiCredit, getRemainingCredits } from './secureSubscriptionService';
 
 /**
  * Error thrown when user has no AI credits remaining

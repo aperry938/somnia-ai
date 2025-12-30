@@ -162,6 +162,83 @@ export function canAccessFeature(feature: PremiumFeature): boolean {
     return isPremium();
 }
 
+// ============================================
+// BACKWARD COMPATIBILITY: AI Credit Functions
+// (Enables drop-in replacement of old subscriptionService)
+// ============================================
+
+const CREDITS_KEY = 'somnia_ai_credits';
+const CREDITS_RESET_KEY = 'somnia_credits_reset_date';
+const FREE_TIER_AI_CREDITS = 3;
+
+interface CreditState {
+    remaining: number;
+    resetDate: string;
+}
+
+/**
+ * Get current credit state for AI analyses
+ * Credits reset on the 1st of each month
+ */
+export function getCredits(): CreditState {
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${now.getMonth() + 1}`;
+    const storedResetDate = localStorage.getItem(CREDITS_RESET_KEY);
+
+    // Check if we need to reset credits (new month)
+    if (storedResetDate !== currentMonth) {
+        localStorage.setItem(CREDITS_KEY, String(FREE_TIER_AI_CREDITS));
+        localStorage.setItem(CREDITS_RESET_KEY, currentMonth);
+        return { remaining: FREE_TIER_AI_CREDITS, resetDate: currentMonth };
+    }
+
+    const remaining = parseInt(localStorage.getItem(CREDITS_KEY) || String(FREE_TIER_AI_CREDITS), 10);
+    return { remaining, resetDate: currentMonth };
+}
+
+/**
+ * Check if user can use an AI analysis
+ * Premium users: always true
+ * Free users: true if credits remaining
+ */
+export function canUseAiAnalysis(): boolean {
+    if (isPremium()) return true;
+    return getCredits().remaining > 0;
+}
+
+/**
+ * Consume one AI analysis credit
+ * Returns true if successful, false if no credits remaining
+ */
+export function useAiCredit(): boolean {
+    if (isPremium()) return true; // Premium doesn't consume credits
+
+    const credits = getCredits();
+    if (credits.remaining <= 0) return false;
+
+    localStorage.setItem(CREDITS_KEY, String(credits.remaining - 1));
+    window.dispatchEvent(new CustomEvent('creditsChanged', { detail: getCredits() }));
+    return true;
+}
+
+/**
+ * Get remaining credits for display
+ */
+export function getRemainingCredits(): number {
+    if (isPremium()) return -1; // -1 indicates unlimited
+    return getCredits().remaining;
+}
+
+/**
+ * Guard function to wrap premium features
+ * Throws error if not subscribed
+ */
+export function requirePremium(feature: PremiumFeature): void {
+    if (!canAccessFeature(feature)) {
+        throw new Error(`Premium subscription required for: ${PREMIUM_FEATURES[feature].name}`);
+    }
+}
+
 /**
  * Create checkout session for subscription
  */

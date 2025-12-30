@@ -21,7 +21,7 @@ import { DreamStreakCalendar } from '../insights/DreamStreakCalendar';
 import { RecurringThemes } from '../insights/RecurringThemes';
 import { InsightsGrid } from '../insights/InsightsGrid';
 import { PremiumBadge } from '../shared/PremiumBadge';
-import { canUseAiAnalysis, useAiCredit, isPremium } from '../../services/subscriptionService';
+import { canUseAiAnalysis, useAiCredit, isPremium } from '../../services/secureSubscriptionService';
 import { DreamCompareModal } from '../modals/DreamCompareModal';
 
 

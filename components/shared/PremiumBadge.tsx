@@ -1,6 +1,17 @@
-import React, { useState } from 'react';
-import { PremiumFeature, isPremium, PREMIUM_FEATURES } from '../../services/subscriptionService';
-import { PaywallModal } from '../modals/PaywallModal';
+import React, { useState, useMemo } from 'react';
+import { PremiumFeature, isPremium, PREMIUM_FEATURES } from '../../services/secureSubscriptionService';
+import { SecurePaywallModal } from '../modals/SecurePaywallModal';
+
+// Generate or retrieve a persistent device ID for pre-auth purchases
+function getDeviceId(): string {
+    const KEY = 'somnia_device_id';
+    let id = localStorage.getItem(KEY);
+    if (!id) {
+        id = `device_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+        localStorage.setItem(KEY, id);
+    }
+    return id;
+}
 
 interface PremiumBadgeProps {
     feature: PremiumFeature;
@@ -21,6 +32,7 @@ export const PremiumBadge: React.FC<PremiumBadgeProps> = ({
     showLabel = true,
 }) => {
     const [showPaywall, setShowPaywall] = useState(false);
+    const deviceId = useMemo(() => getDeviceId(), []);
 
     // Don't show badge if user is premium
     if (isPremium()) {
@@ -45,10 +57,11 @@ export const PremiumBadge: React.FC<PremiumBadgeProps> = ({
                     {showLabel && 'PRO'}
                 </span>
             </button>
-            <PaywallModal
+            <SecurePaywallModal
                 isOpen={showPaywall}
                 onClose={() => setShowPaywall(false)}
                 feature={feature}
+                userId={deviceId}
             />
         </>
     );
