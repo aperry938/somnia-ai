@@ -9,6 +9,7 @@ import { detectRecurringPatterns, formatPatternName } from '../../constants/drea
 import { WeeklyDigest } from '../insights/WeeklyDigest';
 import { GlobalTrendsCard } from '../insights/GlobalTrendsCard';
 import { SentimentChart } from '../insights/SentimentChart';
+import { AchievementsCard } from '../insights/AchievementsCard';
 import { calculateUserStats } from '../../services/userStatsService';
 import { PremiumBadge } from '../shared/PremiumBadge';
 import { canUseAiAnalysis, useAiCredit, isPremium } from '../../services/subscriptionService';
@@ -202,6 +203,8 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                 <div className="mt-8 mb-8 animate-fadeIn">
                     <GlobalTrendsCard />
                 </div>
+
+                <AchievementsCard dreams={dreams} />
 
                 {chartData.length > 1 && (
                     <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">

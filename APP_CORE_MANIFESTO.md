@@ -6,7 +6,7 @@
 
 ## 0. META-PROTOCOL
 
-- **Last Updated:** December 30, 2024 (Iteration 75 - Dream Vault Sync)
+- **Last Updated:** December 30, 2024 (Iteration 76 - Achievement System)
 - **Evolution Authority:** Oneironaut Protocol
 - **Sync Frequency:** Continuous (Infinite Mode)
 - **Location:** Project root (`APP_CORE_MANIFESTO.md`)
@@ -347,6 +347,14 @@ AI Sleep Coach now consumes credits for free users. Initial greeting is free, bu
 
 **Implementation:** `AICoachModal.tsx` → credit check in `handleSend`, `getRemainingCredits()` indicator
 
+### 3.44 Achievement System
+
+Gamification layer with 6 achievements tracking milestones (First Dream, 10/50 Dreams, Week/Month Streak, Lucid Tagger). Earned achievements persist in localStorage and display in a badge grid on InsightsPage.
+
+**Implementation:**
+- `services/achievementService.ts` → check, earn, and persist achievements
+- `components/insights/AchievementsCard.tsx` → Visual badge grid
+
 ---
 
 
@@ -447,10 +455,11 @@ Single-page app with simple `currentPage` state. Adding a router would be premat
 - [x] **AI Sleep Coach Memory** — Persistent history in AICoachModal (3.15)
 - [x] **Premium Feature Gating** — PremiumBadge UI for monetization (3.42)
 - [x] **AI Coach Premium Gating** — Gate AI Sleep Coach behind credits/premium
+- [x] **Achievement System** — 6 achievements with badge UI in InsightsPage (3.44)
 
 ### High Priority (Remaining)
 
-- [ ] **Achievement System** — Unlock badges for streaks and milestones
+- [ ] **Streak Notifications** — Local push notifications for streak maintenance
 
 ### Medium Priority
 
