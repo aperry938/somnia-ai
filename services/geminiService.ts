@@ -1,5 +1,6 @@
 import { GoogleGenAI, GenerateContentResponse, Modality, Type } from "@google/genai";
 import { ChatMessage, Dream, DreamAnalysis, DreamSynthesis, SleepHabitAnalysis, SleepAids, Biometrics } from '../types';
+import { requirePremium } from './subscriptionService';
 
 let aiInstance: GoogleGenAI | null = null;
 
