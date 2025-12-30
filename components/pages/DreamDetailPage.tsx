@@ -3,13 +3,23 @@ import { useAppContext } from '../../contexts/AppContext';
 import { analyzeDream, generateDreamImage, generateDreamTitle, DreamArtStyle, DREAM_ART_STYLES } from '../../services/geminiService';
 import { DreamChatModal } from '../modals/DreamChatModal';
 import { ImageModal } from '../modals/ImageModal';
-import { SleepAids } from '../../types';
+import { SleepAids, DreamMood } from '../../types';
 import { AnalysisLoading, ImageGenerationLoading } from '../shared/LoadingStates';
 import { TagInput, COMMON_DREAM_TAGS } from '../shared/TagInput';
 import { findDreamSymbols, DreamSymbol } from '../../constants/dreamSymbols';
 import { useToast } from '../shared/Toast';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { speakText, stopSpeaking } from '../../services/ttsService';
+
+const MOOD_DISPLAY: Record<DreamMood, { emoji: string; label: string }> = {
+    joyful: { emoji: '😊', label: 'Joyful' },
+    peaceful: { emoji: '😌', label: 'Peaceful' },
+    neutral: { emoji: '😐', label: 'Neutral' },
+    confused: { emoji: '😕', label: 'Confused' },
+    anxious: { emoji: '😰', label: 'Anxious' },
+    sad: { emoji: '😢', label: 'Sad' },
+    fearful: { emoji: '😨', label: 'Fearful' },
+};
 
 // Evening Reflection Display Component
 const EveningReflectionDisplay: React.FC<{ aids: SleepAids }> = ({ aids }) => {
@@ -310,7 +320,15 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                     <div className="w-full h-64 rounded-lg bg-gray-200 dark:bg-gray-700 mb-6 flex items-center justify-center text-day-text-secondary">Image failed to load</div>
                 )}
 
-                <p className="text-day-text-secondary dark:text-night-text-secondary">{date.toLocaleString()}</p>
+                <p className="text-day-text-secondary dark:text-night-text-secondary flex items-center gap-2">
+                    <span>{date.toLocaleString()}</span>
+                    {dream.mood && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-day-accent/10 dark:bg-night-accent/10 rounded-full text-sm">
+                            <span>{MOOD_DISPLAY[dream.mood].emoji}</span>
+                            <span className="text-day-accent dark:text-night-accent">{MOOD_DISPLAY[dream.mood].label}</span>
+                        </span>
+                    )}
+                </p>
                 <div className="flex items-center gap-2 mt-2 mb-4">
                     <h2 className="font-serif text-3xl">{dream.title}</h2>
                     <button
