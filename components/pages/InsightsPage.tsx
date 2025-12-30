@@ -12,6 +12,7 @@ import { SentimentChart } from '../insights/SentimentChart';
 import { AchievementsCard } from '../insights/AchievementsCard';
 import { calculateUserStats } from '../../services/userStatsService';
 import { DreamCalendar } from '../insights/DreamCalendar';
+import { DreamWordCloud } from '../insights/DreamWordCloud';
 import { PremiumBadge } from '../shared/PremiumBadge';
 import { canUseAiAnalysis, useAiCredit, isPremium } from '../../services/subscriptionService';
 import { DreamCompareModal } from '../modals/DreamCompareModal';
@@ -202,6 +203,7 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
 
                 <WeeklyDigest dreams={dreams} />
                 <DreamCalendar dreams={dreams} />
+                <DreamWordCloud dreams={dreams} />
                 <BiometricsCard />
 
                 <div className="mt-8 mb-8 animate-fadeIn">

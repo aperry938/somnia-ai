@@ -6,7 +6,7 @@
 
 ## 0. META-PROTOCOL
 
-- **Last Updated:** December 30, 2024 (Iteration 83 - Dream Calendar View)
+- **Last Updated:** December 30, 2024 (Iteration 84 - Dream Word Cloud)
 - **Evolution Authority:** Oneironaut Protocol
 - **Sync Frequency:** Continuous (Infinite Mode)
 - **Location:** Project root (`APP_CORE_MANIFESTO.md`)
@@ -490,11 +490,12 @@ Single-page app with simple `currentPage` state. Adding a router would be premat
 - [x] **Dream Comparison Tool** — Compare two dreams side-by-side (3.47)
 - [x] **Night Mode Auto-Switch** — Auto-theme based on sunset/sunrise (3.48)
 - [x] **Dream Calendar View** — GitHub-style heatmap in InsightsPage (3.49)
+- [x] **Dream Word Cloud** — Visualize recurring words with frequency sizing (3.50)
 
 ### High Priority (Remaining)
 
 - [ ] **Weekly Dream Digest** — Summarized email of weekly dreams
-- [ ] **Dream Word Cloud** — Visualize recurring words across dreams
+- [ ] **AI Dream Narrator** — TTS narration of dream text and analysis
 
 ### Exploratory
 
