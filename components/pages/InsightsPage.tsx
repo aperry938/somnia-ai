@@ -19,6 +19,7 @@ import { SleepDurationChart } from '../insights/SleepDurationChart';
 import { DreamLengthInsights } from '../insights/DreamLengthInsights';
 import { DreamStreakCalendar } from '../insights/DreamStreakCalendar';
 import { RecurringThemes } from '../insights/RecurringThemes';
+import { InsightsGrid } from '../insights/InsightsGrid';
 import { PremiumBadge } from '../shared/PremiumBadge';
 import { canUseAiAnalysis, useAiCredit, isPremium } from '../../services/subscriptionService';
 import { DreamCompareModal } from '../modals/DreamCompareModal';
@@ -216,6 +217,13 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                 <DreamLengthInsights dreams={dreams} />
                 <DreamStreakCalendar dreams={dreams} />
                 <RecurringThemes dreams={dreams} />
+
+                {/* All categorized insights */}
+                <div className="mt-8">
+                    <h2 className="font-serif text-2xl text-center mb-4">Dream Analysis</h2>
+                    <InsightsGrid dreams={dreams} />
+                </div>
+
                 <BiometricsCard />
 
                 <div className="mt-8 mb-8 animate-fadeIn">

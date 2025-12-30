@@ -13,6 +13,7 @@ import { useWakeWindow } from '../../hooks/useWakeWindow';
 import { WakeWindowViz } from '../WakeWindowViz';
 import { PremiumBadge } from '../shared/PremiumBadge';
 import { isPremium } from '../../services/subscriptionService';
+import { SleepDetectionSettingsCard } from '../settings/SleepDetectionSettingsCard';
 
 const DayRating: React.FC<{ rating: number | null; onRate: (rating: number) => void; }> = ({ rating, onRate }) => {
     return (
@@ -302,6 +303,9 @@ export const SleepPage: React.FC = () => {
                             </div>
                         </div>
                     )}
+
+                    {/* Sleep Detection Settings */}
+                    <SleepDetectionSettingsCard />
 
                     <div className="pt-4 pb-8">
                         <button
