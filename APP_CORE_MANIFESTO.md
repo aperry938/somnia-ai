@@ -6,7 +6,7 @@
 
 ## 0. META-PROTOCOL
 
-- **Last Updated:** December 30, 2024 (Iteration 81 - Dream Comparison Tool)
+- **Last Updated:** December 30, 2024 (Iteration 82 - Night Mode Auto-Switch)
 - **Evolution Authority:** Oneironaut Protocol
 - **Sync Frequency:** Continuous (Infinite Mode)
 - **Location:** Project root (`APP_CORE_MANIFESTO.md`)
@@ -376,6 +376,12 @@ Side-by-side comparison of two dreams with dropdown selectors, image/metadata/an
 
 **Implementation:** `components/modals/DreamCompareModal.tsx` → integrated in InsightsPage
 
+### 3.48 Night Mode Auto-Switch
+
+Auto-theme based on sunset/sunrise times using geolocation + sunrise-sunset.org API. Falls back to 7am-7pm if geolocation unavailable. Results cached in localStorage for 12 hours.
+
+**Implementation:** `hooks/useSunTimes.ts` → integrated into `useTheme.ts`
+
 ---
 
 
@@ -482,11 +488,12 @@ Single-page app with simple `currentPage` state. Adding a router would be premat
 - [x] **Dreamer Persona Selector** — Choose AI personality for dream analysis (3.46)
 - [x] **Sleep Quality Predictions** — Predict quality based on habits in SleepPage
 - [x] **Dream Comparison Tool** — Compare two dreams side-by-side (3.47)
+- [x] **Night Mode Auto-Switch** — Auto-theme based on sunset/sunrise (3.48)
 
 ### High Priority (Remaining)
 
-- [ ] **Night Mode Auto-Switch** — Auto-theme based on sunset/sunrise
 - [ ] **Weekly Dream Digest** — Summarized email of weekly dreams
+- [ ] **Dream Calendar View** — Calendar visualization of dream frequency
 
 ### Exploratory
 
