@@ -6,7 +6,7 @@
 
 ## 0. META-PROTOCOL
 
-- **Last Updated:** December 30, 2024 (Iteration 79 - Dreamer Persona Selector)
+- **Last Updated:** December 30, 2024 (Iteration 80 - Dream Vault Audit II)
 - **Evolution Authority:** Oneironaut Protocol
 - **Sync Frequency:** Continuous (Infinite Mode)
 - **Location:** Project root (`APP_CORE_MANIFESTO.md`)
@@ -474,14 +474,12 @@ Single-page app with simple `currentPage` state. Adding a router would be premat
 - [x] **Streak Notifications** — Local push notifications for streak maintenance (3.45)
 - [x] **Tag Filtering** — Advanced filter UX in Chronicle with search + tag pills
 - [x] **Dreamer Persona Selector** — Choose AI personality for dream analysis (3.46)
+- [x] **Sleep Quality Predictions** — Predict quality based on habits in SleepPage
 
 ### High Priority (Remaining)
 
-- [ ] **Sleep Quality Predictions** — AI predicts quality based on habits
-
-### Medium Priority
-
 - [ ] **Dream Comparison Tool** — Compare two dreams side-by-side
+- [ ] **Night Mode Auto-Switch** — Auto-theme based on sunset/sunrise
 
 ### Exploratory
 
