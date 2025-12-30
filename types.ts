@@ -119,3 +119,4 @@ export interface SyncAction {
 }
 
 export type CoachPersonality = 'mystical' | 'scientific';
+export type AnalysisPersonality = 'oneironaut' | 'jungian' | 'scientific';

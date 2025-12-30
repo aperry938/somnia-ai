@@ -90,7 +90,7 @@ const AccordionItem: React.FC<{ title: string; content: string; isOpenDefault?: 
 
 // Main Dream Detail Component
 export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => void; }> = ({ dreamId, onBack }) => {
-    const { getDreamById, updateDream, deleteDream, biometrics, dreams } = useAppContext();
+    const { getDreamById, updateDream, deleteDream, biometrics, dreams, analysisPersonality, setAnalysisPersonality } = useAppContext();
     const { showToast } = useToast();
     const dream = dreamId ? getDreamById(dreamId) : null;
     const [analysisState, setAnalysisState] = useState<'pending' | 'loading' | 'success' | 'error'>('pending');
@@ -129,7 +129,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
         setAnalysisState('loading');
         try {
             const [analysisData, imageB64] = await Promise.all([
-                analyzeDream(dream.dreamText, dream.sleepAids, biometrics),
+                analyzeDream(dream.dreamText, dream.sleepAids, biometrics, analysisPersonality),
                 generateDreamImage(dream.dreamText, selectedArtStyle)
             ]);
 
@@ -144,7 +144,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
             console.error(e);
             setAnalysisState('error');
         }
-    }, [dream, updateDream]);
+    }, [dream, updateDream, analysisPersonality, selectedArtStyle, biometrics]);
 
     useEffect(() => {
         if (analysisState === 'pending') {
@@ -239,6 +239,21 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                                         }`}
                                 >
                                     {DREAM_ART_STYLES[style].name}
+                                </button>
+                            ))}
+                        </div>
+                        <p className="text-sm text-day-text-secondary dark:text-night-text-secondary mt-4 mb-2">Choose analysis persona:</p>
+                        <div className="flex flex-wrap gap-2">
+                            {(['oneironaut', 'jungian', 'scientific'] as const).map(p => (
+                                <button
+                                    key={p}
+                                    onClick={() => setAnalysisPersonality(p)}
+                                    className={`px-3 py-1.5 rounded-full text-sm transition-colors ${analysisPersonality === p
+                                        ? 'bg-indigo-500 dark:bg-indigo-600 text-white'
+                                        : 'bg-white/50 dark:bg-black/20 hover:bg-white/70 dark:hover:bg-black/30'
+                                        }`}
+                                >
+                                    {p === 'oneironaut' ? 'The Oneironaut' : p === 'jungian' ? 'Shadow Walker' : 'Dr. REM'}
                                 </button>
                             ))}
                         </div>

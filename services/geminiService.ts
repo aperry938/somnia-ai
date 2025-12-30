@@ -1,5 +1,5 @@
 import { GoogleGenAI, GenerateContentResponse, Modality, Type } from "@google/genai";
-import { ChatMessage, Dream, DreamAnalysis, DreamSynthesis, SleepHabitAnalysis, SleepAids, Biometrics } from '../types';
+import { ChatMessage, Dream, DreamAnalysis, DreamSynthesis, SleepHabitAnalysis, SleepAids, Biometrics, AnalysisPersonality } from '../types';
 import { requirePremium, canUseAiAnalysis, useAiCredit, getRemainingCredits } from './subscriptionService';
 
 /**
@@ -35,7 +35,24 @@ const safetySettings = [
     { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
 ];
 
-function createInitialAnalysisPrompt(dreamText: string, sleepAids?: SleepAids, biometrics?: Biometrics): string {
+function createInitialAnalysisPrompt(dreamText: string, sleepAids?: SleepAids, biometrics?: Biometrics, personality: AnalysisPersonality = 'oneironaut'): string {
+    const personas = {
+        oneironaut: {
+            name: 'The Oneironaut',
+            style: 'a wise, deeply insightful, and compassionate guide. Your analysis must be an original work of insight built from a synthesis of psychology (Freud, Jung), mythology (Campbell), and somatic wisdom (van der Kolk, Solms). Do not cite these sources; embody their wisdom.',
+        },
+        jungian: {
+            name: 'The Shadow Walker',
+            style: 'a Jungian analyst exploring the collective unconscious. Focus on archetypes (Shadow, Anima/Animus, Wise Old Man/Woman), the process of individuation, and universal symbolic patterns. Reference mythological parallels.',
+        },
+        scientific: {
+            name: 'Dr. REM',
+            style: 'a neuroscientist studying dreams. Your analysis should be grounded in cognitive science, memory consolidation theory, and emotional processing research. Focus on what the brain might be doing during this dream.',
+        }
+    };
+
+    const persona = personas[personality];
+
     let context = '';
 
     // Add biometrics context if available
@@ -71,7 +88,7 @@ function createInitialAnalysisPrompt(dreamText: string, sleepAids?: SleepAids, b
 
     return `
 I. PRIME DIRECTIVE: PERSONA & PHILOSOPHY
-You are The Oneironaut. Your function is to illuminate the hidden meaning within a user's dream. Your persona is that of a wise, deeply insightful, and compassionate guide. Your analysis must be an original work of insight built from a synthesis of psychology (Freud, Jung), mythology (Campbell), and somatic wisdom (van der Kolk, Solms). Do not cite these sources; embody their wisdom. Your goal is to provide an actionable insight that can be integrated into the user's waking life.
+You are ${persona.name}. Your function is to illuminate the hidden meaning within a user's dream. Your persona is that of ${persona.style} Your goal is to provide an actionable insight that can be integrated into the user's waking life.
 
 II. THE ALCHEMICAL METHOD: INSIGHT-FIRST SYNTHESIS
 Your entire response must be a single, valid JSON object. For every dream event you reference, immediately deliver the core symbolic or psychological meaning.
@@ -100,7 +117,7 @@ ${dreamText}
  * @returns Promise<DreamAnalysis> - The structured analysis of the dream
  * @throws Error if AI analysis fails
  */
-export const analyzeDream = async (dreamText: string, sleepAids?: SleepAids, biometrics?: Biometrics): Promise<DreamAnalysis> => {
+export const analyzeDream = async (dreamText: string, sleepAids?: SleepAids, biometrics?: Biometrics, personality: AnalysisPersonality = 'oneironaut'): Promise<DreamAnalysis> => {
     // Check if user can use AI analysis (premium or has credits)
     if (!canUseAiAnalysis()) {
         throw new NoCreditsError();
@@ -108,7 +125,7 @@ export const analyzeDream = async (dreamText: string, sleepAids?: SleepAids, bio
 
     try {
         const ai = getAi();
-        const prompt = createInitialAnalysisPrompt(dreamText, sleepAids, biometrics);
+        const prompt = createInitialAnalysisPrompt(dreamText, sleepAids, biometrics, personality);
         const response: GenerateContentResponse = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: [{ parts: [{ text: prompt }] }],

@@ -6,7 +6,7 @@
 
 ## 0. META-PROTOCOL
 
-- **Last Updated:** December 30, 2024 (Iteration 78 - Dream Vault Audit)
+- **Last Updated:** December 30, 2024 (Iteration 79 - Dreamer Persona Selector)
 - **Evolution Authority:** Oneironaut Protocol
 - **Sync Frequency:** Continuous (Infinite Mode)
 - **Location:** Project root (`APP_CORE_MANIFESTO.md`)
@@ -361,6 +361,15 @@ Local push notifications remind users to maintain their dream logging streak. Fi
 
 **Implementation:** `hooks/useStreakNotification.ts` → localStorage-based once-per-day check
 
+### 3.46 Dreamer Persona Selector
+
+Users can choose from 3 AI personas for dream analysis: The Oneironaut (mystical synthesis), Shadow Walker (Jungian archetypes), or Dr. REM (neuroscience). Persisted in `analysisPersonality` localStorage.
+
+**Implementation:**
+- `types.ts` → `AnalysisPersonality` type
+- `geminiService.ts` → Persona-specific prompt generation
+- `DreamDetailPage.tsx` → Pre-analysis persona selector UI
+
 ---
 
 
@@ -464,10 +473,10 @@ Single-page app with simple `currentPage` state. Adding a router would be premat
 - [x] **Achievement System** — 6 achievements with badge UI in InsightsPage (3.44)
 - [x] **Streak Notifications** — Local push notifications for streak maintenance (3.45)
 - [x] **Tag Filtering** — Advanced filter UX in Chronicle with search + tag pills
+- [x] **Dreamer Persona Selector** — Choose AI personality for dream analysis (3.46)
 
 ### High Priority (Remaining)
 
-- [ ] **Dreamer Persona Selector** — Choose AI personality for dream analysis
 - [ ] **Sleep Quality Predictions** — AI predicts quality based on habits
 
 ### Medium Priority

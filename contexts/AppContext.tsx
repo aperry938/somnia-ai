@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode, useCallback } from 'react';
-import { Alarm, Dream, SleepAids, Biometrics, Theme, CoachPersonality } from '../types';
+import { Alarm, Dream, SleepAids, Biometrics, Theme, CoachPersonality, AnalysisPersonality } from '../types';
 import { enqueueAction } from '../services/syncService';
 
 interface AppContextType {
@@ -29,6 +29,8 @@ interface AppContextType {
     setCoachPersonality: (personality: CoachPersonality) => void;
     volume: number;
     setVolume: (volume: number) => void;
+    analysisPersonality: AnalysisPersonality;
+    setAnalysisPersonality: (personality: AnalysisPersonality) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -65,6 +67,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [themeOverride, setThemeOverride] = useLocalStorage<Theme | 'auto'>('somnia_theme_override', 'auto');
     const [coachPersonality, setCoachPersonality] = useLocalStorage<CoachPersonality>('somnia_coach_personality', 'mystical');
     const [volume, setVolume] = useLocalStorage<number>('somnia_volume', 0.5);
+    const [analysisPersonality, setAnalysisPersonality] = useLocalStorage<AnalysisPersonality>('somnia_analysis_personality', 'oneironaut');
     const [isScribeOpen, setIsScribeOpen] = useState(false);
 
     const addAlarm = (time: string, smartWake: boolean = false) => {
@@ -169,6 +172,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setCoachPersonality,
         volume,
         setVolume,
+        analysisPersonality,
+        setAnalysisPersonality,
     };
 
     return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
