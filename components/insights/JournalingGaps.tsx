@@ -9,12 +9,12 @@ export const JournalingGaps: React.FC<JournalingGapsProps> = ({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
-        const sorted = [...dreams].sort((a, b) => a.timestamp - b.timestamp);
+        const sorted = [...dreams].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
         let maxGap = 0;
         let totalGaps = 0;
 
         for (let i = 1; i < sorted.length; i++) {
-            const gap = (sorted[i].timestamp - sorted[i - 1].timestamp) / (1000 * 60 * 60 * 24);
+            const gap = (new Date(sorted[i].timestamp).getTime() - new Date(sorted[i - 1].timestamp).getTime()) / (1000 * 60 * 60 * 24);
             totalGaps += gap;
             if (gap > maxGap) maxGap = gap;
         }

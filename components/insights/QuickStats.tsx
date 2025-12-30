@@ -14,7 +14,7 @@ export const QuickStats: React.FC<QuickStatsProps> = ({ dreams }) => {
 
     const thisWeek = dreams.filter(d => new Date(d.timestamp) >= oneWeekAgo).length;
     const thisMonth = dreams.filter(d => new Date(d.timestamp) >= oneMonthAgo).length;
-    const withImages = dreams.filter(d => d.aiGeneratedImage).length;
+    const withImages = dreams.filter(d => d.imageUrl).length;
     const withAnalysis = dreams.filter(d => d.aiAnalysis).length;
 
     return (

@@ -10,7 +10,7 @@ export const AIDependency: React.FC<AIDependencyProps> = ({ dreams }) => {
         if (dreams.length < 5) return null;
 
         const withAI = dreams.filter(d => d.aiAnalysis).length;
-        const withImage = dreams.filter(d => d.aiGeneratedImage).length;
+        const withImage = dreams.filter(d => d.imageUrl).length;
 
         return {
             analyzed: withAI,

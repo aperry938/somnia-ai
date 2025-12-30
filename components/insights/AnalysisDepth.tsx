@@ -10,7 +10,7 @@ export const AnalysisDepth: React.FC<AnalysisDepthProps> = ({ dreams }) => {
         if (dreams.length < 5) return null;
 
         const withAnalysis = dreams.filter(d => d.aiAnalysis).length;
-        const withImage = dreams.filter(d => d.aiGeneratedImage).length;
+        const withImage = dreams.filter(d => d.imageUrl).length;
         const withTags = dreams.filter(d => d.tags && d.tags.length > 0).length;
         const withQuality = dreams.filter(d => d.sleepQuality !== null).length;
 

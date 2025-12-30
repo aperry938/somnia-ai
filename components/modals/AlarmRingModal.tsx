@@ -22,7 +22,12 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ onRecordDream, o
     const [currentPrompt] = useState(() => DREAM_PROMPTS[Math.floor(Math.random() * DREAM_PROMPTS.length)]);
     const [showInput, setShowInput] = useState(false);
 
-    const { isListening, transcript, startListening, stopListening, isSupported } = useSpeechRecognition();
+    // Callback for when speech is finalized
+    const handleFinalTranscript = useCallback((text: string) => {
+        setQuickNote(prev => prev + ' ' + text);
+    }, []);
+
+    const { isListening, interimTranscript, startListening, stopListening, isSupported } = useSpeechRecognition(handleFinalTranscript);
 
     useEffect(() => {
         playProgressiveAlarm();
@@ -31,12 +36,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ onRecordDream, o
         };
     }, []);
 
-    // Auto-update quick note with voice transcript
-    useEffect(() => {
-        if (transcript) {
-            setQuickNote(prev => prev + ' ' + transcript);
-        }
-    }, [transcript]);
+    // Show interim transcript as user speaks (no effect - just for display)
 
     const handleAction = useCallback((action: () => void) => {
         stopAlarmSound();
@@ -81,8 +81,8 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ onRecordDream, o
                         <button
                             onClick={toggleVoice}
                             className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto transition-all ${isListening
-                                    ? 'bg-red-500 animate-pulse scale-110'
-                                    : 'bg-white/20 hover:bg-white/30'
+                                ? 'bg-red-500 animate-pulse scale-110'
+                                : 'bg-white/20 hover:bg-white/30'
                                 }`}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">

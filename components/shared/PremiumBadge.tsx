@@ -84,6 +84,7 @@ export const PremiumGate: React.FC<PremiumGateProps> = ({
 }) => {
     const [showPaywall, setShowPaywall] = useState(false);
     const userIsPremium = isPremium();
+    const deviceId = useMemo(() => getDeviceId(), []);
 
     if (userIsPremium) {
         return <>{children}</>;
@@ -115,10 +116,11 @@ export const PremiumGate: React.FC<PremiumGateProps> = ({
                     </button>
                 </div>
             )}
-            <PaywallModal
+            <SecurePaywallModal
                 isOpen={showPaywall}
                 onClose={() => setShowPaywall(false)}
                 feature={feature}
+                userId={deviceId}
             />
         </>
     );

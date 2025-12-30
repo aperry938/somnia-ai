@@ -297,7 +297,7 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                             <button onClick={handleSynthesizeDreams} className="px-4 py-1 bg-red-500 text-white text-sm rounded-full">Retry</button>
                         </div>
                     ) : (
-                        <PremiumBadge feature="dream_weaving" className="w-full">
+                        <PremiumBadge feature="dream_synthesis" className="w-full">
                             <button onClick={handleSynthesizeDreams} disabled={isDreamSynthLoading || dreams.length < 3} className="w-full py-2 bg-day-accent dark:bg-night-accent text-white font-bold rounded-full disabled:opacity-50 disabled:cursor-not-allowed">
                                 {isDreamSynthLoading ? 'Analyzing...' : 'Synthesize Dream Themes'}
                             </button>
@@ -331,7 +331,7 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                             <button onClick={handleAnalyzeHabits} className="px-4 py-1 bg-red-500 text-white text-sm rounded-full">Retry</button>
                         </div>
                     ) : (
-                        <PremiumBadge feature="sleep_science" className="w-full">
+                        <PremiumBadge feature="sleep_habits" className="w-full">
                             <button onClick={handleAnalyzeHabits} disabled={isHabitLoading || dreams.filter(d => d.sleepQuality).length < 3} className="w-full py-2 bg-day-accent dark:bg-night-accent text-white font-bold rounded-full disabled:opacity-50 disabled:cursor-not-allowed">
                                 {isHabitLoading ? 'Analyzing...' : 'Analyze Sleep Habits'}
                             </button>

@@ -9,11 +9,11 @@ export const FirstDreamLastDream: React.FC<FirstDreamLastDreamProps> = ({ dreams
     const stats = useMemo(() => {
         if (dreams.length < 2) return null;
 
-        const sorted = [...dreams].sort((a, b) => a.timestamp - b.timestamp);
+        const sorted = [...dreams].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
         const first = sorted[0];
         const last = sorted[sorted.length - 1];
 
-        const daysSince = Math.floor((Date.now() - first.timestamp) / (1000 * 60 * 60 * 24));
+        const daysSince = Math.floor((Date.now() - new Date(first.timestamp).getTime()) / (1000 * 60 * 60 * 24));
         const dreamsPerMonth = dreams.length / (daysSince / 30) || 0;
 
         return {

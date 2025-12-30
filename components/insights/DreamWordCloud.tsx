@@ -30,7 +30,7 @@ const extractWords = (dreams: Dream[]): Map<string, number> => {
 
     dreams.forEach(dream => {
         const text = dream.dreamText.toLowerCase();
-        const words = text.match(/[a-z]+/g) || [];
+        const words: string[] = text.match(/[a-z]+/g) || [];
 
         words.forEach(word => {
             if (word.length > 3 && !STOP_WORDS.has(word)) {
