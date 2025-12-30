@@ -13,6 +13,7 @@ import { SadnessDreams } from './SadnessDreams';
 import { JoyDreams } from './JoyDreams';
 import { AngerDreams } from './AngerDreams';
 import { ConfusionDreams } from './ConfusionDreams';
+import { MoodTracker } from './MoodTracker';
 
 // Theme insights
 import { AdventureDreams } from './AdventureDreams';
@@ -140,7 +141,7 @@ export const InsightsGrid: React.FC<InsightsGridProps> = ({ dreams }) => {
 
                 {activeTab === 'Emotions' && (
                     <>
-                        <JoyDreams dreams={dreams} />
+                        <MoodTracker dreams={dreams} />
                         <FearDreams dreams={dreams} />
                         <AngerDreams dreams={dreams} />
                         <SadnessDreams dreams={dreams} />

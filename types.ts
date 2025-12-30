@@ -31,7 +31,11 @@ export interface Dream {
     chatHistory: ChatMessage[];
     sleepAids?: SleepAids;
     tags?: string[];
+    mood?: DreamMood; // Emotional tone of the dream
 }
+
+// Moods for tracking emotional patterns
+export type DreamMood = 'joyful' | 'peaceful' | 'anxious' | 'sad' | 'fearful' | 'confused' | 'neutral';
 
 export interface DreamAnalysis {
     title: string;
