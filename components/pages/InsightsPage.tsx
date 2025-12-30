@@ -13,6 +13,7 @@ import { AchievementsCard } from '../insights/AchievementsCard';
 import { calculateUserStats } from '../../services/userStatsService';
 import { PremiumBadge } from '../shared/PremiumBadge';
 import { canUseAiAnalysis, useAiCredit, isPremium } from '../../services/subscriptionService';
+import { DreamCompareModal } from '../modals/DreamCompareModal';
 
 
 
@@ -94,6 +95,7 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
     const [habitAnalysis, setHabitAnalysis] = useState<SleepHabitAnalysis | null>(null);
     const [isHabitLoading, setIsHabitLoading] = useState(false);
     const [habitError, setHabitError] = useState<string | null>(null);
+    const [isCompareOpen, setIsCompareOpen] = useState(false);
 
     const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -168,7 +170,7 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
     const stats = useMemo(() => calculateUserStats(dreams), [dreams]);
 
     return (
-        <div>
+        <>
             <h1 className="font-serif page-title text-4xl text-center mb-8">Insights</h1>
             <div className="space-y-8 max-w-2xl mx-auto">
                 {/* Stats Card */}
@@ -362,7 +364,22 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                         </button>
                     </div>
                 </div>
+
+                {/* Compare Dreams Button */}
+                {dreams.length >= 2 && (
+                    <button
+                        onClick={() => setIsCompareOpen(true)}
+                        className="w-full py-3 bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-medium rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+                        </svg>
+                        Compare Dreams
+                    </button>
+                )}
             </div>
-        </div>
+
+            {isCompareOpen && <DreamCompareModal dreams={dreams} onClose={() => setIsCompareOpen(false)} />}
+        </>
     );
 };

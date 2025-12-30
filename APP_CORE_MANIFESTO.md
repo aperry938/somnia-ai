@@ -6,7 +6,7 @@
 
 ## 0. META-PROTOCOL
 
-- **Last Updated:** December 30, 2024 (Iteration 80 - Dream Vault Audit II)
+- **Last Updated:** December 30, 2024 (Iteration 81 - Dream Comparison Tool)
 - **Evolution Authority:** Oneironaut Protocol
 - **Sync Frequency:** Continuous (Infinite Mode)
 - **Location:** Project root (`APP_CORE_MANIFESTO.md`)
@@ -370,6 +370,12 @@ Users can choose from 3 AI personas for dream analysis: The Oneironaut (mystical
 - `geminiService.ts` → Persona-specific prompt generation
 - `DreamDetailPage.tsx` → Pre-analysis persona selector UI
 
+### 3.47 Dream Comparison Tool
+
+Side-by-side comparison of two dreams with dropdown selectors, image/metadata/analysis preview, and tag diff visualization (shared/unique left/right).
+
+**Implementation:** `components/modals/DreamCompareModal.tsx` → integrated in InsightsPage
+
 ---
 
 
@@ -475,11 +481,12 @@ Single-page app with simple `currentPage` state. Adding a router would be premat
 - [x] **Tag Filtering** — Advanced filter UX in Chronicle with search + tag pills
 - [x] **Dreamer Persona Selector** — Choose AI personality for dream analysis (3.46)
 - [x] **Sleep Quality Predictions** — Predict quality based on habits in SleepPage
+- [x] **Dream Comparison Tool** — Compare two dreams side-by-side (3.47)
 
 ### High Priority (Remaining)
 
-- [ ] **Dream Comparison Tool** — Compare two dreams side-by-side
 - [ ] **Night Mode Auto-Switch** — Auto-theme based on sunset/sunrise
+- [ ] **Weekly Dream Digest** — Summarized email of weekly dreams
 
 ### Exploratory
 
