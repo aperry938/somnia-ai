@@ -43,8 +43,8 @@ export const PRICING = {
 // Feature descriptions for paywall
 export const PREMIUM_FEATURES: Record<PremiumFeature, { name: string; description: string }> = {
     ai_analysis: {
-        name: 'AI Dream Analysis',
-        description: 'Deep psychological interpretation of your dreams by The Oneironaut',
+        name: 'Unlimited AI Dream Analysis',
+        description: 'Unlimited psychological interpretations (free tier: 3/month)',
     },
     ai_imagery: {
         name: 'Dream Visualization',
@@ -75,16 +75,87 @@ export const PREMIUM_FEATURES: Record<PremiumFeature, { name: string; descriptio
         description: 'Password-protected encrypted exports of your dream journal',
     },
     unlimited_alarms: {
-        name: 'Unlimited Alarms',
-        description: 'Create as many alarms as you need (free tier: 3 max)',
+        name: 'Priority Features',
+        description: 'Early access to new features and priority support',
     },
 };
 
 // Free tier limits
 export const FREE_TIER_LIMITS = {
-    maxAlarms: 3,
+    maxAlarms: 10, // Generous alarm limit (core feature)
+    aiAnalysesPerMonth: 3, // AI analyses available to free users monthly
     maxSoundscapes: ['white', 'pink', 'brown'], // Only noise types, no binaural
 } as const;
+
+// Credit storage keys
+const CREDITS_KEY = 'somnia_ai_credits';
+const CREDITS_RESET_KEY = 'somnia_credits_reset_date';
+
+// Credit state interface
+export interface CreditState {
+    remaining: number;
+    resetDate: string;
+}
+
+/**
+ * Get current credit state for AI analyses
+ * Credits reset on the 1st of each month
+ */
+export const getCredits = (): CreditState => {
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${now.getMonth() + 1}`;
+    const storedResetDate = localStorage.getItem(CREDITS_RESET_KEY);
+
+    // Check if we need to reset credits (new month)
+    if (storedResetDate !== currentMonth) {
+        // Reset credits for new month
+        localStorage.setItem(CREDITS_KEY, String(FREE_TIER_LIMITS.aiAnalysesPerMonth));
+        localStorage.setItem(CREDITS_RESET_KEY, currentMonth);
+        return {
+            remaining: FREE_TIER_LIMITS.aiAnalysesPerMonth,
+            resetDate: currentMonth,
+        };
+    }
+
+    const remaining = parseInt(localStorage.getItem(CREDITS_KEY) || String(FREE_TIER_LIMITS.aiAnalysesPerMonth), 10);
+    return {
+        remaining,
+        resetDate: currentMonth,
+    };
+};
+
+/**
+ * Check if user can use an AI analysis
+ * Premium users: always true
+ * Free users: true if credits remaining
+ */
+export const canUseAiAnalysis = (): boolean => {
+    if (isPremium()) return true;
+    return getCredits().remaining > 0;
+};
+
+/**
+ * Consume one AI analysis credit
+ * Returns true if successful, false if no credits remaining
+ */
+export const useAiCredit = (): boolean => {
+    if (isPremium()) return true; // Premium doesn't consume credits
+
+    const credits = getCredits();
+    if (credits.remaining <= 0) return false;
+
+    localStorage.setItem(CREDITS_KEY, String(credits.remaining - 1));
+    window.dispatchEvent(new CustomEvent('creditsChanged', { detail: getCredits() }));
+    return true;
+};
+
+/**
+ * Get remaining credits for display
+ */
+export const getRemainingCredits = (): number => {
+    if (isPremium()) return -1; // -1 indicates unlimited
+    return getCredits().remaining;
+};
 
 // Local storage key
 const SUBSCRIPTION_KEY = 'somnia_subscription';
