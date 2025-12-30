@@ -16,6 +16,7 @@ import { DreamWordCloud } from '../insights/DreamWordCloud';
 import { DreamMoodTracker } from '../insights/DreamMoodTracker';
 import { LucidDreamProgress } from '../insights/LucidDreamProgress';
 import { SleepDurationChart } from '../insights/SleepDurationChart';
+import { DreamLengthInsights } from '../insights/DreamLengthInsights';
 import { PremiumBadge } from '../shared/PremiumBadge';
 import { canUseAiAnalysis, useAiCredit, isPremium } from '../../services/subscriptionService';
 import { DreamCompareModal } from '../modals/DreamCompareModal';
@@ -210,6 +211,7 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                 <DreamMoodTracker dreams={dreams} />
                 <LucidDreamProgress dreams={dreams} />
                 <SleepDurationChart dreams={dreams} />
+                <DreamLengthInsights dreams={dreams} />
                 <BiometricsCard />
 
                 <div className="mt-8 mb-8 animate-fadeIn">
