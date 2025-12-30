@@ -60,7 +60,21 @@ export const MoodTracker: React.FC<MoodTrackerProps> = ({ dreams }) => {
     }, [dreams]);
 
     if (!stats) {
-        return null; // Not enough data
+        // Show helpful empty state for new users
+        return (
+            <div className="bg-gradient-to-br from-pink-500/10 to-purple-500/10 border border-pink-500/20 dark:border-purple-500/30 rounded-xl p-4">
+                <h3 className="font-serif text-lg mb-3 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-pink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Dream Mood Patterns
+                </h3>
+                <div className="text-center py-4 text-day-text-secondary dark:text-night-text-secondary">
+                    <p className="text-sm">Log 3+ dreams with mood to unlock patterns</p>
+                    <p className="text-xs mt-1 opacity-70">Select a mood when recording dreams</p>
+                </div>
+            </div>
+        );
     }
 
     return (
