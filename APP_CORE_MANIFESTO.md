@@ -6,7 +6,7 @@
 
 ## 0. META-PROTOCOL
 
-- **Last Updated:** December 30, 2024 (Iteration 76 - Achievement System)
+- **Last Updated:** December 30, 2024 (Iteration 77 - Streak Notifications)
 - **Evolution Authority:** Oneironaut Protocol
 - **Sync Frequency:** Continuous (Infinite Mode)
 - **Location:** Project root (`APP_CORE_MANIFESTO.md`)
@@ -355,6 +355,12 @@ Gamification layer with 6 achievements tracking milestones (First Dream, 10/50 D
 - `services/achievementService.ts` → check, earn, and persist achievements
 - `components/insights/AchievementsCard.tsx` → Visual badge grid
 
+### 3.45 Streak Notifications
+
+Local push notifications remind users to maintain their dream logging streak. Fires once per day if user has an active streak but hasn't logged a dream today.
+
+**Implementation:** `hooks/useStreakNotification.ts` → localStorage-based once-per-day check
+
 ---
 
 
@@ -456,10 +462,11 @@ Single-page app with simple `currentPage` state. Adding a router would be premat
 - [x] **Premium Feature Gating** — PremiumBadge UI for monetization (3.42)
 - [x] **AI Coach Premium Gating** — Gate AI Sleep Coach behind credits/premium
 - [x] **Achievement System** — 6 achievements with badge UI in InsightsPage (3.44)
+- [x] **Streak Notifications** — Local push notifications for streak maintenance (3.45)
 
 ### High Priority (Remaining)
 
-- [ ] **Streak Notifications** — Local push notifications for streak maintenance
+- [ ] **Tag Filtering Refinement** — Enhanced filter UX in Chronicle
 
 ### Medium Priority
 

@@ -5,6 +5,7 @@ import { useAppContext } from './contexts/AppContext';
 import { useAlarmManager } from './hooks/useAlarmManager';
 import { initAudioContext } from './services/audioService';
 import { useRealityChecks } from './hooks/useRealityChecks';
+import { useStreakNotification } from './hooks/useStreakNotification';
 import { calculateUserStats } from './services/userStatsService';
 import { useToast } from './components/shared/Toast';
 import { speakText, getBriefingContent } from './services/ttsService';
@@ -190,6 +191,7 @@ const App: React.FC = () => {
             {isScribeOpen && <DreamScribeModal onSave={handleScribeSave} onClose={() => setIsScribeOpen(false)} />}
             <KeyboardShortcutsHelp isOpen={isHelpOpen} onClose={closeHelp} />
             <RealityCheckManager />
+            <StreakNotificationManager />
             <OfflineIndicator />
             <VoiceCommandFab />
             <ThemeToggle />
@@ -211,6 +213,15 @@ const RealityCheckManager = () => {
             RC
         </button>
     );
+};
+
+// Internal component for Streak Notifications
+const StreakNotificationManager: React.FC = () => {
+    const { dreams } = useAppContext();
+    const stats = calculateUserStats(dreams);
+    // Hook handles notification logic internally
+    useStreakNotification(dreams, stats.currentStreak);
+    return null;
 };
 
 export default App;
