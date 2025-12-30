@@ -6,7 +6,7 @@
 
 ## 0. META-PROTOCOL
 
-- **Last Updated:** December 30, 2024 (Iteration 74 - Premium Feature Gating)
+- **Last Updated:** December 30, 2024 (Iteration 75 - Dream Vault Sync)
 - **Evolution Authority:** Oneironaut Protocol
 - **Sync Frequency:** Continuous (Infinite Mode)
 - **Location:** Project root (`APP_CORE_MANIFESTO.md`)
@@ -341,6 +341,12 @@ Complete monetization circuit with visual PRO indicators and paywall integration
 - `InsightsPage.tsx` → `PremiumBadge` wrapper + credit consumption in handlers
 - `SleepPage.tsx` → Conditional `PremiumBadge` on binaural soundscape cards
 
+### 3.43 AI Coach Credit Gating
+
+AI Sleep Coach now consumes credits for free users. Initial greeting is free, but each message uses 1 credit. Shows remaining credits in header and graceful exhaustion message.
+
+**Implementation:** `AICoachModal.tsx` → credit check in `handleSend`, `getRemainingCredits()` indicator
+
 ---
 
 
@@ -423,7 +429,7 @@ Single-page app with simple `currentPage` state. Adding a router would be premat
 
 ## 6. THE DREAM VAULT (Future Ideas)
 
-### ✅ Completed (Iterations 1-73)
+### ✅ Completed (Iterations 1-75)
 
 - [x] **Manual Theme Toggle** — Cycles Auto/Day/Night from BottomNav
 - [x] **Snooze Duration Logic** — 5-minute re-trigger via setTimeout
@@ -436,17 +442,19 @@ Single-page app with simple `currentPage` state. Adding a router would be premat
 - [x] **Social Dreaming** — Web Share API integration (3.41)
 - [x] **Export to PDF** — Print friendly format (3.27 enhanced)
 - [x] **Offline Mode** — PWA Service Worker + UI Indicators (3.40)
+- [x] **Voice Journaling** — useSpeechRecognition hook in DreamScribeModal
+- [x] **Dream Threading** — Related dreams via shared tags in DreamDetailPage (3.14)
+- [x] **AI Sleep Coach Memory** — Persistent history in AICoachModal (3.15)
+- [x] **Premium Feature Gating** — PremiumBadge UI for monetization (3.42)
+- [x] **AI Coach Premium Gating** — Gate AI Sleep Coach behind credits/premium
 
 ### High Priority (Remaining)
 
-- [ ] **Dream Threading** — Connect related dreams (Partially done via Tags)
-- [ ] **Voice Journaling** — Dictate dreams instead of typing
+- [ ] **Achievement System** — Unlock badges for streaks and milestones
 
 ### Medium Priority
 
-- [ ] **Achievement System** — Unlock badges for streaks
-- [ ] **Tag Filtering** — Filter Chronicle by tags (Done via UI?)
-- [ ] **AI Sleep Coach Memory** — Persistent conversation history (Done 3.15?)
+- [ ] **Tag Filtering Refinement** — Enhanced filter UX in Chronicle
 
 ### Exploratory
 

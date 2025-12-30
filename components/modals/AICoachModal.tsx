@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { getCoachResponse } from '../../services/geminiService';
 import { useAppContext } from '../../contexts/AppContext';
 import { ChatMessage } from '../../types';
+import { canUseAiAnalysis, useAiCredit, isPremium, getRemainingCredits } from '../../services/subscriptionService';
 
 const COACH_HISTORY_KEY = 'somnia_coach_history';
 const MAX_SAVED_MESSAGES = 20; // Limit saved history to prevent storage bloat
@@ -41,6 +42,7 @@ export const AICoachModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
     }, [history]);
 
     const fetchInitialResponse = async () => {
+        // Credit check for free users - initial greeting is free
         setIsLoading(true);
         try {
             const responseText = await getCoachResponse([], coachPersonality);
@@ -69,6 +71,18 @@ export const AICoachModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
 
     const handleSend = async (messageText: string) => {
         if (!messageText.trim() || isLoading) return;
+
+        // Credit gate for free users
+        if (!isPremium() && !canUseAiAnalysis()) {
+            setHistory(prev => [...prev, {
+                id: Date.now(),
+                role: 'model',
+                parts: [{ text: "You've used all your free AI credits this month. Upgrade to Premium for unlimited access to the AI Sleep Coach! 🌙" }],
+                isError: true
+            }]);
+            return;
+        }
+
         const userMessage: ChatMessage = { id: Date.now(), role: 'user', parts: [{ text: messageText }] };
         const newHistory = [...history, userMessage];
         setHistory(newHistory);
@@ -76,6 +90,10 @@ export const AICoachModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
         setIsLoading(true);
 
         try {
+            // Consume credit for free users
+            if (!isPremium()) {
+                useAiCredit();
+            }
             const responseText = await getCoachResponse(newHistory, coachPersonality);
             setHistory(prev => [...prev, { id: Date.now(), role: 'model', parts: [{ text: responseText }] }]);
         } catch (e) {
@@ -124,6 +142,9 @@ export const AICoachModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
                                 Scientific
                             </button>
                         </div>
+                        {!isPremium() && (
+                            <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">{getRemainingCredits()}/3 AI credits • Each message uses 1</p>
+                        )}
                     </div>
                     {history.length > 1 && (
                         <button
