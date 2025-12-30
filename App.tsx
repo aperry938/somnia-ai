@@ -92,8 +92,11 @@ const App: React.FC = () => {
         setCurrentPage('dream-detail');
     }, []);
 
-    const handleRecordDream = useCallback(() => {
+    const [wakeQuickNote, setWakeQuickNote] = useState<string>('');
+
+    const handleRecordDream = useCallback((quickNote?: string) => {
         stopRinging();
+        if (quickNote) setWakeQuickNote(quickNote);
         setIsScribeOpen(true);
     }, [stopRinging, setIsScribeOpen]);
 
