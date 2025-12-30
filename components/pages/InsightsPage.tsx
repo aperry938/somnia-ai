@@ -10,6 +10,8 @@ import { WeeklyDigest } from '../insights/WeeklyDigest';
 import { GlobalTrendsCard } from '../insights/GlobalTrendsCard';
 import { SentimentChart } from '../insights/SentimentChart';
 import { calculateUserStats } from '../../services/userStatsService';
+import { PremiumBadge } from '../shared/PremiumBadge';
+import { canUseAiAnalysis, useAiCredit, isPremium } from '../../services/subscriptionService';
 
 
 
@@ -120,9 +122,17 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
     const patterns = useMemo(() => detectRecurringPatterns(dreams), [dreams]);
 
     const handleSynthesizeDreams = async () => {
+        // Credit gate for free users
+        if (!isPremium() && !canUseAiAnalysis()) {
+            return; // PremiumBadge UI will handle this case
+        }
         setIsDreamSynthLoading(true);
         setDreamSynthError(null);
         try {
+            // Consume credit for free users
+            if (!isPremium()) {
+                useAiCredit();
+            }
             const result = await synthesizeDreamThemes(dreams);
             setDreamSynthesis(result);
         } catch (e) {
@@ -133,9 +143,17 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
     };
 
     const handleAnalyzeHabits = async () => {
+        // Credit gate for free users
+        if (!isPremium() && !canUseAiAnalysis()) {
+            return; // PremiumBadge UI will handle this case
+        }
         setIsHabitLoading(true);
         setHabitError(null);
         try {
+            // Consume credit for free users
+            if (!isPremium()) {
+                useAiCredit();
+            }
             const result = await analyzeSleepHabits(dreams);
             setHabitAnalysis(result);
         } catch (e) {
@@ -250,11 +268,14 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                             <button onClick={handleSynthesizeDreams} className="px-4 py-1 bg-red-500 text-white text-sm rounded-full">Retry</button>
                         </div>
                     ) : (
-                        <button onClick={handleSynthesizeDreams} disabled={isDreamSynthLoading || dreams.length < 3} className="w-full py-2 bg-day-accent dark:bg-night-accent text-white font-bold rounded-full disabled:opacity-50 disabled:cursor-not-allowed">
-                            {isDreamSynthLoading ? 'Analyzing...' : 'Synthesize Dream Themes'}
-                        </button>
+                        <PremiumBadge feature="dream_weaving" className="w-full">
+                            <button onClick={handleSynthesizeDreams} disabled={isDreamSynthLoading || dreams.length < 3} className="w-full py-2 bg-day-accent dark:bg-night-accent text-white font-bold rounded-full disabled:opacity-50 disabled:cursor-not-allowed">
+                                {isDreamSynthLoading ? 'Analyzing...' : 'Synthesize Dream Themes'}
+                            </button>
+                        </PremiumBadge>
                     )}
                     {dreams.length < 3 && !dreamSynthesis && <p className="text-xs text-center mt-2 text-day-text-secondary dark:text-night-text-secondary">Requires at least 3 logged dreams.</p>}
+                    {!isPremium() && dreams.length >= 3 && !dreamSynthesis && <p className="text-xs text-center mt-1 text-amber-600 dark:text-amber-400">Uses 1 AI credit</p>}
                 </AnalysisCard>
 
                 <AnalysisCard title="Sleep Science" description="Discover how your nightly routines correlate with your sleep quality." buttonText="Analyze Sleep Habits" onAnalyze={handleAnalyzeHabits} isLoading={isHabitLoading}>
@@ -281,11 +302,14 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                             <button onClick={handleAnalyzeHabits} className="px-4 py-1 bg-red-500 text-white text-sm rounded-full">Retry</button>
                         </div>
                     ) : (
-                        <button onClick={handleAnalyzeHabits} disabled={isHabitLoading || dreams.filter(d => d.sleepQuality).length < 3} className="w-full py-2 bg-day-accent dark:bg-night-accent text-white font-bold rounded-full disabled:opacity-50 disabled:cursor-not-allowed">
-                            {isHabitLoading ? 'Analyzing...' : 'Analyze Sleep Habits'}
-                        </button>
+                        <PremiumBadge feature="sleep_science" className="w-full">
+                            <button onClick={handleAnalyzeHabits} disabled={isHabitLoading || dreams.filter(d => d.sleepQuality).length < 3} className="w-full py-2 bg-day-accent dark:bg-night-accent text-white font-bold rounded-full disabled:opacity-50 disabled:cursor-not-allowed">
+                                {isHabitLoading ? 'Analyzing...' : 'Analyze Sleep Habits'}
+                            </button>
+                        </PremiumBadge>
                     )}
                     {dreams.filter(d => d.sleepQuality).length < 3 && !habitAnalysis && <p className="text-xs text-center mt-2 text-day-text-secondary dark:text-night-text-secondary">Requires at least 3 nights with sleep quality ratings.</p>}
+                    {!isPremium() && dreams.filter(d => d.sleepQuality).length >= 3 && !habitAnalysis && <p className="text-xs text-center mt-1 text-amber-600 dark:text-amber-400">Uses 1 AI credit</p>}
                 </AnalysisCard>
 
                 {/* Export Section */}

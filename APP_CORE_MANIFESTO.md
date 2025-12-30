@@ -6,7 +6,7 @@
 
 ## 0. META-PROTOCOL
 
-- **Last Updated:** December 29, 2024 (Iteration 73 - PWA Sync)
+- **Last Updated:** December 30, 2024 (Iteration 74 - Premium Feature Gating)
 - **Evolution Authority:** Oneironaut Protocol
 - **Sync Frequency:** Continuous (Infinite Mode)
 - **Location:** Project root (`APP_CORE_MANIFESTO.md`)
@@ -332,6 +332,14 @@ Full offline capability via VitePWA. Service Worker caches app shell. OfflineInd
 Native sharing integration allows users to share dream text via system share sheet (Messages, WhatsApp, etc.).
 
 **Implementation:** `DreamDetailPage.tsx` → `navigator.share()`
+
+### 3.42 Premium Feature Gating UI
+
+Complete monetization circuit with visual PRO indicators and paywall integration. Premium features (Dream Weaving, Sleep Science, Binaural Soundscapes) now display PRO badges for free users and consume AI credits on use.
+
+**Implementation:**
+- `InsightsPage.tsx` → `PremiumBadge` wrapper + credit consumption in handlers
+- `SleepPage.tsx` → Conditional `PremiumBadge` on binaural soundscape cards
 
 ---
 

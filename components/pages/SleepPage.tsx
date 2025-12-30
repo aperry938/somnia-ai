@@ -11,6 +11,8 @@ import { REALITY_CHECKS, LUCID_TECHNIQUES } from '../../constants/lucidDreaming'
 import { predictSleepQuality, SleepPrediction } from '../../services/sleepPredictionService';
 import { useWakeWindow } from '../../hooks/useWakeWindow';
 import { WakeWindowViz } from '../WakeWindowViz';
+import { PremiumBadge } from '../shared/PremiumBadge';
+import { isPremium } from '../../services/subscriptionService';
 
 const DayRating: React.FC<{ rating: number | null; onRate: (rating: number) => void; }> = ({ rating, onRate }) => {
     return (
@@ -195,12 +197,26 @@ export const SleepPage: React.FC = () => {
                             </button>
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                            {SOUNDSCAPES.map(sound => (
-                                <div key={sound.id} onClick={() => openSoundscapeModal(sound)} className={`sound-card bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border  p-4 rounded-xl text-center cursor-pointer transition-all hover:border-day-accent dark:hover:border-night-accent ${playingSoundId === sound.id ? 'border-day-accent dark:border-night-accent shadow-lg' : 'border-day-border dark:border-night-border'}`}>
-                                    <div className="flex justify-center items-center h-12 text-day-accent dark:text-night-accent w-12 mx-auto">{sound.icon}</div>
-                                    <p className="mt-2 font-medium">{sound.name}</p>
-                                </div>
-                            ))}
+                            {SOUNDSCAPES.map(sound => {
+                                const showProBadge = sound.isPremium && !isPremium();
+                                return (
+                                    <div key={sound.id} className="relative">
+                                        {showProBadge ? (
+                                            <PremiumBadge feature="binaural_beats" className="w-full block">
+                                                <div className={`sound-card bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border p-4 rounded-xl text-center cursor-pointer transition-all hover:border-day-accent dark:hover:border-night-accent ${playingSoundId === sound.id ? 'border-day-accent dark:border-night-accent shadow-lg' : 'border-day-border dark:border-night-border'}`}>
+                                                    <div className="flex justify-center items-center h-12 text-day-accent dark:text-night-accent w-12 mx-auto">{sound.icon}</div>
+                                                    <p className="mt-2 font-medium">{sound.name}</p>
+                                                </div>
+                                            </PremiumBadge>
+                                        ) : (
+                                            <div onClick={() => openSoundscapeModal(sound)} className={`sound-card bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border p-4 rounded-xl text-center cursor-pointer transition-all hover:border-day-accent dark:hover:border-night-accent ${playingSoundId === sound.id ? 'border-day-accent dark:border-night-accent shadow-lg' : 'border-day-border dark:border-night-border'}`}>
+                                                <div className="flex justify-center items-center h-12 text-day-accent dark:text-night-accent w-12 mx-auto">{sound.icon}</div>
+                                                <p className="mt-2 font-medium">{sound.name}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
 
