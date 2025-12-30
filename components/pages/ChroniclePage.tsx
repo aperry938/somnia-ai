@@ -1,8 +1,13 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
-import { Dream } from '../../types';
+import { Dream, DreamMood } from '../../types';
 import { exportDreamsAsJSON, exportDreamJournalToPDF, exportDreamsEncrypted, importDreamsEncrypted } from '../../services/exportService';
+
+const MOOD_EMOJIS: Record<DreamMood, string> = {
+    joyful: '😊', peaceful: '😌', neutral: '😐',
+    confused: '😕', anxious: '😰', sad: '😢', fearful: '😨'
+};
 
 const DreamItem: React.FC<{ dream: Dream; onSelect: (id: number) => void; onTagClick: (tag: string) => void }> = React.memo(({ dream, onSelect, onTagClick }) => {
     return (
@@ -19,6 +24,7 @@ const DreamItem: React.FC<{ dream: Dream; onSelect: (id: number) => void; onTagC
                 <p className="font-serif text-lg font-bold truncate">{dream.title || 'Untitled Dream'}</p>
                 <p className="text-sm text-day-text-secondary dark:text-night-text-secondary mb-1">
                     {new Date(dream.timestamp).toLocaleDateString([], { month: 'long', day: 'numeric' })}
+                    {dream.mood && <span className="ml-2" title={dream.mood}>{MOOD_EMOJIS[dream.mood]}</span>}
                 </p>
                 <p className="text-sm line-clamp-2 mb-2">{dream.dreamText}</p>
                 {dream.tags && dream.tags.length > 0 && (
