@@ -82,9 +82,10 @@ export const PREMIUM_FEATURES: Record<PremiumFeature, { name: string; descriptio
 
 // Free tier limits
 export const FREE_TIER_LIMITS = {
-    maxAlarms: 10, // Generous alarm limit (core feature)
-    aiAnalysesPerMonth: 3, // AI analyses available to free users monthly
-    maxSoundscapes: ['white', 'pink', 'brown'], // Only noise types, no binaural
+    maxAlarms: Infinity, // Unlimited - doesn't cost us anything
+    maxDreams: Infinity, // Unlimited - local storage only
+    aiAnalysesPerMonth: 3, // AI features are the paid differentiator
+    maxSoundscapes: ['white', 'pink', 'brown'], // Basic sounds, no binaural
 } as const;
 
 // Credit storage keys
