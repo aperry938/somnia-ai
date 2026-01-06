@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode, useCallback } from 'react';
-import { Alarm, Dream, SleepAids, Biometrics, Theme, CoachPersonality, AnalysisPersonality, DreamMood, SleepSession } from '../types';
+import { Alarm, Dream, SleepAids, Biometrics, Theme, CoachPersonality, AnalysisPersonality, DreamMood, SleepSession, AlarmPurpose } from '../types';
 import { enqueueAction } from '../services/syncService';
 import { cacheDreamTitle } from '../services/geminiService';
 
@@ -15,8 +15,8 @@ interface AppContextType {
     updateSleepSessionData: (data: Partial<SleepAids>) => void;
     clearSleepSession: () => void;
     getNextActiveAlarm: () => Alarm | null;
-    addAlarm: (time: string, smartWake: boolean, days?: number[], soundId?: string) => number;
-    updateAlarm: (id: number, time: string, smartWake: boolean, days?: number[], soundId?: string) => void;
+    addAlarm: (time: string, smartWake: boolean, days?: number[], soundId?: string, purpose?: AlarmPurpose, label?: string) => number;
+    updateAlarm: (id: number, time: string, smartWake: boolean, days?: number[], soundId?: string, purpose?: AlarmPurpose, label?: string) => void;
     toggleAlarmActive: (id: number) => void;
     deleteAlarm: (id: number) => void;
     addDream: (dreamText: string, sleepQuality: number | null, mood?: DreamMood) => number;
@@ -87,7 +87,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         });
     }, []); // Only run on initial mount
 
-    const addAlarm = (time: string, smartWake: boolean = false, days: number[] = [], soundId: string = 'somnia'): number => {
+    const addAlarm = (time: string, smartWake: boolean = false, days: number[] = [], soundId: string = 'somnia', purpose: AlarmPurpose = 'sleep', label?: string): number => {
         const newAlarm: Alarm = {
             id: Date.now(),
             time,
@@ -95,7 +95,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             smartWake,
             smartWindow: 30,
             days,
-            soundId
+            soundId,
+            purpose,
+            label
         };
         setAlarms(prev => [...prev, newAlarm]);
         enqueueAction('ADD_ALARM', newAlarm);
@@ -171,9 +173,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setActiveSleepSession(null);
     }, [setActiveSleepSession]);
 
-    const updateAlarm = (id: number, time: string, smartWake: boolean, days: number[] = [], soundId: string = 'somnia') => {
-        setAlarms(prev => prev.map(a => a.id === id ? { ...a, time, smartWake, days, soundId } : a));
-        enqueueAction('UPDATE_ALARM', { id, time, smartWake, days, soundId });
+    const updateAlarm = (id: number, time: string, smartWake: boolean, days: number[] = [], soundId: string = 'somnia', purpose: AlarmPurpose = 'sleep', label?: string) => {
+        setAlarms(prev => prev.map(a => a.id === id ? { ...a, time, smartWake, days, soundId, purpose, label } : a));
+        enqueueAction('UPDATE_ALARM', { id, time, smartWake, days, soundId, purpose, label });
     };
 
     const toggleAlarmActive = (id: number) => {
@@ -184,6 +186,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const deleteAlarm = (id: number) => {
         setAlarms(prev => prev.filter(a => a.id !== id));
+        // Clear sleep session if it was linked to this alarm
+        if (activeSleepSession?.alarmId === id) {
+            setActiveSleepSession(null);
+        }
         enqueueAction('DELETE_ALARM', { id });
     };
 

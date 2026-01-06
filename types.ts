@@ -2,6 +2,9 @@ import type { ReactElement } from 'react';
 
 export type Page = 'alarms' | 'sleep' | 'chronicle' | 'insights' | 'dream-detail' | 'privacy' | 'terms';
 
+// Alarm purpose determines behavior when it rings
+export type AlarmPurpose = 'sleep' | 'reminder';
+
 export interface Alarm {
     id: number;
     time: string;
@@ -10,6 +13,8 @@ export interface Alarm {
     soundId?: string; // ID of the sound to play (default: 'progressive')
     smartWake?: boolean; // If true, wake up during light sleep
     smartWindow?: number; // Minutes before alarm to check (default 30)
+    purpose?: AlarmPurpose; // 'sleep' shows dream flow, 'reminder' just dismisses (default: 'sleep')
+    label?: string; // Optional label for reminder alarms
 }
 
 export interface SleepAids {

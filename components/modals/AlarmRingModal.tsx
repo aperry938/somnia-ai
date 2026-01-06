@@ -25,6 +25,9 @@ type WakeStep = 'alarm' | 'snooze' | 'dream' | 'boost';
 const SNOOZE_DURATION = 5 * 60; // 5 minutes in seconds
 
 export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordDream, onSnooze, onAwake }) => {
+    // For reminder alarms, skip straight to dismiss - no dream prompts
+    const isSleepAlarm = alarm.purpose !== 'reminder';
+
     const [step, setStep] = useState<WakeStep>('alarm');
     const [quickNote, setQuickNote] = useState('');
     const [currentPrompt] = useState(() => DREAM_PROMPTS[Math.floor(Math.random() * DREAM_PROMPTS.length)]);
@@ -83,12 +86,17 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
         setStep('dream');
     }, []);
 
-    // Handle "I'm Awake" - advance to dream capture
+    // Handle "I'm Awake" - advance to dream capture for sleep alarms, or dismiss for reminders
     const handleAwake = useCallback(() => {
         haptics.success();
         stopAlarmSound();
-        setStep('dream');
-    }, []);
+        if (isSleepAlarm) {
+            setStep('dream');
+        } else {
+            // For reminder alarms, just dismiss
+            onAwake();
+        }
+    }, [isSleepAlarm, onAwake]);
 
     // Handle recording dream - advance to boost step
     const handleRecordDream = useCallback(() => {
@@ -142,9 +150,15 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
             <div className="w-full max-w-sm animate-fadeIn text-center py-6">
                 {/* Time Display - Always visible */}
                 <p className="text-6xl font-light text-white/90 mb-2">{timeStr}</p>
-                <h2 className="font-serif text-2xl text-white/80 mb-8">Good Morning</h2>
+                <h2 className="font-serif text-2xl text-white/80 mb-2">
+                    {isSleepAlarm ? 'Good Morning' : 'Reminder'}
+                </h2>
+                {alarm.label && (
+                    <p className="text-white/60 text-lg mb-6">{alarm.label}</p>
+                )}
+                {!alarm.label && <div className="mb-6" />}
 
-                {/* STEP 1: Alarm - Just Snooze and I'm Awake */}
+                {/* STEP 1: Alarm - Just Snooze and I'm Awake/Dismiss */}
                 {step === 'alarm' && (
                     <div className="animate-fadeIn">
                         <div className="flex gap-3">
@@ -158,7 +172,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                                 onClick={handleAwake}
                                 className="flex-1 py-5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold rounded-2xl text-lg shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all active:scale-95"
                             >
-                                I'm Awake
+                                {isSleepAlarm ? "I'm Awake" : 'Dismiss'}
                             </button>
                         </div>
                     </div>

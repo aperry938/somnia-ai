@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
-import { Alarm } from '../../types';
+import { Alarm, AlarmPurpose } from '../../types';
 import { DailyBriefingWidget } from '../widgets/DailyBriefingWidget';
 import { toggleAlarmPreview, stopAlarmPreview, isPreviewPlaying } from '../../services/audioService';
+import haptics from '../../services/hapticsService';
 
 // Helper to format alarm repetition text
 const formatRepeatText = (days: number[]): string => {
@@ -82,9 +83,25 @@ const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = Re
             </div>
             <div className="flex items-center justify-between relative z-10">
                 <div className="flex flex-col gap-0.5">
-                    <p className={`text-sm ${alarm.isActive ? 'text-day-text-secondary dark:text-night-text-secondary' : 'text-gray-400'}`}>
-                        {formatRepeatText(alarm.days)}
-                    </p>
+                    {/* Label for reminders */}
+                    {alarm.label && (
+                        <p className={`text-sm font-medium ${alarm.isActive ? 'text-day-text dark:text-night-text' : 'text-gray-400'}`}>
+                            {alarm.label}
+                        </p>
+                    )}
+                    <div className="flex items-center gap-2">
+                        <p className={`text-sm ${alarm.isActive ? 'text-day-text-secondary dark:text-night-text-secondary' : 'text-gray-400'}`}>
+                            {formatRepeatText(alarm.days)}
+                        </p>
+                        {/* Type badge */}
+                        <span className={`text-xs px-1.5 py-0.5 rounded ${
+                            alarm.purpose === 'reminder'
+                                ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
+                                : 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                        }`}>
+                            {alarm.purpose === 'reminder' ? 'Reminder' : 'Sleep'}
+                        </span>
+                    </div>
                     {/* Sound name display */}
                     <div className={`flex items-center gap-1 text-xs ${alarm.isActive ? 'text-day-accent/70 dark:text-night-accent/70' : 'text-gray-400'}`}>
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -291,6 +308,10 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
     const [savedAlarmId, setSavedAlarmId] = useState<number | null>(null);
     const [showSavedConfirmation, setShowSavedConfirmation] = useState(false);
 
+    // Alarm purpose - sleep alarms trigger dream flow, reminder alarms just dismiss
+    const [purpose, setPurpose] = useState<AlarmPurpose>(alarmToEdit?.purpose || 'sleep');
+    const [label, setLabel] = useState(alarmToEdit?.label || '');
+
     // Repetition state
     const [frequency, setFrequency] = useState<'once' | 'daily' | 'weekly'>(() => {
         const days = alarmToEdit?.days ?? [];
@@ -351,15 +372,15 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
 
         let alarmId: number;
         if (alarmToEdit) {
-            updateAlarm(alarmToEdit.id, time, false, finalDays, selectedSound);
+            updateAlarm(alarmToEdit.id, time, false, finalDays, selectedSound, purpose, label || undefined);
             alarmId = alarmToEdit.id;
         } else {
-            alarmId = addAlarm(time, false, finalDays, selectedSound);
+            alarmId = addAlarm(time, false, finalDays, selectedSound, purpose, label || undefined);
         }
 
         if (onSaveSuccess) onSaveSuccess();
 
-        // Show confirmation with Sleep Gateway option
+        // Show confirmation - only offer Sleep Gateway for sleep alarms
         setSavedAlarmId(alarmId);
         setShowSavedConfirmation(true);
     };
@@ -385,7 +406,7 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
         onClose();
     };
 
-    // Show saved confirmation with Sleep Gateway option
+    // Show saved confirmation - only offer Sleep Gateway for sleep alarms
     if (showSavedConfirmation) {
         return (
             <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={handleDismissConfirmation}>
@@ -396,37 +417,40 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
                     </div>
-                    <h2 className="font-serif text-2xl mb-2">Alarm Saved!</h2>
+                    <h2 className="font-serif text-2xl mb-2">{purpose === 'sleep' ? 'Alarm Saved!' : 'Reminder Set!'}</h2>
                     <p className="text-day-text-secondary dark:text-night-text-secondary mb-6">
-                        Your alarm is set for <span className="font-medium text-day-accent dark:text-night-accent">{time}</span>
+                        {label && <span className="block font-medium mb-1">{label}</span>}
+                        Your {purpose === 'sleep' ? 'alarm' : 'reminder'} is set for <span className="font-medium text-day-accent dark:text-night-accent">{time}</span>
                     </p>
 
-                    {/* Sleep Gateway link */}
-                    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 border border-indigo-200 dark:border-indigo-700 rounded-xl p-4 mb-4">
-                        <div className="flex items-center gap-3 mb-3">
-                            <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-800 flex items-center justify-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                                </svg>
+                    {/* Sleep Gateway link - only for sleep alarms */}
+                    {purpose === 'sleep' && (
+                        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 border border-indigo-200 dark:border-indigo-700 rounded-xl p-4 mb-4">
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-800 flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                                    </svg>
+                                </div>
+                                <div className="text-left">
+                                    <h3 className="font-medium text-sm">Configure Sleep Gateway?</h3>
+                                    <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">Log pre-sleep activities to track with this alarm</p>
+                                </div>
                             </div>
-                            <div className="text-left">
-                                <h3 className="font-medium text-sm">Configure Sleep Gateway?</h3>
-                                <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">Log pre-sleep activities to track with this alarm</p>
-                            </div>
+                            <button
+                                onClick={handleConfigureSleepGateway}
+                                className="w-full py-2.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-medium rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all"
+                            >
+                                Open Sleep Gateway
+                            </button>
                         </div>
-                        <button
-                            onClick={handleConfigureSleepGateway}
-                            className="w-full py-2.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-medium rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all"
-                        >
-                            Open Sleep Gateway
-                        </button>
-                    </div>
+                    )}
 
                     <button
                         onClick={handleDismissConfirmation}
-                        className="text-day-text-secondary dark:text-night-text-secondary hover:text-day-text dark:hover:text-night-text transition-colors"
+                        className={`${purpose === 'sleep' ? 'text-day-text-secondary dark:text-night-text-secondary hover:text-day-text dark:hover:text-night-text' : 'w-full py-3 bg-day-accent dark:bg-night-accent text-white font-medium rounded-xl'} transition-colors`}
                     >
-                        Skip for now
+                        {purpose === 'sleep' ? 'Skip for now' : 'Done'}
                     </button>
                 </div>
             </div>
@@ -438,6 +462,54 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
             <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-sm animate-fadeIn max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                 <h2 className="font-serif text-2xl text-center mb-6">{alarmToEdit ? "Edit Alarm" : "Set Alarm"}</h2>
                 <DrumTimePicker initialTime={time} onChange={setTime} />
+
+                {/* Alarm Purpose Selector */}
+                <div className="mt-6 mb-4">
+                    <label className="text-sm font-medium block mb-2">Alarm Type</label>
+                    <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+                        <button
+                            onClick={() => setPurpose('sleep')}
+                            className={`flex-1 flex items-center justify-center gap-2 text-sm py-2 rounded-md transition-all ${purpose === 'sleep'
+                                ? 'bg-white dark:bg-gray-700 shadow-sm font-medium text-day-accent dark:text-night-accent'
+                                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                                }`}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                            </svg>
+                            Sleep
+                        </button>
+                        <button
+                            onClick={() => setPurpose('reminder')}
+                            className={`flex-1 flex items-center justify-center gap-2 text-sm py-2 rounded-md transition-all ${purpose === 'reminder'
+                                ? 'bg-white dark:bg-gray-700 shadow-sm font-medium text-day-accent dark:text-night-accent'
+                                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                                }`}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                            Reminder
+                        </button>
+                    </div>
+                    <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-2">
+                        {purpose === 'sleep' ? 'Opens dream journal when alarm rings' : 'Simple notification - no dream prompts'}
+                    </p>
+                </div>
+
+                {/* Label for reminders */}
+                {purpose === 'reminder' && (
+                    <div className="mb-4">
+                        <label className="text-sm font-medium block mb-2">Label (optional)</label>
+                        <input
+                            type="text"
+                            value={label}
+                            onChange={(e) => setLabel(e.target.value)}
+                            placeholder="e.g., Take medication, Meeting..."
+                            className="w-full p-3 bg-gray-100 dark:bg-gray-800 border-none rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent"
+                        />
+                    </div>
+                )}
 
                 {/* Repetition Frequency */}
                 <div className="mt-6 mb-4">
@@ -532,11 +604,226 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
     );
 };
 
+// Tonight's Sleep Quick Card - helps recurring alarm users log pre-sleep data
+const TonightsSleepCard: React.FC<{
+    nextSleepAlarm: Alarm | null;
+    onOpenFullGateway: () => void;
+}> = ({ nextSleepAlarm, onOpenFullGateway }) => {
+    const { activeSleepSession, startSleepSession, updateSleepSessionData } = useAppContext();
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [dayRating, setDayRating] = useState<number | null>(activeSleepSession?.sleepGatewayData?.dayRating ?? null);
+    const [dayNotes, setDayNotes] = useState(activeSleepSession?.sleepGatewayData?.dayNotes ?? '');
+    const [saved, setSaved] = useState(false);
+
+    // Check if it's evening time (after 6 PM) or within 6 hours of alarm
+    const shouldShow = useMemo(() => {
+        if (!nextSleepAlarm || nextSleepAlarm.purpose === 'reminder') return false;
+
+        const now = new Date();
+        const currentHour = now.getHours();
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+        // Parse alarm time
+        const [alarmH, alarmM] = nextSleepAlarm.time.split(':').map(Number);
+        const alarmMinutes = alarmH * 60 + alarmM;
+
+        // Calculate time until alarm (could be today or tomorrow)
+        let minutesUntilAlarm: number;
+        if (alarmMinutes > currentMinutes) {
+            minutesUntilAlarm = alarmMinutes - currentMinutes;
+        } else {
+            minutesUntilAlarm = (24 * 60 - currentMinutes) + alarmMinutes;
+        }
+
+        // Show if: it's evening (6 PM - 11:59 PM) OR within 8 hours of alarm
+        const isEvening = currentHour >= 18;
+        const isWithin8Hours = minutesUntilAlarm <= 8 * 60;
+
+        return isEvening || isWithin8Hours;
+    }, [nextSleepAlarm]);
+
+    // Sync state with active session when it changes
+    useEffect(() => {
+        if (activeSleepSession?.sleepGatewayData) {
+            setDayRating(activeSleepSession.sleepGatewayData.dayRating ?? null);
+            setDayNotes(activeSleepSession.sleepGatewayData.dayNotes ?? '');
+        }
+    }, [activeSleepSession]);
+
+    if (!shouldShow || !nextSleepAlarm) return null;
+
+    // Format alarm time for display
+    const [hourStr, minuteStr] = nextSleepAlarm.time.split(':');
+    const hour = parseInt(hourStr, 10);
+    const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+    const period = hour >= 12 ? 'PM' : 'AM';
+    const alarmTimeDisplay = `${displayHour}:${minuteStr} ${period}`;
+
+    const handleExpand = () => {
+        haptics.light();
+        setIsExpanded(true);
+        // Start or update session when user engages
+        if (!activeSleepSession) {
+            startSleepSession(nextSleepAlarm.id);
+        }
+    };
+
+    const handleRatingSelect = (rating: number) => {
+        haptics.medium();
+        setDayRating(rating);
+        setSaved(false);
+        // Immediately save to session
+        updateSleepSessionData({ dayRating: rating });
+    };
+
+    const handleSaveNotes = () => {
+        haptics.success();
+        updateSleepSessionData({ dayNotes: dayNotes.trim() || undefined });
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+    };
+
+    const handleOpenFullGateway = () => {
+        haptics.medium();
+        // Save any current data first
+        if (dayRating !== null || dayNotes.trim()) {
+            updateSleepSessionData({
+                dayRating: dayRating ?? undefined,
+                dayNotes: dayNotes.trim() || undefined
+            });
+        }
+        onOpenFullGateway();
+    };
+
+    // Quick rating icons - moon phases for a sleep theme
+    const ratingLabels = ['Rough', 'Meh', 'Okay', 'Good', 'Great'];
+
+    return (
+        <div className="mb-6 w-full max-w-2xl mx-auto">
+            <div
+                className={`bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/40 dark:to-purple-900/40 border border-indigo-200 dark:border-indigo-700/50 rounded-2xl overflow-hidden transition-all duration-300 ${isExpanded ? 'shadow-lg' : 'shadow-md hover:shadow-lg'}`}
+            >
+                {/* Header - always visible */}
+                <div
+                    className={`px-4 py-3 flex items-center justify-between ${!isExpanded ? 'cursor-pointer' : ''}`}
+                    onClick={!isExpanded ? handleExpand : undefined}
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-800/60 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-500 dark:text-indigo-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 className="font-medium text-sm text-day-text dark:text-night-text">Tonight's Sleep</h3>
+                            <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">
+                                Alarm at {alarmTimeDisplay}
+                            </p>
+                        </div>
+                    </div>
+                    {!isExpanded ? (
+                        <div className="flex items-center gap-2 text-indigo-500 dark:text-indigo-400">
+                            <span className="text-xs">Log your day</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={() => setIsExpanded(false)}
+                            className="text-day-text-secondary dark:text-night-text-secondary p-1"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                            </svg>
+                        </button>
+                    )}
+                </div>
+
+                {/* Expanded content */}
+                {isExpanded && (
+                    <div className="px-4 pb-4 animate-fadeIn">
+                        {/* Day Rating */}
+                        <div className="mb-4">
+                            <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mb-2">How was your day?</p>
+                            <div className="flex justify-between gap-2">
+                                {[1, 2, 3, 4, 5].map((rating) => (
+                                    <button
+                                        key={rating}
+                                        onClick={() => handleRatingSelect(rating)}
+                                        className={`flex-1 py-2 px-1 rounded-lg flex flex-col items-center gap-1 transition-all ${
+                                            dayRating === rating
+                                                ? 'bg-indigo-500 dark:bg-indigo-600 text-white scale-105 shadow-md'
+                                                : 'bg-white/50 dark:bg-gray-800/50 text-day-text-secondary dark:text-night-text-secondary hover:bg-white dark:hover:bg-gray-800'
+                                        }`}
+                                    >
+                                        <span className="text-lg">
+                                            {rating === 1 ? '😫' : rating === 2 ? '😕' : rating === 3 ? '😐' : rating === 4 ? '🙂' : '😊'}
+                                        </span>
+                                        <span className="text-[10px]">{ratingLabels[rating - 1]}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Quick Notes */}
+                        <div className="mb-3">
+                            <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mb-2">Quick notes (optional)</p>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={dayNotes}
+                                    onChange={(e) => { setDayNotes(e.target.value); setSaved(false); }}
+                                    onBlur={handleSaveNotes}
+                                    placeholder="Stressful meeting, exercised, late coffee..."
+                                    className="flex-1 px-3 py-2 bg-white/70 dark:bg-gray-800/70 border border-indigo-200 dark:border-indigo-700/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                                />
+                                {saved && (
+                                    <div className="flex items-center text-green-500 text-xs">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Active session indicator */}
+                        {activeSleepSession && dayRating && (
+                            <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400 mb-3">
+                                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                                <span>Session linked to your {alarmTimeDisplay} alarm</span>
+                            </div>
+                        )}
+
+                        {/* More options link */}
+                        <button
+                            onClick={handleOpenFullGateway}
+                            className="w-full py-2.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-medium rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all text-sm flex items-center justify-center gap-2"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                            </svg>
+                            Full Sleep Gateway
+                        </button>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
 
 export const AlarmsPage: React.FC<{ timeString: string, dateString: string, onNavigateToSleep?: () => void }> = ({ timeString, dateString, onNavigateToSleep }) => {
-    const { alarms } = useAppContext();
+    const { alarms, getNextActiveAlarm } = useAppContext();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [alarmToEdit, setAlarmToEdit] = useState<Alarm | null>(null);
+
+    // Get the next active sleep alarm for the Tonight's Sleep card
+    const nextSleepAlarm = useMemo(() => {
+        const next = getNextActiveAlarm();
+        // Only return if it's a sleep alarm
+        return next && next.purpose !== 'reminder' ? next : null;
+    }, [getNextActiveAlarm]);
 
     const openModal = (alarm: Alarm | null = null) => {
         setAlarmToEdit(alarm);
@@ -565,6 +852,13 @@ export const AlarmsPage: React.FC<{ timeString: string, dateString: string, onNa
                         <DailyBriefingWidget />
                     </div>
                 </header>
+
+                {/* Tonight's Sleep Quick Card - appears for recurring alarm users in evening */}
+                <TonightsSleepCard
+                    nextSleepAlarm={nextSleepAlarm}
+                    onOpenFullGateway={handleConfigureSleepGateway}
+                />
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto w-full">
                     {alarms.length > 0 ? (
                         alarms.map(alarm => <AlarmItem key={alarm.id} alarm={alarm} onEdit={openModal} />)
