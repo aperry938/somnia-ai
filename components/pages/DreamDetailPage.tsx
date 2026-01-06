@@ -10,6 +10,8 @@ import { findDreamSymbols, DreamSymbol } from '../../constants/dreamSymbols';
 import { useToast } from '../shared/Toast';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { speakText, stopSpeaking } from '../../services/ttsService';
+import { isPremium } from '../../services/secureSubscriptionService';
+import haptics from '../../services/hapticsService';
 
 const MOOD_DISPLAY: Record<DreamMood, { emoji: string; label: string }> = {
     joyful: { emoji: '😊', label: 'Joyful' },
@@ -433,6 +435,37 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                     </details>
                 )}
 
+                {/* Discuss with AI - PRO Feature */}
+                <div className="mt-6 mb-4">
+                    {isPremium() ? (
+                        <button
+                            onClick={() => { haptics.medium(); setIsChatOpen(true); }}
+                            className="w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold rounded-full flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                            </svg>
+                            Discuss This Dream with AI
+                            <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">PRO</span>
+                        </button>
+                    ) : (
+                        <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-700/50 rounded-xl p-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center flex-shrink-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                    </svg>
+                                </div>
+                                <div className="flex-grow">
+                                    <p className="font-medium text-amber-800 dark:text-amber-200">Discuss This Dream with AI</p>
+                                    <p className="text-sm text-amber-600 dark:text-amber-400">Unlock personalized dream interpretation and deeper insights</p>
+                                </div>
+                                <span className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">PRO</span>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
                 <div className="mt-8 pt-6 border-t border-day-border dark:border-night-border">
                     {analysisState === 'loading' && (
                         <div className="text-center text-day-accent dark:text-night-accent">
@@ -454,9 +487,6 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                                 <AccordionItem key={i} title={item.title} content={item.content} isOpenDefault={i === 0} />
                             ))}
                             <AccordionItem title={dream.aiAnalysis.integration.title} content={dream.aiAnalysis.integration.content} />
-                            <button onClick={() => setIsChatOpen(true)} className="w-full mt-4 py-2 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 font-bold rounded-full">
-                                Deepen Analysis with AI
-                            </button>
                         </div>
                     )}
                 </div>

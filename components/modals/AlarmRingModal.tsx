@@ -3,6 +3,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { playAlarmBySound, stopAlarmSound, playAlertnessBoost, stopAlertnessBoost } from '../../services/audioService';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { Alarm } from '../../types';
+import haptics from '../../services/hapticsService';
 
 interface AlarmRingModalProps {
     alarm: Alarm;
@@ -50,6 +51,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
 
     // Handle snooze - show countdown instead of dismissing
     const handleSnooze = useCallback(() => {
+        haptics.snooze();
         stopAlarmSound();
         if (isListening) stopListening();
         setSnoozeRemaining(SNOOZE_DURATION);
@@ -77,29 +79,34 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
 
     // Cancel snooze and wake up
     const cancelSnooze = useCallback(() => {
+        haptics.medium();
         setStep('dream');
     }, []);
 
     // Handle "I'm Awake" - advance to dream capture
     const handleAwake = useCallback(() => {
+        haptics.success();
         stopAlarmSound();
         setStep('dream');
     }, []);
 
     // Handle recording dream - advance to boost step
     const handleRecordDream = useCallback(() => {
+        haptics.dreamSaved();
         if (isListening) stopListening();
         onRecordDream(quickNote.trim() || undefined);
     }, [isListening, stopListening, quickNote, onRecordDream]);
 
     // Handle skipping dream - advance to boost step
     const handleSkipDream = useCallback(() => {
+        haptics.light();
         if (isListening) stopListening();
         setStep('boost');
     }, [isListening, stopListening]);
 
     // Toggle voice recording
     const toggleVoice = useCallback(() => {
+        haptics.medium();
         if (isListening) {
             stopListening();
         } else {
@@ -110,6 +117,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
 
     // Toggle alertness boost
     const toggleAlertnessBoost = useCallback(() => {
+        haptics.boostStart();
         if (alertnessOn) {
             stopAlertnessBoost();
             setAlertnessOn(false);
@@ -121,6 +129,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
 
     // Final dismiss - close everything
     const handleFinish = useCallback(() => {
+        haptics.success();
         stopAlertnessBoost();
         onAwake();
     }, [onAwake]);

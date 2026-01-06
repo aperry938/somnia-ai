@@ -3,6 +3,7 @@ import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { SleepQualityRating } from '../shared/SleepQualityRating';
 import { DreamMood } from '../../types';
 import { playAlertnessBoost, stopAlertnessBoost } from '../../services/audioService';
+import haptics from '../../services/hapticsService';
 
 const MOODS: { value: DreamMood; emoji: string; label: string }[] = [
     { value: 'joyful', emoji: '😊', label: 'Joyful' },
@@ -14,7 +15,7 @@ const MOODS: { value: DreamMood; emoji: string; label: string }[] = [
     { value: 'fearful', emoji: '😨', label: 'Fearful' },
 ];
 
-type ScribeStep = 'record' | 'boost';
+type ScribeStep = 'record' | 'boost' | 'playing';
 
 interface DreamScribeModalProps {
     onSave: (dreamText: string, sleepQuality: number | null, mood?: DreamMood) => void;
@@ -29,6 +30,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
     const [mood, setMood] = useState<DreamMood | null>(null);
     const [boostActive, setBoostActive] = useState(false);
     const savedDataRef = useRef<{ text: string; quality: number | null; mood?: DreamMood } | null>(null);
+    const dreamSavedRef = useRef(false);
 
     const handleFinalTranscript = useCallback((transcript: string) => {
         setDreamText(prev => (prev ? prev.trim() + ' ' : '') + transcript);
@@ -50,12 +52,14 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
 
     const handleSave = () => {
         if (!dreamText.trim() || isListening) return;
+        haptics.dreamSaved();
         // Store the data and show boost offer
         savedDataRef.current = { text: dreamText, quality: sleepQuality, mood: mood || undefined };
         setStep('boost');
     };
 
     const toggleBoost = () => {
+        haptics.boostStart();
         if (boostActive) {
             stopAlertnessBoost();
             setBoostActive(false);
@@ -66,16 +70,29 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
         }
     };
 
-    const handleFinish = (startBoost: boolean) => {
-        if (startBoost && !boostActive) {
-            // Start the boost if not already playing
-            playAlertnessBoost();
-        } else if (!startBoost) {
-            // Stop boost if skipping
-            stopAlertnessBoost();
+    const handleStartBoost = () => {
+        haptics.boostStart();
+        // Start the boost and go to playing step - dream will be saved when user dismisses
+        playAlertnessBoost();
+        setBoostActive(true);
+        setStep('playing');
+    };
+
+    const handleSkip = () => {
+        haptics.light();
+        // Save dream and close without boost
+        stopAlertnessBoost();
+        if (savedDataRef.current && !dreamSavedRef.current) {
+            dreamSavedRef.current = true;
+            onSave(savedDataRef.current.text, savedDataRef.current.quality, savedDataRef.current.mood);
         }
-        // Save the dream
-        if (savedDataRef.current) {
+    };
+
+    const handleStartMyDay = () => {
+        haptics.success();
+        // User is done - boost keeps playing if active, just close modal
+        if (savedDataRef.current && !dreamSavedRef.current) {
+            dreamSavedRef.current = true;
             onSave(savedDataRef.current.text, savedDataRef.current.quality, savedDataRef.current.mood);
         }
     };
@@ -133,7 +150,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                             {MOODS.map(({ value, emoji, label }) => (
                                 <button
                                     key={value}
-                                    onClick={() => setMood(mood === value ? null : value)}
+                                    onClick={() => { haptics.selection(); setMood(mood === value ? null : value); }}
                                     className={`px-3 py-1.5 rounded-full text-sm transition-all flex items-center gap-1 ${mood === value
                                         ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white scale-105'
                                         : 'bg-white/10 border border-white/20 text-white/80 hover:border-white/40'
@@ -162,35 +179,80 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
         );
     }
 
-    // Step 2: Wake Up Boost offer - simplified with just Skip/Start
+    // Step 2: Wake Up Boost offer - Skip/Start
+    if (step === 'boost') {
+        return (
+            <div className="fixed inset-0 bg-gradient-to-b from-indigo-900/95 to-purple-900/95 backdrop-blur-md flex items-center justify-center p-4 z-50">
+                <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-6 w-full max-w-sm animate-fadeIn text-white text-center">
+                    <div className="mb-6">
+                        <div className="w-16 h-16 mx-auto bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mb-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                        </div>
+                        <h3 className="font-serif text-xl mb-2">Dream Saved!</h3>
+                        <p className="text-white/70 text-sm mb-1">Would you like a Wake Up Boost?</p>
+                        <p className="text-white/50 text-xs">12Hz beta waves for alertness & mental clarity</p>
+                    </div>
+
+                    <div className="flex gap-3">
+                        <button
+                            onClick={handleSkip}
+                            className="flex-1 py-4 bg-white/20 hover:bg-white/30 rounded-xl font-medium transition-all text-lg"
+                        >
+                            Skip
+                        </button>
+                        <button
+                            onClick={handleStartBoost}
+                            className="flex-1 py-4 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 rounded-xl font-medium transition-all text-lg"
+                        >
+                            Start
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Step 3: Boost playing - toggle and Start My Day
     return (
         <div className="fixed inset-0 bg-gradient-to-b from-indigo-900/95 to-purple-900/95 backdrop-blur-md flex items-center justify-center p-4 z-50">
             <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-6 w-full max-w-sm animate-fadeIn text-white text-center">
                 <div className="mb-6">
-                    <div className="w-16 h-16 mx-auto bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mb-3">
+                    <div className="w-16 h-16 mx-auto bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mb-3 shadow-lg shadow-orange-500/30">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                         </svg>
                     </div>
-                    <h3 className="font-serif text-xl mb-2">Dream Saved!</h3>
-                    <p className="text-white/70 text-sm mb-1">Would you like a Wake Up Boost?</p>
-                    <p className="text-white/50 text-xs">12Hz beta waves for alertness & mental clarity</p>
+                    <h3 className="font-serif text-xl mb-2">Wake Up Boost</h3>
+                    <p className="text-white/60 text-sm">12Hz beta waves for alertness</p>
                 </div>
 
-                <div className="flex gap-3">
-                    <button
-                        onClick={() => handleFinish(false)}
-                        className="flex-1 py-4 bg-white/20 hover:bg-white/30 rounded-xl font-medium transition-all text-lg"
-                    >
-                        Skip
-                    </button>
-                    <button
-                        onClick={() => handleFinish(true)}
-                        className="flex-1 py-4 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 rounded-xl font-medium transition-all text-lg"
-                    >
-                        Start
-                    </button>
-                </div>
+                {/* Toggle boost button */}
+                <button
+                    onClick={toggleBoost}
+                    className={`w-full py-4 rounded-xl font-semibold text-lg mb-4 transition-all ${boostActive
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/30'
+                        : 'bg-white/20 text-white hover:bg-white/30'
+                        }`}
+                >
+                    {boostActive ? (
+                        <span className="flex items-center justify-center gap-2">
+                            <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                            Boost Active - Tap to Stop
+                        </span>
+                    ) : (
+                        'Start Boost Again'
+                    )}
+                </button>
+
+                {/* Start My Day button */}
+                <button
+                    onClick={handleStartMyDay}
+                    className="w-full py-4 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold rounded-xl text-lg shadow-lg hover:shadow-xl transition-all"
+                >
+                    Start My Day
+                </button>
             </div>
         </div>
     );

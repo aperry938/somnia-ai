@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { GuidedRelaxation } from '../../types';
 import { playBreathSound } from '../../services/audioService';
 import { useAppContext } from '../../contexts/AppContext';
+import haptics from '../../services/hapticsService';
 
 const CircleVisualizer: React.FC<{ animationClass: string; animKey: number }> = ({ animationClass, animKey }) => (
     <div className="w-40 h-40 flex justify-center items-center">
@@ -43,10 +44,12 @@ type CycleStep = {
     vibrate?: number; // Vibration duration in ms (for inhale/exhale cues)
 };
 
-// Haptic feedback helper
-const triggerHaptic = (pattern: number | number[]) => {
-    if ('vibrate' in navigator) {
-        navigator.vibrate(pattern);
+// Haptic feedback helper using centralized service
+const triggerHaptic = (duration: number) => {
+    if (duration <= 100) {
+        haptics.breatheIn();
+    } else {
+        haptics.breatheOut();
     }
 };
 
@@ -140,10 +143,12 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
     }, [sessionState, relaxation.id]);
 
     const startSession = () => {
+        haptics.medium();
         setSessionState('starting');
     };
 
     const endSession = () => {
+        haptics.light();
         setSessionState('ready');
         setStepIndex(0);
         setCountdown(0);
