@@ -120,6 +120,9 @@ export interface Biometrics {
     age: number | null;
     gender: string;
     avgSleep: number | null;
+    occupation?: string;
+    sleepGoal?: number; // Target hours of sleep
+    wakeGoal?: string; // Preferred wake time (HH:MM)
 }
 
 // Sync Types
