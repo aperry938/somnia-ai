@@ -25,6 +25,8 @@ export const SOUNDSCAPES: Soundscape[] = [
     // 110 Hz resonates in the chest/body (somatic entrainment), below the ear's hypersensitive range
     { id: 'delta_waves', name: 'Delta Waves', type: 'binaural', params: { base: 110, diff: 2.5 }, isPremium: true, icon: React.createElement('svg', iconProps, React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" })), description: "2.5Hz deep delta for maximum restorative sleep. Promotes tissue regeneration, immune function, and memory consolidation through slow-wave entrainment." },
     { id: 'theta_waves', name: 'Theta Waves', type: 'binaural', params: { base: 110, diff: 6.0 }, isPremium: true, icon: React.createElement('svg', iconProps, React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M17 14v6m-5-12v12m-5-6v6" })), description: "6Hz 'Twilight' frequency - the bridge between subconscious dreaming and conscious visualization. Optimal for lucid dreaming, creativity, and REM enhancement." },
+    // SLEEP RAMP - Guided descent from wakefulness to deep sleep
+    { id: 'sleep_ramp', name: 'Sleep Ramp', type: 'ramp', params: { base: 110 }, isPremium: true, icon: React.createElement('svg', iconProps, React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" })), description: "Intelligent Alpha→Theta→Delta descent. Dynamically adjusts to your sleep duration, guiding you from relaxation (12Hz) through hypnagogia (8→4Hz) to deep restorative delta (1.5Hz)." },
 ];
 
 export const GUIDED_RELAXATIONS: GuidedRelaxation[] = [

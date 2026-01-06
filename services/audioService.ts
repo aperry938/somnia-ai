@@ -714,6 +714,107 @@ const createBinauralNode = (context: AudioContext, baseFreq: number, diff: numbe
     return merger;
 };
 
+/**
+ * Creates a Sleep Ramp binaural beat system with multi-stage frequency descent.
+ * 
+ * The ramp guides the brain from wakefulness to deep sleep:
+ * - Phase 1 (Alpha, 0-20%): 12Hz → 8Hz - Decompression, settling in
+ * - Phase 2 (Theta, 20-50%): 8Hz → 4Hz - Hypnagogic bridge, losing linear thought
+ * - Phase 3 (Delta, 50-100%): 4Hz → 1.5Hz - Deep sleep anchor
+ * 
+ * After the ramp completes, the frequency holds at 1.5Hz indefinitely.
+ * 
+ * @param context - AudioContext
+ * @param baseFreq - Carrier frequency (typically 110Hz for chest resonance)
+ * @param durationMinutes - Total duration of the ramp in minutes (0 = 30 min default)
+ * @returns ChannelMergerNode with attached oscillators for cleanup
+ */
+const createSleepRampNode = (
+    context: AudioContext,
+    baseFreq: number,
+    durationMinutes: number
+): ChannelMergerNode => {
+    const oscLeft = context.createOscillator();
+    const oscRight = context.createOscillator();
+    const merger = context.createChannelMerger(2);
+
+    oscLeft.type = 'sine';
+    oscRight.type = 'sine';
+
+    // Ramp duration: use provided duration or default to 30 minutes
+    // For very long sessions (8+ hours), cap ramp at 45 minutes
+    const rampMinutes = durationMinutes === 0 ? 30 : Math.min(durationMinutes, 45);
+    const rampSeconds = rampMinutes * 60;
+    const now = context.currentTime;
+
+    // === FREQUENCY RAMP SCHEDULE ===
+    // Binaural beat = difference between left and right oscillator frequencies
+    // Left ear: baseFreq - (beatFreq / 2)
+    // Right ear: baseFreq + (beatFreq / 2)
+
+    // Phase boundaries (percentage-based)
+    const phase1End = rampSeconds * 0.20;  // 20% - Alpha phase ends
+    const phase2End = rampSeconds * 0.50;  // 50% - Theta phase ends
+    const phase3End = rampSeconds;          // 100% - Delta phase ends
+
+    // Beat frequencies at each transition point
+    const alphaStart = 12;   // Starting frequency (relaxed alertness)
+    const alphaEnd = 8;      // End of alpha (transition)
+    const thetaEnd = 4;      // End of theta (hypnagogic)
+    const deltaEnd = 1.5;    // Final deep delta (hold here)
+
+    // Helper to set frequency pair for binaural beat
+    const setFrequencyPair = (time: number, beatFreq: number, method: 'set' | 'ramp') => {
+        const leftFreq = baseFreq - beatFreq / 2;
+        const rightFreq = baseFreq + beatFreq / 2;
+
+        if (method === 'set') {
+            oscLeft.frequency.setValueAtTime(leftFreq, time);
+            oscRight.frequency.setValueAtTime(rightFreq, time);
+        } else {
+            oscLeft.frequency.linearRampToValueAtTime(leftFreq, time);
+            oscRight.frequency.linearRampToValueAtTime(rightFreq, time);
+        }
+    };
+
+    // === SCHEDULE THE RAMP ===
+
+    // Start at Alpha (12Hz)
+    setFrequencyPair(now, alphaStart, 'set');
+
+    // Phase 1: Alpha 12Hz → 8Hz (0% to 20%)
+    setFrequencyPair(now + phase1End, alphaEnd, 'ramp');
+
+    // Phase 2: Theta 8Hz → 4Hz (20% to 50%)
+    setFrequencyPair(now + phase2End, thetaEnd, 'ramp');
+
+    // Phase 3: Delta 4Hz → 1.5Hz (50% to 100%)
+    setFrequencyPair(now + phase3End, deltaEnd, 'ramp');
+
+    // After ramp: Hold at 1.5Hz indefinitely (no further changes needed - audio API holds last value)
+
+    // Subtle binaural gain (same as regular binaural beats)
+    const gainLeft = context.createGain();
+    const gainRight = context.createGain();
+    gainLeft.gain.setValueAtTime(0.08, now);
+    gainRight.gain.setValueAtTime(0.08, now);
+
+    oscLeft.connect(gainLeft);
+    oscRight.connect(gainRight);
+    gainLeft.connect(merger, 0, 0);
+    gainRight.connect(merger, 0, 1);
+
+    oscLeft.start(now);
+    oscRight.start(now);
+
+    // Attach oscillators for cleanup
+    (merger as any).oscillators = [oscLeft, oscRight];
+    (merger as any).gains = [gainLeft, gainRight];
+    (merger as any).rampDurationSeconds = rampSeconds;
+
+    return merger;
+};
+
 const getAudioBuffer = async (context: AudioContext, src: string): Promise<AudioBuffer> => {
     if (audioBufferCache[src]) {
         return audioBufferCache[src];
@@ -767,6 +868,11 @@ export const playSleepSound = async (sound: Soundscape, durationMinutes: number,
         (sleepSourceNode as AudioBufferSourceNode).start();
     } else if (sound.type === 'binaural') {
         sleepSourceNode = createBinauralNode(context, sound.params.base, sound.params.diff);
+        sleepSourceNode.connect(sleepGainNode);
+    } else if (sound.type === 'ramp') {
+        // Sleep Ramp: Multi-stage binaural descent (Alpha→Theta→Delta)
+        // Duration scales the ramp phases proportionally
+        sleepSourceNode = createSleepRampNode(context, sound.params.base, durationMinutes);
         sleepSourceNode.connect(sleepGainNode);
     } else if (sound.type === 'file') {
         try {
