@@ -6,18 +6,21 @@ const LAST_ACTIVITY_KEY = 'somnia_last_activity';
 interface SleepDetectionSettings {
     enabled: boolean;
     inactivityHours: number; // Hours of inactivity before prompting
+    soundId: string; // Alarm sound to use when triggered
 }
 
 const DEFAULT_SETTINGS: SleepDetectionSettings = {
     enabled: false,
-    inactivityHours: 5
+    inactivityHours: 5,
+    soundId: 'somnia'
 };
 
 /**
  * Hook to detect phone inactivity and prompt dream logging.
  * Monitors user activity and triggers a callback when inactivity threshold is reached.
+ * @param onWakePrompt - Called with the sound ID to use when inactivity threshold is met
  */
-export const useSleepDetection = (onWakePrompt: () => void) => {
+export const useSleepDetection = (onWakePrompt: (soundId: string) => void) => {
     const checkIntervalRef = useRef<number | null>(null);
 
     // Get settings from localStorage
@@ -87,14 +90,16 @@ export const useSleepDetection = (onWakePrompt: () => void) => {
         // Check inactivity periodically (every 5 minutes when app is active)
         checkIntervalRef.current = window.setInterval(() => {
             if (document.visibilityState === 'visible' && checkInactivity()) {
-                onWakePrompt();
+                const settings = getSettings();
+                onWakePrompt(settings.soundId);
             }
         }, 5 * 60 * 1000);
 
         // Also check when app becomes visible after being in background
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible' && checkInactivity()) {
-                onWakePrompt();
+                const settings = getSettings();
+                onWakePrompt(settings.soundId);
             }
         };
         document.addEventListener('visibilitychange', handleVisibilityChange);

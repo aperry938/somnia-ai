@@ -42,7 +42,7 @@ const App: React.FC = () => {
         return localStorage.getItem('somnia_onboarding_complete') === 'true';
     });
     const { timeString, dateString } = useClock();
-    const { ringingAlarm, stopRinging, snooze } = useAlarmManager();
+    const { ringingAlarm, stopRinging, snooze, triggerSleepDetectionAlarm } = useAlarmManager();
     const { isHelpOpen, closeHelp } = useKeyboardHelp();
 
     useEffect(() => {
@@ -95,9 +95,9 @@ const App: React.FC = () => {
 
     const [wakeQuickNote, setWakeQuickNote] = useState<string>('');
 
-    // Sleep Detection: opens DreamScribe after phone inactivity threshold
-    useSleepDetection(() => {
-        setIsScribeOpen(true);
+    // Sleep Detection: triggers alarm wake-up flow after phone inactivity threshold
+    useSleepDetection((soundId: string) => {
+        triggerSleepDetectionAlarm(soundId);
     });
 
     const handleRecordDream = useCallback((quickNote?: string) => {

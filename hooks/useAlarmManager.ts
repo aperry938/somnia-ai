@@ -114,13 +114,16 @@ export const useAlarmManager = () => {
 
     const stopRinging = useCallback(() => {
         if (ringingAlarm) {
-            // Only deactivate one-time alarms (no days specified)
-            // Repeating alarms stay active for the next scheduled day
-            const isOneTimeAlarm = !ringingAlarm.days || ringingAlarm.days.length === 0;
-            if (isOneTimeAlarm) {
-                toggleAlarmActive(ringingAlarm.id);
+            // Sleep detection alarms (id=-1) don't need to be deactivated in storage
+            if (ringingAlarm.id !== -1) {
+                // Only deactivate one-time alarms (no days specified)
+                // Repeating alarms stay active for the next scheduled day
+                const isOneTimeAlarm = !ringingAlarm.days || ringingAlarm.days.length === 0;
+                if (isOneTimeAlarm) {
+                    toggleAlarmActive(ringingAlarm.id);
+                }
+                // For repeating alarms, just dismiss - they'll trigger again on the next scheduled day
             }
-            // For repeating alarms, just dismiss - they'll trigger again on the next scheduled day
 
             setRingingAlarm(null);
             setIsSnoozed(false);
@@ -154,5 +157,24 @@ export const useAlarmManager = () => {
         }
     }, [ringingAlarm]);
 
-    return { ringingAlarm, stopRinging, snooze, isSnoozed };
+    /**
+     * Trigger a "virtual" alarm for sleep detection.
+     * Creates a temporary alarm object with the specified sound.
+     */
+    const triggerSleepDetectionAlarm = useCallback((soundId: string) => {
+        // Don't trigger if an alarm is already ringing
+        if (ringingAlarm || isSnoozed) return;
+
+        const virtualAlarm: Alarm = {
+            id: -1, // Special ID for sleep detection alarm
+            time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+            isActive: true,
+            days: [], // One-time (won't deactivate anything since id=-1)
+            soundId: soundId,
+            smartWake: false,
+        };
+        setRingingAlarm(virtualAlarm);
+    }, [ringingAlarm, isSnoozed]);
+
+    return { ringingAlarm, stopRinging, snooze, isSnoozed, triggerSleepDetectionAlarm };
 };
