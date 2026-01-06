@@ -85,6 +85,36 @@ serve(async (req) => {
             );
         }
 
+        // Server-side rate limiting - 100 requests per day per user
+        const DAILY_LIMIT = 100;
+        const today = new Date().toISOString().split('T')[0];
+
+        // Check usage count (create table: voice_usage with user_id, date, count)
+        const { data: usage } = await supabaseClient
+            .from('voice_usage')
+            .select('count')
+            .eq('user_id', user.id)
+            .eq('date', today)
+            .single();
+
+        const currentCount = usage?.count || 0;
+
+        if (currentCount >= DAILY_LIMIT) {
+            return new Response(
+                JSON.stringify({ error: 'Daily voice limit reached. Resets at midnight.' }),
+                { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+        }
+
+        // Increment usage counter (upsert)
+        await supabaseClient
+            .from('voice_usage')
+            .upsert({
+                user_id: user.id,
+                date: today,
+                count: currentCount + 1,
+            }, { onConflict: 'user_id,date' });
+
         // Parse request body
         const { text, voice = 'soothing' } = await req.json();
 

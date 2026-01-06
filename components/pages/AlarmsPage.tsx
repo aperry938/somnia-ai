@@ -140,18 +140,23 @@ const DrumTimePicker: React.FC<{ initialTime: string; onChange: (time: string) =
         onChange(timeString);
     }, [hour, minute, period, onChange]);
 
-    // Scroll to selected values on mount
+    // Scroll to selected values on mount - use setTimeout to ensure DOM is ready
     useEffect(() => {
-        if (hourRef.current) {
-            hourRef.current.scrollTop = (hour - 1) * ITEM_HEIGHT;
-        }
-        if (minuteRef.current) {
-            minuteRef.current.scrollTop = minute * ITEM_HEIGHT;
-        }
-        if (periodRef.current) {
-            periodRef.current.scrollTop = period === 'AM' ? 0 : ITEM_HEIGHT;
-        }
-    }, []);
+        const scrollToInitialValues = () => {
+            if (hourRef.current) {
+                hourRef.current.scrollTop = (hour - 1) * ITEM_HEIGHT;
+            }
+            if (minuteRef.current) {
+                minuteRef.current.scrollTop = minute * ITEM_HEIGHT;
+            }
+            if (periodRef.current) {
+                periodRef.current.scrollTop = period === 'AM' ? 0 : ITEM_HEIGHT;
+            }
+        };
+        // Delay to ensure scroll containers are rendered
+        const timer = setTimeout(scrollToInitialValues, 50);
+        return () => clearTimeout(timer);
+    }, [hour, minute, period]);
 
     const handleScroll = (ref: React.RefObject<HTMLDivElement>, setter: (val: any) => void, values: any[]) => {
         if (!ref.current) return;

@@ -21,12 +21,62 @@ export const VOICE_OPTIONS: Record<VoiceType, { label: string; description: stri
     warm: { label: 'Orion', description: 'Warm, deep male voice' },
 };
 
-// Storage key for voice preference
+// Storage keys
 const VOICE_PREF_KEY = 'somnia_voice_preference';
+const VOICE_USAGE_KEY = 'somnia_voice_usage';
+
+// Rate limiting - daily cap to control costs
+const DAILY_VOICE_LIMIT = 50; // Max voice messages per day
 
 // Current audio element for playback control
 let currentAudio: HTMLAudioElement | null = null;
 let isSpeaking = false;
+
+/**
+ * Voice usage tracking for rate limiting
+ */
+interface VoiceUsage {
+    date: string; // YYYY-MM-DD
+    count: number;
+}
+
+function getTodayString(): string {
+    return new Date().toISOString().split('T')[0];
+}
+
+function getVoiceUsage(): VoiceUsage {
+    const stored = localStorage.getItem(VOICE_USAGE_KEY);
+    if (stored) {
+        const usage = JSON.parse(stored) as VoiceUsage;
+        // Reset if it's a new day
+        if (usage.date !== getTodayString()) {
+            return { date: getTodayString(), count: 0 };
+        }
+        return usage;
+    }
+    return { date: getTodayString(), count: 0 };
+}
+
+function incrementVoiceUsage(): void {
+    const usage = getVoiceUsage();
+    usage.count += 1;
+    localStorage.setItem(VOICE_USAGE_KEY, JSON.stringify(usage));
+}
+
+/**
+ * Check remaining voice messages for today
+ */
+export function getRemainingVoiceMessages(): number {
+    const usage = getVoiceUsage();
+    return Math.max(0, DAILY_VOICE_LIMIT - usage.count);
+}
+
+/**
+ * Check if user has reached daily voice limit
+ */
+export function isVoiceRateLimited(): boolean {
+    return getRemainingVoiceMessages() <= 0;
+}
 
 /**
  * Get user's preferred voice
@@ -76,6 +126,13 @@ export async function speakText(text: string, voice?: VoiceType): Promise<void> 
         return;
     }
 
+    // Check rate limit
+    if (isVoiceRateLimited()) {
+        console.warn('Daily voice limit reached');
+        window.dispatchEvent(new CustomEvent('voiceRateLimited'));
+        return;
+    }
+
     // Stop any current speech
     stopSpeaking();
 
@@ -116,6 +173,9 @@ export async function speakText(text: string, voice?: VoiceType): Promise<void> 
         // Play the audio
         currentAudio = new Audio(audioUrl);
         isSpeaking = true;
+
+        // Increment usage counter
+        incrementVoiceUsage();
 
         // Dispatch event for UI updates
         window.dispatchEvent(new CustomEvent('voiceStateChanged', { detail: { isSpeaking: true } }));
