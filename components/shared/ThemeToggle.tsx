@@ -1,14 +1,38 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
 
 export const ThemeToggle: React.FC = () => {
     const { themeOverride, setThemeOverride } = useAppContext();
+    const [showLabel, setShowLabel] = useState(false);
+    const [labelText, setLabelText] = useState('');
+
+    const getThemeLabel = (theme: string) => {
+        switch (theme) {
+            case 'auto': return 'Auto Mode';
+            case 'day': return 'Day Mode';
+            case 'night': return 'Night Mode';
+            default: return '';
+        }
+    };
 
     const cycleTheme = () => {
-        if (themeOverride === 'auto') setThemeOverride('day');
-        else if (themeOverride === 'day') setThemeOverride('night');
-        else setThemeOverride('auto');
+        let nextTheme: 'auto' | 'day' | 'night';
+        if (themeOverride === 'auto') nextTheme = 'day';
+        else if (themeOverride === 'day') nextTheme = 'night';
+        else nextTheme = 'auto';
+
+        setThemeOverride(nextTheme);
+        setLabelText(getThemeLabel(nextTheme));
+        setShowLabel(true);
     };
+
+    // Hide label after 1.5 seconds
+    useEffect(() => {
+        if (showLabel) {
+            const timeout = setTimeout(() => setShowLabel(false), 1500);
+            return () => clearTimeout(timeout);
+        }
+    }, [showLabel]);
 
     const getIcon = () => {
         switch (themeOverride) {
@@ -34,12 +58,23 @@ export const ThemeToggle: React.FC = () => {
     };
 
     return (
-        <button
-            onClick={cycleTheme}
-            className="fixed top-6 left-6 z-40 p-3 rounded-full bg-white/10 dark:bg-black/20 backdrop-blur-md border border-white/20 dark:border-white/10 text-day-text-primary dark:text-night-text-primary shadow-lg hover:bg-white/20 dark:hover:bg-white/10 transition-all"
-            title={`Theme: ${themeOverride.charAt(0).toUpperCase() + themeOverride.slice(1)}`}
-        >
-            {getIcon()}
-        </button>
+        <>
+            <button
+                onClick={cycleTheme}
+                className="fixed top-6 left-6 z-40 p-3 rounded-full bg-white/10 dark:bg-black/20 backdrop-blur-md border border-white/20 dark:border-white/10 text-day-text-primary dark:text-night-text-primary shadow-lg hover:bg-white/20 dark:hover:bg-white/10 transition-all"
+                title={`Theme: ${themeOverride.charAt(0).toUpperCase() + themeOverride.slice(1)}`}
+            >
+                {getIcon()}
+            </button>
+
+            {/* Floating Label */}
+            {showLabel && (
+                <div className="fixed top-20 left-6 z-40 px-3 py-1.5 rounded-full bg-white/90 dark:bg-black/80 backdrop-blur-sm border border-white/20 dark:border-white/10 shadow-lg animate-fadeIn">
+                    <span className="text-sm font-medium text-day-text-primary dark:text-night-text-primary">
+                        {labelText}
+                    </span>
+                </div>
+            )}
+        </>
     );
 };
