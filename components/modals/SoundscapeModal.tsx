@@ -191,33 +191,8 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                             <button onClick={() => handleDurationClick(60)} className="duration-btn py-2 border border-day-border dark:border-night-border rounded-lg text-sm hover:bg-day-accent/10 dark:hover:bg-night-accent/10 transition-colors">60m</button>
                         </div>
 
-                        {/* Beat Frequency Slider (Binaural only) */}
-                        {sound.type === 'binaural' && (
-                            <div className="mt-4 p-3 bg-white/50 dark:bg-black/20 rounded-lg text-left">
-                                <div className="flex justify-between text-xs mb-1">
-                                    <span className="text-day-text-secondary dark:text-night-text-secondary">Beat Frequency</span>
-                                    <span className="font-mono text-day-accent dark:text-night-accent">{beatFreq.toFixed(1)} Hz</span>
-                                </div>
-                                <input
-                                    type="range"
-                                    min="1"
-                                    max="20"
-                                    step="0.5"
-                                    value={beatFreq}
-                                    onChange={(e) => handleBeatFreqChange(parseFloat(e.target.value))}
-                                    className="w-full accent-day-accent dark:accent-night-accent cursor-pointer"
-                                />
-                                <div className="flex justify-between text-[10px] text-day-text-secondary dark:text-night-text-secondary mt-1">
-                                    <span>Delta</span>
-                                    <span>Theta</span>
-                                    <span>Alpha</span>
-                                    <span>Beta</span>
-                                </div>
-                                <p className="text-[10px] text-center text-day-accent dark:text-night-accent mt-2 font-medium">
-                                    {getFrequencyLabel(beatFreq)}
-                                </p>
-                            </div>
-                        )}
+
+                        {/* Binaural beats use predefined frequencies (Delta/Theta) */}
 
                         {/* Master Volume Slider */}
                         <div className="mt-4 p-3 bg-white/50 dark:bg-black/20 rounded-lg text-left">
@@ -239,11 +214,10 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                         {/* Preview Toggle Button */}
                         <button
                             onClick={togglePreview}
-                            className={`mt-3 w-full py-2 rounded-lg text-sm font-medium transition-all ${
-                                isPreviewing
+                            className={`mt-3 w-full py-2 rounded-lg text-sm font-medium transition-all ${isPreviewing
                                     ? 'bg-green-500/20 text-green-600 dark:text-green-400 border border-green-500/30'
                                     : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-transparent'
-                            }`}
+                                }`}
                         >
                             {isPreviewing ? (
                                 <span className="flex items-center justify-center gap-2">

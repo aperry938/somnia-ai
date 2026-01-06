@@ -1001,3 +1001,82 @@ export const playBreathSound = (direction: 'in' | 'out', duration: number) => {
     whiteNoise.start(now);
     whiteNoise.stop(now + duration);
 }
+
+// --- ALERTNESS BOOST FUNCTIONS (Wake-Up Flow) ---
+
+// Active alertness nodes
+let alertnessNodes: { oscLeft: OscillatorNode; oscRight: OscillatorNode; gainNode: GainNode } | null = null;
+
+/**
+ * Plays 12Hz Beta binaural beats for alertness during wake-up
+ * 
+ * 12Hz Beta is optimal for:
+ * - Gentle alertness without stress
+ * - Cognitive readiness
+ * - Smooth transition from sleep to wakefulness
+ * 
+ * Uses same 110Hz carrier as sleep sounds for consistency
+ */
+export const playAlertnessBoost = () => {
+    const context = getAudioContext();
+    if (!context || alertnessNodes) return; // Already playing
+
+    const baseFreq = 110; // Same comfortable carrier
+    const betaDiff = 12;  // 12Hz for gentle alertness
+
+    const oscLeft = context.createOscillator();
+    const oscRight = context.createOscillator();
+    const merger = context.createChannelMerger(2);
+    const gainNode = context.createGain();
+
+    oscLeft.type = 'sine';
+    oscRight.type = 'sine';
+    oscLeft.frequency.value = baseFreq - betaDiff / 2;
+    oscRight.frequency.value = baseFreq + betaDiff / 2;
+
+    const now = context.currentTime;
+    gainNode.gain.setValueAtTime(0, now);
+    gainNode.gain.linearRampToValueAtTime(0.1, now + 2); // Gentle fade in
+
+    oscLeft.connect(merger, 0, 0);
+    oscRight.connect(merger, 0, 1);
+    merger.connect(gainNode);
+    gainNode.connect(context.destination);
+
+    oscLeft.start();
+    oscRight.start();
+
+    alertnessNodes = { oscLeft, oscRight, gainNode };
+};
+
+/**
+ * Stops alertness boost with gentle fade out
+ */
+export const stopAlertnessBoost = () => {
+    if (!alertnessNodes || !audioContext) return;
+
+    const { oscLeft, oscRight, gainNode } = alertnessNodes;
+    const now = audioContext.currentTime;
+
+    gainNode.gain.linearRampToValueAtTime(0, now + 1);
+
+    setTimeout(() => {
+        try {
+            oscLeft.stop();
+            oscRight.stop();
+            oscLeft.disconnect();
+            oscRight.disconnect();
+            gainNode.disconnect();
+        } catch (e) {
+            // Already stopped
+        }
+        alertnessNodes = null;
+    }, 1100);
+};
+
+/**
+ * Check if alertness boost is playing
+ */
+export const isAlertnessBoostPlaying = (): boolean => {
+    return alertnessNodes !== null;
+};
