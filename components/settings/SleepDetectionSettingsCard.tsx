@@ -67,15 +67,24 @@ export const SleepDetectionSettingsCard: React.FC = () => {
                         <label className="text-sm text-day-text-secondary dark:text-night-text-secondary block mb-2">
                             Inactivity threshold: <span className="font-bold text-day-accent dark:text-night-accent">{settings.inactivityHours} hours</span>
                         </label>
-                        <input
-                            type="range"
-                            min="3"
-                            max="10"
-                            step="0.5"
-                            value={settings.inactivityHours}
-                            onChange={(e) => updateSettings({ inactivityHours: parseFloat(e.target.value) })}
-                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-day-accent dark:accent-night-accent"
-                        />
+                        <div className="relative">
+                            <input
+                                type="range"
+                                min="3"
+                                max="10"
+                                step="0.5"
+                                value={settings.inactivityHours}
+                                onChange={(e) => updateSettings({ inactivityHours: parseFloat(e.target.value) })}
+                                className="w-full h-2 rounded-lg appearance-none cursor-pointer accent-day-accent dark:accent-night-accent"
+                                style={{
+                                    background: `linear-gradient(to right, 
+                                        var(--color-day-accent, rgb(129, 140, 248)) 0%, 
+                                        var(--color-day-accent, rgb(129, 140, 248)) ${((settings.inactivityHours - 3) / 7) * 100}%, 
+                                        rgb(75, 85, 99) ${((settings.inactivityHours - 3) / 7) * 100}%, 
+                                        rgb(75, 85, 99) 100%)`
+                                }}
+                            />
+                        </div>
                         <div className="flex justify-between text-xs text-day-text-secondary dark:text-night-text-secondary mt-1">
                             <span>3h</span>
                             <span>10h</span>
