@@ -35,8 +35,8 @@ const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = Re
         <div
             onClick={() => onEdit(alarm)}
             className={`group relative bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border shadow-lg rounded-2xl p-4 cursor-pointer transition-all duration-300 flex flex-col justify-between h-32 hover:shadow-xl hover:scale-[1.02] hover:border-day-accent dark:hover:border-night-accent active:scale-[0.98] ${alarm.isActive
-                    ? 'ring-2 ring-day-accent/30 dark:ring-night-accent/30'
-                    : 'opacity-60 hover:opacity-100'
+                ? 'ring-2 ring-day-accent/30 dark:ring-night-accent/30'
+                : 'opacity-60 hover:opacity-100'
                 }`}
         >
             {/* Active indicator glow */}
@@ -181,9 +181,9 @@ const AnalogClock: React.FC<{ initialTime: string; onChange: (time: string) => v
                 {/* Clock face circle */}
                 <div className="absolute inset-0 rounded-full border-2 border-day-border dark:border-night-border"></div>
 
-                {/* Hour hand */}
+                {/* Hour hand - pointer-events disabled to not intercept clicks */}
                 <div
-                    className="absolute w-1.5 bg-day-text dark:bg-night-text rounded-full"
+                    className="absolute w-1.5 bg-day-text dark:bg-night-text rounded-full pointer-events-none"
                     style={{
                         height: '50px',
                         bottom: '50%',
@@ -192,9 +192,9 @@ const AnalogClock: React.FC<{ initialTime: string; onChange: (time: string) => v
                         transform: `translateX(-50%) rotate(${hourAngle}deg)`,
                     }}
                 />
-                {/* Minute hand */}
+                {/* Minute hand - pointer-events disabled to not intercept clicks */}
                 <div
-                    className="absolute w-1 bg-day-accent dark:bg-night-accent rounded-full"
+                    className="absolute w-1 bg-day-accent dark:bg-night-accent rounded-full pointer-events-none"
                     style={{
                         height: '70px',
                         bottom: '50%',
@@ -206,12 +206,12 @@ const AnalogClock: React.FC<{ initialTime: string; onChange: (time: string) => v
 
                 {/* Hour/minute numbers */}
                 {selecting === 'hour' && Array.from({ length: 12 }, (_, i) => i + 1).map(h => (
-                    <div key={h} style={{ transform: `rotate(${-90 + h * 30}deg) translate(90px) rotate(-${-90 + h * 30}deg)` }} className="absolute top-1/2 left-1/2 -m-4 w-8 h-8">
+                    <div key={h} style={{ transform: `rotate(${-90 + h * 30}deg) translate(90px) rotate(-${-90 + h * 30}deg)` }} className="absolute top-1/2 left-1/2 -m-4 w-8 h-8 z-10">
                         <button onClick={() => handleHourSelect(period === 'PM' && h !== 12 ? h + 12 : period === 'AM' && h === 12 ? 0 : h)} className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${displayHour === h ? 'bg-day-accent text-white dark:bg-night-accent' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}>{h}</button>
                     </div>
                 ))}
                 {selecting === 'minute' && Array.from({ length: 12 }, (_, i) => i * 5).map(m => (
-                    <div key={m} style={{ transform: `rotate(${-90 + m * 6}deg) translate(90px) rotate(-${-90 + m * 6}deg)` }} className="absolute top-1/2 left-1/2 -m-4 w-8 h-8">
+                    <div key={m} style={{ transform: `rotate(${-90 + m * 6}deg) translate(90px) rotate(-${-90 + m * 6}deg)` }} className="absolute top-1/2 left-1/2 -m-4 w-8 h-8 z-10">
                         <button onClick={() => handleMinuteSelect(m)} className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${minute === m ? 'bg-day-accent text-white dark:bg-night-accent' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}>{String(m).padStart(2, '0')}</button>
                     </div>
                 ))}
@@ -219,7 +219,7 @@ const AnalogClock: React.FC<{ initialTime: string; onChange: (time: string) => v
                 {/* Center dot */}
                 <div className="absolute top-1/2 left-1/2 w-3 h-3 bg-day-accent dark:bg-night-accent rounded-full -m-1.5"></div>
             </div>
-            <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-2">Tap time to type exact value</p>
+            <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-2">Tap digits to edit or switch view</p>
         </div>
     );
 };
