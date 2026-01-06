@@ -4,17 +4,17 @@ import { playBreathSound } from '../../services/audioService';
 import { useAppContext } from '../../contexts/AppContext';
 import haptics from '../../services/hapticsService';
 
-const CircleVisualizer: React.FC<{ animationClass: string; animKey: number }> = ({ animationClass, animKey }) => (
+const CircleVisualizer: React.FC<{ animationClass: string; animKey: number; isAnimating: boolean }> = ({ animationClass, animKey, isAnimating }) => (
     <div className="w-40 h-40 flex justify-center items-center">
         <div
             key={animKey}
-            className={`w-20 h-20 rounded-full bg-day-accent dark:bg-night-accent transform ${animationClass}`}
+            className={`w-20 h-20 rounded-full bg-day-accent dark:bg-night-accent transform transition-all duration-300 ${isAnimating ? animationClass : 'scale-[0.8] opacity-70'}`}
         ></div>
     </div>
 );
 
 
-const BoxVisualizer: React.FC<{ animKey: number }> = ({ animKey }) => (
+const BoxVisualizer: React.FC<{ animKey: number; isAnimating: boolean }> = ({ animKey, isAnimating }) => (
     <div key={animKey} className="w-40 h-40 flex justify-center items-center">
         <svg width="120" height="120" viewBox="0 0 120 120" className="-rotate-90">
             <path
@@ -27,7 +27,7 @@ const BoxVisualizer: React.FC<{ animKey: number }> = ({ animKey }) => (
                 d="M0 0 H120 V120 H0 Z"
                 fill="none"
                 stroke="currentColor"
-                className="text-day-accent dark:text-night-accent animate-box-breathing-16s"
+                className={`text-day-accent dark:text-night-accent ${isAnimating ? 'animate-box-breathing-16s' : ''}`}
                 strokeWidth="4"
                 strokeDasharray="480"
                 strokeDashoffset="480"
@@ -185,8 +185,8 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
                     <div className="animate-fadeIn">
                         <div className="flex justify-center items-center my-8 h-40">
                             {relaxation.id === 'box_breathing'
-                                ? <BoxVisualizer animKey={animationKey} />
-                                : <CircleVisualizer animationClass={animationClass} animKey={animationKey} />
+                                ? <BoxVisualizer animKey={animationKey} isAnimating={sessionState === 'running'} />
+                                : <CircleVisualizer animationClass={animationClass} animKey={animationKey} isAnimating={sessionState === 'running'} />
                             }
                         </div>
                         <p className="text-xl font-medium h-8">
@@ -197,6 +197,6 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 };
