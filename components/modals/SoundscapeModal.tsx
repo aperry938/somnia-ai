@@ -18,8 +18,13 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
     const [isPreviewing, setIsPreviewing] = useState(false);
     const [baseFreq] = useState(sound.type === 'binaural' ? sound.params.base || 100 : 100);
 
-    // Start preview automatically when modal opens
+    // Start preview automatically when modal opens (except for ramp type which can't be previewed)
     useEffect(() => {
+        // Skip preview for Sleep Ramp - it's a multi-stage progression that can't be demoed
+        if (sound.type === 'ramp') {
+            return;
+        }
+
         const startPreview = async () => {
             const soundToPlay = { ...sound };
             if (sound.type === 'binaural') {
@@ -215,8 +220,8 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                         <button
                             onClick={togglePreview}
                             className={`mt-3 w-full py-2 rounded-lg text-sm font-medium transition-all ${isPreviewing
-                                    ? 'bg-green-500/20 text-green-600 dark:text-green-400 border border-green-500/30'
-                                    : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-transparent'
+                                ? 'bg-green-500/20 text-green-600 dark:text-green-400 border border-green-500/30'
+                                : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-transparent'
                                 }`}
                         >
                             {isPreviewing ? (
