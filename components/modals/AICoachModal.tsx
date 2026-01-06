@@ -6,6 +6,7 @@ import { isPremium } from '../../services/secureSubscriptionService';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { speakText, stopSpeaking, isVoiceAvailable, getIsSpeaking } from '../../services/ttsService';
 import haptics from '../../services/hapticsService';
+import { VoiceOrb } from '../shared/VoiceOrb';
 
 const COACH_HISTORY_KEY = 'somnia_coach_history';
 const MAX_SAVED_MESSAGES = 20; // Limit saved history to prevent storage bloat
@@ -19,12 +20,42 @@ export const AICoachModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
     const [isSpeaking, setIsSpeaking] = useState(false);
     const chatBoxRef = useRef<HTMLDivElement>(null);
 
-    // Speech recognition for voice input
+    // Speech recognition for voice input - auto-send when done
     const handleVoiceInput = useCallback((transcript: string) => {
-        setInput(prev => (prev + ' ' + transcript).trim());
-        haptics.light();
+        if (transcript.trim()) {
+            haptics.light();
+            // Auto-send the voice message
+            handleSendVoice(transcript.trim());
+        }
     }, []);
     const { isListening, interimTranscript, startListening, stopListening, isSupported: speechSupported } = useSpeechRecognition(handleVoiceInput);
+
+    // Handle sending voice messages (used by VoiceOrb)
+    const handleSendVoice = async (text: string) => {
+        if (!text.trim() || isLoading) return;
+
+        haptics.medium();
+        const userMessage: ChatMessage = { id: Date.now(), role: 'user', parts: [{ text }] };
+        const newHistory = [...history, userMessage];
+        setHistory(newHistory);
+        setIsLoading(true);
+
+        try {
+            const responseText = await getCoachResponse(newHistory, coachPersonality);
+            setHistory(prev => [...prev, { id: Date.now(), role: 'model', parts: [{ text: responseText }] }]);
+
+            // Auto-speak response in voice mode
+            if (voiceModeEnabled && voiceAvailable) {
+                await speakResponse(responseText);
+            }
+            haptics.success();
+        } catch (e) {
+            setHistory(prev => [...prev, { id: Date.now(), role: 'model', parts: [{ text: "Sorry, I couldn't get a response." }], isError: true }]);
+            haptics.error();
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     // Check if AI voice is available (premium + configured)
     const voiceAvailable = isVoiceAvailable();
@@ -172,20 +203,28 @@ export const AICoachModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
 
     const toggleVoiceMode = () => {
         haptics.selection();
-        setVoiceModeEnabled(!voiceModeEnabled);
         if (voiceModeEnabled) {
+            // Closing voice mode
             stopSpeaking();
             if (isListening) stopListening();
         }
+        setVoiceModeEnabled(!voiceModeEnabled);
     };
 
-    const toggleListening = () => {
+    const handleVoiceOrbTap = () => {
         haptics.medium();
         if (isListening) {
             stopListening();
-        } else {
+        } else if (!isSpeaking && !isLoading) {
             startListening();
         }
+    };
+
+    const handleVoiceOrbClose = () => {
+        stopSpeaking();
+        if (isListening) stopListening();
+        setVoiceModeEnabled(false);
+        haptics.light();
     };
 
     // PRO-only gate - show upgrade prompt for non-premium users
@@ -249,48 +288,49 @@ export const AICoachModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
     }
 
     return (
-        <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={onClose}>
-            <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-lg animate-fadeIn flex flex-col h-[80vh]" onClick={(e) => e.stopPropagation()}>
-                <div className="flex justify-between items-start mb-4 flex-shrink-0">
-                    <div className="flex items-center gap-2">
-                        <h2 className="font-serif text-2xl">AI Sleep Coach</h2>
-                        <span className="text-[10px] bg-gradient-to-r from-amber-500 to-orange-500 text-white px-1.5 py-0.5 rounded-full font-medium">PRO</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        {/* Voice Mode Toggle - only for premium users with AI voice */}
-                        {voiceAvailable && (
-                            <button
-                                onClick={toggleVoiceMode}
-                                className={`p-2 rounded-lg transition-colors ${voiceModeEnabled
-                                    ? 'bg-indigo-500 text-white'
-                                    : 'bg-white/30 dark:bg-black/20 text-day-text-secondary dark:text-night-text-secondary hover:bg-white/50 dark:hover:bg-black/30'}`}
-                                title={voiceModeEnabled ? "Disable voice mode" : "Enable voice mode"}
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                                </svg>
-                            </button>
-                        )}
-                        {history.length > 1 && (
-                            <button
-                                onClick={handleClearHistory}
-                                className="text-xs text-day-text-secondary dark:text-night-text-secondary hover:text-red-500 transition-colors"
-                            >
-                                Clear
-                            </button>
-                        )}
-                    </div>
-                </div>
+        <>
+            {/* Voice Orb Overlay */}
+            {voiceModeEnabled && voiceAvailable && (
+                <VoiceOrb
+                    isListening={isListening}
+                    isSpeaking={isSpeaking || isLoading}
+                    onTap={handleVoiceOrbTap}
+                    onClose={handleVoiceOrbClose}
+                />
+            )}
 
-                {/* Voice Mode Indicator */}
-                {voiceModeEnabled && (
-                    <div className="flex items-center justify-center gap-2 py-2 mb-2 bg-indigo-500/10 rounded-lg text-sm text-indigo-600 dark:text-indigo-400">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728" />
-                        </svg>
-                        Voice mode active • Tap mic to speak
+            <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={onClose}>
+                <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-lg animate-fadeIn flex flex-col h-[80vh]" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex justify-between items-start mb-4 flex-shrink-0">
+                        <div className="flex items-center gap-2">
+                            <h2 className="font-serif text-2xl">AI Sleep Coach</h2>
+                            <span className="text-[10px] bg-gradient-to-r from-amber-500 to-orange-500 text-white px-1.5 py-0.5 rounded-full font-medium">PRO</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {/* Voice Mode Toggle - only for premium users with AI voice */}
+                            {voiceAvailable && (
+                                <button
+                                    onClick={toggleVoiceMode}
+                                    className={`p-2 rounded-lg transition-colors ${voiceModeEnabled
+                                        ? 'bg-indigo-500 text-white'
+                                        : 'bg-white/30 dark:bg-black/20 text-day-text-secondary dark:text-night-text-secondary hover:bg-white/50 dark:hover:bg-black/30'}`}
+                                    title={voiceModeEnabled ? "Disable voice mode" : "Enable voice mode"}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                                    </svg>
+                                </button>
+                            )}
+                            {history.length > 1 && (
+                                <button
+                                    onClick={handleClearHistory}
+                                    className="text-xs text-day-text-secondary dark:text-night-text-secondary hover:text-red-500 transition-colors"
+                                >
+                                    Clear
+                                </button>
+                            )}
+                        </div>
                     </div>
-                )}
 
                 <div ref={chatBoxRef} className="flex-grow overflow-y-auto custom-scrollbar p-2 mb-4 border border-day-border dark:border-night-border rounded-lg">
                     {history.map((msg) => (
@@ -329,30 +369,15 @@ export const AICoachModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
                     {isLoading && <div className="text-center p-4 text-day-text-secondary dark:text-night-text-secondary">Thinking...</div>}
                 </div>
 
-                {/* Input area with voice button */}
+                {/* Input area */}
                 <div className="flex gap-2 flex-shrink-0">
-                    {/* Voice input button (only when voice mode is enabled) */}
-                    {voiceModeEnabled && speechSupported && (
-                        <button
-                            onClick={toggleListening}
-                            className={`p-2 rounded-full transition-all ${isListening
-                                ? 'bg-red-500 text-white animate-pulse'
-                                : 'bg-white/30 dark:bg-black/20 text-day-text-secondary dark:text-night-text-secondary hover:bg-white/50'}`}
-                            title={isListening ? "Stop recording" : "Start recording"}
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                            </svg>
-                        </button>
-                    )}
                     <input
-                        value={isListening ? input + (interimTranscript ? ' ' + interimTranscript : '') : input}
+                        value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSend(input)}
                         type="text"
-                        placeholder={isListening ? "Listening..." : "Ask for sleep advice..."}
-                        className={`flex-grow p-2 border rounded-full bg-white/50 dark:bg-black/20 focus:outline-none focus:ring-2 focus:ring-day-accent ${isListening ? 'border-red-400' : 'border-day-border dark:border-night-border'}`}
-                        disabled={isListening}
+                        placeholder="Ask for sleep advice..."
+                        className="flex-grow p-2 border rounded-full bg-white/50 dark:bg-black/20 focus:outline-none focus:ring-2 focus:ring-day-accent border-day-border dark:border-night-border"
                     />
                     <button
                         onClick={() => handleSend(input)}
@@ -364,5 +389,6 @@ export const AICoachModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
                 </div>
             </div>
         </div>
+        </>
     );
 };
