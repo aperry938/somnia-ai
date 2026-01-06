@@ -202,7 +202,7 @@ export const SleepPage: React.FC = () => {
                                 const showProBadge = sound.isPremium && !isPremium();
                                 const cardClasses = `sound-card bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border p-4 rounded-xl text-center cursor-pointer transition-all hover:border-day-accent dark:hover:border-night-accent h-[120px] flex flex-col justify-center relative ${playingSoundId === sound.id ? 'border-day-accent dark:border-night-accent shadow-lg' : 'border-day-border dark:border-night-border'}`;
                                 return (
-                                    <div key={sound.id}>
+                                    <div key={sound.id} className="h-[120px]">
                                         {showProBadge ? (
                                             <PremiumBadge feature="binaural_beats" className="w-full h-full block" hideBadge>
                                                 <div className={`${cardClasses} text-gray-400`}>
