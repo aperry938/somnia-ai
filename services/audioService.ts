@@ -323,9 +323,12 @@ let somniaEqFilters: BiquadFilterNode[] = [];
  * Creates "Somnia-Grey" EQ-shaped noise for premium sleep audio
  *
  * Psychoacoustic EQ curve optimized for sleep:
- * - Boost (+3dB) @ 60 Hz: Adds physical weight/warmth
- * - Cut (-3dB) @ 400 Hz: Removes "cardboard" boxy sound
- * - Notch (-6dB) @ 3,500 Hz: Cuts ear canal resonance for silky feel
+ * - Boost (+5dB) @ 60 Hz: Adds physical weight/warmth (chest resonance)
+ * - Boost (+2dB) @ 120 Hz: Additional low-end body
+ * - Cut (-4dB) @ 400 Hz: Removes "cardboard" boxy sound
+ * - Deep Notch (-12dB) @ 3,500 Hz: CRITICAL - cuts ear canal resonance for silky feel
+ * - Notch (-8dB) @ 5,000 Hz: Additional harshness removal
+ * - Aggressive rolloff @ 4kHz: Removes ALL high-frequency harshness
  */
 const createSomniaGreyNoise = (
     context: AudioContext,
@@ -334,41 +337,73 @@ const createSomniaGreyNoise = (
 ): AudioBufferSourceNode => {
     const noiseNode = createNoiseNode(context, type);
 
-    // 60 Hz Low Shelf Boost (+3dB) - Adds warmth/weight
+    // 60 Hz Low Shelf Boost (+5dB) - Adds warmth/weight
     const lowBoost = context.createBiquadFilter();
     lowBoost.type = 'lowshelf';
     lowBoost.frequency.setValueAtTime(60, context.currentTime);
-    lowBoost.gain.setValueAtTime(3, context.currentTime); // +3dB
+    lowBoost.gain.setValueAtTime(5, context.currentTime); // +5dB (more warmth)
 
-    // 400 Hz Peaking Cut (-3dB) - Removes boxy mud
+    // 120 Hz Peaking Boost (+2dB) - Additional body
+    const subBoost = context.createBiquadFilter();
+    subBoost.type = 'peaking';
+    subBoost.frequency.setValueAtTime(120, context.currentTime);
+    subBoost.Q.setValueAtTime(1, context.currentTime);
+    subBoost.gain.setValueAtTime(2, context.currentTime); // +2dB
+
+    // 400 Hz Peaking Cut (-4dB) - Removes boxy mud
     const midCut = context.createBiquadFilter();
     midCut.type = 'peaking';
     midCut.frequency.setValueAtTime(400, context.currentTime);
     midCut.Q.setValueAtTime(1.5, context.currentTime);
-    midCut.gain.setValueAtTime(-3, context.currentTime); // -3dB
+    midCut.gain.setValueAtTime(-4, context.currentTime); // -4dB (deeper cut)
 
-    // 3500 Hz Notch (-6dB) - Removes ear canal resonance harshness
+    // 3500 Hz Deep Notch (-12dB) - CRITICAL: Removes ear canal resonance harshness
     const highNotch = context.createBiquadFilter();
     highNotch.type = 'peaking';
     highNotch.frequency.setValueAtTime(3500, context.currentTime);
-    highNotch.Q.setValueAtTime(3, context.currentTime); // Narrow notch
-    highNotch.gain.setValueAtTime(-6, context.currentTime); // -6dB
+    highNotch.Q.setValueAtTime(2.5, context.currentTime); // Wide but deep notch
+    highNotch.gain.setValueAtTime(-12, context.currentTime); // -12dB (much deeper)
 
-    // Additional high-frequency rolloff for ultimate smoothness (optional gentle slope)
+    // 5000 Hz Secondary Notch (-8dB) - Additional harshness removal
+    const highNotch2 = context.createBiquadFilter();
+    highNotch2.type = 'peaking';
+    highNotch2.frequency.setValueAtTime(5000, context.currentTime);
+    highNotch2.Q.setValueAtTime(2, context.currentTime);
+    highNotch2.gain.setValueAtTime(-8, context.currentTime); // -8dB
+
+    // Aggressive high-frequency rolloff for silky smoothness
+    // Use different rolloff frequencies based on noise type
     const highRolloff = context.createBiquadFilter();
     highRolloff.type = 'lowpass';
-    highRolloff.frequency.setValueAtTime(8000, context.currentTime);
-    highRolloff.Q.setValueAtTime(0.7, context.currentTime);
+    // White noise needs more aggressive filtering (harshest)
+    // Pink noise is medium, Brown noise is already mellow
+    if (type === 'white') {
+        highRolloff.frequency.setValueAtTime(2500, context.currentTime); // Very aggressive for white
+    } else if (type === 'pink') {
+        highRolloff.frequency.setValueAtTime(3500, context.currentTime); // Moderate for pink
+    } else {
+        highRolloff.frequency.setValueAtTime(5000, context.currentTime); // Gentle for brown
+    }
+    highRolloff.Q.setValueAtTime(0.707, context.currentTime); // Butterworth response
 
-    // Chain: noise -> lowBoost -> midCut -> highNotch -> highRolloff -> output
+    // Second stage lowpass for extra smoothness
+    const highRolloff2 = context.createBiquadFilter();
+    highRolloff2.type = 'lowpass';
+    highRolloff2.frequency.setValueAtTime(6000, context.currentTime);
+    highRolloff2.Q.setValueAtTime(0.5, context.currentTime);
+
+    // Chain: noise -> lowBoost -> subBoost -> midCut -> highNotch -> highNotch2 -> highRolloff -> highRolloff2 -> output
     noiseNode.connect(lowBoost);
-    lowBoost.connect(midCut);
+    lowBoost.connect(subBoost);
+    subBoost.connect(midCut);
     midCut.connect(highNotch);
-    highNotch.connect(highRolloff);
-    highRolloff.connect(outputNode);
+    highNotch.connect(highNotch2);
+    highNotch2.connect(highRolloff);
+    highRolloff.connect(highRolloff2);
+    highRolloff2.connect(outputNode);
 
     // Track filters for cleanup
-    somniaEqFilters = [lowBoost, midCut, highNotch, highRolloff];
+    somniaEqFilters = [lowBoost, subBoost, midCut, highNotch, highNotch2, highRolloff, highRolloff2];
 
     return noiseNode;
 };
