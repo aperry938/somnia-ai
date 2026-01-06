@@ -282,12 +282,14 @@ const getCurrentTimeString = (): string => {
 };
 
 // AlarmModal component
-const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onSaveSuccess?: () => void }> = ({ alarmToEdit, onClose, onSaveSuccess }) => {
-    const { addAlarm, updateAlarm, deleteAlarm } = useAppContext();
+const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onSaveSuccess?: () => void; onConfigureSleepGateway?: (alarmId: number) => void }> = ({ alarmToEdit, onClose, onSaveSuccess, onConfigureSleepGateway }) => {
+    const { addAlarm, updateAlarm, deleteAlarm, startSleepSession } = useAppContext();
     // Use current time for new alarms, existing time for edits
     const [time, setTime] = useState(alarmToEdit?.time || getCurrentTimeString());
     const [selectedSound, setSelectedSound] = useState(alarmToEdit?.soundId || 'somnia');
     const [showSmartWakeInfo, setShowSmartWakeInfo] = useState(false);
+    const [savedAlarmId, setSavedAlarmId] = useState<number | null>(null);
+    const [showSavedConfirmation, setShowSavedConfirmation] = useState(false);
 
     // Repetition state
     const [frequency, setFrequency] = useState<'once' | 'daily' | 'weekly'>(() => {
@@ -347,13 +349,33 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
         if (frequency === 'once') finalDays = [];
         if (frequency === 'daily') finalDays = [0, 1, 2, 3, 4, 5, 6];
 
+        let alarmId: number;
         if (alarmToEdit) {
             updateAlarm(alarmToEdit.id, time, false, finalDays, selectedSound);
+            alarmId = alarmToEdit.id;
         } else {
-            addAlarm(time, false, finalDays, selectedSound);
+            alarmId = addAlarm(time, false, finalDays, selectedSound);
         }
 
         if (onSaveSuccess) onSaveSuccess();
+
+        // Show confirmation with Sleep Gateway option
+        setSavedAlarmId(alarmId);
+        setShowSavedConfirmation(true);
+    };
+
+    const handleConfigureSleepGateway = () => {
+        if (savedAlarmId) {
+            startSleepSession(savedAlarmId);
+            if (onConfigureSleepGateway) {
+                onConfigureSleepGateway(savedAlarmId);
+            }
+        }
+        onClose();
+    };
+
+    const handleDismissConfirmation = () => {
+        setShowSavedConfirmation(false);
         onClose();
     };
 
@@ -362,6 +384,54 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
         if (alarmToEdit) deleteAlarm(alarmToEdit.id);
         onClose();
     };
+
+    // Show saved confirmation with Sleep Gateway option
+    if (showSavedConfirmation) {
+        return (
+            <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={handleDismissConfirmation}>
+                <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-sm animate-fadeIn text-center" onClick={(e) => e.stopPropagation()}>
+                    {/* Success checkmark */}
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                    </div>
+                    <h2 className="font-serif text-2xl mb-2">Alarm Saved!</h2>
+                    <p className="text-day-text-secondary dark:text-night-text-secondary mb-6">
+                        Your alarm is set for <span className="font-medium text-day-accent dark:text-night-accent">{time}</span>
+                    </p>
+
+                    {/* Sleep Gateway link */}
+                    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 border border-indigo-200 dark:border-indigo-700 rounded-xl p-4 mb-4">
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-800 flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                                </svg>
+                            </div>
+                            <div className="text-left">
+                                <h3 className="font-medium text-sm">Configure Sleep Gateway?</h3>
+                                <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">Log pre-sleep activities to track with this alarm</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={handleConfigureSleepGateway}
+                            className="w-full py-2.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-medium rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all"
+                        >
+                            Open Sleep Gateway
+                        </button>
+                    </div>
+
+                    <button
+                        onClick={handleDismissConfirmation}
+                        className="text-day-text-secondary dark:text-night-text-secondary hover:text-day-text dark:hover:text-night-text transition-colors"
+                    >
+                        Skip for now
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={() => { stopAlarmPreview(); onClose(); }}>
@@ -463,7 +533,7 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
 };
 
 
-export const AlarmsPage: React.FC<{ timeString: string, dateString: string }> = ({ timeString, dateString }) => {
+export const AlarmsPage: React.FC<{ timeString: string, dateString: string, onNavigateToSleep?: () => void }> = ({ timeString, dateString, onNavigateToSleep }) => {
     const { alarms } = useAppContext();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [alarmToEdit, setAlarmToEdit] = useState<Alarm | null>(null);
@@ -477,6 +547,12 @@ export const AlarmsPage: React.FC<{ timeString: string, dateString: string }> = 
         stopAlarmPreview(); // Stop any playing preview when modal closes
         setIsModalOpen(false);
         setAlarmToEdit(null);
+    };
+
+    const handleConfigureSleepGateway = () => {
+        if (onNavigateToSleep) {
+            onNavigateToSleep();
+        }
     };
 
     return (
@@ -500,7 +576,7 @@ export const AlarmsPage: React.FC<{ timeString: string, dateString: string }> = 
             <button onClick={() => openModal()} className="fixed bottom-24 right-6 bg-day-accent dark:bg-night-accent text-white rounded-full p-4 shadow-lg shadow-indigo-500/30 hover:bg-indigo-600 dark:hover:bg-indigo-500 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
             </button>
-            {isModalOpen && <AlarmModal alarmToEdit={alarmToEdit} onClose={closeModal} />}
+            {isModalOpen && <AlarmModal alarmToEdit={alarmToEdit} onClose={closeModal} onConfigureSleepGateway={handleConfigureSleepGateway} />}
             {/* Styles for toggle switch */}
             <style>{`.toggle-checkbox:checked + .toggle-label { background-color: #6366F1; } .dark .toggle-checkbox:checked + .toggle-label { background-color: #818CF8; } .toggle-checkbox:checked { transform: translateX(1.25rem); border-color: #6366F1; } .dark .toggle-checkbox:checked { border-color: #818CF8; } .toggle-checkbox { transition: transform 0.2s ease-in-out; }`}</style>
         </>

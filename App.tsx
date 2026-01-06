@@ -147,12 +147,20 @@ const App: React.FC = () => {
         navigateToDreamDetail(newDreamId);
     }, [dreams, addDream, showToast, navigateToDreamDetail, setIsScribeOpen]);
 
+    const navigateToSleep = useCallback(() => {
+        setCurrentPage('sleep');
+    }, []);
+
+    const navigateToAlarms = useCallback(() => {
+        setCurrentPage('alarms');
+    }, []);
+
     const renderPage = () => {
         switch (currentPage) {
             case 'alarms':
-                return <AlarmsPage timeString={timeString} dateString={dateString} />;
+                return <AlarmsPage timeString={timeString} dateString={dateString} onNavigateToSleep={navigateToSleep} />;
             case 'sleep':
-                return <SleepPage />;
+                return <SleepPage onNavigateToAlarms={navigateToAlarms} />;
             case 'chronicle':
                 return <ChroniclePage onDreamSelect={navigateToDreamDetail} />;
             case 'insights':
@@ -176,7 +184,7 @@ const App: React.FC = () => {
                     </Suspense>
                 );
             default:
-                return <AlarmsPage timeString={timeString} dateString={dateString} />;
+                return <AlarmsPage timeString={timeString} dateString={dateString} onNavigateToSleep={navigateToSleep} />;
         }
     };
 

@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode, useCallback } from 'react';
-import { Alarm, Dream, SleepAids, Biometrics, Theme, CoachPersonality, AnalysisPersonality, DreamMood } from '../types';
+import { Alarm, Dream, SleepAids, Biometrics, Theme, CoachPersonality, AnalysisPersonality, DreamMood, SleepSession } from '../types';
 import { enqueueAction } from '../services/syncService';
 import { cacheDreamTitle } from '../services/geminiService';
 
@@ -9,7 +9,13 @@ interface AppContextType {
     biometrics: Biometrics;
     activeSleepAids: SleepAids;
     pendingSleepData: SleepAids | null;
-    addAlarm: (time: string, smartWake: boolean, days?: number[], soundId?: string) => void;
+    // Sleep Session Management
+    activeSleepSession: SleepSession | null;
+    startSleepSession: (alarmId?: number) => void;
+    updateSleepSessionData: (data: Partial<SleepAids>) => void;
+    clearSleepSession: () => void;
+    getNextActiveAlarm: () => Alarm | null;
+    addAlarm: (time: string, smartWake: boolean, days?: number[], soundId?: string) => number;
     updateAlarm: (id: number, time: string, smartWake: boolean, days?: number[], soundId?: string) => void;
     toggleAlarmActive: (id: number) => void;
     deleteAlarm: (id: number) => void;
@@ -70,6 +76,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [volume, setVolume] = useLocalStorage<number>('somnia_volume', 0.5);
     const [analysisPersonality, setAnalysisPersonality] = useLocalStorage<AnalysisPersonality>('somnia_analysis_personality', 'oneironaut');
     const [isScribeOpen, setIsScribeOpen] = useState(false);
+    const [activeSleepSession, setActiveSleepSession] = useLocalStorage<SleepSession | null>('somnia_active_sleep_session', null);
 
     // Pre-populate title cache with existing dream titles to prevent unnecessary API calls
     useEffect(() => {
@@ -80,7 +87,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         });
     }, []); // Only run on initial mount
 
-    const addAlarm = (time: string, smartWake: boolean = false, days: number[] = [], soundId: string = 'somnia') => {
+    const addAlarm = (time: string, smartWake: boolean = false, days: number[] = [], soundId: string = 'somnia'): number => {
         const newAlarm: Alarm = {
             id: Date.now(),
             time,
@@ -92,7 +99,77 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         };
         setAlarms(prev => [...prev, newAlarm]);
         enqueueAction('ADD_ALARM', newAlarm);
+        return newAlarm.id;
     };
+
+    // Get the next active alarm (soonest time today/tomorrow)
+    const getNextActiveAlarm = useCallback((): Alarm | null => {
+        const activeAlarms = alarms.filter(a => a.isActive);
+        if (activeAlarms.length === 0) return null;
+
+        const now = new Date();
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        const currentDay = now.getDay();
+
+        // Find the soonest alarm
+        let soonest: Alarm | null = null;
+        let soonestDiff = Infinity;
+
+        for (const alarm of activeAlarms) {
+            const [h, m] = alarm.time.split(':').map(Number);
+            const alarmMinutes = h * 60 + m;
+
+            // Check if alarm is for today or has no days set (one-time)
+            const isForToday = alarm.days.length === 0 || alarm.days.includes(currentDay);
+            const isForTomorrow = alarm.days.length === 0 || alarm.days.includes((currentDay + 1) % 7);
+
+            let diff: number;
+            if (isForToday && alarmMinutes > currentMinutes) {
+                diff = alarmMinutes - currentMinutes;
+            } else if (isForTomorrow) {
+                diff = (24 * 60 - currentMinutes) + alarmMinutes;
+            } else {
+                continue;
+            }
+
+            if (diff < soonestDiff) {
+                soonestDiff = diff;
+                soonest = alarm;
+            }
+        }
+
+        return soonest;
+    }, [alarms]);
+
+    // Start a new sleep session, optionally linked to a specific alarm
+    const startSleepSession = useCallback((alarmId?: number) => {
+        const alarm = alarmId ? alarms.find(a => a.id === alarmId) : getNextActiveAlarm();
+        const newSession: SleepSession = {
+            id: Date.now(),
+            alarmId: alarm?.id ?? null,
+            alarmTime: alarm?.time ?? null,
+            startedAt: new Date().toISOString(),
+            sleepGatewayData: {},
+            isActive: true
+        };
+        setActiveSleepSession(newSession);
+    }, [alarms, getNextActiveAlarm, setActiveSleepSession]);
+
+    // Update sleep gateway data for the active session
+    const updateSleepSessionData = useCallback((data: Partial<SleepAids>) => {
+        setActiveSleepSession(prev => {
+            if (!prev) return prev;
+            return {
+                ...prev,
+                sleepGatewayData: { ...prev.sleepGatewayData, ...data }
+            };
+        });
+    }, [setActiveSleepSession]);
+
+    // Clear the active sleep session (after dream is logged)
+    const clearSleepSession = useCallback(() => {
+        setActiveSleepSession(null);
+    }, [setActiveSleepSession]);
 
     const updateAlarm = (id: number, time: string, smartWake: boolean, days: number[] = [], soundId: string = 'somnia') => {
         setAlarms(prev => prev.map(a => a.id === id ? { ...a, time, smartWake, days, soundId } : a));
@@ -111,6 +188,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
 
     const addDream = (dreamText: string, sleepQuality: number | null, mood?: DreamMood): number => {
+        // Use sleep session data if available, otherwise fall back to pendingSleepData
+        const sleepData = activeSleepSession?.sleepGatewayData ?? pendingSleepData ?? {};
         const newDream: Dream = {
             id: Date.now(),
             timestamp: new Date().toISOString(),
@@ -120,11 +199,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             imageUrl: null,
             aiAnalysis: null,
             chatHistory: [],
-            sleepAids: pendingSleepData ?? {},
+            sleepAids: sleepData,
             mood,
         };
         setDreams(prev => [newDream, ...prev]);
-        setPendingSleepData(null); // Clear pending data after it has been used
+        // Clear both session and pending data after dream is logged
+        setActiveSleepSession(null);
+        setPendingSleepData(null);
         enqueueAction('ADD_DREAM', newDream);
         return newDream.id;
     };
@@ -164,6 +245,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         biometrics,
         activeSleepAids,
         pendingSleepData,
+        activeSleepSession,
+        startSleepSession,
+        updateSleepSessionData,
+        clearSleepSession,
+        getNextActiveAlarm,
         addAlarm,
         updateAlarm,
         toggleAlarmActive,

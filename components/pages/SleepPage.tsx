@@ -36,7 +36,7 @@ const DayRating: React.FC<{ rating: number | null; onRate: (rating: number) => v
 
 
 
-export const SleepPage: React.FC = () => {
+export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNavigateToAlarms }) => {
     const [activeModal, setActiveModal] = useState<'coach' | 'soundscape' | 'relaxation' | 'sync' | null>(null);
     const [selectedSound, setSelectedSound] = useState<Soundscape | null>(null);
     const [selectedRelaxation, setSelectedRelaxation] = useState<GuidedRelaxation | null>(null);
@@ -53,7 +53,30 @@ export const SleepPage: React.FC = () => {
     // Wake Window Hook
     const { isSupported: motionSupported, movementLog, requestPermission } = useWakeWindow(isSleeping);
 
-    const { setActiveSleepAid, activeSleepAids, setPendingSleepData, dreams, volume } = useAppContext();
+    const { setActiveSleepAid, activeSleepAids, setPendingSleepData, dreams, volume, activeSleepSession, updateSleepSessionData, startSleepSession, getNextActiveAlarm, alarms } = useAppContext();
+
+    // Check if user has an active alarm set
+    const nextAlarm = getNextActiveAlarm();
+    const hasActiveAlarm = alarms.some(a => a.isActive);
+
+    // Initialize session data from existing session if present
+    useEffect(() => {
+        if (activeSleepSession) {
+            if (activeSleepSession.sleepGatewayData.dayRating !== undefined) {
+                setDayRating(activeSleepSession.sleepGatewayData.dayRating);
+            }
+            if (activeSleepSession.sleepGatewayData.dayNotes !== undefined) {
+                setDayNotes(activeSleepSession.sleepGatewayData.dayNotes || '');
+            }
+        }
+    }, []);
+
+    // Update session data whenever dayRating or dayNotes change
+    useEffect(() => {
+        if (activeSleepSession) {
+            updateSleepSessionData({ dayRating, dayNotes });
+        }
+    }, [dayRating, dayNotes, activeSleepSession, updateSleepSessionData]);
 
     // Update prediction when dayRating or activeSleepAids change
     useEffect(() => {
@@ -126,13 +149,87 @@ export const SleepPage: React.FC = () => {
             .map(cb => (cb as HTMLInputElement).dataset.key)
             .filter((key): key is string => key !== undefined);
 
+        // Compile sleep data
+        const sleepData: SleepAids = {
+            ...activeSleepAids,
+            dayRating,
+            dayNotes,
+            checklist: checklistItems,
+            soundDuration: finalDuration > 0 ? finalDuration : undefined,
+            volume: volume
+        };
 
+        // If no active session, start one now (for users who skipped the alarm link)
+        if (!activeSleepSession) {
+            startSleepSession();
+        }
 
+        // Update session with final data
+        updateSleepSessionData(sleepData);
+
+        // Also set pending data for backwards compatibility
+        setPendingSleepData(sleepData);
+
+        setIsSleeping(true);
+    };
+
+    // Format alarm time for display
+    const formatAlarmTime = (time: string) => {
+        const [h, m] = time.split(':').map(Number);
+        const hour = h === 0 ? 12 : h > 12 ? h - 12 : h;
+        const period = h >= 12 ? 'PM' : 'AM';
+        return `${hour}:${String(m).padStart(2, '0')} ${period}`;
     };
 
     return (
         <>
             <h1 className="font-serif page-title text-4xl text-center mb-8">Sleep Gateway</h1>
+
+            {/* No Alarm Set Banner */}
+            {!hasActiveAlarm && !isSleeping && (
+                <div className="max-w-2xl mx-auto mb-6 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-700 rounded-xl p-4 animate-fadeIn">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-800/50 flex items-center justify-center flex-shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div className="flex-grow">
+                            <h3 className="font-medium text-amber-800 dark:text-amber-200">Set an Alarm First</h3>
+                            <p className="text-sm text-amber-700 dark:text-amber-300/80">Your sleep data will be linked to your alarm for better tracking</p>
+                        </div>
+                        <button
+                            onClick={onNavigateToAlarms}
+                            className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg transition-colors flex-shrink-0"
+                        >
+                            Set Alarm
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Active Session Info Banner */}
+            {activeSleepSession && !isSleeping && (
+                <div className="max-w-2xl mx-auto mb-6 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border border-indigo-200 dark:border-indigo-700 rounded-xl p-4 animate-fadeIn">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-800/50 flex items-center justify-center flex-shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                            </svg>
+                        </div>
+                        <div className="flex-grow">
+                            <h3 className="font-medium text-indigo-800 dark:text-indigo-200">Sleep Session Active</h3>
+                            <p className="text-sm text-indigo-700 dark:text-indigo-300/80">
+                                {activeSleepSession.alarmTime
+                                    ? `Linked to alarm at ${formatAlarmTime(activeSleepSession.alarmTime)}`
+                                    : 'Your sleep data will be saved with your next dream log'}
+                            </p>
+                        </div>
+                        <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse flex-shrink-0" />
+                    </div>
+                </div>
+            )}
+
             {isSleeping ? (
                 <div className="max-w-2xl mx-auto space-y-8 bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border rounded-xl text-center p-8 animate-fadeIn">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-day-accent dark:text-night-accent mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>

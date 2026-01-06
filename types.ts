@@ -131,3 +131,13 @@ export interface SyncAction {
 
 export type CoachPersonality = 'mystical' | 'scientific';
 export type AnalysisPersonality = 'oneironaut' | 'jungian' | 'scientific';
+
+// Sleep Session - links alarm to sleep gateway data to dream
+export interface SleepSession {
+    id: number; // Session ID (timestamp)
+    alarmId: number | null; // Linked alarm ID
+    alarmTime: string | null; // Alarm time for display
+    startedAt: string; // When session was created
+    sleepGatewayData: SleepAids; // Pre-sleep data from Sleep Gateway
+    isActive: boolean; // Whether this session is still active (not yet logged)
+}
