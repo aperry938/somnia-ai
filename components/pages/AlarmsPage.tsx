@@ -126,18 +126,24 @@ const AnalogClock: React.FC<{ initialTime: string; onChange: (time: string) => v
 
                 {/* Hour hand */}
                 <div
-                    className="absolute top-1/2 left-1/2 w-1.5 bg-day-text dark:bg-night-text rounded-full origin-bottom"
+                    className="absolute w-1.5 bg-day-text dark:bg-night-text rounded-full"
                     style={{
                         height: '50px',
-                        transform: `translate(-50%, -100%) rotate(${hourAngle}deg)`,
+                        bottom: '50%',
+                        left: '50%',
+                        transformOrigin: 'bottom center',
+                        transform: `translateX(-50%) rotate(${hourAngle}deg)`,
                     }}
                 />
                 {/* Minute hand */}
                 <div
-                    className="absolute top-1/2 left-1/2 w-1 bg-day-accent dark:bg-night-accent rounded-full origin-bottom"
+                    className="absolute w-1 bg-day-accent dark:bg-night-accent rounded-full"
                     style={{
                         height: '70px',
-                        transform: `translate(-50%, -100%) rotate(${minuteAngle}deg)`,
+                        bottom: '50%',
+                        left: '50%',
+                        transformOrigin: 'bottom center',
+                        transform: `translateX(-50%) rotate(${minuteAngle}deg)`,
                     }}
                 />
 
@@ -163,7 +169,8 @@ const AnalogClock: React.FC<{ initialTime: string; onChange: (time: string) => v
 
 // Alarm sound options
 const ALARM_SOUNDS = [
-    { id: 'progressive', name: 'Progressive Dream', description: 'Gently builds volume & pitch (Default)' },
+    { id: 'somnia', name: 'Somnia', description: 'Very slow & growing - our signature alarm (Default)' },
+    { id: 'progressive', name: 'Progressive Dream', description: 'Gently builds volume & pitch' },
     { id: 'gentle', name: 'Gentle Rise', description: 'Soft, gradual wake-up' },
     { id: 'chimes', name: 'Wind Chimes', description: 'Peaceful chime melody' },
     { id: 'nature', name: 'Nature Dawn', description: 'Birds and morning sounds' },
@@ -176,7 +183,7 @@ const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onSaveSuccess?: () => void }> = ({ alarmToEdit, onClose, onSaveSuccess }) => {
     const { addAlarm, updateAlarm, deleteAlarm } = useAppContext();
     const [time, setTime] = useState(alarmToEdit?.time || '07:00');
-    const [selectedSound, setSelectedSound] = useState(alarmToEdit?.soundId || 'progressive');
+    const [selectedSound, setSelectedSound] = useState(alarmToEdit?.soundId || 'somnia');
     const [showSmartWakeInfo, setShowSmartWakeInfo] = useState(false);
 
     // Repetition state
@@ -287,8 +294,7 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
                 {/* Alarm Sound Selector */}
                 <div className="mt-6">
                     <label className="text-sm font-medium block mb-2">Alarm Sound <span className="text-xs text-day-text-secondary dark:text-night-text-secondary">(tap to preview)</span></label>
-                    <div className="grid grid-cols-1 gap-2">
-                        {/* Full width for progressive, grid for others? No, let's stick to list or grid. List is safer for long names. grid-cols-1 is list. */}
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                         {ALARM_SOUNDS.map(sound => (
                             <button
                                 key={sound.id}
@@ -296,16 +302,13 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
                                     setSelectedSound(sound.id);
                                     playAlarmPreview(sound.id);
                                 }}
-                                className={`p-3 rounded-lg text-left transition-all flex items-center justify-between ${selectedSound === sound.id
+                                className={`p-4 rounded-xl text-center transition-all ${selectedSound === sound.id
                                     ? 'bg-day-accent/20 dark:bg-night-accent/20 border-2 border-day-accent dark:border-night-accent'
-                                    : 'bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border hover:border-day-accent/50'
+                                    : 'bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border hover:border-day-accent/50'
                                     }`}
                             >
-                                <div>
-                                    <span className="text-sm font-medium block">{sound.name} {sound.id === 'progressive' && '⭐'}</span>
-                                    <span className="text-xs text-day-text-secondary dark:text-night-text-secondary">{sound.description}</span>
-                                </div>
-                                {selectedSound === sound.id && <div className="w-3 h-3 rounded-full bg-day-accent dark:bg-night-accent" />}
+                                <span className="text-sm font-medium block">{sound.name} {sound.id === 'somnia' && '⭐'}</span>
+                                <span className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-1 block">{sound.description}</span>
                             </button>
                         ))}
                     </div>

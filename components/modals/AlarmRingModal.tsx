@@ -1,6 +1,6 @@
 // components/modals/AlarmRingModal.tsx
 import React, { useEffect, useState, useCallback } from 'react';
-import { playProgressiveAlarm, stopAlarmSound } from '../../services/audioService';
+import { playSomniaAlarm, stopAlarmSound } from '../../services/audioService';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 
 interface AlarmRingModalProps {
@@ -30,7 +30,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ onRecordDream, o
     const { isListening, interimTranscript, startListening, stopListening, isSupported } = useSpeechRecognition(handleFinalTranscript);
 
     useEffect(() => {
-        playProgressiveAlarm();
+        playSomniaAlarm();
         return () => {
             stopAlarmSound();
         };

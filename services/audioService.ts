@@ -39,6 +39,36 @@ const getAudioContext = (): AudioContext => {
 // --- ALARM FUNCTIONS ---
 
 /**
+ * Plays the Somnia alarm - our signature very slow growing alarm.
+ * Starts almost inaudible and very slowly builds over 60 seconds.
+ * Automatically stops any playing sleep sounds.
+ */
+export const playSomniaAlarm = () => {
+    stopSleepSound(); // Ensure sleep sounds are stopped
+    const context = getAudioContext();
+    if (alarmOscillator) {
+        stopAlarmSound();
+    }
+
+    alarmOscillator = context.createOscillator();
+    alarmGainNode = context.createGain();
+
+    alarmOscillator.connect(alarmGainNode);
+    alarmGainNode.connect(context.destination);
+
+    const now = context.currentTime;
+    alarmOscillator.type = 'sine';
+    alarmOscillator.frequency.setValueAtTime(180, now); // Very low starting frequency
+    alarmGainNode.gain.setValueAtTime(0.0001, now); // Almost inaudible start
+
+    // Very slow ramp up over 60 seconds - the gentlest wake-up
+    alarmGainNode.gain.exponentialRampToValueAtTime(0.4, now + 60);
+    alarmOscillator.frequency.exponentialRampToValueAtTime(500, now + 60);
+
+    alarmOscillator.start(now);
+};
+
+/**
  * Plays the progressive smart alarm.
  * Starts with low volume and frequency, ramping up over 30 seconds.
  * Automatically stops any playing sleep sounds.
@@ -94,7 +124,7 @@ let previewTimeout: ReturnType<typeof setTimeout> | null = null;
 
 /**
  * Plays a 10-second preview of an alarm sound style.
- * @param soundId - The alarm sound to preview ('gentle', 'chimes', 'nature', 'classic')
+ * @param soundId - The alarm sound to preview ('somnia', 'progressive', 'gentle', 'chimes', 'nature', 'classic')
  */
 export const playAlarmPreview = (soundId: string) => {
     // Stop any current preview first
@@ -112,6 +142,24 @@ export const playAlarmPreview = (soundId: string) => {
 
     // Different sound characteristics for each alarm type
     switch (soundId) {
+        case 'somnia':
+            // Very slow and growing - our signature alarm
+            // Starts almost inaudible, very slowly builds over 60s (preview shows 10s sample)
+            previewOscillator.type = 'sine';
+            previewOscillator.frequency.setValueAtTime(180, ctx.currentTime); // Start very low
+            previewGainNode.gain.setValueAtTime(0.01, ctx.currentTime);
+            // Gentle, dreamy frequency rise
+            previewOscillator.frequency.exponentialRampToValueAtTime(280, ctx.currentTime + 10);
+            previewGainNode.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 10);
+            break;
+        case 'progressive':
+            // Progressive Dream - moderate growth
+            previewOscillator.type = 'sine';
+            previewOscillator.frequency.setValueAtTime(300, ctx.currentTime);
+            previewGainNode.gain.setValueAtTime(0.05, ctx.currentTime);
+            previewOscillator.frequency.exponentialRampToValueAtTime(500, ctx.currentTime + 10);
+            previewGainNode.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 10);
+            break;
         case 'gentle':
             // Soft, low frequency sine wave with slow pulse
             previewOscillator.type = 'sine';
