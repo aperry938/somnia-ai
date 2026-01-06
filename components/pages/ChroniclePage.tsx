@@ -4,6 +4,7 @@ import { useAppContext } from '../../contexts/AppContext';
 import { Dream, DreamMood } from '../../types';
 import { exportDreamsAsJSON, exportDreamJournalToPDF, exportDreamsEncrypted, importDreamsEncrypted } from '../../services/exportService';
 import { MOOD_ICONS, MOOD_LABELS } from '../../constants/uiIcons';
+import { AchievementsCard } from '../insights/AchievementsCard';
 
 const DreamItem: React.FC<{ dream: Dream; onSelect: (id: number) => void; onTagClick: (tag: string) => void }> = React.memo(({ dream, onSelect, onTagClick }) => {
     return (
@@ -221,6 +222,11 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
                         </div>
                     )}
                 </div>
+            </div>
+
+            {/* Achievements */}
+            <div className="max-w-2xl mx-auto mb-6">
+                <AchievementsCard dreams={dreams} />
             </div>
 
             {/* Search bar */}

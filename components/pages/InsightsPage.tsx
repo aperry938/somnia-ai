@@ -7,7 +7,6 @@ import { detectRecurringPatterns, formatPatternName } from '../../constants/drea
 import { WeeklyDigest } from '../insights/WeeklyDigest';
 import { GlobalTrendsCard } from '../insights/GlobalTrendsCard';
 import { SentimentChart } from '../insights/SentimentChart';
-import { AchievementsCard } from '../insights/AchievementsCard';
 import { calculateUserStats } from '../../services/userStatsService';
 import { DreamCalendar } from '../insights/DreamCalendar';
 import { DreamWordCloud } from '../insights/DreamWordCloud';
@@ -273,7 +272,6 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                         </div>
 
                         <GlobalTrendsCard />
-                        <AchievementsCard dreams={dreams} />
 
                         {/* Sleep Quality Chart */}
                         {chartData.length > 1 && (
