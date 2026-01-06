@@ -327,6 +327,42 @@ export function clearSubscriptionCache(): void {
     window.dispatchEvent(new CustomEvent('subscriptionChanged', { detail: getCachedStatus() }));
 }
 
+/**
+ * Create customer portal session for subscription management
+ */
+export async function createCustomerPortalSession(
+    authToken: string,
+    returnUrl?: string
+): Promise<{ url: string | null; error?: string }> {
+    if (!SUPABASE_URL) {
+        return { url: null, error: 'Supabase not configured' };
+    }
+
+    try {
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/create-portal-session`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`,
+            },
+            body: JSON.stringify({
+                returnUrl: returnUrl || window.location.origin,
+            }),
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            return { url: null, error: error.error || 'Portal session failed' };
+        }
+
+        const data = await response.json();
+        return { url: data.url };
+    } catch (error) {
+        console.error('Portal session error:', error);
+        return { url: null, error: 'Network error' };
+    }
+}
+
 // Pricing constants (for UI display only - actual prices in Stripe)
 export const PRICING = {
     monthly: {

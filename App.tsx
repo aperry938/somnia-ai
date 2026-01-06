@@ -34,13 +34,24 @@ const PrivacyPage = lazy(() => import('./components/pages/PrivacyPage').then(m =
 const TermsPage = lazy(() => import('./components/pages/TermsPage').then(m => ({ default: m.TermsPage })));
 const ProfilePage = lazy(() => import('./components/pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
 const AuthPage = lazy(() => import('./components/pages/AuthPage').then(m => ({ default: m.AuthPage })));
+const SuccessPage = lazy(() => import('./components/pages/SuccessPage').then(m => ({ default: m.SuccessPage })));
 
 
 
 const App: React.FC = () => {
     const { addDream, isScribeOpen, setIsScribeOpen } = useAppContext();
     const { isAuthenticated, isLoading: authLoading, isConfigured: authConfigured } = useAuth();
-    const [currentPage, setCurrentPage] = useState<Page>('alarms');
+
+    // Check for Stripe success redirect
+    const initialPage = (): Page => {
+        const url = new URL(window.location.href);
+        if (url.pathname === '/success' || url.searchParams.has('session_id')) {
+            return 'success';
+        }
+        return 'alarms';
+    };
+
+    const [currentPage, setCurrentPage] = useState<Page>(initialPage);
     const [selectedDreamId, setSelectedDreamId] = useState<number | null>(null);
     const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(() => {
         return localStorage.getItem('somnia_onboarding_complete') === 'true';
@@ -193,6 +204,16 @@ const App: React.FC = () => {
                 return (
                     <Suspense fallback={<PageLoading message="Loading profile..." />}>
                         <ProfilePage onNavigateTo={(page) => setCurrentPage(page)} />
+                    </Suspense>
+                );
+            case 'success':
+                return (
+                    <Suspense fallback={<PageLoading message="Processing..." />}>
+                        <SuccessPage onBack={() => {
+                            // Clear URL params and navigate to alarms
+                            window.history.replaceState({}, '', '/');
+                            setCurrentPage('alarms');
+                        }} />
                     </Suspense>
                 );
             default:

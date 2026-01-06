@@ -6,7 +6,8 @@ import { Biometrics } from '../../types';
 import { useToast } from '../shared/Toast';
 import { calculateUserStats } from '../../services/userStatsService';
 import { useClock } from '../../hooks/useClock';
-import { isPremium, getRemainingCredits, getCredits } from '../../services/secureSubscriptionService';
+import { isPremium, getRemainingCredits, getCredits, createCustomerPortalSession } from '../../services/secureSubscriptionService';
+import { SecurePaywallModal } from '../modals/SecurePaywallModal';
 
 const FREE_TIER_MAX_CREDITS = 3; // Same as in secureSubscriptionService
 
@@ -179,59 +180,112 @@ const ProfileInfoCard: React.FC = () => {
 
 // Membership Card
 const MembershipCard: React.FC = () => {
+    const { user, session, isAuthenticated } = useAuth();
+    const { showToast } = useToast();
     const premium = isPremium();
     const credits = getRemainingCredits();
     const maxCredits = FREE_TIER_MAX_CREDITS;
+    const [showPaywall, setShowPaywall] = useState(false);
+    const [isManaging, setIsManaging] = useState(false);
+
+    const handleManageSubscription = async () => {
+        if (!session?.access_token) {
+            showToast('Please sign in to manage your subscription', 'error');
+            return;
+        }
+
+        setIsManaging(true);
+        const result = await createCustomerPortalSession(session.access_token);
+        setIsManaging(false);
+
+        if (result.error) {
+            showToast(result.error, 'error');
+            return;
+        }
+
+        if (result.url) {
+            window.location.href = result.url;
+        }
+    };
+
+    const handleUpgrade = () => {
+        if (!isAuthenticated) {
+            showToast('Please sign in to upgrade', 'error');
+            return;
+        }
+        setShowPaywall(true);
+    };
 
     return (
-        <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">
-            <h2 className="font-serif text-xl mb-2">Membership</h2>
+        <>
+            <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">
+                <h2 className="font-serif text-xl mb-2">Membership</h2>
 
-            {premium ? (
-                <div className="space-y-4">
-                    <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-amber-100 to-amber-50 dark:from-amber-900/30 dark:to-amber-800/20 rounded-lg">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                {premium ? (
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-amber-100 to-amber-50 dark:from-amber-900/30 dark:to-amber-800/20 rounded-lg">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            <div>
+                                <p className="font-bold text-amber-700 dark:text-amber-300">Premium Member</p>
+                                <p className="text-sm text-amber-600 dark:text-amber-400">Unlimited AI analysis</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={handleManageSubscription}
+                            disabled={isManaging}
+                            className="w-full py-2 border border-day-border dark:border-night-border rounded-lg text-day-text-secondary dark:text-night-text-secondary text-sm hover:bg-white/10 dark:hover:bg-black/10 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                            {isManaging ? (
+                                <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+                            ) : null}
+                            Manage Subscription
+                        </button>
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-3 p-3 bg-white/30 dark:bg-black/20 rounded-lg">
+                            <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <p className="font-bold">Free Plan</p>
+                                <p className="text-sm text-day-text-secondary dark:text-night-text-secondary">{credits}/{maxCredits} AI credits remaining</p>
+                            </div>
+                        </div>
+                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                            <div
+                                className="bg-day-accent dark:bg-night-accent h-2 rounded-full transition-all"
+                                style={{ width: `${(credits / maxCredits) * 100}%` }}
+                            />
+                        </div>
+                        <button
+                            onClick={handleUpgrade}
+                            className="w-full py-2.5 bg-gradient-to-r from-amber-400 to-amber-600 text-white font-bold rounded-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                 <path fillRule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clipRule="evenodd" />
                             </svg>
-                        </div>
-                        <div>
-                            <p className="font-bold text-amber-700 dark:text-amber-300">Premium Member</p>
-                            <p className="text-sm text-amber-600 dark:text-amber-400">Unlimited AI analysis</p>
-                        </div>
+                            Upgrade to Premium
+                        </button>
                     </div>
-                    <button className="w-full py-2 border border-day-border dark:border-night-border rounded-lg text-day-text-secondary dark:text-night-text-secondary text-sm">
-                        Manage Subscription
-                    </button>
-                </div>
-            ) : (
-                <div className="space-y-4">
-                    <div className="flex items-center gap-3 p-3 bg-white/30 dark:bg-black/20 rounded-lg">
-                        <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                        </div>
-                        <div>
-                            <p className="font-bold">Free Plan</p>
-                            <p className="text-sm text-day-text-secondary dark:text-night-text-secondary">{credits}/{maxCredits} AI credits remaining</p>
-                        </div>
-                    </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                        <div
-                            className="bg-day-accent dark:bg-night-accent h-2 rounded-full transition-all"
-                            style={{ width: `${(credits / maxCredits) * 100}%` }}
-                        />
-                    </div>
-                    <button className="w-full py-2.5 bg-gradient-to-r from-amber-400 to-amber-600 text-white font-bold rounded-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clipRule="evenodd" />
-                        </svg>
-                        Upgrade to Premium
-                    </button>
-                </div>
+                )}
+            </div>
+
+            {/* Paywall Modal */}
+            {user && (
+                <SecurePaywallModal
+                    isOpen={showPaywall}
+                    onClose={() => setShowPaywall(false)}
+                    userId={user.id}
+                />
             )}
-        </div>
+        </>
     );
 };
 
