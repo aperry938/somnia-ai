@@ -144,8 +144,8 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
             soundToPlay.params = { ...sound.params, diff: beatFreq };
         }
 
-        // Small delay to ensure clean transition
-        await new Promise(resolve => setTimeout(resolve, 150));
+        // Longer delay to ensure clean audio transition from preview
+        await new Promise(resolve => setTimeout(resolve, 300));
         await playSleepSound(soundToPlay, duration, volume);
         onPlay(sound.id);
 
@@ -169,7 +169,8 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
             soundToPlay.params = { ...sound.params, diff: beatFreq };
         }
 
-        await new Promise(resolve => setTimeout(resolve, 150));
+        // Longer delay to ensure clean audio transition from preview
+        await new Promise(resolve => setTimeout(resolve, 300));
         await playSleepSound(soundToPlay, mins, volume);
         onPlay(sound.id);
 
@@ -188,8 +189,12 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
     };
 
     const handleClose = () => {
+        // Prevent closing while actively playing - user must click Stop
+        if (isPlaying) {
+            return;
+        }
         // Stop preview when closing without playing
-        if (isPreviewing && !isPlaying) {
+        if (isPreviewing) {
             stopSleepSound(0.3);
             setIsPreviewing(false);
         }
@@ -232,18 +237,18 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                 {isPlaying ? (
                     <div className="space-y-4">
                         {/* Now Playing Indicator */}
-                        <div className="flex items-center justify-center gap-2 text-green-500">
-                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                        <div className="flex items-center justify-center gap-2 text-day-accent dark:text-night-accent">
+                            <div className="w-2 h-2 bg-day-accent dark:bg-night-accent rounded-full animate-pulse" />
                             <span className="text-sm font-medium uppercase tracking-wider">Now Playing</span>
                         </div>
 
                         {/* Large Timer Display */}
                         {timeRemaining !== null && (
                             <div className="py-4">
-                                <p className="text-5xl font-light text-day-text-primary dark:text-night-text-primary font-mono">
+                                <p className="text-5xl font-serif text-day-text-primary dark:text-night-text-primary">
                                     {formatTime(timeRemaining)}
                                 </p>
-                                <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-1">
+                                <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-2">
                                     remaining
                                 </p>
                             </div>
@@ -266,10 +271,10 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                             />
                         </div>
 
-                        {/* Stop Button */}
+                        {/* Stop Button - Softer styling */}
                         <button
                             onClick={handleStop}
-                            className="w-full py-4 bg-red-500/90 hover:bg-red-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-colors"
+                            className="w-full py-4 bg-day-accent/20 dark:bg-night-accent/20 hover:bg-day-accent/30 dark:hover:bg-night-accent/30 text-day-accent dark:text-night-accent font-medium rounded-xl flex items-center justify-center gap-2 transition-colors border border-day-accent/30 dark:border-night-accent/30"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -277,11 +282,6 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                             </svg>
                             Stop Sound
                         </button>
-
-                        {/* Minimize hint */}
-                        <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">
-                            Tap outside or press Esc to minimize
-                        </p>
                     </div>
                 ) : (
                     <>
