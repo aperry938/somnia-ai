@@ -177,9 +177,9 @@ const AnalogClock: React.FC<{ initialTime: string; onChange: (time: string) => v
                     <button onClick={() => setPeriod('PM')} className={`px-2 rounded ${period === 'PM' ? 'bg-day-accent/20 text-day-accent dark:bg-night-accent/20 dark:text-night-accent' : ''}`}>PM</button>
                 </div>
             </div>
-            <div className="relative w-64 h-64 overflow-visible">
+            <div className="relative w-72 h-72">
                 {/* Clock face circle */}
-                <div className="absolute inset-0 rounded-full border-2 border-day-border dark:border-night-border"></div>
+                <div className="absolute inset-4 rounded-full border-2 border-day-border dark:border-night-border"></div>
 
                 {/* Hour hand - visible dark gray color */}
                 <div
@@ -204,17 +204,59 @@ const AnalogClock: React.FC<{ initialTime: string; onChange: (time: string) => v
                     }}
                 />
 
-                {/* Hour/minute numbers - translate 72px to fit in container */}
-                {selecting === 'hour' && Array.from({ length: 12 }, (_, i) => i + 1).map(h => (
-                    <div key={h} style={{ transform: `rotate(${-90 + h * 30}deg) translate(72px) rotate(-${-90 + h * 30}deg)` }} className="absolute top-1/2 left-1/2 -m-4 w-8 h-8 z-10">
-                        <button onClick={() => handleHourSelect(period === 'PM' && h !== 12 ? h + 12 : period === 'AM' && h === 12 ? 0 : h)} className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${displayHour === h ? 'bg-day-accent text-white dark:bg-night-accent' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}>{h}</button>
-                    </div>
-                ))}
-                {selecting === 'minute' && Array.from({ length: 12 }, (_, i) => i * 5).map(m => (
-                    <div key={m} style={{ transform: `rotate(${-90 + m * 6}deg) translate(72px) rotate(-${-90 + m * 6}deg)` }} className="absolute top-1/2 left-1/2 -m-4 w-8 h-8 z-10">
-                        <button onClick={() => handleMinuteSelect(m)} className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${minute === m ? 'bg-day-accent text-white dark:bg-night-accent' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}>{String(m).padStart(2, '0')}</button>
-                    </div>
-                ))}
+                {/* Hour numbers: 12 at top (0°), 3 at right (90°), 6 at bottom (180°), 9 at left (270°) */}
+                {selecting === 'hour' && [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((h, index) => {
+                    const angle = index * 30; // 12=0°, 1=30°, 2=60°, 3=90°, etc.
+                    return (
+                        <div
+                            key={h}
+                            className="absolute top-1/2 left-1/2 w-9 h-9 z-10"
+                            style={{
+                                marginLeft: '-18px',
+                                marginTop: '-18px',
+                                transform: `rotate(${angle}deg) translateY(-110px) rotate(-${angle}deg)`
+                            }}
+                        >
+                            <button
+                                onClick={() => handleHourSelect(period === 'PM' && h !== 12 ? h + 12 : period === 'AM' && h === 12 ? 0 : h)}
+                                className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors text-sm font-medium ${
+                                    displayHour === h
+                                        ? 'bg-day-accent text-white dark:bg-night-accent'
+                                        : 'hover:bg-gray-200 dark:hover:bg-gray-700'
+                                }`}
+                            >
+                                {h}
+                            </button>
+                        </div>
+                    );
+                })}
+
+                {/* Minute numbers: 00 at top (0°), 15 at right (90°), 30 at bottom (180°), 45 at left (270°) */}
+                {selecting === 'minute' && [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(m => {
+                    const angle = m * 6; // 0=0°, 5=30°, 10=60°, 15=90°, etc.
+                    return (
+                        <div
+                            key={m}
+                            className="absolute top-1/2 left-1/2 w-9 h-9 z-10"
+                            style={{
+                                marginLeft: '-18px',
+                                marginTop: '-18px',
+                                transform: `rotate(${angle}deg) translateY(-110px) rotate(-${angle}deg)`
+                            }}
+                        >
+                            <button
+                                onClick={() => handleMinuteSelect(m)}
+                                className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors text-sm font-medium ${
+                                    minute === m
+                                        ? 'bg-day-accent text-white dark:bg-night-accent'
+                                        : 'hover:bg-gray-200 dark:hover:bg-gray-700'
+                                }`}
+                            >
+                                {String(m).padStart(2, '0')}
+                            </button>
+                        </div>
+                    );
+                })}
 
                 {/* Center dot */}
                 <div className="absolute top-1/2 left-1/2 w-3 h-3 bg-day-accent dark:bg-night-accent rounded-full -m-1.5"></div>
