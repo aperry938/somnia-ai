@@ -49,6 +49,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
     const [prediction, setPrediction] = useState<SleepPrediction | null>(null);
     const [selectedTechnique, setSelectedTechnique] = useState<LucidDreamTechnique | null>(null);
     const [showRealityCheckModal, setShowRealityCheckModal] = useState(false);
+    const [lucidExpanded, setLucidExpanded] = useState(false);
 
     // Wake Window Hook
     const { isSupported: motionSupported, movementLog, requestPermission } = useWakeWindow(isSleeping);
@@ -354,36 +355,52 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                         </div>
                     </div>
 
-                    {/* Lucid Dreaming Tips */}
+                    {/* Lucid Dreaming Tips - Collapsible */}
                     <div>
-                        <h2 className="font-serif text-2xl text-center my-8">Lucid Dreaming</h2>
-                        <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">
-                            <h3 className="font-medium mb-3">Tonight's Reality Check</h3>
-                            <div
-                                className="p-3 bg-day-accent/10 dark:bg-night-accent/10 rounded-lg cursor-pointer hover:bg-day-accent/20 dark:hover:bg-night-accent/20 transition-colors"
-                                onClick={() => setShowRealityCheckModal(true)}
+                        <button
+                            onClick={() => setLucidExpanded(!lucidExpanded)}
+                            className="w-full flex items-center justify-center gap-2 my-8 group"
+                        >
+                            <h2 className="font-serif text-2xl text-center">Lucid Dreaming</h2>
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className={`h-5 w-5 text-day-text-secondary dark:text-night-text-secondary transition-transform ${lucidExpanded ? 'rotate-180' : ''}`}
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
                             >
-                                <p className="font-medium text-day-accent dark:text-night-accent">{REALITY_CHECKS[new Date().getDay()].check}</p>
-                                <p className="text-sm text-day-text-secondary dark:text-night-text-secondary mt-1">{REALITY_CHECKS[new Date().getDay()].description}</p>
-                                <p className="text-xs text-day-accent/70 dark:text-night-accent/70 mt-2">Tap for all reality checks →</p>
-                            </div>
-                            <div className="mt-4 space-y-2">
-                                {LUCID_TECHNIQUES.slice(0, 2).map(t => (
-                                    <div
-                                        key={t.id}
-                                        className="p-3 bg-white/50 dark:bg-black/20 rounded-lg cursor-pointer hover:bg-white/70 dark:hover:bg-black/30 transition-colors"
-                                        onClick={() => setSelectedTechnique(t)}
-                                    >
-                                        <div className="flex justify-between items-start">
-                                            <span className="font-medium text-sm">{t.name}</span>
-                                            <span className="text-xs px-2 py-0.5 bg-day-accent/20 dark:bg-night-accent/20 text-day-accent dark:text-night-accent rounded-full">{t.difficulty}</span>
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        {lucidExpanded && (
+                            <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl animate-fadeIn">
+                                <h3 className="font-medium mb-3">Tonight's Reality Check</h3>
+                                <div
+                                    className="p-3 bg-day-accent/10 dark:bg-night-accent/10 rounded-lg cursor-pointer hover:bg-day-accent/20 dark:hover:bg-night-accent/20 transition-colors"
+                                    onClick={() => setShowRealityCheckModal(true)}
+                                >
+                                    <p className="font-medium text-day-accent dark:text-night-accent">{REALITY_CHECKS[new Date().getDay()].check}</p>
+                                    <p className="text-sm text-day-text-secondary dark:text-night-text-secondary mt-1">{REALITY_CHECKS[new Date().getDay()].description}</p>
+                                    <p className="text-xs text-day-accent/70 dark:text-night-accent/70 mt-2">Tap for all reality checks →</p>
+                                </div>
+                                <div className="mt-4 space-y-2">
+                                    {LUCID_TECHNIQUES.slice(0, 2).map(t => (
+                                        <div
+                                            key={t.id}
+                                            className="p-3 bg-white/50 dark:bg-black/20 rounded-lg cursor-pointer hover:bg-white/70 dark:hover:bg-black/30 transition-colors"
+                                            onClick={() => setSelectedTechnique(t)}
+                                        >
+                                            <div className="flex justify-between items-start">
+                                                <span className="font-medium text-sm">{t.name}</span>
+                                                <span className="text-xs px-2 py-0.5 bg-day-accent/20 dark:bg-night-accent/20 text-day-accent dark:text-night-accent rounded-full">{t.difficulty}</span>
+                                            </div>
+                                            <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-1">{t.description}</p>
+                                            <p className="text-xs text-day-accent/70 dark:text-night-accent/70 mt-2">Tap for full guide →</p>
                                         </div>
-                                        <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-1">{t.description}</p>
-                                        <p className="text-xs text-day-accent/70 dark:text-night-accent/70 mt-2">Tap for full guide →</p>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
 
 
