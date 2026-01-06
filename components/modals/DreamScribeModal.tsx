@@ -68,14 +68,9 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
     };
 
     const handleStartBoost = () => {
-        // Start the boost and go to playing step
+        // Start the boost and go to playing step - dream will be saved when user dismisses
         playAlertnessBoost();
         setBoostActive(true);
-        // Save the dream now
-        if (savedDataRef.current && !dreamSavedRef.current) {
-            dreamSavedRef.current = true;
-            onSave(savedDataRef.current.text, savedDataRef.current.quality, savedDataRef.current.mood);
-        }
         setStep('playing');
     };
 
