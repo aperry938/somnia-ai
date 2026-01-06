@@ -22,6 +22,7 @@ import { VoiceCommandFab } from './components/shared/VoiceCommandFab';
 import { ThemeToggle } from './components/shared/ThemeToggle';
 import { OnboardingCarousel } from './components/onboarding/OnboardingCarousel';
 import { useSleepDetection } from './hooks/useSleepDetection';
+import { DevModeToggle } from './components/DevModeToggle';
 
 
 // Lazy load heavy pages for better code splitting
@@ -204,7 +205,7 @@ const App: React.FC = () => {
             <OfflineIndicator />
             <VoiceCommandFab />
             <ThemeToggle />
-
+            <DevModeToggle />
         </div>
     );
 };

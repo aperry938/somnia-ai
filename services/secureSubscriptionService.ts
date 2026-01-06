@@ -28,6 +28,38 @@ export interface SubscriptionStatus {
 // Storage keys
 const TOKEN_KEY = 'somnia_subscription_token';
 const STATUS_KEY = 'somnia_subscription_status';
+const DEV_MODE_KEY = 'somnia_dev_mode';
+const DEV_PREMIUM_KEY = 'somnia_dev_premium';
+
+/**
+ * DEV MODE: Check if developer mode is enabled
+ */
+export function isDevMode(): boolean {
+    return localStorage.getItem(DEV_MODE_KEY) === 'true';
+}
+
+/**
+ * DEV MODE: Toggle developer mode on/off
+ */
+export function setDevMode(enabled: boolean): void {
+    localStorage.setItem(DEV_MODE_KEY, String(enabled));
+    window.dispatchEvent(new CustomEvent('devModeChanged', { detail: { enabled } }));
+}
+
+/**
+ * DEV MODE: Check if dev premium override is active
+ */
+export function isDevPremium(): boolean {
+    return localStorage.getItem(DEV_PREMIUM_KEY) === 'true';
+}
+
+/**
+ * DEV MODE: Set premium status for testing
+ */
+export function setDevPremium(premium: boolean): void {
+    localStorage.setItem(DEV_PREMIUM_KEY, String(premium));
+    window.dispatchEvent(new CustomEvent('subscriptionChanged', { detail: { isPremium: premium } }));
+}
 
 // Supabase configuration (set in environment)
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
@@ -140,8 +172,14 @@ export async function verifySubscription(authToken: string): Promise<Subscriptio
 /**
  * Check if user has premium access
  * Uses cached status with token validation
+ * DEV MODE: Respects dev mode override if enabled
  */
 export function isPremium(): boolean {
+    // DEV MODE: Override if dev mode is active
+    if (isDevMode()) {
+        return isDevPremium();
+    }
+
     const token = localStorage.getItem(TOKEN_KEY);
 
     // No token = not premium
