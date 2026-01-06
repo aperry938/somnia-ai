@@ -152,21 +152,21 @@ export const playAlarmPreview = (soundId: string) => {
     switch (soundId) {
         case 'somnia':
             // Very slow and growing - our signature alarm
-            // Starts almost inaudible, very slowly builds over 60s (preview shows 30s sample)
+            // Starts almost inaudible, grows to VERY LOUD over 60 seconds
             previewOscillator.type = 'sine';
             previewOscillator.frequency.setValueAtTime(180, ctx.currentTime); // Start very low
             previewGainNode.gain.setValueAtTime(0.01, ctx.currentTime);
-            // Gentle, dreamy frequency rise over 30 seconds
-            previewOscillator.frequency.exponentialRampToValueAtTime(320, ctx.currentTime + 30);
-            previewGainNode.gain.exponentialRampToValueAtTime(0.35, ctx.currentTime + 30);
+            // Grows to maximum volume over 60 seconds
+            previewOscillator.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 60);
+            previewGainNode.gain.exponentialRampToValueAtTime(1.0, ctx.currentTime + 60);
             break;
         case 'progressive':
-            // Progressive Dream - moderate growth over 30 seconds
+            // Progressive Dream - grows to very loud over 45 seconds
             previewOscillator.type = 'sine';
             previewOscillator.frequency.setValueAtTime(300, ctx.currentTime);
             previewGainNode.gain.setValueAtTime(0.05, ctx.currentTime);
-            previewOscillator.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 30);
-            previewGainNode.gain.exponentialRampToValueAtTime(0.4, ctx.currentTime + 30);
+            previewOscillator.frequency.exponentialRampToValueAtTime(700, ctx.currentTime + 45);
+            previewGainNode.gain.exponentialRampToValueAtTime(1.0, ctx.currentTime + 45);
             break;
         case 'gentle':
             // Soft, low frequency sine wave with slow pulse - 30 second cycle
@@ -218,10 +218,27 @@ export const playAlarmPreview = (soundId: string) => {
 
     previewOscillator.start(ctx.currentTime);
 
-    // Auto-stop after 30 seconds to let users experience the full alarm cycle
-    previewTimeout = setTimeout(() => {
+    // No auto-stop - user clicks again to stop
+};
+
+/**
+ * Check if a preview is currently playing
+ */
+export const isPreviewPlaying = (): boolean => {
+    return previewOscillator !== null;
+};
+
+/**
+ * Toggle alarm preview - starts if stopped, stops if playing
+ */
+export const toggleAlarmPreview = (soundId: string): boolean => {
+    if (isPreviewPlaying()) {
         stopAlarmPreview();
-    }, 30000);
+        return false; // now stopped
+    } else {
+        playAlarmPreview(soundId);
+        return true; // now playing
+    }
 };
 
 /**

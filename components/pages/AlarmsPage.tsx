@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
 import { Alarm } from '../../types';
 import { DailyBriefingWidget } from '../widgets/DailyBriefingWidget';
-import { playAlarmPreview, stopAlarmPreview } from '../../services/audioService';
+import { toggleAlarmPreview, stopAlarmPreview, isPreviewPlaying } from '../../services/audioService';
 
 // Helper to format alarm repetition text
 const formatRepeatText = (days: number[]): string => {
@@ -177,7 +177,7 @@ const AnalogClock: React.FC<{ initialTime: string; onChange: (time: string) => v
                     <button onClick={() => setPeriod('PM')} className={`px-2 rounded ${period === 'PM' ? 'bg-day-accent/20 text-day-accent dark:bg-night-accent/20 dark:text-night-accent' : ''}`}>PM</button>
                 </div>
             </div>
-            <div className="relative w-64 h-64">
+            <div className="relative w-64 h-64 overflow-visible">
                 {/* Clock face circle */}
                 <div className="absolute inset-0 rounded-full border-2 border-day-border dark:border-night-border"></div>
 
@@ -204,14 +204,14 @@ const AnalogClock: React.FC<{ initialTime: string; onChange: (time: string) => v
                     }}
                 />
 
-                {/* Hour/minute numbers - translate 80px to fit in 256px container */}
+                {/* Hour/minute numbers - translate 72px to fit in container */}
                 {selecting === 'hour' && Array.from({ length: 12 }, (_, i) => i + 1).map(h => (
-                    <div key={h} style={{ transform: `rotate(${-90 + h * 30}deg) translate(80px) rotate(-${-90 + h * 30}deg)` }} className="absolute top-1/2 left-1/2 -m-4 w-8 h-8 z-10">
+                    <div key={h} style={{ transform: `rotate(${-90 + h * 30}deg) translate(72px) rotate(-${-90 + h * 30}deg)` }} className="absolute top-1/2 left-1/2 -m-4 w-8 h-8 z-10">
                         <button onClick={() => handleHourSelect(period === 'PM' && h !== 12 ? h + 12 : period === 'AM' && h === 12 ? 0 : h)} className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${displayHour === h ? 'bg-day-accent text-white dark:bg-night-accent' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}>{h}</button>
                     </div>
                 ))}
                 {selecting === 'minute' && Array.from({ length: 12 }, (_, i) => i * 5).map(m => (
-                    <div key={m} style={{ transform: `rotate(${-90 + m * 6}deg) translate(80px) rotate(-${-90 + m * 6}deg)` }} className="absolute top-1/2 left-1/2 -m-4 w-8 h-8 z-10">
+                    <div key={m} style={{ transform: `rotate(${-90 + m * 6}deg) translate(72px) rotate(-${-90 + m * 6}deg)` }} className="absolute top-1/2 left-1/2 -m-4 w-8 h-8 z-10">
                         <button onClick={() => handleMinuteSelect(m)} className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${minute === m ? 'bg-day-accent text-white dark:bg-night-accent' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}>{String(m).padStart(2, '0')}</button>
                     </div>
                 ))}
@@ -359,7 +359,7 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
                                 key={sound.id}
                                 onClick={() => {
                                     setSelectedSound(sound.id);
-                                    playAlarmPreview(sound.id);
+                                    toggleAlarmPreview(sound.id);
                                 }}
                                 className={`p-4 rounded-xl text-center transition-all ${selectedSound === sound.id
                                     ? 'bg-day-accent/20 dark:bg-night-accent/20 border-2 border-day-accent dark:border-night-accent'
