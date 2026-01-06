@@ -200,11 +200,12 @@ export const SleepPage: React.FC = () => {
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                             {SOUNDSCAPES.map(sound => {
                                 const showProBadge = sound.isPremium && !isPremium();
+                                const cardClasses = `sound-card bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border p-4 rounded-xl text-center cursor-pointer transition-all hover:border-day-accent dark:hover:border-night-accent h-[120px] flex flex-col justify-center relative ${playingSoundId === sound.id ? 'border-day-accent dark:border-night-accent shadow-lg' : 'border-day-border dark:border-night-border'}`;
                                 return (
-                                    <div key={sound.id} className="relative">
+                                    <div key={sound.id}>
                                         {showProBadge ? (
-                                            <PremiumBadge feature="binaural_beats" className="w-full block" hideBadge>
-                                                <div className={`sound-card bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border p-4 rounded-xl text-center cursor-pointer transition-all hover:border-day-accent dark:hover:border-night-accent relative ${playingSoundId === sound.id ? 'border-day-accent dark:border-night-accent shadow-lg' : 'border-day-border dark:border-night-border'}`}>
+                                            <PremiumBadge feature="binaural_beats" className="w-full h-full block" hideBadge>
+                                                <div className={`${cardClasses} text-gray-400`}>
                                                     {/* PRO badge inside card */}
                                                     <span className="absolute top-2 right-2 text-[10px] bg-gradient-to-r from-amber-500 to-orange-500 text-white px-1.5 py-0.5 rounded-full font-medium flex items-center gap-0.5">
                                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 20 20">
@@ -212,14 +213,14 @@ export const SleepPage: React.FC = () => {
                                                         </svg>
                                                         PRO
                                                     </span>
-                                                    <div className="flex justify-center items-center h-12 text-gray-400 w-12 mx-auto">{sound.icon}</div>
+                                                    <div className="flex justify-center items-center h-12 w-12 mx-auto">{sound.icon}</div>
                                                     <p className="mt-2 font-medium text-gray-500">{sound.name}</p>
                                                 </div>
                                             </PremiumBadge>
                                         ) : (
-                                            <div onClick={() => openSoundscapeModal(sound)} className={`sound-card bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border p-4 rounded-xl text-center cursor-pointer transition-all hover:border-day-accent dark:hover:border-night-accent ${playingSoundId === sound.id ? 'border-day-accent dark:border-night-accent shadow-lg' : 'border-day-border dark:border-night-border'}`}>
-                                                <div className="flex justify-center items-center h-12 text-day-accent dark:text-night-accent w-12 mx-auto">{sound.icon}</div>
-                                                <p className="mt-2 font-medium">{sound.name}</p>
+                                            <div onClick={() => openSoundscapeModal(sound)} className={`${cardClasses} text-day-accent dark:text-night-accent`}>
+                                                <div className="flex justify-center items-center h-12 w-12 mx-auto">{sound.icon}</div>
+                                                <p className="mt-2 font-medium text-day-text-primary dark:text-night-text-primary">{sound.name}</p>
                                             </div>
                                         )}
                                     </div>
