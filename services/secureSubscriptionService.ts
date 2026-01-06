@@ -15,7 +15,8 @@ export type PremiumFeature =
     | 'binaural_beats'
     | 'reality_checks'
     | 'encrypted_backup'
-    | 'unlimited_alarms';
+    | 'unlimited_alarms'
+    | 'voice_assistant';
 
 export interface SubscriptionStatus {
     isPremium: boolean;
@@ -380,5 +381,9 @@ export const PREMIUM_FEATURES: Record<PremiumFeature, { name: string; descriptio
     unlimited_alarms: {
         name: 'Priority Features',
         description: 'Early access to new features and priority support',
+    },
+    voice_assistant: {
+        name: 'AI Voice Assistant',
+        description: 'Natural language voice commands powered by AI for hands-free control',
     },
 };

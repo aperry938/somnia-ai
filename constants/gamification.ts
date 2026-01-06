@@ -11,15 +11,15 @@ export const XP_PER_DREAM = 100;
 
 /** Level titles based on total dreams logged */
 export const LEVEL_TITLES: Record<number, string> = {
-    1: 'Dreamer',
-    2: 'Seeker',
-    3: 'Wanderer',
-    4: 'Voyager',
-    5: 'Explorer',
-    6: 'Navigator',
-    7: 'Sage',
-    8: 'Oracle',
-    9: 'Master',
+    1: 'Initiate',
+    2: 'Analyst',
+    3: 'Architect',
+    4: 'Specialist',
+    5: 'Strategist',
+    6: 'Synthesist',
+    7: 'Operator',
+    8: 'Director',
+    9: 'Vanguard',
     10: 'Oneironaut',
 };
 
