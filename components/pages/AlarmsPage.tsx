@@ -339,10 +339,20 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
     };
 
     useEffect(() => {
-        const handleKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose(); };
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                stopAlarmPreview();
+                onClose();
+            }
+        };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [onClose]);
+
+    // Cleanup preview on unmount
+    useEffect(() => {
+        return () => stopAlarmPreview();
+    }, []);
 
     const handleSave = () => {
         stopAlarmPreview();
@@ -369,7 +379,7 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
     };
 
     return (
-        <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={onClose}>
+        <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={() => { stopAlarmPreview(); onClose(); }}>
             <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-sm animate-fadeIn max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                 <h2 className="font-serif text-2xl text-center mb-6">{alarmToEdit ? "Edit Alarm" : "Set Alarm"}</h2>
                 <AnalogClock initialTime={time} onChange={setTime} />
@@ -479,6 +489,7 @@ export const AlarmsPage: React.FC<{ timeString: string, dateString: string }> = 
     };
 
     const closeModal = () => {
+        stopAlarmPreview(); // Stop any playing preview when modal closes
         setIsModalOpen(false);
         setAlarmToEdit(null);
     };

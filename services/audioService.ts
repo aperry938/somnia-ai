@@ -112,31 +112,35 @@ export const playProgressiveAlarm = () => {
  * @param soundId - The alarm sound ID from alarm setup
  */
 export const playAlarmBySound = (soundId: string = 'somnia') => {
+    console.log('[playAlarmBySound] Requested soundId:', soundId);
     switch (soundId) {
         case 'somnia':
+            console.log('[playAlarmBySound] Playing Somnia alarm');
             playSomniaAlarm();
             break;
         case 'progressive':
+            console.log('[playAlarmBySound] Playing Progressive alarm');
             playProgressiveAlarm();
             break;
         case 'gentle':
-            // Gentle Rise - very soft gradual wake-up
+            console.log('[playAlarmBySound] Playing Gentle Rise alarm');
             playGentleAlarm();
             break;
         case 'chimes':
-            // Wind Chimes - peaceful melody
+            console.log('[playAlarmBySound] Playing Chimes alarm');
             playChimesAlarm();
             break;
         case 'nature':
-            // Nature Dawn - birds and morning sounds
+            console.log('[playAlarmBySound] Playing Nature alarm');
             playNatureAlarm();
             break;
         case 'classic':
-            // Classic Alarm - traditional tone
+            console.log('[playAlarmBySound] Playing Classic alarm');
             playClassicAlarm();
             break;
         default:
-            playSomniaAlarm(); // Default to our signature sound
+            console.log('[playAlarmBySound] Unknown soundId, defaulting to Somnia:', soundId);
+            playSomniaAlarm();
     }
 };
 

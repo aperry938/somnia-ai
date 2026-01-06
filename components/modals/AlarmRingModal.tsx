@@ -37,6 +37,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
 
     useEffect(() => {
         // Play the user-selected alarm sound
+        console.log('[AlarmRingModal] Playing alarm with soundId:', alarm.soundId, 'Full alarm:', alarm);
         playAlarmBySound(alarm.soundId || 'somnia');
         return () => {
             stopAlarmSound();
