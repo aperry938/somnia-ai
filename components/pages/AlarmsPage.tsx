@@ -181,22 +181,22 @@ const AnalogClock: React.FC<{ initialTime: string; onChange: (time: string) => v
                 {/* Clock face circle */}
                 <div className="absolute inset-0 rounded-full border-2 border-day-border dark:border-night-border"></div>
 
-                {/* Hour hand - pointer-events disabled to not intercept clicks */}
+                {/* Hour hand - visible dark gray color */}
                 <div
-                    className="absolute w-1.5 bg-day-text dark:bg-night-text rounded-full pointer-events-none"
+                    className="absolute w-1.5 bg-gray-600 dark:bg-gray-300 rounded-full pointer-events-none"
                     style={{
-                        height: '50px',
+                        height: '45px',
                         bottom: '50%',
                         left: '50%',
                         transformOrigin: 'bottom center',
                         transform: `translateX(-50%) rotate(${hourAngle}deg)`,
                     }}
                 />
-                {/* Minute hand - pointer-events disabled to not intercept clicks */}
+                {/* Minute hand - accent color */}
                 <div
                     className="absolute w-1 bg-day-accent dark:bg-night-accent rounded-full pointer-events-none"
                     style={{
-                        height: '70px',
+                        height: '65px',
                         bottom: '50%',
                         left: '50%',
                         transformOrigin: 'bottom center',
@@ -204,14 +204,14 @@ const AnalogClock: React.FC<{ initialTime: string; onChange: (time: string) => v
                     }}
                 />
 
-                {/* Hour/minute numbers */}
+                {/* Hour/minute numbers - translate 80px to fit in 256px container */}
                 {selecting === 'hour' && Array.from({ length: 12 }, (_, i) => i + 1).map(h => (
-                    <div key={h} style={{ transform: `rotate(${-90 + h * 30}deg) translate(90px) rotate(-${-90 + h * 30}deg)` }} className="absolute top-1/2 left-1/2 -m-4 w-8 h-8 z-10">
+                    <div key={h} style={{ transform: `rotate(${-90 + h * 30}deg) translate(80px) rotate(-${-90 + h * 30}deg)` }} className="absolute top-1/2 left-1/2 -m-4 w-8 h-8 z-10">
                         <button onClick={() => handleHourSelect(period === 'PM' && h !== 12 ? h + 12 : period === 'AM' && h === 12 ? 0 : h)} className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${displayHour === h ? 'bg-day-accent text-white dark:bg-night-accent' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}>{h}</button>
                     </div>
                 ))}
                 {selecting === 'minute' && Array.from({ length: 12 }, (_, i) => i * 5).map(m => (
-                    <div key={m} style={{ transform: `rotate(${-90 + m * 6}deg) translate(90px) rotate(-${-90 + m * 6}deg)` }} className="absolute top-1/2 left-1/2 -m-4 w-8 h-8 z-10">
+                    <div key={m} style={{ transform: `rotate(${-90 + m * 6}deg) translate(80px) rotate(-${-90 + m * 6}deg)` }} className="absolute top-1/2 left-1/2 -m-4 w-8 h-8 z-10">
                         <button onClick={() => handleMinuteSelect(m)} className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${minute === m ? 'bg-day-accent text-white dark:bg-night-accent' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}>{String(m).padStart(2, '0')}</button>
                     </div>
                 ))}
