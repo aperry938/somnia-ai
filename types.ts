@@ -61,13 +61,15 @@ export interface BinauralParams {
     diff: number;
 }
 
-src: string;
+export interface FileParams {
+    src: string;
 }
 
 export interface SyntheticParams {
     type: 'rain' | 'ocean' | 'fireplace';
 }
 
+export type Soundscape =
     | { id: string; name: string; description: string; icon: ReactElement; type: 'noise'; params: NoiseParams; isPremium?: boolean }
     | { id: string; name: string; description: string; icon: ReactElement; type: 'binaural'; params: BinauralParams; isPremium?: boolean }
     | { id: string; name: string; description: string; icon: ReactElement; type: 'file'; params: FileParams; isPremium?: boolean }

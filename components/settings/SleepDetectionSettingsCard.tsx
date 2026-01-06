@@ -5,12 +5,23 @@ const STORAGE_KEY = 'somnia_sleep_detection';
 interface SleepDetectionSettings {
     enabled: boolean;
     inactivityHours: number;
+    soundId: string; // Alarm sound to use when triggered
 }
 
 const DEFAULT_SETTINGS: SleepDetectionSettings = {
     enabled: false,
-    inactivityHours: 5
+    inactivityHours: 5,
+    soundId: 'somnia'
 };
+
+const ALARM_SOUNDS = [
+    { id: 'somnia', name: 'Somnia' },
+    { id: 'progressive', name: 'Progressive' },
+    { id: 'gentle', name: 'Gentle Rise' },
+    { id: 'chimes', name: 'Chimes' },
+    { id: 'nature', name: 'Nature' },
+    { id: 'classic', name: 'Classic' },
+];
 
 export const SleepDetectionSettingsCard: React.FC = () => {
     const [settings, setSettings] = useState<SleepDetectionSettings>(DEFAULT_SETTINGS);
@@ -71,8 +82,23 @@ export const SleepDetectionSettingsCard: React.FC = () => {
                         </div>
                     </div>
 
+                    <div>
+                        <label className="text-sm text-day-text-secondary dark:text-night-text-secondary block mb-2">
+                            Wake-up sound
+                        </label>
+                        <select
+                            value={settings.soundId}
+                            onChange={(e) => updateSettings({ soundId: e.target.value })}
+                            className="w-full bg-white/50 dark:bg-black/30 border border-day-border dark:border-night-border rounded-lg px-3 py-2 text-sm"
+                        >
+                            {ALARM_SOUNDS.map(sound => (
+                                <option key={sound.id} value={sound.id}>{sound.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
                     <p className="text-xs text-day-text-secondary dark:text-night-text-secondary bg-white/30 dark:bg-black/20 p-2 rounded-lg">
-                        💡 When your phone is inactive for {settings.inactivityHours} hours, we'll prompt you to log your dreams when you wake up—even without an alarm set.
+                        💡 When your phone is inactive for {settings.inactivityHours} hours, we'll wake you with your selected sound and prompt you to log your dreams.
                     </p>
                 </div>
             )}
