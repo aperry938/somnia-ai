@@ -375,6 +375,16 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
         if (frequency === 'once') finalDays = [];
         if (frequency === 'daily') finalDays = [0, 1, 2, 3, 4, 5, 6];
 
+        // Log the values being saved for debugging
+        console.log('[AlarmModal] Saving alarm:', {
+            time,
+            selectedSound,
+            finalDays,
+            purpose,
+            label,
+            isEdit: !!alarmToEdit
+        });
+
         let alarmId: number;
         if (alarmToEdit) {
             updateAlarm(alarmToEdit.id, time, false, finalDays, selectedSound, purpose, label || undefined);

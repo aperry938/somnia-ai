@@ -59,8 +59,8 @@ export const useAlarmManager = () => {
                 triggeredThisMinuteRef.current.clear();
                 lastMinuteRef.current = currentTime;
 
-                // Debug log alarm status once per minute
-                console.log('[Alarm Check]', { currentTime, currentDay, alarms: alarms.map(a => ({ id: a.id, time: a.time, days: a.days, isActive: a.isActive })) });
+                // Debug log alarm status once per minute (including soundId)
+                console.log('[Alarm Check]', { currentTime, currentDay, alarms: alarms.map(a => ({ id: a.id, time: a.time, days: a.days, isActive: a.isActive, soundId: a.soundId })) });
             }
 
             // Check for normal alarm or smart wake
@@ -83,7 +83,7 @@ export const useAlarmManager = () => {
 
                 // Normal trigger - exact time match
                 if (alarm.time === currentTime) {
-                    console.log('[Alarm Trigger]', { alarmId: alarm.id, alarmTime: alarm.time, currentTime, days: alarm.days, currentDay });
+                    console.log('[Alarm Trigger]', { alarmId: alarm.id, alarmTime: alarm.time, currentTime, days: alarm.days, currentDay, soundId: alarm.soundId });
                     triggeredThisMinuteRef.current.add(alarmKey);
                     return true;
                 }
