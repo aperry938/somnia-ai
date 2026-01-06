@@ -17,7 +17,6 @@ import { DreamScribeModal } from './components/modals/DreamScribeModal';
 import { PageLoading } from './components/shared/LoadingStates';
 import { KeyboardShortcutsHelp, useKeyboardHelp } from './components/shared/KeyboardHelp';
 import { OfflineIndicator } from './components/OfflineIndicator';
-import { VoiceCommandFab } from './components/shared/VoiceCommandFab';
 import { ThemeToggle } from './components/shared/ThemeToggle';
 import { OnboardingCarousel } from './components/onboarding/OnboardingCarousel';
 import { useSleepDetection } from './hooks/useSleepDetection';
@@ -228,7 +227,6 @@ const App: React.FC = () => {
             <RealityCheckManager />
             <StreakNotificationManager />
             <OfflineIndicator />
-            <VoiceCommandFab />
             <ThemeToggle />
             <DevModeToggle />
         </div>

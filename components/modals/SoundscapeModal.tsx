@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Soundscape } from '../../types';
 import { playSleepSound, stopSleepSound, setLiveVolume, setLiveBeatFrequency, isSleepSoundPlaying } from '../../services/audioService';
 import { useAppContext } from '../../contexts/AppContext';
@@ -20,6 +20,9 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
     const [timeRemaining, setTimeRemaining] = useState<number | null>(null); // Seconds remaining
     const [playStartTime, setPlayStartTime] = useState<number | null>(null);
     const [playDuration, setPlayDuration] = useState<number>(0); // Duration in seconds
+    const [isPaused, setIsPaused] = useState(false); // Track pause state
+    const [isReadyToPlay, setIsReadyToPlay] = useState(false); // Show play screen but not started yet
+    const pausedTimeRef = useRef<number>(0); // Track time remaining when paused
 
     // No auto-preview - user must click to start preview
 
@@ -46,9 +49,9 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
         };
     }, []);
 
-    // Timer countdown when playing
+    // Timer countdown when playing (not when paused or ready)
     useEffect(() => {
-        if (playStartTime === null || playDuration === 0) return;
+        if (playStartTime === null || playDuration === 0 || isPaused || isReadyToPlay) return;
 
         const interval = setInterval(() => {
             const elapsed = Math.floor((Date.now() - playStartTime) / 1000);
@@ -59,12 +62,15 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
             if (remaining === 0) {
                 setTimeRemaining(null);
                 setPlayStartTime(null);
+                setIsReadyToPlay(false);
+                setIsPaused(false);
+                onStop();
                 clearInterval(interval);
             }
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [playStartTime, playDuration]);
+    }, [playStartTime, playDuration, isPaused, isReadyToPlay, onStop]);
 
     // Format seconds to MM:SS or HH:MM:SS
     const formatTime = (seconds: number): string => {
@@ -109,62 +115,91 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
         }
     }, [isPreviewing, sound, beatFreq, volume]);
 
+    // Transition to ready-to-play state (shows Start Sound button)
     const handlePlay = async () => {
-        // Always stop any current sound first (preview or otherwise)
+        // Stop any preview sound first
         stopSleepSound(0.1);
         setIsPreviewing(false);
 
-        const soundToPlay = { ...sound };
-        if (sound.type === 'binaural') {
-            soundToPlay.params = { ...sound.params, diff: beatFreq };
-        }
-
-        // Wait for audio to fully stop before starting new playback
-        await new Promise(resolve => setTimeout(resolve, 400));
-        await playSleepSound(soundToPlay, duration, volume);
-        onPlay(sound.id);
-
-        // Start timer - stay on modal
+        // Set up the duration and transition to ready state
         setPlayDuration(duration * 60);
         setTimeRemaining(duration * 60);
-        setPlayStartTime(Date.now());
+        setIsReadyToPlay(true);
+        setIsPaused(false);
+        onPlay(sound.id); // Mark as "playing" state in parent
     };
 
+    // Quick duration buttons - transition to ready state with selected duration
     const handleDurationClick = async (mins: number) => {
         setDuration(mins);
 
-        // Always stop any current sound first
+        // Stop any preview sound first
         stopSleepSound(0.1);
         setIsPreviewing(false);
 
+        // Set up the duration and transition to ready state
+        setPlayDuration(mins * 60);
+        setTimeRemaining(mins * 60);
+        setIsReadyToPlay(true);
+        setIsPaused(false);
+        onPlay(sound.id); // Mark as "playing" state in parent
+    };
+
+    // Actually start the sound playback
+    const handleStartSound = async () => {
         const soundToPlay = { ...sound };
         if (sound.type === 'binaural') {
             soundToPlay.params = { ...sound.params, diff: beatFreq };
         }
 
-        // Wait for audio to fully stop before starting new playback
-        await new Promise(resolve => setTimeout(resolve, 400));
-        await playSleepSound(soundToPlay, mins, volume);
-        onPlay(sound.id);
+        // Calculate remaining duration in minutes
+        const remainingMinutes = (timeRemaining || playDuration) / 60;
+        await playSleepSound(soundToPlay, remainingMinutes, volume);
 
-        // Start timer - stay on modal
-        setPlayDuration(mins * 60);
-        setTimeRemaining(mins * 60);
+        setIsReadyToPlay(false);
+        setIsPaused(false);
         setPlayStartTime(Date.now());
     };
 
+    // Pause the sound and timer
+    const handlePause = () => {
+        stopSleepSound(0.3);
+        pausedTimeRef.current = timeRemaining || 0;
+        setIsPaused(true);
+        setPlayStartTime(null);
+    };
+
+    // Resume from pause
+    const handleResume = async () => {
+        const soundToPlay = { ...sound };
+        if (sound.type === 'binaural') {
+            soundToPlay.params = { ...sound.params, diff: beatFreq };
+        }
+
+        // Resume with remaining time
+        const remainingMinutes = pausedTimeRef.current / 60;
+        await playSleepSound(soundToPlay, remainingMinutes, volume);
+
+        setIsPaused(false);
+        setPlayStartTime(Date.now());
+        setPlayDuration(pausedTimeRef.current);
+    };
+
+    // Fully stop and close (called by X button)
     const handleStop = () => {
         stopSleepSound();
         setIsPreviewing(false);
         setTimeRemaining(null);
         setPlayStartTime(null);
+        setIsReadyToPlay(false);
+        setIsPaused(false);
         onStop();
     };
 
     const handleClose = () => {
-        // Prevent closing while actively playing - user must click Stop
-        if (isPlaying) {
-            return;
+        // When closing via X button, stop everything and close
+        if (isPlaying || isReadyToPlay || isPaused) {
+            handleStop();
         }
         // Stop preview when closing without playing
         if (isPreviewing) {
@@ -172,6 +207,13 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
             setIsPreviewing(false);
         }
         onClose();
+    };
+
+    // Handle backdrop click - only close if not in playing state
+    const handleBackdropClick = () => {
+        if (!isPlaying && !isReadyToPlay && !isPaused) {
+            handleClose();
+        }
     };
 
     // Get frequency range label
@@ -182,8 +224,12 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
         return 'Beta (Alert)';
     };
 
+    // Determine if we're in the "playing view" (ready, playing, or paused)
+    const isInPlayingView = isPlaying || isReadyToPlay || isPaused;
+    const isActuallyPlaying = isPlaying && !isReadyToPlay && !isPaused && playStartTime !== null;
+
     return (
-        <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={handleClose}>
+        <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={handleBackdropClick}>
             <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-sm animate-fadeIn text-center relative" onClick={(e) => e.stopPropagation()}>
                 <button
                     onClick={handleClose}
@@ -196,7 +242,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                 </button>
 
                 {/* Live Preview Indicator */}
-                {isPreviewing && (
+                {isPreviewing && !isInPlayingView && (
                     <div className="absolute top-4 left-4 flex items-center gap-1.5">
                         <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                         <span className="text-[10px] text-green-500 font-medium uppercase tracking-wider">Live Preview</span>
@@ -207,22 +253,33 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                 <h2 className="font-serif text-2xl mt-2">{sound.name}</h2>
                 <p className="text-day-text-secondary dark:text-night-text-secondary my-4 text-sm">{sound.description}</p>
 
-                {isPlaying ? (
+                {isInPlayingView ? (
                     <div className="space-y-4">
-                        {/* Now Playing Indicator */}
-                        <div className="flex items-center justify-center gap-2 text-day-accent dark:text-night-accent">
-                            <div className="w-2 h-2 bg-day-accent dark:bg-night-accent rounded-full animate-pulse" />
-                            <span className="text-sm font-medium uppercase tracking-wider">Now Playing</span>
-                        </div>
+                        {/* Status Indicator */}
+                        {isReadyToPlay ? (
+                            <div className="flex items-center justify-center gap-2 text-day-text-secondary dark:text-night-text-secondary">
+                                <span className="text-sm font-medium uppercase tracking-wider">Ready to Play</span>
+                            </div>
+                        ) : isPaused ? (
+                            <div className="flex items-center justify-center gap-2 text-amber-500">
+                                <div className="w-2 h-2 bg-amber-500 rounded-full" />
+                                <span className="text-sm font-medium uppercase tracking-wider">Paused</span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-center gap-2 text-day-accent dark:text-night-accent">
+                                <div className="w-2 h-2 bg-day-accent dark:bg-night-accent rounded-full animate-pulse" />
+                                <span className="text-sm font-medium uppercase tracking-wider">Now Playing</span>
+                            </div>
+                        )}
 
                         {/* Large Timer Display */}
                         {timeRemaining !== null && (
                             <div className="py-4">
                                 <p className="text-5xl font-serif text-day-text-primary dark:text-night-text-primary">
-                                    {formatTime(timeRemaining)}
+                                    {formatTime(isPaused ? pausedTimeRef.current : timeRemaining)}
                                 </p>
                                 <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-2">
-                                    remaining
+                                    {isReadyToPlay ? 'duration' : 'remaining'}
                                 </p>
                             </div>
                         )}
@@ -244,17 +301,40 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                             />
                         </div>
 
-                        {/* Stop Button - Softer styling */}
-                        <button
-                            onClick={handleStop}
-                            className="w-full py-4 bg-day-accent/20 dark:bg-night-accent/20 hover:bg-day-accent/30 dark:hover:bg-night-accent/30 text-day-accent dark:text-night-accent font-medium rounded-xl flex items-center justify-center gap-2 transition-colors border border-day-accent/30 dark:border-night-accent/30"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
-                            </svg>
-                            Stop Sound
-                        </button>
+                        {/* Action Button - Start, Pause, or Resume */}
+                        {isReadyToPlay ? (
+                            <button
+                                onClick={handleStartSound}
+                                className="w-full py-4 bg-day-accent dark:bg-night-accent hover:brightness-110 text-white font-medium rounded-xl flex items-center justify-center gap-2 transition-all"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Start Sound
+                            </button>
+                        ) : isPaused ? (
+                            <button
+                                onClick={handleResume}
+                                className="w-full py-4 bg-day-accent dark:bg-night-accent hover:brightness-110 text-white font-medium rounded-xl flex items-center justify-center gap-2 transition-all"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Resume Sound
+                            </button>
+                        ) : (
+                            <button
+                                onClick={handlePause}
+                                className="w-full py-4 bg-day-accent/20 dark:bg-night-accent/20 hover:bg-day-accent/30 dark:hover:bg-night-accent/30 text-day-accent dark:text-night-accent font-medium rounded-xl flex items-center justify-center gap-2 transition-colors border border-day-accent/30 dark:border-night-accent/30"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Pause Sound
+                            </button>
+                        )}
                     </div>
                 ) : (
                     <>
