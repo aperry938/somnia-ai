@@ -33,9 +33,38 @@ export const HardwareSyncModal: React.FC<HardwareSyncModalProps> = ({ onClose })
 
                 <div className="space-y-6 text-center">
                     {status === 'scanning' && (
-                        <div className="py-8">
+                        <div className="py-6">
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                            <p className="text-gray-400 animate-pulse">Scanning for devices...</p>
+                            <p className="text-gray-400 animate-pulse mb-6">Scanning for devices...</p>
+                            <div className="text-left">
+                                <p className="text-xs text-gray-500 mb-3 text-center">Compatible with popular wearables:</p>
+                                <div className="grid grid-cols-2 gap-2 text-sm">
+                                    <div className="flex items-center gap-2 bg-white/5 dark:bg-black/20 px-3 py-2 rounded-lg">
+                                        <span className="w-2 h-2 bg-amber-400 rounded-full"></span>
+                                        <span>Oura Ring</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 bg-white/5 dark:bg-black/20 px-3 py-2 rounded-lg">
+                                        <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
+                                        <span>Apple Watch</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 bg-white/5 dark:bg-black/20 px-3 py-2 rounded-lg">
+                                        <span className="w-2 h-2 bg-teal-400 rounded-full"></span>
+                                        <span>Whoop</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 bg-white/5 dark:bg-black/20 px-3 py-2 rounded-lg">
+                                        <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                                        <span>Garmin</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 bg-white/5 dark:bg-black/20 px-3 py-2 rounded-lg">
+                                        <span className="w-2 h-2 bg-pink-400 rounded-full"></span>
+                                        <span>Fitbit</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 bg-white/5 dark:bg-black/20 px-3 py-2 rounded-lg">
+                                        <span className="w-2 h-2 bg-indigo-400 rounded-full"></span>
+                                        <span>Samsung Galaxy</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     )}
 
