@@ -107,6 +107,143 @@ export const playProgressiveAlarm = () => {
 };
 
 /**
+ * Plays an alarm sound by its ID.
+ * Dispatches to the correct alarm implementation based on user selection.
+ * @param soundId - The alarm sound ID from alarm setup
+ */
+export const playAlarmBySound = (soundId: string = 'somnia') => {
+    switch (soundId) {
+        case 'somnia':
+            playSomniaAlarm();
+            break;
+        case 'progressive':
+            playProgressiveAlarm();
+            break;
+        case 'gentle':
+            // Gentle Rise - very soft gradual wake-up
+            playGentleAlarm();
+            break;
+        case 'chimes':
+            // Wind Chimes - peaceful melody
+            playChimesAlarm();
+            break;
+        case 'nature':
+            // Nature Dawn - birds and morning sounds
+            playNatureAlarm();
+            break;
+        case 'classic':
+            // Classic Alarm - traditional tone
+            playClassicAlarm();
+            break;
+        default:
+            playSomniaAlarm(); // Default to our signature sound
+    }
+};
+
+/**
+ * Gentle Rise alarm - very soft gradual wake-up
+ */
+const playGentleAlarm = () => {
+    stopSleepSound();
+    const context = getAudioContext();
+    if (alarmOscillator) stopAlarmSound();
+
+    alarmOscillator = context.createOscillator();
+    alarmGainNode = context.createGain();
+
+    alarmOscillator.connect(alarmGainNode);
+    alarmGainNode.connect(context.destination);
+
+    const now = context.currentTime;
+    alarmOscillator.type = 'sine';
+    alarmOscillator.frequency.setValueAtTime(220, now); // Gentle A3
+    alarmGainNode.gain.setValueAtTime(0.0001, now);
+
+    // Very slow and gentle ramp over 45 seconds
+    alarmGainNode.gain.exponentialRampToValueAtTime(0.3, now + 45);
+    alarmOscillator.frequency.exponentialRampToValueAtTime(330, now + 45); // Rise to E4
+
+    alarmOscillator.start(now);
+};
+
+/**
+ * Wind Chimes alarm - peaceful chime melody
+ */
+const playChimesAlarm = () => {
+    stopSleepSound();
+    const context = getAudioContext();
+    if (alarmOscillator) stopAlarmSound();
+
+    alarmOscillator = context.createOscillator();
+    alarmGainNode = context.createGain();
+
+    alarmOscillator.connect(alarmGainNode);
+    alarmGainNode.connect(context.destination);
+
+    const now = context.currentTime;
+    alarmOscillator.type = 'triangle'; // Softer timbre like chimes
+    alarmOscillator.frequency.setValueAtTime(523, now); // C5 - chime-like
+    alarmGainNode.gain.setValueAtTime(0.0001, now);
+
+    // Ramp with gentle oscillation feel
+    alarmGainNode.gain.exponentialRampToValueAtTime(0.25, now + 30);
+    alarmOscillator.frequency.exponentialRampToValueAtTime(784, now + 30); // G5
+
+    alarmOscillator.start(now);
+};
+
+/**
+ * Nature Dawn alarm - birds and morning sounds (using filtered noise)
+ */
+const playNatureAlarm = () => {
+    stopSleepSound();
+    const context = getAudioContext();
+    if (alarmOscillator) stopAlarmSound();
+
+    // Use high-passed noise for bird-like chirping
+    alarmOscillator = context.createOscillator();
+    alarmGainNode = context.createGain();
+
+    alarmOscillator.connect(alarmGainNode);
+    alarmGainNode.connect(context.destination);
+
+    const now = context.currentTime;
+    alarmOscillator.type = 'sine';
+    alarmOscillator.frequency.setValueAtTime(800, now); // Higher, bird-like
+    alarmGainNode.gain.setValueAtTime(0.0001, now);
+
+    alarmGainNode.gain.exponentialRampToValueAtTime(0.3, now + 30);
+    alarmOscillator.frequency.exponentialRampToValueAtTime(1200, now + 30);
+
+    alarmOscillator.start(now);
+};
+
+/**
+ * Classic Alarm - traditional alarm tone
+ */
+const playClassicAlarm = () => {
+    stopSleepSound();
+    const context = getAudioContext();
+    if (alarmOscillator) stopAlarmSound();
+
+    alarmOscillator = context.createOscillator();
+    alarmGainNode = context.createGain();
+
+    alarmOscillator.connect(alarmGainNode);
+    alarmGainNode.connect(context.destination);
+
+    const now = context.currentTime;
+    alarmOscillator.type = 'square'; // Classic alarm tone
+    alarmOscillator.frequency.setValueAtTime(440, now); // A4
+    alarmGainNode.gain.setValueAtTime(0.001, now);
+
+    // Quick ramp to moderate volume
+    alarmGainNode.gain.exponentialRampToValueAtTime(0.35, now + 10);
+
+    alarmOscillator.start(now);
+};
+
+/**
  * Stops the alarm sound immediately.
  * Fades out volume over 0.5s to prevent clicking artifacts.
  */

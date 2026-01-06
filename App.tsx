@@ -8,7 +8,6 @@ import { useRealityChecks } from './hooks/useRealityChecks';
 import { useStreakNotification } from './hooks/useStreakNotification';
 import { calculateUserStats } from './services/userStatsService';
 import { useToast } from './components/shared/Toast';
-import { speakText, getBriefingContent } from './services/ttsService';
 import { checkAndMigrateData } from './services/migrationService';
 
 import { AlarmsPage } from './components/pages/AlarmsPage';
@@ -109,8 +108,7 @@ const App: React.FC = () => {
 
     const handleAwake = useCallback(() => {
         stopRinging();
-        const text = getBriefingContent("Dreamer");
-        speakText(text);
+        // No TTS greeting - just dismiss the alarm
     }, [stopRinging]);
 
     const { showToast } = useToast();
@@ -197,7 +195,7 @@ const App: React.FC = () => {
                 </div>
             </main>
             <BottomNav currentPage={currentPage} setCurrentPage={setCurrentPage} />
-            {ringingAlarm && <AlarmRingModal onSnooze={snooze} onAwake={handleAwake} onRecordDream={handleRecordDream} />}
+            {ringingAlarm && <AlarmRingModal alarm={ringingAlarm} onSnooze={snooze} onAwake={handleAwake} onRecordDream={handleRecordDream} />}
             {isScribeOpen && <DreamScribeModal onSave={handleScribeSave} onClose={() => { setIsScribeOpen(false); setWakeQuickNote(''); }} initialText={wakeQuickNote} />}
             <KeyboardShortcutsHelp isOpen={isHelpOpen} onClose={closeHelp} />
             <RealityCheckManager />

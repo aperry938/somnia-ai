@@ -1,9 +1,11 @@
 // components/modals/AlarmRingModal.tsx
 import React, { useEffect, useState, useCallback } from 'react';
-import { playSomniaAlarm, stopAlarmSound, playAlertnessBoost, stopAlertnessBoost, isAlertnessBoostPlaying } from '../../services/audioService';
+import { playAlarmBySound, stopAlarmSound, playAlertnessBoost, stopAlertnessBoost } from '../../services/audioService';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
+import { Alarm } from '../../types';
 
 interface AlarmRingModalProps {
+    alarm: Alarm;
     onRecordDream: (quickNote?: string) => void;
     onSnooze: () => void;
     onAwake: () => void;
@@ -17,7 +19,7 @@ const DREAM_PROMPTS = [
     "What was the last thing you remember?"
 ];
 
-export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ onRecordDream, onSnooze, onAwake }) => {
+export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordDream, onSnooze, onAwake }) => {
     const [quickNote, setQuickNote] = useState('');
     const [currentPrompt] = useState(() => DREAM_PROMPTS[Math.floor(Math.random() * DREAM_PROMPTS.length)]);
     const [showInput, setShowInput] = useState(false);
@@ -31,12 +33,13 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ onRecordDream, o
     const { isListening, interimTranscript, startListening, stopListening, isSupported } = useSpeechRecognition(handleFinalTranscript);
 
     useEffect(() => {
-        playSomniaAlarm();
+        // Play the user-selected alarm sound
+        playAlarmBySound(alarm.soundId || 'somnia');
         return () => {
             stopAlarmSound();
             stopAlertnessBoost(); // Clean up alertness on unmount
         };
-    }, []);
+    }, [alarm.soundId]);
 
     // Show interim transcript as user speaks (no effect - just for display)
 
