@@ -1,6 +1,16 @@
 import { GoogleGenAI, GenerateContentResponse, Modality, Type } from "@google/genai";
 import { ChatMessage, Dream, DreamAnalysis, DreamSynthesis, SleepHabitAnalysis, SleepAids, Biometrics, AnalysisPersonality } from '../types';
 import { requirePremium, canUseAiAnalysis, useAiCredit, getRemainingCredits } from './secureSubscriptionService';
+import {
+    SOMNIA_IDENTITY,
+    COACH_PERSONAS,
+    createAnalysisPrompt,
+    createCoachPrompt,
+    createDreamChatPrompt,
+    createSynthesisPrompt,
+    createHabitAnalysisPrompt,
+    buildUserContext
+} from './aiConfig';
 
 /**
  * Error thrown when user has no AI credits remaining
@@ -46,78 +56,7 @@ const safetySettings = [
     { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
 ];
 
-function createInitialAnalysisPrompt(dreamText: string, sleepAids?: SleepAids, biometrics?: Biometrics, personality: AnalysisPersonality = 'oneironaut'): string {
-    const personas = {
-        oneironaut: {
-            name: 'The Oneironaut',
-            style: 'a wise, deeply insightful, and compassionate guide. Your analysis must be an original work of insight built from a synthesis of psychology (Freud, Jung), mythology (Campbell), and somatic wisdom (van der Kolk, Solms). Do not cite these sources; embody their wisdom.',
-        },
-        jungian: {
-            name: 'The Shadow Walker',
-            style: 'a Jungian analyst exploring the collective unconscious. Focus on archetypes (Shadow, Anima/Animus, Wise Old Man/Woman), the process of individuation, and universal symbolic patterns. Reference mythological parallels.',
-        },
-        scientific: {
-            name: 'Dr. REM',
-            style: 'a neuroscientist studying dreams. Your analysis should be grounded in cognitive science, memory consolidation theory, and emotional processing research. Focus on what the brain might be doing during this dream.',
-        }
-    };
-
-    const persona = personas[personality];
-
-    let context = '';
-
-    // Add biometrics context if available
-    const hasBiometrics = biometrics && (biometrics.age || biometrics.gender || biometrics.avgSleep);
-    if (hasBiometrics) {
-        context += '\n--- DREAMER PROFILE ---\n';
-        if (biometrics.age) {
-            context += `Age: ${biometrics.age} years old\n`;
-        }
-        if (biometrics.gender) {
-            context += `Gender: ${biometrics.gender}\n`;
-        }
-        if (biometrics.avgSleep) {
-            context += `Average nightly sleep: ${biometrics.avgSleep} hours\n`;
-        }
-        context += 'Use this profile to personalize your interpretation—consider life stage, identity, and sleep patterns.\n---';
-    }
-
-    // Add pre-sleep context if available
-    if (sleepAids) {
-        const hasSleepContext = sleepAids.dayRating || sleepAids.dayNotes;
-        if (hasSleepContext) {
-            context += '\n--- PRE-SLEEP CONTEXT ---\n';
-            if (sleepAids.dayRating) {
-                context += `User's rating of their day: ${sleepAids.dayRating}/5\n`;
-            }
-            if (sleepAids.dayNotes) {
-                context += `User's notes about their day: "${sleepAids.dayNotes}"\n`;
-            }
-            context += 'Use this context to inform your interpretation.\n---';
-        }
-    }
-
-    return `
-I. PRIME DIRECTIVE: PERSONA & PHILOSOPHY
-You are ${persona.name}. Your function is to illuminate the hidden meaning within a user's dream. Your persona is that of ${persona.style} Your goal is to provide an actionable insight that can be integrated into the user's waking life.
-
-II. THE ALCHEMICAL METHOD: INSIGHT-FIRST SYNTHESIS
-Your entire response must be a single, valid JSON object. For every dream event you reference, immediately deliver the core symbolic or psychological meaning.
-- The JSON object must have three top-level keys: "title", "analysis", and "integration".
-- "title": A short, evocative, and poetic title for the dream (e.g., "The Lion in the Hallway").
-- "analysis" must be an array of objects. Each object represents a thematic insight and must have two keys: "title" (a short, insightful heading like "The Contaminated Homeland") and "content" (a paragraph of deep analysis). Generate 2-3 of these thematic insights.
-- "integration" must be an object with two keys: "title" (always "The Integration") and "content" (a single, empowering, reflective question or a simple ritual for the user to integrate the dream's message).
-
-III. ETHICAL MANDATE: DUTY OF CARE (ABSOLUTE PRIORITY)
-If the dream narrative contains clear and explicit themes of self-harm, suicide, or severe, immediate danger to the user, you MUST DISREGARD the JSON format directive. Instead, respond with a single, compassionate paragraph in plain text. State your limitations as an AI, express concern for their well-being, and strongly recommend they speak with a qualified professional or a trusted person immediately.
-
-IV. USER INPUT
-Analyze the following dream according to the directives above.
-${context}
---- USER-PROVIDED DREAM ---
-${dreamText}
----`;
-}
+// Note: createAnalysisPrompt is now imported from aiConfig.ts for centralized prompt management
 
 /**
  * Analyzes a dream using Gemini AI to extract themes, insights, and integration steps.
@@ -136,7 +75,7 @@ export const analyzeDream = async (dreamText: string, sleepAids?: SleepAids, bio
 
     try {
         const ai = getAi();
-        const prompt = createInitialAnalysisPrompt(dreamText, sleepAids, biometrics, personality);
+        const prompt = createAnalysisPrompt(dreamText, personality, sleepAids, biometrics);
         const response: GenerateContentResponse = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: [{ parts: [{ text: prompt }] }],
@@ -336,18 +275,11 @@ export const cacheDreamTitle = (dreamText: string, title: string): void => {
     dreamTitleCache.set(cacheKey, title);
 };
 
-const createCoachSystemPrompt = (personality: 'mystical' | 'scientific') => {
-    const tones = {
-        mystical: "You are The Oneironaut, a wise and mystical dream guide. Your tone is poetic, insightful, and compassionate. You blend Jungian psychology with mythology. Focus on the symbolic meaning of sleep and dreams.",
-        scientific: "You are Dr. Somnia, a data-driven sleep scientist. Your tone is professional, encouraging, and evidence-based. You focus on sleep hygiene, circadian rhythms, and CBT-I principles. Avoid mysticism."
-    };
-
+const createCoachSystemPrompt = (personality: 'mystical' | 'scientific', userContext?: string) => {
+    const prompt = createCoachPrompt(personality, userContext, new Date());
     return {
         role: 'model' as const,
-        parts: [{
-            text: `${tones[personality]}
-        Ethical Mandate: If the user expresses themes of severe psychological distress, gently state your limitations as an AI and recommend they speak with a qualified human professional.
-        Start the conversation by gently asking how you can help the user prepare for a restful night or interpret their sleep patterns.` }]
+        parts: [{ text: prompt }]
     };
 };
 
@@ -376,14 +308,10 @@ export const getCoachResponse = async (history: ChatMessage[], personality: 'mys
     }
 };
 
-const createDreamChatSystemPrompt = (dream: Dream) => ({
+const createDreamChatSystemPrompt = (dream: Dream, personality: AnalysisPersonality = 'oneironaut') => ({
     role: 'model' as const,
     parts: [{
-        text: `You are The Oneironaut. You are continuing a conversation with the user about their dream. Maintain your persona as a wise, insightful guide.
-        Ethical Mandate: If the user expresses themes of severe psychological distress, gently state your limitations as an AI and recommend they speak with a qualified human professional.
-        Dream: "${dream.dreamText}".
-        Your Initial Analysis: ${JSON.stringify(dream.aiAnalysis)}.
-        Continue the conversation by asking what they'd like to explore further, building on the initial analysis.`
+        text: createDreamChatPrompt(dream, personality)
     }]
 });
 
@@ -414,13 +342,7 @@ export const getDreamChatResponse = async (dream: Dream, history: ChatMessage[])
 
 // --- DEEP ANALYSIS FUNCTIONS ---
 
-const createDreamSynthesisPrompt = (dreams: Dream[]): string => {
-    const dreamLog = dreams.map(d => `Dream ID ${d.id}:\n${d.dreamText}\n---`).join('\n');
-    return `You are the Oneironaut, a master dream interpreter with knowledge of psychology, symbolism, and narrative structure. Analyze the following collection of dreams from a single user. Identify recurring themes, symbols, characters, emotions, and settings. Provide a concise overall summary of the user's dream landscape, and then detail 3-4 of the most prominent recurring themes. For each theme, provide a title, a deep interpretation of what it might signify for the dreamer, and list the IDs of dreams that exemplify this theme.
-    
-    Dream Collection:
-    ${dreamLog}`;
-};
+// Note: createSynthesisPrompt is now imported from aiConfig.ts
 
 /**
  * Analyzes a collection of dreams to identify recurring patterns and themes.
@@ -432,7 +354,7 @@ const createDreamSynthesisPrompt = (dreams: Dream[]): string => {
 export const synthesizeDreamThemes = async (dreams: Dream[]): Promise<DreamSynthesis> => {
     try {
         const ai = getAi();
-        const prompt = createDreamSynthesisPrompt(dreams);
+        const prompt = createSynthesisPrompt(dreams);
         const response: GenerateContentResponse = await ai.models.generateContent({
             model: 'gemini-2.5-flash', // Switched from Pro to Flash for cost optimization (~10x cheaper)
             contents: [{ parts: [{ text: prompt }] }],
@@ -465,37 +387,7 @@ export const synthesizeDreamThemes = async (dreams: Dream[]): Promise<DreamSynth
     }
 };
 
-const createSleepHabitAnalysisPrompt = (dreams: Dream[]): string => {
-    const sleepData = dreams
-        .filter(d => d.sleepQuality !== null)
-        .map(d => {
-            const soundInfo = d.sleepAids?.sound
-                ? `${d.sleepAids.sound}${d.sleepAids.soundDuration ? ` (${d.sleepAids.soundDuration} min)` : ''}`
-                : null;
-
-            const aids = [
-                soundInfo,
-                d.sleepAids?.relaxation,
-                ...(d.sleepAids?.checklist || [])
-            ].filter(Boolean).join(', ');
-
-            let dayContext = '';
-            if (d.sleepAids?.dayRating) dayContext += ` Day Rating: ${d.sleepAids.dayRating}/5.`;
-            if (d.sleepAids?.dayNotes) dayContext += ` Day Notes: "${d.sleepAids.dayNotes}".`;
-
-            return `- Quality: ${d.sleepQuality}/5; Habits: [${aids || 'None Recorded'}]; Context: [${dayContext || 'None'}]`;
-        }).join('\n');
-
-    return `You are a data-driven sleep scientist. You have been provided with a log of a user's sleep preparation habits and their self-reported sleep quality (on a scale of 1-5, where 5 is best). The user has also provided context about their day (a 1-5 rating and notes). Your task is to analyze this data to find potential correlations between habits, daily context, and sleep quality. Do not make definitive medical claims. Frame your findings as observations from the provided data.
-    
-    Analyze the data to identify:
-    1.  Positive Correlations: Habits or day-context that appear frequently on nights with high (4-5) sleep quality.
-    2.  Negative Correlations: Habits or day-context that appear frequently on nights with low (1-2) sleep quality.
-    3.  Actionable Recommendations: Based ONLY on these observed correlations, provide 2-3 personalized, actionable recommendations for the user to experiment with.
-    
-    User's Sleep Data:
-    ${sleepData}`;
-};
+// Note: createHabitAnalysisPrompt is now imported from aiConfig.ts
 
 /**
  * Analyzes correlations between sleep habits, daily context, and sleep quality.
@@ -506,7 +398,7 @@ const createSleepHabitAnalysisPrompt = (dreams: Dream[]): string => {
 export const analyzeSleepHabits = async (dreams: Dream[]): Promise<SleepHabitAnalysis> => {
     try {
         const ai = getAi();
-        const prompt = createSleepHabitAnalysisPrompt(dreams);
+        const prompt = createHabitAnalysisPrompt(dreams);
         const response: GenerateContentResponse = await ai.models.generateContent({
             model: 'gemini-2.5-flash', // Switched from Pro to Flash for cost optimization (~10x cheaper)
             contents: [{ parts: [{ text: prompt }] }],
