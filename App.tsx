@@ -161,8 +161,9 @@ const App: React.FC = () => {
         }
 
         setIsScribeOpen(false);
-        navigateToDreamDetail(newDreamId);
-    }, [dreams, addDream, showToast, navigateToDreamDetail, setIsScribeOpen]);
+        // Go to homepage, not dream detail - user can view chronicle when ready
+        setCurrentPage('alarms');
+    }, [dreams, addDream, showToast, setIsScribeOpen]);
 
     const navigateToSleep = useCallback(() => {
         setCurrentPage('sleep');

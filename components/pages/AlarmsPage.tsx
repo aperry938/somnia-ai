@@ -140,18 +140,29 @@ const DrumTimePicker: React.FC<{ initialTime: string; onChange: (time: string) =
         onChange(timeString);
     }, [hour, minute, period, onChange]);
 
-    // Scroll to selected values on mount
+    // Scroll to selected values on mount - use requestAnimationFrame for reliable timing
     useEffect(() => {
-        if (hourRef.current) {
-            hourRef.current.scrollTop = (hour - 1) * ITEM_HEIGHT;
-        }
-        if (minuteRef.current) {
-            minuteRef.current.scrollTop = minute * ITEM_HEIGHT;
-        }
-        if (periodRef.current) {
-            periodRef.current.scrollTop = period === 'AM' ? 0 : ITEM_HEIGHT;
-        }
-    }, []);
+        const scrollToInitialValues = () => {
+            if (hourRef.current) {
+                hourRef.current.scrollTop = (hour - 1) * ITEM_HEIGHT;
+            }
+            if (minuteRef.current) {
+                minuteRef.current.scrollTop = minute * ITEM_HEIGHT;
+            }
+            if (periodRef.current) {
+                periodRef.current.scrollTop = period === 'AM' ? 0 : ITEM_HEIGHT;
+            }
+        };
+
+        // Use double requestAnimationFrame to ensure layout is complete
+        // First RAF waits for next frame, second RAF ensures paint is done
+        let rafId: number;
+        rafId = requestAnimationFrame(() => {
+            rafId = requestAnimationFrame(scrollToInitialValues);
+        });
+
+        return () => cancelAnimationFrame(rafId);
+    }, [hour, minute, period]);
 
     const handleScroll = (ref: React.RefObject<HTMLDivElement>, setter: (val: any) => void, values: any[]) => {
         if (!ref.current) return;
@@ -369,6 +380,16 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
         let finalDays = selectedDays;
         if (frequency === 'once') finalDays = [];
         if (frequency === 'daily') finalDays = [0, 1, 2, 3, 4, 5, 6];
+
+        // Log the values being saved for debugging
+        console.log('[AlarmModal] Saving alarm:', {
+            time,
+            selectedSound,
+            finalDays,
+            purpose,
+            label,
+            isEdit: !!alarmToEdit
+        });
 
         let alarmId: number;
         if (alarmToEdit) {

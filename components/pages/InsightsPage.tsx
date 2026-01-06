@@ -7,7 +7,6 @@ import { detectRecurringPatterns, formatPatternName } from '../../constants/drea
 import { WeeklyDigest } from '../insights/WeeklyDigest';
 import { GlobalTrendsCard } from '../insights/GlobalTrendsCard';
 import { SentimentChart } from '../insights/SentimentChart';
-import { AchievementsCard } from '../insights/AchievementsCard';
 import { calculateUserStats } from '../../services/userStatsService';
 import { DreamCalendar } from '../insights/DreamCalendar';
 import { DreamWordCloud } from '../insights/DreamWordCloud';
@@ -15,7 +14,6 @@ import { DreamMoodTracker } from '../insights/DreamMoodTracker';
 import { LucidDreamProgress } from '../insights/LucidDreamProgress';
 import { SleepDurationChart } from '../insights/SleepDurationChart';
 import { DreamLengthInsights } from '../insights/DreamLengthInsights';
-import { DreamStreakCalendar } from '../insights/DreamStreakCalendar';
 import { RecurringThemes } from '../insights/RecurringThemes';
 import { InsightsGrid } from '../insights/InsightsGrid';
 import { PremiumBadge } from '../shared/PremiumBadge';
@@ -195,7 +193,6 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                         <DreamCalendar dreams={dreams} />
                         <DreamWordCloud dreams={dreams} />
                         <DreamMoodTracker dreams={dreams} />
-                        <DreamStreakCalendar dreams={dreams} />
                         <RecurringThemes dreams={dreams} />
 
                         {/* Recurring Patterns */}
@@ -273,7 +270,6 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                         </div>
 
                         <GlobalTrendsCard />
-                        <AchievementsCard dreams={dreams} />
 
                         {/* Sleep Quality Chart */}
                         {chartData.length > 1 && (

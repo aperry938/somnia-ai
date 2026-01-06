@@ -113,7 +113,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const newAlarm: Alarm = {
             id: Date.now(),
             time,
-            isActive: true,
+            isActive: true, // New alarms are ALWAYS active
             smartWake,
             smartWindow: 30,
             days,
@@ -121,6 +121,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             purpose,
             label
         };
+        console.log('[AppContext] Creating new alarm:', newAlarm);
         setAlarms(prev => [...prev, newAlarm]);
         enqueueAction('ADD_ALARM', newAlarm);
         return newAlarm.id;
@@ -206,8 +207,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }, [dreams.length, lastSeenDreamCount]);
 
     const updateAlarm = (id: number, time: string, smartWake: boolean, days: number[] = [], soundId: string = 'somnia', purpose: AlarmPurpose = 'sleep', label?: string) => {
-        setAlarms(prev => prev.map(a => a.id === id ? { ...a, time, smartWake, days, soundId, purpose, label } : a));
-        enqueueAction('UPDATE_ALARM', { id, time, smartWake, days, soundId, purpose, label });
+        setAlarms(prev => prev.map(a => {
+            if (a.id !== id) return a;
+            // Explicitly preserve isActive and merge new values
+            return { ...a, time, smartWake, days, soundId, purpose, label };
+        }));
+        // Include existing isActive in sync action
+        const existingAlarm = alarms.find(a => a.id === id);
+        enqueueAction('UPDATE_ALARM', { id, time, smartWake, days, soundId, purpose, label, isActive: existingAlarm?.isActive ?? true });
     };
 
     const toggleAlarmActive = (id: number) => {
