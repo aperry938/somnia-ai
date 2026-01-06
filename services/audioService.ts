@@ -302,12 +302,96 @@ export const playSleepSound = async (sound: Soundscape, durationMinutes: number,
             sleepSourceNode.connect(sleepGainNode);
             (sleepSourceNode as AudioBufferSourceNode).start();
         } catch (e) {
-            console.error("Failed to load or play audio file:", e);
+            console.error("Failed to load or play audio file, fallback to synthesis:", e);
             if (sleepGainNode) {
                 sleepGainNode.disconnect();
                 sleepGainNode = null;
             }
             return;
+        }
+    } else if (sound.type === 'synthetic') {
+        // Advanced sound synthesis for nature sounds
+        const type = sound.params.type;
+
+        if (type === 'rain') {
+            // Pink noise + Low Pass Filter for Rain
+            const noise = createNoiseNode(context, 'pink');
+            const filter = context.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(800, context.currentTime); // Muffle high freqs
+
+            // Random volume modulation for "gusts" of rain
+            const rainGain = context.createGain();
+            rainGain.gain.setValueAtTime(0.8, context.currentTime);
+
+            noise.connect(filter);
+            filter.connect(rainGain);
+            rainGain.connect(sleepGainNode);
+            noise.start();
+            sleepSourceNode = noise;
+
+        } else if (type === 'ocean') {
+            // Brown noise + Modulating Low Pass (Waves)
+            const noise = createNoiseNode(context, 'brown');
+            const filter = context.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(300, context.currentTime); // Deep rumble
+
+            // Wave modulation (LFO)
+            const lfo = context.createOscillator();
+            lfo.type = 'sine';
+            lfo.frequency.setValueAtTime(0.1, context.currentTime); // Very slow waves (10s period)
+
+            const lfoGain = context.createGain();
+            lfoGain.gain.setValueAtTime(400, context.currentTime); // Modulate filter freq by +/- 400Hz
+
+            lfo.connect(lfoGain);
+            lfoGain.connect(filter.frequency);
+            lfo.start();
+
+            noise.connect(filter);
+            filter.connect(sleepGainNode);
+            noise.start();
+
+            // Track nodes to stop them later (hacky but functional for now)
+            (noise as any).lfo = lfo;
+            sleepSourceNode = noise;
+
+        } else if (type === 'fireplace') {
+            // Brown noise (rumble) + Random clicks (crackles)
+            const noise = createNoiseNode(context, 'brown');
+            const filter = context.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(400, context.currentTime);
+
+            // Crackle generator (random buffer clicks)
+            const bufferSize = context.sampleRate * 2;
+            const buffer = context.createBuffer(1, bufferSize, context.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                if (Math.random() > 0.9995) { // Occasional crackle
+                    data[i] = (Math.random() * 2 - 1) * 0.8;
+                } else {
+                    data[i] = 0;
+                }
+            }
+            const crackle = context.createBufferSource();
+            crackle.buffer = buffer;
+            crackle.loop = true;
+
+            const crackleGain = context.createGain();
+            crackleGain.gain.value = 0.6; // Mix crackle
+
+            noise.connect(filter);
+            filter.connect(sleepGainNode);
+            crackle.connect(crackleGain);
+            crackleGain.connect(sleepGainNode);
+
+            noise.start();
+            crackle.start();
+
+            (noise as any).crackle = crackle;
+            sleepSourceNode = noise;
         }
     }
 
@@ -344,21 +428,39 @@ export const stopSleepSound = (fadeDuration: number = 2) => {
     }
     if (sleepSourceNode && context) {
         const stopTime = context.currentTime + fadeDuration;
-        if (sleepSourceNode instanceof AudioBufferSourceNode) {
-            try { sleepSourceNode.stop(stopTime); } catch (e) { /* ignore */ }
+        const currentNode = sleepSourceNode; // Capture for closure
+
+        if (currentNode instanceof AudioBufferSourceNode || currentNode instanceof OscillatorNode) {
+            try { (currentNode as any).stop(stopTime); } catch (e) { /* ignore */ }
         }
-        // For binaural beats, stop the attached oscillators
-        if ((sleepSourceNode as any).oscillators) {
-            (sleepSourceNode as any).oscillators.forEach((osc: OscillatorNode) => {
+
+        // For binaural beats
+        if ((currentNode as any).oscillators) {
+            (currentNode as any).oscillators.forEach((osc: OscillatorNode) => {
                 try { osc.stop(stopTime); } catch (e) { /* ignore */ }
             });
         }
+
+        // Cleanup synthetic extras (LFO, Crackle)
+        if ((currentNode as any).lfo) {
+            try { (currentNode as any).lfo.stop(stopTime); } catch (e) { }
+        }
+        if ((currentNode as any).crackle) {
+            try { (currentNode as any).crackle.stop(stopTime); } catch (e) { }
+        }
+
         setTimeout(() => {
-            if (sleepSourceNode) {
-                sleepSourceNode.disconnect();
-                sleepSourceNode = null;
+            if (currentNode) {
+                // Disconnect main
+                currentNode.disconnect();
+
+                // Disconnect extras
+                if ((currentNode as any).lfo) (currentNode as any).lfo.disconnect();
+                if ((currentNode as any).crackle) (currentNode as any).crackle.disconnect();
             }
         }, (fadeDuration * 1000) + 100);
+
+        sleepSourceNode = null;
     }
 };
 

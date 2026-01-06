@@ -163,18 +163,53 @@ const AnalogClock: React.FC<{ initialTime: string; onChange: (time: string) => v
 
 // Alarm sound options
 const ALARM_SOUNDS = [
+    { id: 'progressive', name: 'Progressive Dream', description: 'Gently builds volume & pitch (Default)' },
     { id: 'gentle', name: 'Gentle Rise', description: 'Soft, gradual wake-up' },
     { id: 'chimes', name: 'Wind Chimes', description: 'Peaceful chime melody' },
     { id: 'nature', name: 'Nature Dawn', description: 'Birds and morning sounds' },
     { id: 'classic', name: 'Classic Alarm', description: 'Traditional alarm tone' },
 ];
 
+const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
 // AlarmModal component
-const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void }> = ({ alarmToEdit, onClose }) => {
+const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onSaveSuccess?: () => void }> = ({ alarmToEdit, onClose, onSaveSuccess }) => {
     const { addAlarm, updateAlarm, deleteAlarm } = useAppContext();
     const [time, setTime] = useState(alarmToEdit?.time || '07:00');
-    const [selectedSound, setSelectedSound] = useState('gentle');
+    const [selectedSound, setSelectedSound] = useState(alarmToEdit?.soundId || 'progressive');
     const [showSmartWakeInfo, setShowSmartWakeInfo] = useState(false);
+
+    // Repetition state
+    const [frequency, setFrequency] = useState<'once' | 'daily' | 'weekly'>(
+        !alarmToEdit || alarmToEdit.days.length === 0 ? 'once' :
+            alarmToEdit.days.length === 7 ? 'daily' : 'weekly'
+    );
+    const [selectedDays, setSelectedDays] = useState<number[]>(alarmToEdit?.days || []);
+
+    // Update selected days based on frequency change
+    useEffect(() => {
+        if (frequency === 'daily') {
+            setSelectedDays([0, 1, 2, 3, 4, 5, 6]);
+        } else if (frequency === 'once') {
+            setSelectedDays([]);
+        }
+        // If switching to weekly, keep existing selection or default to M-F if empty
+        else if (frequency === 'weekly' && selectedDays.length === 0) {
+            setSelectedDays([1, 2, 3, 4, 5]);
+        }
+    }, [frequency]);
+
+    const toggleDay = (dayIndex: number) => {
+        if (frequency !== 'weekly') setFrequency('weekly');
+
+        setSelectedDays(prev => {
+            if (prev.includes(dayIndex)) {
+                return prev.filter(d => d !== dayIndex);
+            } else {
+                return [...prev, dayIndex].sort();
+            }
+        });
+    };
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose(); };
@@ -184,11 +219,19 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void }> =
 
     const handleSave = () => {
         stopAlarmPreview();
+
+        // Finalize days based on frequency
+        let finalDays = selectedDays;
+        if (frequency === 'once') finalDays = [];
+        if (frequency === 'daily') finalDays = [0, 1, 2, 3, 4, 5, 6];
+
         if (alarmToEdit) {
-            updateAlarm(alarmToEdit.id, time, false); // Smart wake always false for now
+            updateAlarm(alarmToEdit.id, time, false, finalDays, selectedSound);
         } else {
-            addAlarm(time, false);
+            addAlarm(time, false, finalDays, selectedSound);
         }
+
+        if (onSaveSuccess) onSaveSuccess();
         onClose();
     };
 
@@ -204,10 +247,48 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void }> =
                 <h2 className="font-serif text-2xl text-center mb-6">{alarmToEdit ? "Edit Alarm" : "Set Alarm"}</h2>
                 <AnalogClock initialTime={time} onChange={setTime} />
 
+                {/* Repetition Frequency */}
+                <div className="mt-6 mb-4">
+                    <label className="text-sm font-medium block mb-2">Repeat</label>
+                    <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1 mb-3">
+                        {(['once', 'daily', 'weekly'] as const).map((freq) => (
+                            <button
+                                key={freq}
+                                onClick={() => setFrequency(freq)}
+                                className={`flex-1 text-sm py-1.5 rounded-md capitalize transition-all ${frequency === freq
+                                        ? 'bg-white dark:bg-gray-700 shadow-sm font-medium text-day-accent dark:text-night-accent'
+                                        : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                                    }`}
+                            >
+                                {freq}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Weekly Day Selector */}
+                    {frequency === 'weekly' && (
+                        <div className="flex justify-between gap-1 mt-2">
+                            {DAYS.map((day, index) => (
+                                <button
+                                    key={index}
+                                    onClick={() => toggleDay(index)}
+                                    className={`w-8 h-8 rounded-full text-xs font-medium transition-all ${selectedDays.includes(index)
+                                            ? 'bg-day-accent text-white dark:bg-night-accent'
+                                            : 'bg-gray-100 dark:bg-gray-800 text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                                        }`}
+                                >
+                                    {day}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
                 {/* Alarm Sound Selector */}
                 <div className="mt-6">
                     <label className="text-sm font-medium block mb-2">Alarm Sound <span className="text-xs text-day-text-secondary dark:text-night-text-secondary">(tap to preview)</span></label>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 gap-2">
+                        {/* Full width for progressive, grid for others? No, let's stick to list or grid. List is safer for long names. grid-cols-1 is list. */}
                         {ALARM_SOUNDS.map(sound => (
                             <button
                                 key={sound.id}
@@ -215,13 +296,16 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void }> =
                                     setSelectedSound(sound.id);
                                     playAlarmPreview(sound.id);
                                 }}
-                                className={`p-2 rounded-lg text-left transition-all ${selectedSound === sound.id
+                                className={`p-3 rounded-lg text-left transition-all flex items-center justify-between ${selectedSound === sound.id
                                     ? 'bg-day-accent/20 dark:bg-night-accent/20 border-2 border-day-accent dark:border-night-accent'
                                     : 'bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border hover:border-day-accent/50'
                                     }`}
                             >
-                                <span className="text-sm font-medium block">{sound.name}</span>
-                                <span className="text-xs text-day-text-secondary dark:text-night-text-secondary">{sound.description}</span>
+                                <div>
+                                    <span className="text-sm font-medium block">{sound.name} {sound.id === 'progressive' && '⭐'}</span>
+                                    <span className="text-xs text-day-text-secondary dark:text-night-text-secondary">{sound.description}</span>
+                                </div>
+                                {selectedSound === sound.id && <div className="w-3 h-3 rounded-full bg-day-accent dark:bg-night-accent" />}
                             </button>
                         ))}
                     </div>

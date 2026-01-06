@@ -6,6 +6,8 @@ export interface Alarm {
     id: number;
     time: string;
     isActive: boolean;
+    days: number[]; // 0-6, where 0 is Sunday. Empty means "once".
+    soundId?: string; // ID of the sound to play (default: 'progressive')
     smartWake?: boolean; // If true, wake up during light sleep
     smartWindow?: number; // Minutes before alarm to check (default 30)
 }
@@ -59,14 +61,17 @@ export interface BinauralParams {
     diff: number;
 }
 
-export interface FileParams {
-    src: string;
+src: string;
 }
 
-export type Soundscape =
+export interface SyntheticParams {
+    type: 'rain' | 'ocean' | 'fireplace';
+}
+
     | { id: string; name: string; description: string; icon: ReactElement; type: 'noise'; params: NoiseParams; isPremium?: boolean }
     | { id: string; name: string; description: string; icon: ReactElement; type: 'binaural'; params: BinauralParams; isPremium?: boolean }
-    | { id: string; name: string; description: string; icon: ReactElement; type: 'file'; params: FileParams; isPremium?: boolean };
+    | { id: string; name: string; description: string; icon: ReactElement; type: 'file'; params: FileParams; isPremium?: boolean }
+    | { id: string; name: string; description: string; icon: ReactElement; type: 'synthetic'; params: SyntheticParams; isPremium?: boolean };
 
 export interface GuidedRelaxation {
     id: string;
