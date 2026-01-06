@@ -516,7 +516,7 @@ export const stopSleepSound = (fadeDuration: number = 2) => {
 
 /**
  * Adjusts the volume of the currently playing sleep sound in real-time.
- * 
+ *
  * @param volume - Target volume level (0-1)
  */
 export const setLiveVolume = (volume: number) => {
@@ -524,6 +524,32 @@ export const setLiveVolume = (volume: number) => {
         // Smooth transition to new volume
         sleepGainNode.gain.setTargetAtTime(volume, audioContext.currentTime, 0.1);
     }
+};
+
+/**
+ * Updates the binaural beat frequency in real-time.
+ * Only works if a binaural beat is currently playing.
+ *
+ * @param baseFreq - Base frequency in Hz
+ * @param diff - Beat frequency difference in Hz
+ */
+export const setLiveBeatFrequency = (baseFreq: number, diff: number) => {
+    if (sleepSourceNode && audioContext && (sleepSourceNode as any).oscillators) {
+        const oscillators = (sleepSourceNode as any).oscillators as OscillatorNode[];
+        if (oscillators.length === 2) {
+            const now = audioContext.currentTime;
+            // Smooth transition to new frequencies
+            oscillators[0].frequency.setTargetAtTime(baseFreq - diff / 2, now, 0.1);
+            oscillators[1].frequency.setTargetAtTime(baseFreq + diff / 2, now, 0.1);
+        }
+    }
+};
+
+/**
+ * Check if a sleep sound is currently playing
+ */
+export const isSleepSoundPlaying = (): boolean => {
+    return sleepSourceNode !== null && sleepGainNode !== null;
 };
 
 // --- BREATHING CUE FUNCTIONS ---
