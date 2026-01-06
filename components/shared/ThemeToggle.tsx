@@ -8,9 +8,9 @@ export const ThemeToggle: React.FC = () => {
 
     const getThemeLabel = (theme: string) => {
         switch (theme) {
-            case 'auto': return 'Auto Mode';
-            case 'day': return 'Day Mode';
-            case 'night': return 'Night Mode';
+            case 'auto': return 'Auto';
+            case 'day': return 'Day';
+            case 'night': return 'Night';
             default: return '';
         }
     };
