@@ -14,6 +14,19 @@ const formatRepeatText = (days: number[]): string => {
     return days.map(d => dayNames[d]).join(', ');
 };
 
+// Helper to get alarm sound display name
+const getSoundName = (soundId: string | undefined): string => {
+    const soundMap: Record<string, string> = {
+        'somnia': 'Somnia',
+        'progressive': 'Progressive',
+        'gentle': 'Gentle Rise',
+        'chimes': 'Chimes',
+        'nature': 'Nature',
+        'classic': 'Classic'
+    };
+    return soundMap[soundId || 'somnia'] || 'Somnia';
+};
+
 // Memoized component for a single alarm item - fully clickable with dynamic styling
 const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = React.memo(({ alarm, onEdit }) => {
     const { toggleAlarmActive } = useAppContext();
@@ -68,15 +81,21 @@ const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = Re
                 </div>
             </div>
             <div className="flex items-center justify-between relative z-10">
-                <p className={`text-sm ${alarm.isActive ? 'text-day-text-secondary dark:text-night-text-secondary' : 'text-gray-400'}`}>
-                    {formatRepeatText(alarm.days)}
-                </p>
-                {/* Sound indicator */}
-                <div className="flex items-center gap-1 text-xs text-day-text-secondary dark:text-night-text-secondary opacity-0 group-hover:opacity-100 transition-opacity">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                    </svg>
-                    <span>Tap to edit</span>
+                <div className="flex flex-col gap-0.5">
+                    <p className={`text-sm ${alarm.isActive ? 'text-day-text-secondary dark:text-night-text-secondary' : 'text-gray-400'}`}>
+                        {formatRepeatText(alarm.days)}
+                    </p>
+                    {/* Sound name display */}
+                    <div className={`flex items-center gap-1 text-xs ${alarm.isActive ? 'text-day-accent/70 dark:text-night-accent/70' : 'text-gray-400'}`}>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                        </svg>
+                        <span>{getSoundName(alarm.soundId)}</span>
+                    </div>
+                </div>
+                {/* Edit hint on hover */}
+                <div className="text-xs text-day-text-secondary dark:text-night-text-secondary opacity-0 group-hover:opacity-100 transition-opacity">
+                    Tap to edit
                 </div>
             </div>
         </div>

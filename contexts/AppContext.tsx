@@ -9,8 +9,8 @@ interface AppContextType {
     biometrics: Biometrics;
     activeSleepAids: SleepAids;
     pendingSleepData: SleepAids | null;
-    addAlarm: (time: string, smartWake: boolean) => void;
-    updateAlarm: (id: number, time: string, smartWake: boolean) => void;
+    addAlarm: (time: string, smartWake: boolean, days?: number[], soundId?: string) => void;
+    updateAlarm: (id: number, time: string, smartWake: boolean, days?: number[], soundId?: string) => void;
     toggleAlarmActive: (id: number) => void;
     deleteAlarm: (id: number) => void;
     addDream: (dreamText: string, sleepQuality: number | null, mood?: DreamMood) => number;
@@ -80,21 +80,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         });
     }, []); // Only run on initial mount
 
-    const addAlarm = (time: string, smartWake: boolean = false) => {
+    const addAlarm = (time: string, smartWake: boolean = false, days: number[] = [], soundId: string = 'somnia') => {
         const newAlarm: Alarm = {
             id: Date.now(),
             time,
             isActive: true,
             smartWake,
-            smartWindow: 30
+            smartWindow: 30,
+            days,
+            soundId
         };
         setAlarms(prev => [...prev, newAlarm]);
         enqueueAction('ADD_ALARM', newAlarm);
     };
 
-    const updateAlarm = (id: number, time: string, smartWake: boolean) => {
-        setAlarms(prev => prev.map(a => a.id === id ? { ...a, time, smartWake } : a));
-        enqueueAction('UPDATE_ALARM', { id, time, smartWake });
+    const updateAlarm = (id: number, time: string, smartWake: boolean, days: number[] = [], soundId: string = 'somnia') => {
+        setAlarms(prev => prev.map(a => a.id === id ? { ...a, time, smartWake, days, soundId } : a));
+        enqueueAction('UPDATE_ALARM', { id, time, smartWake, days, soundId });
     };
 
     const toggleAlarmActive = (id: number) => {
