@@ -60,7 +60,12 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
     const [countdown, setCountdown] = useState(0);
     const [animationClass, setAnimationClass] = useState('scale-[0.8] opacity-70');
     const [animationKey, setAnimationKey] = useState(0);
+    const [sessionDuration, setSessionDuration] = useState(5); // minutes
+    const [totalTimeRemaining, setTotalTimeRemaining] = useState(0); // seconds
+    const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
     const { setActiveSleepAid } = useAppContext();
+
+    const DURATION_PRESETS = [2, 5, 10]; // minutes
 
     const cycle: CycleStep[] = useMemo(() => {
         if (relaxation.id === 'box_breathing') {
@@ -144,8 +149,29 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
 
     const startSession = () => {
         haptics.medium();
+        setSessionStartTime(Date.now());
+        setTotalTimeRemaining(sessionDuration * 60);
         setSessionState('starting');
     };
+
+    // Session timer - counts down total session time
+    useEffect(() => {
+        if (sessionState !== 'running' || !sessionStartTime) return;
+
+        const interval = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
+            const remaining = Math.max(0, sessionDuration * 60 - elapsed);
+            setTotalTimeRemaining(remaining);
+
+            // Auto-end when time runs out
+            if (remaining === 0) {
+                haptics.success();
+                endSession();
+            }
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [sessionState, sessionStartTime, sessionDuration]);
 
     const endSession = () => {
         haptics.light();
@@ -153,8 +179,17 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
         setStepIndex(0);
         setCountdown(0);
         setInstruction('');
+        setSessionStartTime(null);
+        setTotalTimeRemaining(0);
         setAnimationClass(relaxation.id === 'box_breathing' ? '' : 'scale-[0.8] opacity-70');
         onClose();
+    };
+
+    // Format time as M:SS
+    const formatTime = (seconds: number) => {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}:${s.toString().padStart(2, '0')}`;
     };
 
     useEffect(() => {
@@ -177,7 +212,27 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
 
                 {sessionState === 'ready' ? (
                     <div className="animate-fadeIn">
-                        <p className="text-day-text-secondary dark:text-night-text-secondary my-8">{relaxation.description}</p>
+                        <p className="text-day-text-secondary dark:text-night-text-secondary my-4 text-sm">{relaxation.description}</p>
+
+                        {/* Duration Presets */}
+                        <div className="mb-6">
+                            <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mb-2">Session Duration</p>
+                            <div className="grid grid-cols-3 gap-2">
+                                {DURATION_PRESETS.map(mins => (
+                                    <button
+                                        key={mins}
+                                        onClick={() => setSessionDuration(mins)}
+                                        className={`py-2 rounded-lg text-sm font-medium transition-all ${sessionDuration === mins
+                                                ? 'bg-day-accent dark:bg-night-accent text-white'
+                                                : 'bg-white/50 dark:bg-black/30 border border-day-border dark:border-night-border hover:border-day-accent dark:hover:border-night-accent'
+                                            }`}
+                                    >
+                                        {mins} min
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
                         <button onClick={startSession} className="w-full py-3 bg-day-accent dark:bg-night-accent text-white font-bold rounded-full text-lg shadow-lg">Start Session</button>
                         <button onClick={onClose} className="w-full mt-3 py-2 text-day-text-secondary dark:text-night-text-secondary">Close</button>
                     </div>
@@ -193,6 +248,12 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
                             {instruction}
                             {sessionState === 'running' && ` (${countdown}s)`}
                         </p>
+                        {/* Total Time Remaining */}
+                        {sessionState === 'running' && totalTimeRemaining > 0 && (
+                            <p className="text-sm text-day-text-secondary dark:text-night-text-secondary mt-2">
+                                {formatTime(totalTimeRemaining)} remaining
+                            </p>
+                        )}
                         <button onClick={endSession} className="w-full mt-6 py-2 bg-gray-200 dark:bg-gray-700 rounded-full">End Session</button>
                     </div>
                 )}
