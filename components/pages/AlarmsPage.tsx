@@ -140,7 +140,7 @@ const DrumTimePicker: React.FC<{ initialTime: string; onChange: (time: string) =
         onChange(timeString);
     }, [hour, minute, period, onChange]);
 
-    // Scroll to selected values on mount - use setTimeout to ensure DOM is ready
+    // Scroll to selected values on mount - use requestAnimationFrame for reliable timing
     useEffect(() => {
         const scrollToInitialValues = () => {
             if (hourRef.current) {
@@ -153,9 +153,15 @@ const DrumTimePicker: React.FC<{ initialTime: string; onChange: (time: string) =
                 periodRef.current.scrollTop = period === 'AM' ? 0 : ITEM_HEIGHT;
             }
         };
-        // Delay to ensure scroll containers are rendered
-        const timer = setTimeout(scrollToInitialValues, 50);
-        return () => clearTimeout(timer);
+
+        // Use double requestAnimationFrame to ensure layout is complete
+        // First RAF waits for next frame, second RAF ensures paint is done
+        let rafId: number;
+        rafId = requestAnimationFrame(() => {
+            rafId = requestAnimationFrame(scrollToInitialValues);
+        });
+
+        return () => cancelAnimationFrame(rafId);
     }, [hour, minute, period]);
 
     const handleScroll = (ref: React.RefObject<HTMLDivElement>, setter: (val: any) => void, values: any[]) => {

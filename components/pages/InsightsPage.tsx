@@ -14,7 +14,6 @@ import { DreamMoodTracker } from '../insights/DreamMoodTracker';
 import { LucidDreamProgress } from '../insights/LucidDreamProgress';
 import { SleepDurationChart } from '../insights/SleepDurationChart';
 import { DreamLengthInsights } from '../insights/DreamLengthInsights';
-import { DreamStreakCalendar } from '../insights/DreamStreakCalendar';
 import { RecurringThemes } from '../insights/RecurringThemes';
 import { InsightsGrid } from '../insights/InsightsGrid';
 import { PremiumBadge } from '../shared/PremiumBadge';
@@ -194,7 +193,6 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                         <DreamCalendar dreams={dreams} />
                         <DreamWordCloud dreams={dreams} />
                         <DreamMoodTracker dreams={dreams} />
-                        <DreamStreakCalendar dreams={dreams} />
                         <RecurringThemes dreams={dreams} />
 
                         {/* Recurring Patterns */}
