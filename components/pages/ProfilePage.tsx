@@ -8,7 +8,6 @@ import { calculateUserStats } from '../../services/userStatsService';
 import { useClock } from '../../hooks/useClock';
 import { isPremium, getRemainingCredits, getCredits, createCustomerPortalSession } from '../../services/secureSubscriptionService';
 import { SecurePaywallModal } from '../modals/SecurePaywallModal';
-import { VOICE_OPTIONS, VoiceType, getVoicePreference, setVoicePreference, isVoiceAvailable, speakText } from '../../services/ttsService';
 
 const FREE_TIER_MAX_CREDITS = 3; // Same as in secureSubscriptionService
 
@@ -385,91 +384,6 @@ const ArtStyleCard: React.FC = () => {
     );
 };
 
-// Voice Preference Card (Premium only)
-const VoicePreferenceCard: React.FC = () => {
-    const [selectedVoice, setSelectedVoice] = useState<VoiceType>(getVoicePreference);
-    const [isPreviewing, setIsPreviewing] = useState(false);
-    const premium = isPremium();
-    const voiceAvailable = isVoiceAvailable();
-
-    // Don't show for non-premium users
-    if (!premium) return null;
-
-    const handleVoiceChange = (voice: VoiceType) => {
-        setSelectedVoice(voice);
-        setVoicePreference(voice);
-    };
-
-    const handlePreview = async (voice: VoiceType) => {
-        if (!voiceAvailable || isPreviewing) return;
-        setIsPreviewing(true);
-        try {
-            await speakText(`Hello, I'm ${VOICE_OPTIONS[voice].label}. I'll be your AI voice assistant.`, voice);
-        } finally {
-            setIsPreviewing(false);
-        }
-    };
-
-    const voiceList = Object.entries(VOICE_OPTIONS) as [VoiceType, { label: string; description: string }][];
-
-    return (
-        <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">
-            <div className="flex items-center gap-2 mb-2">
-                <h2 className="font-serif text-xl">AI Voice</h2>
-                <span className="text-[10px] bg-gradient-to-r from-amber-500 to-orange-500 text-white px-1.5 py-0.5 rounded-full font-medium">PRO</span>
-            </div>
-            <p className="text-day-text-secondary dark:text-night-text-secondary text-sm mb-4">
-                Choose the voice for your AI assistant.
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-                {voiceList.map(([voice, info]) => (
-                    <button
-                        key={voice}
-                        onClick={() => handleVoiceChange(voice)}
-                        className={`p-3 rounded-lg border-2 transition-all text-left ${
-                            selectedVoice === voice
-                                ? 'border-day-accent dark:border-night-accent bg-day-accent/10 dark:bg-night-accent/10'
-                                : 'border-day-border dark:border-night-border hover:border-day-accent/50 dark:hover:border-night-accent/50'
-                        }`}
-                    >
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className={`font-medium text-sm ${selectedVoice === voice ? 'text-day-accent dark:text-night-accent' : ''}`}>
-                                    {info.label}
-                                </p>
-                                <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">
-                                    {info.description}
-                                </p>
-                            </div>
-                            {selectedVoice === voice && (
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-day-accent dark:text-night-accent flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                            )}
-                        </div>
-                    </button>
-                ))}
-            </div>
-            {voiceAvailable && (
-                <button
-                    onClick={() => handlePreview(selectedVoice)}
-                    disabled={isPreviewing}
-                    className="mt-4 w-full py-2 border border-day-border dark:border-night-border rounded-lg text-day-text-secondary dark:text-night-text-secondary text-sm hover:bg-white/10 dark:hover:bg-black/10 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                    {isPreviewing ? (
-                        <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
-                    ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                        </svg>
-                    )}
-                    Preview Voice
-                </button>
-            )}
-        </div>
-    );
-};
-
 // Notifications Card
 const NotificationsCard: React.FC = () => {
     const [settings, setSettings] = useState(() => {
@@ -822,7 +736,6 @@ export const ProfilePage: React.FC<{ onBack?: () => void; onNavigateTo?: (page: 
                 <MembershipCard />
                 <ThemePreferenceCard />
                 <ArtStyleCard />
-                <VoicePreferenceCard />
                 <NotificationsCard />
                 <DataManagementCard />
                 <AccountManagementCard />
