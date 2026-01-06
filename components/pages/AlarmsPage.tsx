@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
 import { Alarm } from '../../types';
 import { DailyBriefingWidget } from '../widgets/DailyBriefingWidget';
+import { playAlarmPreview, stopAlarmPreview } from '../../services/audioService';
 
 // Memoized component for a single alarm item
 const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = React.memo(({ alarm, onEdit }) => {
@@ -182,6 +183,7 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void }> =
     }, [onClose]);
 
     const handleSave = () => {
+        stopAlarmPreview();
         if (alarmToEdit) {
             updateAlarm(alarmToEdit.id, time, false); // Smart wake always false for now
         } else {
@@ -191,6 +193,7 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void }> =
     };
 
     const handleDelete = () => {
+        stopAlarmPreview();
         if (alarmToEdit) deleteAlarm(alarmToEdit.id);
         onClose();
     };
@@ -203,12 +206,15 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void }> =
 
                 {/* Alarm Sound Selector */}
                 <div className="mt-6">
-                    <label className="text-sm font-medium block mb-2">Alarm Sound</label>
+                    <label className="text-sm font-medium block mb-2">Alarm Sound <span className="text-xs text-day-text-secondary dark:text-night-text-secondary">(tap to preview)</span></label>
                     <div className="grid grid-cols-2 gap-2">
                         {ALARM_SOUNDS.map(sound => (
                             <button
                                 key={sound.id}
-                                onClick={() => setSelectedSound(sound.id)}
+                                onClick={() => {
+                                    setSelectedSound(sound.id);
+                                    playAlarmPreview(sound.id);
+                                }}
                                 className={`p-2 rounded-lg text-left transition-all ${selectedSound === sound.id
                                     ? 'bg-day-accent/20 dark:bg-night-accent/20 border-2 border-day-accent dark:border-night-accent'
                                     : 'bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border hover:border-day-accent/50'

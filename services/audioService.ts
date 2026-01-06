@@ -87,6 +87,109 @@ export const stopAlarmSound = () => {
     alarmGainNode = null;
 };
 
+// Preview alarm state
+let previewOscillator: OscillatorNode | null = null;
+let previewGainNode: GainNode | null = null;
+let previewTimeout: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * Plays a 10-second preview of an alarm sound style.
+ * @param soundId - The alarm sound to preview ('gentle', 'chimes', 'nature', 'classic')
+ */
+export const playAlarmPreview = (soundId: string) => {
+    // Stop any current preview first
+    stopAlarmPreview();
+
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    previewGainNode = ctx.createGain();
+    previewGainNode.connect(ctx.destination);
+    previewGainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+
+    previewOscillator = ctx.createOscillator();
+    previewOscillator.connect(previewGainNode);
+
+    // Different sound characteristics for each alarm type
+    switch (soundId) {
+        case 'gentle':
+            // Soft, low frequency sine wave with slow pulse
+            previewOscillator.type = 'sine';
+            previewOscillator.frequency.setValueAtTime(220, ctx.currentTime);
+            previewGainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+            // Create gentle pulsing
+            for (let i = 0; i < 10; i++) {
+                previewGainNode.gain.linearRampToValueAtTime(0.25, ctx.currentTime + i + 0.5);
+                previewGainNode.gain.linearRampToValueAtTime(0.1, ctx.currentTime + i + 1);
+            }
+            break;
+        case 'chimes':
+            // Higher frequency with more harmonic content
+            previewOscillator.type = 'triangle';
+            previewOscillator.frequency.setValueAtTime(523, ctx.currentTime); // C5
+            // Add shimmer effect
+            for (let i = 0; i < 5; i++) {
+                previewOscillator.frequency.setValueAtTime(523, ctx.currentTime + i * 2);
+                previewOscillator.frequency.linearRampToValueAtTime(659, ctx.currentTime + i * 2 + 0.5);
+                previewOscillator.frequency.linearRampToValueAtTime(784, ctx.currentTime + i * 2 + 1);
+                previewOscillator.frequency.linearRampToValueAtTime(523, ctx.currentTime + i * 2 + 1.5);
+            }
+            break;
+        case 'nature':
+            // Soft binaural-like with nature feel
+            previewOscillator.type = 'sine';
+            previewOscillator.frequency.setValueAtTime(174, ctx.currentTime); // Deep earth tone
+            previewGainNode.gain.setValueAtTime(0.15, ctx.currentTime);
+            // Gentle frequency modulation
+            for (let i = 0; i < 5; i++) {
+                previewOscillator.frequency.linearRampToValueAtTime(196, ctx.currentTime + i * 2 + 1);
+                previewOscillator.frequency.linearRampToValueAtTime(174, ctx.currentTime + i * 2 + 2);
+            }
+            break;
+        case 'classic':
+        default:
+            // Traditional beeping alarm pattern
+            previewOscillator.type = 'square';
+            previewOscillator.frequency.setValueAtTime(880, ctx.currentTime);
+            previewGainNode.gain.setValueAtTime(0.2, ctx.currentTime);
+            // Classic beep pattern
+            for (let i = 0; i < 10; i++) {
+                previewGainNode.gain.setValueAtTime(0.2, ctx.currentTime + i * 0.5);
+                previewGainNode.gain.setValueAtTime(0, ctx.currentTime + i * 0.5 + 0.25);
+            }
+            break;
+    }
+
+    previewOscillator.start(ctx.currentTime);
+
+    // Auto-stop after 10 seconds
+    previewTimeout = setTimeout(() => {
+        stopAlarmPreview();
+    }, 10000);
+};
+
+/**
+ * Stops the alarm preview sound.
+ */
+export const stopAlarmPreview = () => {
+    if (previewTimeout) {
+        clearTimeout(previewTimeout);
+        previewTimeout = null;
+    }
+    if (previewGainNode && previewOscillator && audioContext) {
+        const now = audioContext.currentTime;
+        previewGainNode.gain.cancelScheduledValues(now);
+        previewGainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
+        try {
+            previewOscillator.stop(now + 0.2);
+        } catch (e) {
+            // Already stopped
+        }
+    }
+    previewOscillator = null;
+    previewGainNode = null;
+};
+
 
 // --- SLEEP SOUND FUNCTIONS ---
 
