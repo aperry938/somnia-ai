@@ -41,6 +41,10 @@ export const PremiumBadge: React.FC<PremiumBadgeProps> = ({
         return <>{children}</>;
     }
 
+    // Check if className contains height/width classes that need flex layout
+    const needsFlexLayout = className.includes('h-') || className.includes('w-full');
+    const baseClasses = needsFlexLayout ? '' : 'inline-flex items-center gap-1';
+
     return (
         <>
             <button
@@ -48,7 +52,7 @@ export const PremiumBadge: React.FC<PremiumBadgeProps> = ({
                     e.stopPropagation();
                     setShowPaywall(true);
                 }}
-                className={`inline-flex items-center gap-1 ${className}`}
+                className={`${baseClasses} ${className}`.trim()}
                 title={`Premium: ${PREMIUM_FEATURES[feature].name}`}
             >
                 {children}
