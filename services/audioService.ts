@@ -266,7 +266,10 @@ export const stopAlarmPreview = () => {
 
 // --- SLEEP SOUND FUNCTIONS ---
 
-const createNoiseNode = (context: AudioContext, type: 'white' | 'pink' | 'brown'): AudioBufferSourceNode => {
+/**
+ * Creates a raw noise buffer (unprocessed) for use in synthesis chains
+ */
+const createRawNoiseBuffer = (context: AudioContext, type: 'white' | 'pink' | 'brown'): AudioBuffer => {
     const bufferSize = context.sampleRate * 2;
     const buffer = context.createBuffer(1, bufferSize, context.sampleRate);
     const output = buffer.getChannelData(0);
@@ -276,6 +279,7 @@ const createNoiseNode = (context: AudioContext, type: 'white' | 'pink' | 'brown'
             output[i] = Math.random() * 2 - 1;
         }
     } else if (type === 'pink') {
+        // Paul Kellet's refined pink noise algorithm
         let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
         for (let i = 0; i < bufferSize; i++) {
             const white = Math.random() * 2 - 1;
@@ -289,6 +293,7 @@ const createNoiseNode = (context: AudioContext, type: 'white' | 'pink' | 'brown'
             b6 = white * 0.115926;
         }
     } else if (type === 'brown') {
+        // Brownian motion noise (1/f² spectrum)
         let lastOut = 0;
         for (let i = 0; i < bufferSize; i++) {
             const white = Math.random() * 2 - 1;
@@ -297,32 +302,110 @@ const createNoiseNode = (context: AudioContext, type: 'white' | 'pink' | 'brown'
         }
     }
 
+    return buffer;
+};
+
+/**
+ * Creates a basic noise source node without EQ (for use in synthesis chains)
+ */
+const createNoiseNode = (context: AudioContext, type: 'white' | 'pink' | 'brown'): AudioBufferSourceNode => {
+    const buffer = createRawNoiseBuffer(context, type);
     const noiseNode = context.createBufferSource();
     noiseNode.buffer = buffer;
     noiseNode.loop = true;
     return noiseNode;
-}
+};
 
+// Track EQ filter nodes for cleanup
+let somniaEqFilters: BiquadFilterNode[] = [];
+
+/**
+ * Creates "Somnia-Grey" EQ-shaped noise for premium sleep audio
+ *
+ * Psychoacoustic EQ curve optimized for sleep:
+ * - Boost (+3dB) @ 60 Hz: Adds physical weight/warmth
+ * - Cut (-3dB) @ 400 Hz: Removes "cardboard" boxy sound
+ * - Notch (-6dB) @ 3,500 Hz: Cuts ear canal resonance for silky feel
+ */
+const createSomniaGreyNoise = (
+    context: AudioContext,
+    type: 'white' | 'pink' | 'brown',
+    outputNode: AudioNode
+): AudioBufferSourceNode => {
+    const noiseNode = createNoiseNode(context, type);
+
+    // 60 Hz Low Shelf Boost (+3dB) - Adds warmth/weight
+    const lowBoost = context.createBiquadFilter();
+    lowBoost.type = 'lowshelf';
+    lowBoost.frequency.setValueAtTime(60, context.currentTime);
+    lowBoost.gain.setValueAtTime(3, context.currentTime); // +3dB
+
+    // 400 Hz Peaking Cut (-3dB) - Removes boxy mud
+    const midCut = context.createBiquadFilter();
+    midCut.type = 'peaking';
+    midCut.frequency.setValueAtTime(400, context.currentTime);
+    midCut.Q.setValueAtTime(1.5, context.currentTime);
+    midCut.gain.setValueAtTime(-3, context.currentTime); // -3dB
+
+    // 3500 Hz Notch (-6dB) - Removes ear canal resonance harshness
+    const highNotch = context.createBiquadFilter();
+    highNotch.type = 'peaking';
+    highNotch.frequency.setValueAtTime(3500, context.currentTime);
+    highNotch.Q.setValueAtTime(3, context.currentTime); // Narrow notch
+    highNotch.gain.setValueAtTime(-6, context.currentTime); // -6dB
+
+    // Additional high-frequency rolloff for ultimate smoothness (optional gentle slope)
+    const highRolloff = context.createBiquadFilter();
+    highRolloff.type = 'lowpass';
+    highRolloff.frequency.setValueAtTime(8000, context.currentTime);
+    highRolloff.Q.setValueAtTime(0.7, context.currentTime);
+
+    // Chain: noise -> lowBoost -> midCut -> highNotch -> highRolloff -> output
+    noiseNode.connect(lowBoost);
+    lowBoost.connect(midCut);
+    midCut.connect(highNotch);
+    highNotch.connect(highRolloff);
+    highRolloff.connect(outputNode);
+
+    // Track filters for cleanup
+    somniaEqFilters = [lowBoost, midCut, highNotch, highRolloff];
+
+    return noiseNode;
+};
+
+/**
+ * Creates optimized binaural beats using the scientifically superior 110 Hz carrier
+ *
+ * Why 110 Hz (Low A2):
+ * - Resonates in the chest/body (somatic entrainment)
+ * - Below the ear's hypersensitive 2-5 kHz range (Fletcher-Munson curve)
+ * - Feels "warm" and "grounding" like a sonic blanket
+ *
+ * Beat frequencies:
+ * - Deep Sleep (Delta): 2.5 Hz - Golden Mean for Slow Wave Sleep
+ * - REM/Creative (Theta): 6.0 Hz - Twilight frequency for lucid states
+ */
 const createBinauralNode = (context: AudioContext, baseFreq: number, diff: number): ChannelMergerNode => {
     const oscLeft = context.createOscillator();
     const oscRight = context.createOscillator();
     const merger = context.createChannelMerger(2);
 
-    // Use sine waves for pure binaural beats
+    // Use pure sine waves for clean binaural beats
     oscLeft.type = 'sine';
     oscRight.type = 'sine';
 
-    // Left ear: base frequency
-    // Right ear: base frequency + beat difference
+    // Left ear: base frequency - half difference
+    // Right ear: base frequency + half difference
+    // This creates the binaural beat at the "diff" frequency in the brain
     oscLeft.frequency.value = baseFreq - diff / 2;
     oscRight.frequency.value = baseFreq + diff / 2;
 
-    // Individual gain nodes for each ear (binaural should be subtle, ~-25dB)
-    // -25dB ≈ 0.056 linear gain
+    // Binaural beats should be subtle (~-25dB ≈ 0.056 linear gain)
+    // Slightly louder than pure -25dB for the low 110 Hz carrier
     const gainLeft = context.createGain();
     const gainRight = context.createGain();
-    gainLeft.gain.value = 0.06;  // Subtle binaural mix
-    gainRight.gain.value = 0.06;
+    gainLeft.gain.value = 0.08;  // Subtle but perceptible binaural mix
+    gainRight.gain.value = 0.08;
 
     oscLeft.connect(gainLeft);
     oscRight.connect(gainRight);
@@ -337,7 +420,7 @@ const createBinauralNode = (context: AudioContext, baseFreq: number, diff: numbe
     (merger as any).gains = [gainLeft, gainRight];
 
     return merger;
-}
+};
 
 const getAudioBuffer = async (context: AudioContext, src: string): Promise<AudioBuffer> => {
     if (audioBufferCache[src]) {
@@ -386,8 +469,9 @@ export const playSleepSound = async (sound: Soundscape, durationMinutes: number,
     sleepGainNode.connect(sleepCompressor);
 
     if (sound.type === 'noise') {
-        sleepSourceNode = createNoiseNode(context, sound.params.type);
-        sleepSourceNode.connect(sleepGainNode);
+        // Use Somnia-Grey EQ shaping for premium sleep audio quality
+        // This applies psychoacoustic optimization: +3dB@60Hz, -3dB@400Hz, -6dB@3500Hz
+        sleepSourceNode = createSomniaGreyNoise(context, sound.params.type, sleepGainNode);
         (sleepSourceNode as AudioBufferSourceNode).start();
     } else if (sound.type === 'binaural') {
         sleepSourceNode = createBinauralNode(context, sound.params.base, sound.params.diff);
@@ -641,6 +725,13 @@ export const stopSleepSound = (fadeDuration: number = 2) => {
             if (sleepCompressor) {
                 sleepCompressor.disconnect();
                 sleepCompressor = null;
+            }
+            // Cleanup Somnia-Grey EQ filters
+            if (somniaEqFilters.length > 0) {
+                somniaEqFilters.forEach(filter => {
+                    try { filter.disconnect(); } catch (e) { /* ignore */ }
+                });
+                somniaEqFilters = [];
             }
         }, (fadeDuration * 1000) + 100);
     }
