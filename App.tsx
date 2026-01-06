@@ -22,6 +22,7 @@ import { ThemeToggle } from './components/shared/ThemeToggle';
 import { OnboardingCarousel } from './components/onboarding/OnboardingCarousel';
 import { useSleepDetection } from './hooks/useSleepDetection';
 import { DevModeToggle } from './components/DevModeToggle';
+import { useSwipeNavigation } from './hooks/useSwipeNavigation';
 
 
 // Lazy load heavy pages for better code splitting
@@ -44,6 +45,9 @@ const App: React.FC = () => {
     const { timeString, dateString } = useClock();
     const { ringingAlarm, stopRinging, snooze, triggerSleepDetectionAlarm } = useAlarmManager();
     const { isHelpOpen, closeHelp } = useKeyboardHelp();
+
+    // Swipe navigation between main pages
+    const { currentIndex, totalPages } = useSwipeNavigation(currentPage, setCurrentPage);
 
     useEffect(() => {
         const resumeAudio = () => {
@@ -193,6 +197,21 @@ const App: React.FC = () => {
                 <div className="animate-fadeIn">
                     {renderPage()}
                 </div>
+                {/* Page indicator dots for swipe navigation */}
+                {currentIndex !== -1 && (
+                    <div className="flex justify-center gap-2 py-3 mt-4">
+                        {Array.from({ length: totalPages }).map((_, i) => (
+                            <div
+                                key={i}
+                                className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                                    i === currentIndex
+                                        ? 'bg-day-accent dark:bg-night-accent w-6'
+                                        : 'bg-gray-300 dark:bg-gray-600'
+                                }`}
+                            />
+                        ))}
+                    </div>
+                )}
             </main>
             <BottomNav currentPage={currentPage} setCurrentPage={setCurrentPage} />
             {ringingAlarm && <AlarmRingModal alarm={ringingAlarm} onSnooze={snooze} onAwake={handleAwake} onRecordDream={handleRecordDream} />}

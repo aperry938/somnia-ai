@@ -102,185 +102,161 @@ const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = Re
     );
 });
 
-// Custom Analog Clock Picker with clock arms and manual input
-const AnalogClock: React.FC<{ initialTime: string; onChange: (time: string) => void }> = ({ initialTime, onChange }) => {
-    const [hour, setHour] = useState(() => parseInt(initialTime.split(':')[0], 10));
+// Mobile-optimized Drum/Scroll Time Picker
+const DrumTimePicker: React.FC<{ initialTime: string; onChange: (time: string) => void }> = ({ initialTime, onChange }) => {
+    const [hour, setHour] = useState(() => {
+        const h = parseInt(initialTime.split(':')[0], 10);
+        return h === 0 ? 12 : h > 12 ? h - 12 : h;
+    });
     const [minute, setMinute] = useState(() => parseInt(initialTime.split(':')[1], 10));
-    const [period, setPeriod] = useState(() => hour >= 12 ? 'PM' : 'AM');
-    const [selecting, setSelecting] = useState<'hour' | 'minute'>('hour');
-    const [editingHour, setEditingHour] = useState(false);
-    const [editingMinute, setEditingMinute] = useState(false);
+    const [period, setPeriod] = useState(() => parseInt(initialTime.split(':')[0], 10) >= 12 ? 'PM' : 'AM');
+
+    const hourRef = React.useRef<HTMLDivElement>(null);
+    const minuteRef = React.useRef<HTMLDivElement>(null);
+    const periodRef = React.useRef<HTMLDivElement>(null);
+
+    const ITEM_HEIGHT = 56; // Height of each item in pixels
 
     useEffect(() => {
-        const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-        const finalHour = period === 'PM' && displayHour !== 12 ? displayHour + 12 : period === 'AM' && displayHour === 12 ? 0 : displayHour;
+        const finalHour = period === 'PM' && hour !== 12 ? hour + 12 : period === 'AM' && hour === 12 ? 0 : hour;
         const timeString = `${String(finalHour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
         onChange(timeString);
     }, [hour, minute, period, onChange]);
 
-    const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-
-    const handleHourSelect = (h: number) => {
-        setHour(h);
-        setSelecting('minute');
-    };
-
-    const handleMinuteSelect = (m: number) => {
-        setMinute(m);
-    };
-
-    // Calculate clock hand angles
-    // With bottom:50% positioning, hands naturally point UP (12 o'clock), so no offset needed
-    const hourAngle = (displayHour % 12) * 30 + (minute / 60) * 30; // 30 degrees per hour + minute offset
-    const minuteAngle = minute * 6; // 6 degrees per minute
-
-    const handleManualHourChange = (value: string) => {
-        const num = parseInt(value, 10);
-        if (!isNaN(num) && num >= 1 && num <= 12) {
-            const h = period === 'PM' && num !== 12 ? num + 12 : period === 'AM' && num === 12 ? 0 : num;
-            setHour(h);
+    // Scroll to selected values on mount
+    useEffect(() => {
+        if (hourRef.current) {
+            hourRef.current.scrollTop = (hour - 1) * ITEM_HEIGHT;
         }
+        if (minuteRef.current) {
+            minuteRef.current.scrollTop = minute * ITEM_HEIGHT;
+        }
+        if (periodRef.current) {
+            periodRef.current.scrollTop = period === 'AM' ? 0 : ITEM_HEIGHT;
+        }
+    }, []);
+
+    const handleScroll = (ref: React.RefObject<HTMLDivElement>, setter: (val: any) => void, values: any[]) => {
+        if (!ref.current) return;
+        const scrollTop = ref.current.scrollTop;
+        const index = Math.round(scrollTop / ITEM_HEIGHT);
+        const clampedIndex = Math.max(0, Math.min(index, values.length - 1));
+        setter(values[clampedIndex]);
     };
 
-    const handleManualMinuteChange = (value: string) => {
-        const num = parseInt(value, 10);
-        if (!isNaN(num) && num >= 0 && num <= 59) {
-            setMinute(num);
+    const hours = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+    const minutes = Array.from({ length: 60 }, (_, i) => i);
+    const periods = ['AM', 'PM'];
+
+    const scrollToValue = (ref: React.RefObject<HTMLDivElement>, index: number) => {
+        if (ref.current) {
+            ref.current.scrollTo({ top: index * ITEM_HEIGHT, behavior: 'smooth' });
         }
     };
 
     return (
         <div className="flex flex-col items-center">
-            <div className="flex items-end gap-2 mb-6">
-                {/* Hour - click to edit */}
-                {editingHour ? (
-                    <input
-                        type="number"
-                        min="1" max="12"
-                        className="text-6xl font-light w-24 text-center bg-transparent border-b-2 border-day-accent dark:border-night-accent focus:outline-none"
-                        defaultValue={displayHour}
-                        autoFocus
-                        onBlur={(e) => { handleManualHourChange(e.target.value); setEditingHour(false); }}
-                        onKeyDown={(e) => { if (e.key === 'Enter') { handleManualHourChange((e.target as HTMLInputElement).value); setEditingHour(false); } }}
-                    />
-                ) : (
-                    <span
-                        onClick={() => { setSelecting('hour'); setEditingHour(true); }}
-                        className={`text-6xl font-light cursor-pointer ${selecting === 'hour' ? 'text-day-accent dark:text-night-accent' : ''}`}
-                    >
-                        {String(displayHour).padStart(2, '0')}
-                    </span>
-                )}
-                <span className="text-6xl font-light pb-1">:</span>
-                {/* Minute - click to edit for exact input */}
-                {editingMinute ? (
-                    <input
-                        type="number"
-                        min="0" max="59"
-                        className="text-6xl font-light w-24 text-center bg-transparent border-b-2 border-day-accent dark:border-night-accent focus:outline-none"
-                        defaultValue={minute}
-                        autoFocus
-                        onBlur={(e) => { handleManualMinuteChange(e.target.value); setEditingMinute(false); }}
-                        onKeyDown={(e) => { if (e.key === 'Enter') { handleManualMinuteChange((e.target as HTMLInputElement).value); setEditingMinute(false); } }}
-                    />
-                ) : (
-                    <span
-                        onClick={() => { setSelecting('minute'); setEditingMinute(true); }}
-                        className={`text-6xl font-light cursor-pointer ${selecting === 'minute' ? 'text-day-accent dark:text-night-accent' : ''}`}
-                    >
-                        {String(minute).padStart(2, '0')}
-                    </span>
-                )}
-                <div className="flex flex-col text-lg font-medium ml-2">
-                    <button onClick={() => setPeriod('AM')} className={`px-2 rounded ${period === 'AM' ? 'bg-day-accent/20 text-day-accent dark:bg-night-accent/20 dark:text-night-accent' : ''}`}>AM</button>
-                    <button onClick={() => setPeriod('PM')} className={`px-2 rounded ${period === 'PM' ? 'bg-day-accent/20 text-day-accent dark:bg-night-accent/20 dark:text-night-accent' : ''}`}>PM</button>
-                </div>
+            {/* Large time display */}
+            <div className="text-5xl font-light mb-4 text-day-text dark:text-night-text">
+                {String(hour).padStart(2, '0')}:{String(minute).padStart(2, '0')} <span className="text-3xl">{period}</span>
             </div>
-            <div className="relative w-72 h-72">
-                {/* Clock face circle */}
-                <div className="absolute inset-4 rounded-full border-2 border-day-border dark:border-night-border"></div>
 
-                {/* Hour hand - visible dark gray color */}
-                <div
-                    className="absolute w-1.5 bg-gray-600 dark:bg-gray-300 rounded-full pointer-events-none"
-                    style={{
-                        height: '45px',
-                        bottom: '50%',
-                        left: '50%',
-                        transformOrigin: 'bottom center',
-                        transform: `translateX(-50%) rotate(${hourAngle}deg)`,
-                    }}
-                />
-                {/* Minute hand - accent color */}
-                <div
-                    className="absolute w-1 bg-day-accent dark:bg-night-accent rounded-full pointer-events-none"
-                    style={{
-                        height: '65px',
-                        bottom: '50%',
-                        left: '50%',
-                        transformOrigin: 'bottom center',
-                        transform: `translateX(-50%) rotate(${minuteAngle}deg)`,
-                    }}
-                />
+            {/* Drum picker container */}
+            <div className="relative flex items-center justify-center gap-2 bg-gray-100 dark:bg-gray-800/50 rounded-2xl p-4">
+                {/* Selection highlight bar */}
+                <div className="absolute left-4 right-4 h-14 bg-day-accent/20 dark:bg-night-accent/20 rounded-xl pointer-events-none border-2 border-day-accent/40 dark:border-night-accent/40" style={{ top: '50%', transform: 'translateY(-50%)' }} />
 
-                {/* Hour numbers: 12 at top (0°), 3 at right (90°), 6 at bottom (180°), 9 at left (270°) */}
-                {selecting === 'hour' && [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((h, index) => {
-                    const angle = index * 30; // 12=0°, 1=30°, 2=60°, 3=90°, etc.
-                    return (
-                        <div
-                            key={h}
-                            className="absolute top-1/2 left-1/2 w-9 h-9 z-10"
-                            style={{
-                                marginLeft: '-18px',
-                                marginTop: '-18px',
-                                transform: `rotate(${angle}deg) translateY(-110px) rotate(-${angle}deg)`
-                            }}
-                        >
-                            <button
-                                onClick={() => handleHourSelect(period === 'PM' && h !== 12 ? h + 12 : period === 'AM' && h === 12 ? 0 : h)}
-                                className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors text-sm font-medium ${
-                                    displayHour === h
-                                        ? 'bg-day-accent text-white dark:bg-night-accent'
-                                        : 'hover:bg-gray-200 dark:hover:bg-gray-700'
+                {/* Hour drum */}
+                <div className="relative">
+                    <div
+                        ref={hourRef}
+                        className="h-44 w-20 overflow-y-auto scroll-snap-y scroll-snap-mandatory hide-scrollbar"
+                        onScroll={() => handleScroll(hourRef, setHour, hours)}
+                        style={{ scrollSnapType: 'y mandatory' }}
+                    >
+                        <div className="h-[calc(50%-28px)]" /> {/* Top padding */}
+                        {hours.map((h) => (
+                            <div
+                                key={h}
+                                onClick={() => { setHour(h); scrollToValue(hourRef, h - 1); }}
+                                className={`h-14 flex items-center justify-center text-3xl font-medium cursor-pointer transition-all scroll-snap-align-center ${
+                                    hour === h
+                                        ? 'text-day-accent dark:text-night-accent scale-110'
+                                        : 'text-gray-400 dark:text-gray-500'
                                 }`}
+                                style={{ scrollSnapAlign: 'center' }}
                             >
-                                {h}
-                            </button>
-                        </div>
-                    );
-                })}
+                                {String(h).padStart(2, '0')}
+                            </div>
+                        ))}
+                        <div className="h-[calc(50%-28px)]" /> {/* Bottom padding */}
+                    </div>
+                </div>
 
-                {/* Minute numbers: 00 at top (0°), 15 at right (90°), 30 at bottom (180°), 45 at left (270°) */}
-                {selecting === 'minute' && [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(m => {
-                    const angle = m * 6; // 0=0°, 5=30°, 10=60°, 15=90°, etc.
-                    return (
-                        <div
-                            key={m}
-                            className="absolute top-1/2 left-1/2 w-9 h-9 z-10"
-                            style={{
-                                marginLeft: '-18px',
-                                marginTop: '-18px',
-                                transform: `rotate(${angle}deg) translateY(-110px) rotate(-${angle}deg)`
-                            }}
-                        >
-                            <button
-                                onClick={() => handleMinuteSelect(m)}
-                                className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors text-sm font-medium ${
+                <span className="text-4xl font-light text-day-text dark:text-night-text">:</span>
+
+                {/* Minute drum */}
+                <div className="relative">
+                    <div
+                        ref={minuteRef}
+                        className="h-44 w-20 overflow-y-auto scroll-snap-y scroll-snap-mandatory hide-scrollbar"
+                        onScroll={() => handleScroll(minuteRef, setMinute, minutes)}
+                        style={{ scrollSnapType: 'y mandatory' }}
+                    >
+                        <div className="h-[calc(50%-28px)]" />
+                        {minutes.map((m) => (
+                            <div
+                                key={m}
+                                onClick={() => { setMinute(m); scrollToValue(minuteRef, m); }}
+                                className={`h-14 flex items-center justify-center text-3xl font-medium cursor-pointer transition-all scroll-snap-align-center ${
                                     minute === m
-                                        ? 'bg-day-accent text-white dark:bg-night-accent'
-                                        : 'hover:bg-gray-200 dark:hover:bg-gray-700'
+                                        ? 'text-day-accent dark:text-night-accent scale-110'
+                                        : 'text-gray-400 dark:text-gray-500'
                                 }`}
+                                style={{ scrollSnapAlign: 'center' }}
                             >
                                 {String(m).padStart(2, '0')}
-                            </button>
-                        </div>
-                    );
-                })}
+                            </div>
+                        ))}
+                        <div className="h-[calc(50%-28px)]" />
+                    </div>
+                </div>
 
-                {/* Center dot */}
-                <div className="absolute top-1/2 left-1/2 w-3 h-3 bg-day-accent dark:bg-night-accent rounded-full -m-1.5"></div>
+                {/* AM/PM drum */}
+                <div className="relative">
+                    <div
+                        ref={periodRef}
+                        className="h-44 w-16 overflow-y-auto scroll-snap-y scroll-snap-mandatory hide-scrollbar"
+                        onScroll={() => handleScroll(periodRef, setPeriod, periods)}
+                        style={{ scrollSnapType: 'y mandatory' }}
+                    >
+                        <div className="h-[calc(50%-28px)]" />
+                        {periods.map((p) => (
+                            <div
+                                key={p}
+                                onClick={() => { setPeriod(p); scrollToValue(periodRef, p === 'AM' ? 0 : 1); }}
+                                className={`h-14 flex items-center justify-center text-2xl font-medium cursor-pointer transition-all scroll-snap-align-center ${
+                                    period === p
+                                        ? 'text-day-accent dark:text-night-accent scale-110'
+                                        : 'text-gray-400 dark:text-gray-500'
+                                }`}
+                                style={{ scrollSnapAlign: 'center' }}
+                            >
+                                {p}
+                            </div>
+                        ))}
+                        <div className="h-[calc(50%-28px)]" />
+                    </div>
+                </div>
             </div>
-            <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-2">Tap digits to edit or switch view</p>
+
+            <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-3">Scroll or tap to select time</p>
+
+            {/* CSS for hiding scrollbar but keeping functionality */}
+            <style>{`
+                .hide-scrollbar::-webkit-scrollbar { display: none; }
+                .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+            `}</style>
         </div>
     );
 };
@@ -391,7 +367,7 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
         <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={() => { stopAlarmPreview(); onClose(); }}>
             <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-sm animate-fadeIn max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                 <h2 className="font-serif text-2xl text-center mb-6">{alarmToEdit ? "Edit Alarm" : "Set Alarm"}</h2>
-                <AnalogClock initialTime={time} onChange={setTime} />
+                <DrumTimePicker initialTime={time} onChange={setTime} />
 
                 {/* Repetition Frequency */}
                 <div className="mt-6 mb-4">
