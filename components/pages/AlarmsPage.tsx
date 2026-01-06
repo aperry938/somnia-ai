@@ -53,9 +53,9 @@ const AnalogClock: React.FC<{ initialTime: string; onChange: (time: string) => v
         setMinute(m);
     };
 
-    // Calculate clock hand angles
-    const hourAngle = (displayHour % 12) * 30 + (minute / 60) * 30; // 30 degrees per hour + minute offset
-    const minuteAngle = minute * 6; // 6 degrees per minute
+    // Calculate clock hand angles (offset by -90 so 12 o'clock is at top)
+    const hourAngle = -90 + (displayHour % 12) * 30 + (minute / 60) * 30; // 30 degrees per hour + minute offset
+    const minuteAngle = -90 + minute * 6; // 6 degrees per minute
 
     const handleManualHourChange = (value: string) => {
         const num = parseInt(value, 10);
@@ -142,12 +142,12 @@ const AnalogClock: React.FC<{ initialTime: string; onChange: (time: string) => v
 
                 {/* Hour/minute numbers */}
                 {selecting === 'hour' && Array.from({ length: 12 }, (_, i) => i + 1).map(h => (
-                    <div key={h} style={{ transform: `rotate(${h * 30}deg) translate(90px) rotate(-${h * 30}deg)` }} className="absolute top-1/2 left-1/2 -m-4 w-8 h-8">
+                    <div key={h} style={{ transform: `rotate(${-90 + h * 30}deg) translate(90px) rotate(-${-90 + h * 30}deg)` }} className="absolute top-1/2 left-1/2 -m-4 w-8 h-8">
                         <button onClick={() => handleHourSelect(period === 'PM' && h !== 12 ? h + 12 : period === 'AM' && h === 12 ? 0 : h)} className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${displayHour === h ? 'bg-day-accent text-white dark:bg-night-accent' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}>{h}</button>
                     </div>
                 ))}
                 {selecting === 'minute' && Array.from({ length: 12 }, (_, i) => i * 5).map(m => (
-                    <div key={m} style={{ transform: `rotate(${m * 6}deg) translate(90px) rotate(-${m * 6}deg)` }} className="absolute top-1/2 left-1/2 -m-4 w-8 h-8">
+                    <div key={m} style={{ transform: `rotate(${-90 + m * 6}deg) translate(90px) rotate(-${-90 + m * 6}deg)` }} className="absolute top-1/2 left-1/2 -m-4 w-8 h-8">
                         <button onClick={() => handleMinuteSelect(m)} className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${minute === m ? 'bg-day-accent text-white dark:bg-night-accent' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}>{String(m).padStart(2, '0')}</button>
                     </div>
                 ))}
