@@ -293,12 +293,44 @@ const createRawNoiseBuffer = (context: AudioContext, type: 'white' | 'pink' | 'b
             b6 = white * 0.115926;
         }
     } else if (type === 'brown') {
-        // Brownian motion noise (1/f² spectrum)
-        let lastOut = 0;
+        // === DEEP SMOOTHED BROWN NOISE ===
+        // Brownian noise is created by integrating white noise (cumulative sum)
+        // This creates authentic 1/f² spectrum - deep rumble like distant waterfall
+
+        // Step 1: Generate white noise and integrate (cumulative sum)
+        let cumulative = 0;
+        const rawBrown: number[] = [];
+
         for (let i = 0; i < bufferSize; i++) {
+            // Generate white noise sample
             const white = Math.random() * 2 - 1;
-            lastOut = (lastOut + (0.02 * white)) / 1.02;
-            output[i] = lastOut * 3.5;
+            // Integrate: currentSample = lastSample + (white * step)
+            // Small step size (0.02) prevents runaway values
+            cumulative += white * 0.02;
+            // Soft clipping to prevent extreme values
+            cumulative = Math.max(-1, Math.min(1, cumulative));
+            rawBrown.push(cumulative);
+        }
+
+        // Step 2: Normalize the integrated noise to -1 to 1 range
+        let maxAbs = 0;
+        for (let i = 0; i < bufferSize; i++) {
+            maxAbs = Math.max(maxAbs, Math.abs(rawBrown[i]));
+        }
+        if (maxAbs > 0) {
+            for (let i = 0; i < bufferSize; i++) {
+                rawBrown[i] = rawBrown[i] / maxAbs;
+            }
+        }
+
+        // Step 3: Apply simple IIR low-pass filter for "smoothing" effect
+        // This removes any remaining harshness above ~300Hz
+        // Using a simple exponential moving average as a basic LPF
+        const smoothingFactor = 0.95; // Higher = more smoothing (lower cutoff)
+        let smoothed = 0;
+        for (let i = 0; i < bufferSize; i++) {
+            smoothed = smoothingFactor * smoothed + (1 - smoothingFactor) * rawBrown[i];
+            output[i] = smoothed * 1.5; // Slight gain boost for presence
         }
     }
 
@@ -375,14 +407,16 @@ const createSomniaGreyNoise = (
     // Use different rolloff frequencies based on noise type
     const highRolloff = context.createBiquadFilter();
     highRolloff.type = 'lowpass';
-    // White noise needs more aggressive filtering (harshest)
-    // Pink noise is medium, Brown noise is already mellow
+    // White noise: moderate filtering, Pink: medium, Brown: VERY aggressive for deep rumble
     if (type === 'white') {
-        highRolloff.frequency.setValueAtTime(2500, context.currentTime); // Very aggressive for white
+        highRolloff.frequency.setValueAtTime(2500, context.currentTime); // Moderate for white
     } else if (type === 'pink') {
-        highRolloff.frequency.setValueAtTime(3500, context.currentTime); // Moderate for pink
+        highRolloff.frequency.setValueAtTime(3500, context.currentTime); // Medium for pink
     } else {
-        highRolloff.frequency.setValueAtTime(5000, context.currentTime); // Gentle for brown
+        // DEEP SMOOTHED BROWN NOISE: Aggressive 250Hz cutoff
+        // This creates the "submarine ambience / distant waterfall" rumble
+        // Per audio expert specs: cut all frequencies above 250-400Hz
+        highRolloff.frequency.setValueAtTime(250, context.currentTime); // Very aggressive for deep rumble
     }
     highRolloff.Q.setValueAtTime(0.707, context.currentTime); // Butterworth response
 
