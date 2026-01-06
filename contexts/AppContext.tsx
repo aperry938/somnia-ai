@@ -98,6 +98,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         });
     }, []); // Only run on initial mount
 
+    // Clear stale sleep sessions when linked alarm no longer exists or is inactive
+    useEffect(() => {
+        if (activeSleepSession?.alarmId) {
+            const linkedAlarm = alarms.find(a => a.id === activeSleepSession.alarmId);
+            // Clear session if alarm was deleted or deactivated
+            if (!linkedAlarm || !linkedAlarm.isActive) {
+                setActiveSleepSession(null);
+            }
+        }
+    }, [alarms, activeSleepSession, setActiveSleepSession]);
+
     const addAlarm = (time: string, smartWake: boolean = false, days: number[] = [], soundId: string = 'somnia', purpose: AlarmPurpose = 'sleep', label?: string): number => {
         const newAlarm: Alarm = {
             id: Date.now(),

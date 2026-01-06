@@ -16,8 +16,10 @@ export const DailyBriefingWidget: React.FC = () => {
                 onClick={() => setShowInfo(!showInfo)}
             >
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center text-xl">
-                        ✨
+                    <div className="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-day-accent dark:text-night-accent" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+                        </svg>
                     </div>
                     <div>
                         <p className="text-xs font-bold uppercase tracking-wider text-day-accent dark:text-night-accent">Level {stats.level}</p>
