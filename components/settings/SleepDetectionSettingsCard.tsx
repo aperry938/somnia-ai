@@ -47,7 +47,7 @@ export const SleepDetectionSettingsCard: React.FC = () => {
                 <div>
                     <h3 className="font-serif text-lg">Sleep Detection</h3>
                     <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">
-                        Prompt dream logging after inactivity
+                        Auto wake-up after detected sleep
                     </p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -98,7 +98,7 @@ export const SleepDetectionSettingsCard: React.FC = () => {
                     </div>
 
                     <p className="text-xs text-day-text-secondary dark:text-night-text-secondary bg-white/30 dark:bg-black/20 p-2 rounded-lg">
-                        💡 When your phone is inactive for {settings.inactivityHours} hours, we'll wake you with your selected sound and prompt you to log your dreams.
+                        When your phone is inactive for {settings.inactivityHours} hours, we'll trigger your morning wake-up with your selected alarm sound and open the dream capture screen—just like a scheduled alarm.
                     </p>
                 </div>
             )}
