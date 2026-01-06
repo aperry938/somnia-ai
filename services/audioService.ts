@@ -129,6 +129,7 @@ export const stopAlarmSound = () => {
 let previewOscillator: OscillatorNode | null = null;
 let previewGainNode: GainNode | null = null;
 let previewTimeout: ReturnType<typeof setTimeout> | null = null;
+let currentPreviewId: string | null = null; // Track which sound is previewing
 
 /**
  * Plays a 10-second preview of an alarm sound style.
@@ -140,6 +141,9 @@ export const playAlarmPreview = (soundId: string) => {
 
     const ctx = getAudioContext();
     if (!ctx) return;
+
+    // Track which sound is playing
+    currentPreviewId = soundId;
 
     previewGainNode = ctx.createGain();
     previewGainNode.connect(ctx.destination);
@@ -229,15 +233,31 @@ export const isPreviewPlaying = (): boolean => {
 };
 
 /**
- * Toggle alarm preview - starts if stopped, stops if playing
+ * Get the currently playing preview sound ID
+ */
+export const getCurrentPreviewId = (): string | null => {
+    return currentPreviewId;
+};
+
+/**
+ * Toggle alarm preview - starts if stopped, stops if same sound playing, switches if different
  */
 export const toggleAlarmPreview = (soundId: string): boolean => {
     if (isPreviewPlaying()) {
-        stopAlarmPreview();
-        return false; // now stopped
+        if (currentPreviewId === soundId) {
+            // Same sound - stop it
+            stopAlarmPreview();
+            return false;
+        } else {
+            // Different sound - stop old, start new
+            stopAlarmPreview();
+            playAlarmPreview(soundId);
+            return true;
+        }
     } else {
+        // Nothing playing - start this one
         playAlarmPreview(soundId);
-        return true; // now playing
+        return true;
     }
 };
 
@@ -261,6 +281,7 @@ export const stopAlarmPreview = () => {
     }
     previewOscillator = null;
     previewGainNode = null;
+    currentPreviewId = null; // Clear tracking
 };
 
 
