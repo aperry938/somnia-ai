@@ -67,13 +67,13 @@ export const useSunTimes = () => {
             return null;
         };
 
-        // Fallback: night is 6pm to 6am
+        // Fallback: night is 7pm to 7am
         const getFallbackTimes = (): SunTimes => {
             const now = new Date();
             const sunrise = new Date(now);
-            sunrise.setHours(6, 0, 0, 0);
+            sunrise.setHours(7, 0, 0, 0);
             const sunset = new Date(now);
-            sunset.setHours(18, 0, 0, 0);
+            sunset.setHours(19, 0, 0, 0);
             return { sunrise, sunset };
         };
 
