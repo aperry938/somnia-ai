@@ -203,7 +203,7 @@ export const SleepPage: React.FC = () => {
                                 return (
                                     <div key={sound.id} className="relative">
                                         {showProBadge ? (
-                                            <PremiumBadge feature="binaural_beats" className="w-full block">
+                                            <PremiumBadge feature="binaural_beats" className="w-full block" hideBadge>
                                                 <div className={`sound-card bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border p-4 rounded-xl text-center cursor-pointer transition-all hover:border-day-accent dark:hover:border-night-accent relative ${playingSoundId === sound.id ? 'border-day-accent dark:border-night-accent shadow-lg' : 'border-day-border dark:border-night-border'}`}>
                                                     {/* PRO badge inside card */}
                                                     <span className="absolute top-2 right-2 text-[10px] bg-gradient-to-r from-amber-500 to-orange-500 text-white px-1.5 py-0.5 rounded-full font-medium flex items-center gap-0.5">
