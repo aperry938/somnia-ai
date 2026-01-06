@@ -104,14 +104,17 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, setCurrentPag
                 </button>
             ))}
             <div className="border-l border-day-border dark:border-night-border h-8 mx-1" />
-            <ThemeToggle />
+            {/* Profile button */}
             <button
-                onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: '?' }))}
-                className="w-11 h-11 flex items-center justify-center text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent opacity-50 hover:opacity-100 transition-opacity rounded-full active:bg-black/5 dark:active:bg-white/5"
-                title="Keyboard shortcuts"
-                aria-label="Show keyboard shortcuts"
+                onClick={() => setCurrentPage('settings' as Page)}
+                className="flex flex-col items-center w-12 py-1 rounded-lg transition-colors duration-300 text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent"
+                title="Profile & Settings"
+                aria-label="Profile & Settings"
             >
-                <span className="text-xs font-mono">?</span>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <span className="text-[10px] mt-0.5 opacity-70">Profile</span>
             </button>
             <div className="border-l border-day-border dark:border-night-border h-8 mx-1" />
             <button

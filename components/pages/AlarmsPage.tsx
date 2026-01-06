@@ -26,12 +26,14 @@ const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = Re
     );
 });
 
-// Custom Analog Clock Picker
+// Custom Analog Clock Picker with clock arms and manual input
 const AnalogClock: React.FC<{ initialTime: string; onChange: (time: string) => void }> = ({ initialTime, onChange }) => {
     const [hour, setHour] = useState(() => parseInt(initialTime.split(':')[0], 10));
     const [minute, setMinute] = useState(() => parseInt(initialTime.split(':')[1], 10));
     const [period, setPeriod] = useState(() => hour >= 12 ? 'PM' : 'AM');
     const [selecting, setSelecting] = useState<'hour' | 'minute'>('hour');
+    const [editingHour, setEditingHour] = useState(false);
+    const [editingMinute, setEditingMinute] = useState(false);
 
     useEffect(() => {
         const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
@@ -51,18 +53,94 @@ const AnalogClock: React.FC<{ initialTime: string; onChange: (time: string) => v
         setMinute(m);
     };
 
+    // Calculate clock hand angles
+    const hourAngle = (displayHour % 12) * 30 + (minute / 60) * 30; // 30 degrees per hour + minute offset
+    const minuteAngle = minute * 6; // 6 degrees per minute
+
+    const handleManualHourChange = (value: string) => {
+        const num = parseInt(value, 10);
+        if (!isNaN(num) && num >= 1 && num <= 12) {
+            const h = period === 'PM' && num !== 12 ? num + 12 : period === 'AM' && num === 12 ? 0 : num;
+            setHour(h);
+        }
+    };
+
+    const handleManualMinuteChange = (value: string) => {
+        const num = parseInt(value, 10);
+        if (!isNaN(num) && num >= 0 && num <= 59) {
+            setMinute(num);
+        }
+    };
+
     return (
         <div className="flex flex-col items-center">
             <div className="flex items-end gap-2 mb-6">
-                <span onClick={() => setSelecting('hour')} className={`text-6xl font-light cursor-pointer ${selecting === 'hour' ? 'text-day-accent dark:text-night-accent' : ''}`}>{String(displayHour).padStart(2, '0')}</span>
+                {/* Hour - click to edit */}
+                {editingHour ? (
+                    <input
+                        type="number"
+                        min="1" max="12"
+                        className="text-6xl font-light w-24 text-center bg-transparent border-b-2 border-day-accent dark:border-night-accent focus:outline-none"
+                        defaultValue={displayHour}
+                        autoFocus
+                        onBlur={(e) => { handleManualHourChange(e.target.value); setEditingHour(false); }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { handleManualHourChange((e.target as HTMLInputElement).value); setEditingHour(false); } }}
+                    />
+                ) : (
+                    <span
+                        onClick={() => { setSelecting('hour'); setEditingHour(true); }}
+                        className={`text-6xl font-light cursor-pointer ${selecting === 'hour' ? 'text-day-accent dark:text-night-accent' : ''}`}
+                    >
+                        {String(displayHour).padStart(2, '0')}
+                    </span>
+                )}
                 <span className="text-6xl font-light pb-1">:</span>
-                <span onClick={() => setSelecting('minute')} className={`text-6xl font-light cursor-pointer ${selecting === 'minute' ? 'text-day-accent dark:text-night-accent' : ''}`}>{String(minute).padStart(2, '0')}</span>
+                {/* Minute - click to edit for exact input */}
+                {editingMinute ? (
+                    <input
+                        type="number"
+                        min="0" max="59"
+                        className="text-6xl font-light w-24 text-center bg-transparent border-b-2 border-day-accent dark:border-night-accent focus:outline-none"
+                        defaultValue={minute}
+                        autoFocus
+                        onBlur={(e) => { handleManualMinuteChange(e.target.value); setEditingMinute(false); }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { handleManualMinuteChange((e.target as HTMLInputElement).value); setEditingMinute(false); } }}
+                    />
+                ) : (
+                    <span
+                        onClick={() => { setSelecting('minute'); setEditingMinute(true); }}
+                        className={`text-6xl font-light cursor-pointer ${selecting === 'minute' ? 'text-day-accent dark:text-night-accent' : ''}`}
+                    >
+                        {String(minute).padStart(2, '0')}
+                    </span>
+                )}
                 <div className="flex flex-col text-lg font-medium ml-2">
                     <button onClick={() => setPeriod('AM')} className={`px-2 rounded ${period === 'AM' ? 'bg-day-accent/20 text-day-accent dark:bg-night-accent/20 dark:text-night-accent' : ''}`}>AM</button>
                     <button onClick={() => setPeriod('PM')} className={`px-2 rounded ${period === 'PM' ? 'bg-day-accent/20 text-day-accent dark:bg-night-accent/20 dark:text-night-accent' : ''}`}>PM</button>
                 </div>
             </div>
             <div className="relative w-64 h-64">
+                {/* Clock face circle */}
+                <div className="absolute inset-0 rounded-full border-2 border-day-border dark:border-night-border"></div>
+
+                {/* Hour hand */}
+                <div
+                    className="absolute top-1/2 left-1/2 w-1.5 bg-day-text dark:bg-night-text rounded-full origin-bottom"
+                    style={{
+                        height: '50px',
+                        transform: `translate(-50%, -100%) rotate(${hourAngle}deg)`,
+                    }}
+                />
+                {/* Minute hand */}
+                <div
+                    className="absolute top-1/2 left-1/2 w-1 bg-day-accent dark:bg-night-accent rounded-full origin-bottom"
+                    style={{
+                        height: '70px',
+                        transform: `translate(-50%, -100%) rotate(${minuteAngle}deg)`,
+                    }}
+                />
+
+                {/* Hour/minute numbers */}
                 {selecting === 'hour' && Array.from({ length: 12 }, (_, i) => i + 1).map(h => (
                     <div key={h} style={{ transform: `rotate(${h * 30}deg) translate(90px) rotate(-${h * 30}deg)` }} className="absolute top-1/2 left-1/2 -m-4 w-8 h-8">
                         <button onClick={() => handleHourSelect(period === 'PM' && h !== 12 ? h + 12 : period === 'AM' && h === 12 ? 0 : h)} className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${displayHour === h ? 'bg-day-accent text-white dark:bg-night-accent' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}>{h}</button>
@@ -73,17 +151,29 @@ const AnalogClock: React.FC<{ initialTime: string; onChange: (time: string) => v
                         <button onClick={() => handleMinuteSelect(m)} className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${minute === m ? 'bg-day-accent text-white dark:bg-night-accent' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}>{String(m).padStart(2, '0')}</button>
                     </div>
                 ))}
-                <div className="absolute top-1/2 left-1/2 w-2 h-2 bg-day-accent dark:bg-night-accent rounded-full -m-1"></div>
+
+                {/* Center dot */}
+                <div className="absolute top-1/2 left-1/2 w-3 h-3 bg-day-accent dark:bg-night-accent rounded-full -m-1.5"></div>
             </div>
+            <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-2">Tap time to type exact value</p>
         </div>
     );
 };
+
+// Alarm sound options
+const ALARM_SOUNDS = [
+    { id: 'gentle', name: 'Gentle Rise', description: 'Soft, gradual wake-up' },
+    { id: 'chimes', name: 'Wind Chimes', description: 'Peaceful chime melody' },
+    { id: 'nature', name: 'Nature Dawn', description: 'Birds and morning sounds' },
+    { id: 'classic', name: 'Classic Alarm', description: 'Traditional alarm tone' },
+];
 
 // AlarmModal component
 const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void }> = ({ alarmToEdit, onClose }) => {
     const { addAlarm, updateAlarm, deleteAlarm } = useAppContext();
     const [time, setTime] = useState(alarmToEdit?.time || '07:00');
-    const [smartWake, setSmartWake] = useState(alarmToEdit?.smartWake || false);
+    const [selectedSound, setSelectedSound] = useState('gentle');
+    const [showSmartWakeInfo, setShowSmartWakeInfo] = useState(false);
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose(); };
@@ -93,9 +183,9 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void }> =
 
     const handleSave = () => {
         if (alarmToEdit) {
-            updateAlarm(alarmToEdit.id, time, smartWake);
+            updateAlarm(alarmToEdit.id, time, false); // Smart wake always false for now
         } else {
-            addAlarm(time, smartWake);
+            addAlarm(time, false);
         }
         onClose();
     };
@@ -107,23 +197,51 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void }> =
 
     return (
         <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={onClose}>
-            <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-sm animate-fadeIn" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-sm animate-fadeIn max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                 <h2 className="font-serif text-2xl text-center mb-6">{alarmToEdit ? "Edit Alarm" : "Set Alarm"}</h2>
                 <AnalogClock initialTime={time} onChange={setTime} />
 
-                <div className="flex items-center justify-between mt-4 px-2">
-                    <span className="text-sm font-medium">Smart Wake</span>
-                    <div className="relative inline-block w-11 h-6 align-middle select-none transition duration-200 ease-in">
-                        <input
-                            type="checkbox"
-                            name="smartWake"
-                            id="smartWakeToggle"
-                            className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
-                            checked={smartWake}
-                            onChange={(e) => setSmartWake(e.target.checked)}
-                        />
-                        <label htmlFor="smartWakeToggle" className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 dark:bg-gray-700 cursor-pointer"></label>
+                {/* Alarm Sound Selector */}
+                <div className="mt-6">
+                    <label className="text-sm font-medium block mb-2">Alarm Sound</label>
+                    <div className="grid grid-cols-2 gap-2">
+                        {ALARM_SOUNDS.map(sound => (
+                            <button
+                                key={sound.id}
+                                onClick={() => setSelectedSound(sound.id)}
+                                className={`p-2 rounded-lg text-left transition-all ${selectedSound === sound.id
+                                    ? 'bg-day-accent/20 dark:bg-night-accent/20 border-2 border-day-accent dark:border-night-accent'
+                                    : 'bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border hover:border-day-accent/50'
+                                    }`}
+                            >
+                                <span className="text-sm font-medium block">{sound.name}</span>
+                                <span className="text-xs text-day-text-secondary dark:text-night-text-secondary">{sound.description}</span>
+                            </button>
+                        ))}
                     </div>
+                </div>
+
+                {/* Smart Wake - Coming Soon */}
+                <div className="mt-4 px-2 py-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Smart Wake</span>
+                            <span className="text-xs bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full">Coming Soon</span>
+                        </div>
+                        <button
+                            onClick={() => setShowSmartWakeInfo(!showSmartWakeInfo)}
+                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </button>
+                    </div>
+                    {showSmartWakeInfo && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                            Smart Wake will use wearable data to wake you during light sleep phases within a 30-minute window before your alarm. Requires wearable sync integration.
+                        </p>
+                    )}
                 </div>
 
                 <div className="flex justify-center gap-4 mt-6">
@@ -135,6 +253,7 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void }> =
         </div>
     );
 };
+
 
 export const AlarmsPage: React.FC<{ timeString: string, dateString: string }> = ({ timeString, dateString }) => {
     const { alarms } = useAppContext();
