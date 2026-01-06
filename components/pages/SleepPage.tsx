@@ -200,11 +200,12 @@ export const SleepPage: React.FC = () => {
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                             {SOUNDSCAPES.map(sound => {
                                 const showProBadge = sound.isPremium && !isPremium();
+                                const cardClasses = `sound-card bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border p-4 rounded-xl text-center cursor-pointer transition-all hover:border-day-accent dark:hover:border-night-accent h-[120px] flex flex-col justify-center relative ${playingSoundId === sound.id ? 'border-day-accent dark:border-night-accent shadow-lg' : 'border-day-border dark:border-night-border'}`;
                                 return (
-                                    <div key={sound.id} className="relative">
+                                    <div key={sound.id}>
                                         {showProBadge ? (
-                                            <PremiumBadge feature="binaural_beats" className="w-full block" hideBadge>
-                                                <div className={`sound-card bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border p-4 rounded-xl text-center cursor-pointer transition-all hover:border-day-accent dark:hover:border-night-accent relative ${playingSoundId === sound.id ? 'border-day-accent dark:border-night-accent shadow-lg' : 'border-day-border dark:border-night-border'}`}>
+                                            <PremiumBadge feature="binaural_beats" className="w-full h-full block" hideBadge>
+                                                <div className={`${cardClasses} text-gray-400`}>
                                                     {/* PRO badge inside card */}
                                                     <span className="absolute top-2 right-2 text-[10px] bg-gradient-to-r from-amber-500 to-orange-500 text-white px-1.5 py-0.5 rounded-full font-medium flex items-center gap-0.5">
                                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 20 20">
@@ -212,14 +213,14 @@ export const SleepPage: React.FC = () => {
                                                         </svg>
                                                         PRO
                                                     </span>
-                                                    <div className="flex justify-center items-center h-12 text-gray-400 w-12 mx-auto">{sound.icon}</div>
+                                                    <div className="flex justify-center items-center h-12 w-12 mx-auto">{sound.icon}</div>
                                                     <p className="mt-2 font-medium text-gray-500">{sound.name}</p>
                                                 </div>
                                             </PremiumBadge>
                                         ) : (
-                                            <div onClick={() => openSoundscapeModal(sound)} className={`sound-card bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border p-4 rounded-xl text-center cursor-pointer transition-all hover:border-day-accent dark:hover:border-night-accent ${playingSoundId === sound.id ? 'border-day-accent dark:border-night-accent shadow-lg' : 'border-day-border dark:border-night-border'}`}>
-                                                <div className="flex justify-center items-center h-12 text-day-accent dark:text-night-accent w-12 mx-auto">{sound.icon}</div>
-                                                <p className="mt-2 font-medium">{sound.name}</p>
+                                            <div onClick={() => openSoundscapeModal(sound)} className={`${cardClasses} text-day-accent dark:text-night-accent`}>
+                                                <div className="flex justify-center items-center h-12 w-12 mx-auto">{sound.icon}</div>
+                                                <p className="mt-2 font-medium text-day-text-primary dark:text-night-text-primary">{sound.name}</p>
                                             </div>
                                         )}
                                     </div>
@@ -344,7 +345,27 @@ export const SleepPage: React.FC = () => {
                     />
                 )
             }
-            {activeModal === 'sync' && <HardwareSyncModal onClose={closeModal} />}
+            {activeModal === 'sync' && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn" onClick={closeModal}>
+                    <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 max-w-sm w-full shadow-2xl text-center" onClick={e => e.stopPropagation()}>
+                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <h2 className="font-serif text-2xl mb-2">Coming Soon</h2>
+                        <p className="text-day-text-secondary dark:text-night-text-secondary mb-4">
+                            Wearable sync will allow you to connect your smartwatch or fitness tracker to automatically import sleep data, heart rate variability, and movement patterns for more accurate sleep analysis.
+                        </p>
+                        <p className="text-xs text-day-accent dark:text-night-accent mb-4">
+                            Apple Watch, Fitbit, Garmin & more
+                        </p>
+                        <button onClick={closeModal} className="w-full py-2 bg-day-accent dark:bg-night-accent text-white font-bold rounded-full">
+                            Got It
+                        </button>
+                    </div>
+                </div>
+            )}
         </>
     );
 };
