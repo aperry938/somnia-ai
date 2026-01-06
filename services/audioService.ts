@@ -152,76 +152,76 @@ export const playAlarmPreview = (soundId: string) => {
     switch (soundId) {
         case 'somnia':
             // Very slow and growing - our signature alarm
-            // Starts almost inaudible, very slowly builds over 60s (preview shows 10s sample)
+            // Starts almost inaudible, very slowly builds over 60s (preview shows 30s sample)
             previewOscillator.type = 'sine';
             previewOscillator.frequency.setValueAtTime(180, ctx.currentTime); // Start very low
             previewGainNode.gain.setValueAtTime(0.01, ctx.currentTime);
-            // Gentle, dreamy frequency rise
-            previewOscillator.frequency.exponentialRampToValueAtTime(280, ctx.currentTime + 10);
-            previewGainNode.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 10);
+            // Gentle, dreamy frequency rise over 30 seconds
+            previewOscillator.frequency.exponentialRampToValueAtTime(320, ctx.currentTime + 30);
+            previewGainNode.gain.exponentialRampToValueAtTime(0.35, ctx.currentTime + 30);
             break;
         case 'progressive':
-            // Progressive Dream - moderate growth
+            // Progressive Dream - moderate growth over 30 seconds
             previewOscillator.type = 'sine';
             previewOscillator.frequency.setValueAtTime(300, ctx.currentTime);
             previewGainNode.gain.setValueAtTime(0.05, ctx.currentTime);
-            previewOscillator.frequency.exponentialRampToValueAtTime(500, ctx.currentTime + 10);
-            previewGainNode.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 10);
+            previewOscillator.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 30);
+            previewGainNode.gain.exponentialRampToValueAtTime(0.4, ctx.currentTime + 30);
             break;
         case 'gentle':
-            // Soft, low frequency sine wave with slow pulse
+            // Soft, low frequency sine wave with slow pulse - 30 second cycle
             previewOscillator.type = 'sine';
             previewOscillator.frequency.setValueAtTime(220, ctx.currentTime);
             previewGainNode.gain.setValueAtTime(0.1, ctx.currentTime);
-            // Create gentle pulsing
-            for (let i = 0; i < 10; i++) {
-                previewGainNode.gain.linearRampToValueAtTime(0.25, ctx.currentTime + i + 0.5);
-                previewGainNode.gain.linearRampToValueAtTime(0.1, ctx.currentTime + i + 1);
+            // Create gentle pulsing over 30 seconds
+            for (let i = 0; i < 15; i++) {
+                previewGainNode.gain.linearRampToValueAtTime(0.25, ctx.currentTime + i * 2 + 1);
+                previewGainNode.gain.linearRampToValueAtTime(0.1, ctx.currentTime + i * 2 + 2);
             }
             break;
         case 'chimes':
-            // Higher frequency with more harmonic content
+            // Higher frequency with more harmonic content - 30 second cycle
             previewOscillator.type = 'triangle';
             previewOscillator.frequency.setValueAtTime(523, ctx.currentTime); // C5
-            // Add shimmer effect
-            for (let i = 0; i < 5; i++) {
-                previewOscillator.frequency.setValueAtTime(523, ctx.currentTime + i * 2);
-                previewOscillator.frequency.linearRampToValueAtTime(659, ctx.currentTime + i * 2 + 0.5);
-                previewOscillator.frequency.linearRampToValueAtTime(784, ctx.currentTime + i * 2 + 1);
-                previewOscillator.frequency.linearRampToValueAtTime(523, ctx.currentTime + i * 2 + 1.5);
+            // Add shimmer effect over 30 seconds
+            for (let i = 0; i < 10; i++) {
+                previewOscillator.frequency.setValueAtTime(523, ctx.currentTime + i * 3);
+                previewOscillator.frequency.linearRampToValueAtTime(659, ctx.currentTime + i * 3 + 0.75);
+                previewOscillator.frequency.linearRampToValueAtTime(784, ctx.currentTime + i * 3 + 1.5);
+                previewOscillator.frequency.linearRampToValueAtTime(523, ctx.currentTime + i * 3 + 2.25);
             }
             break;
         case 'nature':
-            // Soft binaural-like with nature feel
+            // Soft binaural-like with nature feel - 30 second cycle
             previewOscillator.type = 'sine';
             previewOscillator.frequency.setValueAtTime(174, ctx.currentTime); // Deep earth tone
             previewGainNode.gain.setValueAtTime(0.15, ctx.currentTime);
-            // Gentle frequency modulation
-            for (let i = 0; i < 5; i++) {
-                previewOscillator.frequency.linearRampToValueAtTime(196, ctx.currentTime + i * 2 + 1);
-                previewOscillator.frequency.linearRampToValueAtTime(174, ctx.currentTime + i * 2 + 2);
+            // Gentle frequency modulation over 30 seconds
+            for (let i = 0; i < 10; i++) {
+                previewOscillator.frequency.linearRampToValueAtTime(196, ctx.currentTime + i * 3 + 1.5);
+                previewOscillator.frequency.linearRampToValueAtTime(174, ctx.currentTime + i * 3 + 3);
             }
             break;
         case 'classic':
         default:
-            // Traditional beeping alarm pattern
+            // Traditional beeping alarm pattern - 30 second cycle
             previewOscillator.type = 'square';
             previewOscillator.frequency.setValueAtTime(880, ctx.currentTime);
             previewGainNode.gain.setValueAtTime(0.2, ctx.currentTime);
-            // Classic beep pattern
-            for (let i = 0; i < 10; i++) {
-                previewGainNode.gain.setValueAtTime(0.2, ctx.currentTime + i * 0.5);
-                previewGainNode.gain.setValueAtTime(0, ctx.currentTime + i * 0.5 + 0.25);
+            // Classic beep pattern over 30 seconds
+            for (let i = 0; i < 30; i++) {
+                previewGainNode.gain.setValueAtTime(0.2, ctx.currentTime + i);
+                previewGainNode.gain.setValueAtTime(0, ctx.currentTime + i + 0.5);
             }
             break;
     }
 
     previewOscillator.start(ctx.currentTime);
 
-    // Auto-stop after 10 seconds
+    // Auto-stop after 30 seconds to let users experience the full alarm cycle
     previewTimeout = setTimeout(() => {
         stopAlarmPreview();
-    }, 10000);
+    }, 30000);
 };
 
 /**
