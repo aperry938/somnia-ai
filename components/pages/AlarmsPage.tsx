@@ -34,11 +34,10 @@ const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = Re
     return (
         <div
             onClick={() => onEdit(alarm)}
-            className={`group relative bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border shadow-lg rounded-2xl p-4 cursor-pointer transition-all duration-300 flex flex-col justify-between h-32 hover:shadow-xl hover:scale-[1.02] hover:border-day-accent dark:hover:border-night-accent active:scale-[0.98] ${
-                alarm.isActive
+            className={`group relative bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border shadow-lg rounded-2xl p-4 cursor-pointer transition-all duration-300 flex flex-col justify-between h-32 hover:shadow-xl hover:scale-[1.02] hover:border-day-accent dark:hover:border-night-accent active:scale-[0.98] ${alarm.isActive
                     ? 'ring-2 ring-day-accent/30 dark:ring-night-accent/30'
                     : 'opacity-60 hover:opacity-100'
-            }`}
+                }`}
         >
             {/* Active indicator glow */}
             {alarm.isActive && (
@@ -245,11 +244,13 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
     const [showSmartWakeInfo, setShowSmartWakeInfo] = useState(false);
 
     // Repetition state
-    const [frequency, setFrequency] = useState<'once' | 'daily' | 'weekly'>(
-        !alarmToEdit || alarmToEdit.days.length === 0 ? 'once' :
-            alarmToEdit.days.length === 7 ? 'daily' : 'weekly'
-    );
-    const [selectedDays, setSelectedDays] = useState<number[]>(alarmToEdit?.days || []);
+    const [frequency, setFrequency] = useState<'once' | 'daily' | 'weekly'>(() => {
+        const days = alarmToEdit?.days ?? [];
+        if (days.length === 0) return 'once';
+        if (days.length === 7) return 'daily';
+        return 'weekly';
+    });
+    const [selectedDays, setSelectedDays] = useState<number[]>(alarmToEdit?.days ?? []);
 
     // Update selected days based on frequency change
     useEffect(() => {
@@ -321,8 +322,8 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
                                 key={freq}
                                 onClick={() => setFrequency(freq)}
                                 className={`flex-1 text-sm py-1.5 rounded-md capitalize transition-all ${frequency === freq
-                                        ? 'bg-white dark:bg-gray-700 shadow-sm font-medium text-day-accent dark:text-night-accent'
-                                        : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                                    ? 'bg-white dark:bg-gray-700 shadow-sm font-medium text-day-accent dark:text-night-accent'
+                                    : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                                     }`}
                             >
                                 {freq}
@@ -338,8 +339,8 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
                                     key={index}
                                     onClick={() => toggleDay(index)}
                                     className={`w-8 h-8 rounded-full text-xs font-medium transition-all ${selectedDays.includes(index)
-                                            ? 'bg-day-accent text-white dark:bg-night-accent'
-                                            : 'bg-gray-100 dark:bg-gray-800 text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                                        ? 'bg-day-accent text-white dark:bg-night-accent'
+                                        : 'bg-gray-100 dark:bg-gray-800 text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                                         }`}
                                 >
                                     {day}
