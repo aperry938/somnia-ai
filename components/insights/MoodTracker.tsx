@@ -5,14 +5,56 @@ interface MoodTrackerProps {
     dreams: Dream[];
 }
 
-const MOOD_CONFIG: Record<DreamMood, { label: string; color: string; emoji: string }> = {
-    joyful: { label: 'Joyful', color: 'bg-yellow-400', emoji: '😊' },
-    peaceful: { label: 'Peaceful', color: 'bg-green-400', emoji: '😌' },
-    anxious: { label: 'Anxious', color: 'bg-orange-400', emoji: '😰' },
-    sad: { label: 'Sad', color: 'bg-blue-400', emoji: '😢' },
-    fearful: { label: 'Fearful', color: 'bg-purple-500', emoji: '😨' },
-    confused: { label: 'Confused', color: 'bg-gray-400', emoji: '😕' },
-    neutral: { label: 'Neutral', color: 'bg-slate-400', emoji: '😐' },
+// SVG icon components for moods
+const MoodIcon: React.FC<{ mood: DreamMood; className?: string }> = ({ mood, className = "h-5 w-5" }) => {
+    const icons: Record<DreamMood, React.ReactNode> = {
+        joyful: (
+            <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+        ),
+        peaceful: (
+            <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+        ),
+        anxious: (
+            <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+        ),
+        sad: (
+            <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+        ),
+        fearful: (
+            <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+        ),
+        confused: (
+            <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+        ),
+        neutral: (
+            <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h8M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+        ),
+    };
+    return <>{icons[mood]}</>;
+};
+
+const MOOD_CONFIG: Record<DreamMood, { label: string; color: string }> = {
+    joyful: { label: 'Joyful', color: 'bg-yellow-400' },
+    peaceful: { label: 'Peaceful', color: 'bg-green-400' },
+    anxious: { label: 'Anxious', color: 'bg-orange-400' },
+    sad: { label: 'Sad', color: 'bg-blue-400' },
+    fearful: { label: 'Fearful', color: 'bg-purple-500' },
+    confused: { label: 'Confused', color: 'bg-gray-400' },
+    neutral: { label: 'Neutral', color: 'bg-slate-400' },
 };
 
 const ALL_MOODS: DreamMood[] = ['joyful', 'peaceful', 'anxious', 'sad', 'fearful', 'confused', 'neutral'];
@@ -88,7 +130,9 @@ export const MoodTracker: React.FC<MoodTrackerProps> = ({ dreams }) => {
 
             {/* Dominant Mood */}
             <div className="text-center mb-4">
-                <span className="text-4xl">{MOOD_CONFIG[stats.dominant].emoji}</span>
+                <div className="inline-flex items-center justify-center w-12 h-12 text-day-accent dark:text-night-accent">
+                    <MoodIcon mood={stats.dominant} className="h-10 w-10" />
+                </div>
                 <div className="text-sm mt-1">
                     Dominant mood: <span className="font-medium">{MOOD_CONFIG[stats.dominant].label}</span>
                 </div>
@@ -100,7 +144,7 @@ export const MoodTracker: React.FC<MoodTrackerProps> = ({ dreams }) => {
                     <div key={mood}>
                         <div className="flex justify-between text-xs mb-0.5">
                             <span className="flex items-center gap-1">
-                                <span>{MOOD_CONFIG[mood].emoji}</span>
+                                <MoodIcon mood={mood} className="h-4 w-4" />
                                 <span>{MOOD_CONFIG[mood].label}</span>
                             </span>
                             <span className="text-day-text-secondary dark:text-night-text-secondary">
@@ -123,11 +167,11 @@ export const MoodTracker: React.FC<MoodTrackerProps> = ({ dreams }) => {
                 {stats.recent.map((dream, i) => (
                     <span
                         key={dream.id}
-                        className="text-lg opacity-100 hover:scale-125 transition-transform cursor-default"
+                        className="w-5 h-5 hover:scale-125 transition-transform cursor-default text-day-accent dark:text-night-accent"
                         style={{ opacity: 1 - (i * 0.1) }}
                         title={`${new Date(dream.timestamp).toLocaleDateString()}: ${MOOD_CONFIG[dream.mood!].label}`}
                     >
-                        {MOOD_CONFIG[dream.mood!].emoji}
+                        <MoodIcon mood={dream.mood!} className="h-5 w-5" />
                     </span>
                 ))}
             </div>

@@ -4,16 +4,9 @@ import { SleepQualityRating } from '../shared/SleepQualityRating';
 import { DreamMood } from '../../types';
 import { playAlertnessBoost, stopAlertnessBoost } from '../../services/audioService';
 import haptics from '../../services/hapticsService';
+import { MOOD_ICONS, MOOD_LABELS } from '../../constants/uiIcons';
 
-const MOODS: { value: DreamMood; emoji: string; label: string }[] = [
-    { value: 'joyful', emoji: '😊', label: 'Joyful' },
-    { value: 'peaceful', emoji: '😌', label: 'Peaceful' },
-    { value: 'neutral', emoji: '😐', label: 'Neutral' },
-    { value: 'confused', emoji: '😕', label: 'Confused' },
-    { value: 'anxious', emoji: '😰', label: 'Anxious' },
-    { value: 'sad', emoji: '😢', label: 'Sad' },
-    { value: 'fearful', emoji: '😨', label: 'Fearful' },
-];
+const MOOD_OPTIONS: DreamMood[] = ['joyful', 'peaceful', 'neutral', 'confused', 'anxious', 'sad', 'fearful'];
 
 type ScribeStep = 'record' | 'boost' | 'playing';
 
@@ -147,18 +140,18 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                     <div className="my-4">
                         <p className="text-center text-white/70 mb-2">How did the dream feel?</p>
                         <div className="flex flex-wrap justify-center gap-2">
-                            {MOODS.map(({ value, emoji, label }) => (
+                            {MOOD_OPTIONS.map((value) => (
                                 <button
                                     key={value}
                                     onClick={() => { haptics.selection(); setMood(mood === value ? null : value); }}
-                                    className={`px-3 py-1.5 rounded-full text-sm transition-all flex items-center gap-1 ${mood === value
+                                    className={`px-3 py-1.5 rounded-full text-sm transition-all flex items-center gap-1.5 ${mood === value
                                         ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white scale-105'
                                         : 'bg-white/10 border border-white/20 text-white/80 hover:border-white/40'
                                         }`}
-                                    title={label}
+                                    title={MOOD_LABELS[value]}
                                 >
-                                    <span>{emoji}</span>
-                                    <span className="hidden sm:inline">{label}</span>
+                                    {MOOD_ICONS[value]}
+                                    <span className="hidden sm:inline">{MOOD_LABELS[value]}</span>
                                 </button>
                             ))}
                         </div>

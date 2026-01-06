@@ -37,9 +37,16 @@ export const DreamCompareModal: React.FC<DreamCompareModalProps> = ({ dreams, on
                         {new Date(dream.timestamp).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
                     </p>
                     {dream.sleepQuality && (
-                        <p className="text-sm">
-                            Quality: {'★'.repeat(dream.sleepQuality)}{'☆'.repeat(5 - dream.sleepQuality)}
-                        </p>
+                        <div className="flex items-center gap-1 text-sm">
+                            <span>Quality:</span>
+                            <div className="flex">
+                                {[1, 2, 3, 4, 5].map(i => (
+                                    <svg key={i} xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 ${i <= dream.sleepQuality! ? 'text-yellow-500' : 'text-gray-300 dark:text-gray-600'}`} fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+                                    </svg>
+                                ))}
+                            </div>
+                        </div>
                     )}
                     <p className="text-sm line-clamp-4">{dream.dreamText}</p>
                     {dream.tags && dream.tags.length > 0 && (

@@ -63,8 +63,8 @@ export const useStreakNotification = (dreams: Dream[], currentStreak: number) =>
             // Delay to avoid notification on immediate page load
             const timer = setTimeout(() => {
                 const message = currentStreak >= 7
-                    ? `🔥 You're on a ${currentStreak}-day streak! Don't break it—log your dream today.`
-                    : `📝 Keep your ${currentStreak}-day streak alive! Log your dream before midnight.`;
+                    ? `You're on a ${currentStreak}-day streak! Don't break it—log your dream today.`
+                    : `Keep your ${currentStreak}-day streak alive! Log your dream before midnight.`;
 
                 new Notification("Somnia Dream Reminder", {
                     body: message,

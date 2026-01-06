@@ -39,7 +39,10 @@ export const WeeklyDigest: React.FC<WeeklyDigestProps> = ({ dreams }) => {
     return (
         <div className="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 dark:from-indigo-900/40 dark:to-purple-900/40 border border-day-border dark:border-night-border rounded-xl p-6 mb-8">
             <h2 className="font-serif text-2xl mb-4 flex items-center gap-2">
-                <span className="text-2xl">📅</span> Weekly Digest
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Weekly Digest
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-white/50 dark:bg-black/20 p-4 rounded-lg text-center">
@@ -50,7 +53,7 @@ export const WeeklyDigest: React.FC<WeeklyDigestProps> = ({ dreams }) => {
                     <p className="text-sm text-day-text-secondary dark:text-night-text-secondary uppercase tracking-wider mb-1">Avg Sleep Quality</p>
                     <div className="flex items-center justify-center gap-2">
                         <p className="text-4xl font-light font-serif">{stats.avgQuality.toFixed(1)}</p>
-                        <span className="text-yellow-500 text-xl">★</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" /></svg>
                     </div>
                 </div>
                 <div className="bg-white/50 dark:bg-black/20 p-4 rounded-lg text-center">

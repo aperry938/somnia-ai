@@ -237,10 +237,16 @@ const ThemePreferenceCard: React.FC = () => {
     const { themeOverride, setThemeOverride } = useAppContext();
     const { theme } = useClock();
 
+    const themeIcons: Record<string, React.ReactNode> = {
+        auto: <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>,
+        day: <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>,
+        night: <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>,
+    };
+
     const options = [
-        { value: 'auto', label: 'Auto', icon: '🌗' },
-        { value: 'day', label: 'Light', icon: '☀️' },
-        { value: 'night', label: 'Dark', icon: '🌙' },
+        { value: 'auto', label: 'Auto' },
+        { value: 'day', label: 'Light' },
+        { value: 'night', label: 'Dark' },
     ] as const;
 
     return (
@@ -254,13 +260,13 @@ const ThemePreferenceCard: React.FC = () => {
                     <button
                         key={opt.value}
                         onClick={() => setThemeOverride(opt.value)}
-                        className={`p-3 rounded-lg border-2 transition-all ${
+                        className={`p-3 rounded-lg border-2 transition-all flex flex-col items-center ${
                             themeOverride === opt.value
-                                ? 'border-day-accent dark:border-night-accent bg-day-accent/10 dark:bg-night-accent/10'
-                                : 'border-day-border dark:border-night-border hover:border-day-accent/50 dark:hover:border-night-accent/50'
+                                ? 'border-day-accent dark:border-night-accent bg-day-accent/10 dark:bg-night-accent/10 text-day-accent dark:text-night-accent'
+                                : 'border-day-border dark:border-night-border hover:border-day-accent/50 dark:hover:border-night-accent/50 text-day-text-secondary dark:text-night-text-secondary'
                         }`}
                     >
-                        <p className="text-2xl mb-1">{opt.icon}</p>
+                        <div className="mb-1">{themeIcons[opt.value]}</div>
                         <p className="text-sm font-medium">{opt.label}</p>
                     </button>
                 ))}
@@ -273,15 +279,26 @@ const ThemePreferenceCard: React.FC = () => {
 const ArtStyleCard: React.FC = () => {
     const { artStyle, setArtStyle } = useAppContext();
 
-    const artStyles: { value: ArtStyle; label: string; preview: string }[] = [
-        { value: 'surreal', label: 'Surreal', preview: '🌀' },
-        { value: 'watercolor', label: 'Watercolor', preview: '🎨' },
-        { value: 'oil-painting', label: 'Oil', preview: '🖼️' },
-        { value: 'anime', label: 'Anime', preview: '✨' },
-        { value: 'photorealistic', label: 'Photo', preview: '📷' },
-        { value: 'abstract', label: 'Abstract', preview: '🔷' },
-        { value: 'fantasy', label: 'Fantasy', preview: '🏰' },
-        { value: 'minimalist', label: 'Minimal', preview: '◻️' },
+    const artStyleIcons: Record<ArtStyle, React.ReactNode> = {
+        surreal: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>,
+        watercolor: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" /></svg>,
+        'oil-painting': <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
+        anime: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>,
+        photorealistic: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>,
+        abstract: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>,
+        fantasy: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>,
+        minimalist: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" /></svg>,
+    };
+
+    const artStyles: { value: ArtStyle; label: string }[] = [
+        { value: 'surreal', label: 'Surreal' },
+        { value: 'watercolor', label: 'Watercolor' },
+        { value: 'oil-painting', label: 'Oil' },
+        { value: 'anime', label: 'Anime' },
+        { value: 'photorealistic', label: 'Photo' },
+        { value: 'abstract', label: 'Abstract' },
+        { value: 'fantasy', label: 'Fantasy' },
+        { value: 'minimalist', label: 'Minimal' },
     ];
 
     return (
@@ -295,13 +312,13 @@ const ArtStyleCard: React.FC = () => {
                     <button
                         key={style.value}
                         onClick={() => setArtStyle(style.value)}
-                        className={`p-3 rounded-lg border-2 transition-all ${
+                        className={`p-3 rounded-lg border-2 transition-all flex flex-col items-center ${
                             artStyle === style.value
-                                ? 'border-day-accent dark:border-night-accent bg-day-accent/10 dark:bg-night-accent/10'
-                                : 'border-day-border dark:border-night-border hover:border-day-accent/50 dark:hover:border-night-accent/50'
+                                ? 'border-day-accent dark:border-night-accent bg-day-accent/10 dark:bg-night-accent/10 text-day-accent dark:text-night-accent'
+                                : 'border-day-border dark:border-night-border hover:border-day-accent/50 dark:hover:border-night-accent/50 text-day-text-secondary dark:text-night-text-secondary'
                         }`}
                     >
-                        <p className="text-xl mb-1">{style.preview}</p>
+                        <div className="mb-1">{artStyleIcons[style.value]}</div>
                         <p className="text-xs font-medium truncate">{style.label}</p>
                     </button>
                 ))}

@@ -80,7 +80,12 @@ export const HardwareSyncModal: React.FC<HardwareSyncModalProps> = ({ onClose })
 
                     {status === 'synced' && (
                         <div className="py-4">
-                            <p className="text-green-400 mb-4">✓ Sync Complete</p>
+                            <p className="text-green-400 mb-4 flex items-center justify-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                                Sync Complete
+                            </p>
                             <button onClick={onClose} className="w-full py-2 bg-gray-700 hover:bg-gray-600 rounded-xl">Close</button>
                         </div>
                     )}

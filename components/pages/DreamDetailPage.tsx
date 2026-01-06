@@ -12,16 +12,7 @@ import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { speakText, stopSpeaking } from '../../services/ttsService';
 import { isPremium } from '../../services/secureSubscriptionService';
 import haptics from '../../services/hapticsService';
-
-const MOOD_DISPLAY: Record<DreamMood, { emoji: string; label: string }> = {
-    joyful: { emoji: '😊', label: 'Joyful' },
-    peaceful: { emoji: '😌', label: 'Peaceful' },
-    neutral: { emoji: '😐', label: 'Neutral' },
-    confused: { emoji: '😕', label: 'Confused' },
-    anxious: { emoji: '😰', label: 'Anxious' },
-    sad: { emoji: '😢', label: 'Sad' },
-    fearful: { emoji: '😨', label: 'Fearful' },
-};
+import { MOOD_ICONS, MOOD_LABELS } from '../../constants/uiIcons';
 
 // Evening Reflection Display Component
 const EveningReflectionDisplay: React.FC<{ aids: SleepAids }> = ({ aids }) => {
@@ -325,9 +316,9 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                 <p className="text-day-text-secondary dark:text-night-text-secondary flex items-center gap-2">
                     <span>{date.toLocaleString()}</span>
                     {dream.mood && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-day-accent/10 dark:bg-night-accent/10 rounded-full text-sm">
-                            <span>{MOOD_DISPLAY[dream.mood].emoji}</span>
-                            <span className="text-day-accent dark:text-night-accent">{MOOD_DISPLAY[dream.mood].label}</span>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-day-accent/10 dark:bg-night-accent/10 rounded-full text-sm text-day-accent dark:text-night-accent">
+                            {MOOD_ICONS[dream.mood]}
+                            <span>{MOOD_LABELS[dream.mood]}</span>
                         </span>
                     )}
                 </p>
