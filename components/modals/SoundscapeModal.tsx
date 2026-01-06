@@ -17,6 +17,9 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
     const [beatFreq, setBeatFreq] = useState(sound.type === 'binaural' ? sound.params.diff || 5 : 5);
     const [isPreviewing, setIsPreviewing] = useState(false);
     const [baseFreq] = useState(sound.type === 'binaural' ? sound.params.base || 100 : 100);
+    const [timeRemaining, setTimeRemaining] = useState<number | null>(null); // Seconds remaining
+    const [playStartTime, setPlayStartTime] = useState<number | null>(null);
+    const [playDuration, setPlayDuration] = useState<number>(0); // Duration in seconds
 
     // Start preview automatically when modal opens (except for ramp type which can't be previewed)
     useEffect(() => {
@@ -66,6 +69,38 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
         };
     }, []);
 
+    // Timer countdown when playing
+    useEffect(() => {
+        if (playStartTime === null || playDuration === 0) return;
+
+        const interval = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - playStartTime) / 1000);
+            const remaining = Math.max(0, playDuration - elapsed);
+            setTimeRemaining(remaining);
+
+            // Auto-stop when timer reaches 0
+            if (remaining === 0) {
+                setTimeRemaining(null);
+                setPlayStartTime(null);
+                clearInterval(interval);
+            }
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [playStartTime, playDuration]);
+
+    // Format seconds to MM:SS or HH:MM:SS
+    const formatTime = (seconds: number): string => {
+        const hrs = Math.floor(seconds / 3600);
+        const mins = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+
+        if (hrs > 0) {
+            return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
     // Live update volume
     const handleVolumeChange = useCallback((newVolume: number) => {
         setVolume(newVolume);
@@ -113,7 +148,11 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
         await new Promise(resolve => setTimeout(resolve, 150));
         await playSleepSound(soundToPlay, duration, volume);
         onPlay(sound.id);
-        onClose();
+
+        // Start timer - stay on modal
+        setPlayDuration(duration * 60);
+        setTimeRemaining(duration * 60);
+        setPlayStartTime(Date.now());
     };
 
     const handleDurationClick = async (mins: number) => {
@@ -133,14 +172,19 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
         await new Promise(resolve => setTimeout(resolve, 150));
         await playSleepSound(soundToPlay, mins, volume);
         onPlay(sound.id);
-        onClose();
+
+        // Start timer - stay on modal
+        setPlayDuration(mins * 60);
+        setTimeRemaining(mins * 60);
+        setPlayStartTime(Date.now());
     };
 
     const handleStop = () => {
         stopSleepSound();
         setIsPreviewing(false);
+        setTimeRemaining(null);
+        setPlayStartTime(null);
         onStop();
-        onClose();
     };
 
     const handleClose = () => {
@@ -186,7 +230,59 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                 <p className="text-day-text-secondary dark:text-night-text-secondary my-4 text-sm">{sound.description}</p>
 
                 {isPlaying ? (
-                    <button onClick={handleStop} className="w-full bg-red-500 text-white font-bold rounded-lg p-3">Stop</button>
+                    <div className="space-y-4">
+                        {/* Now Playing Indicator */}
+                        <div className="flex items-center justify-center gap-2 text-green-500">
+                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                            <span className="text-sm font-medium uppercase tracking-wider">Now Playing</span>
+                        </div>
+
+                        {/* Large Timer Display */}
+                        {timeRemaining !== null && (
+                            <div className="py-4">
+                                <p className="text-5xl font-light text-day-text-primary dark:text-night-text-primary font-mono">
+                                    {formatTime(timeRemaining)}
+                                </p>
+                                <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-1">
+                                    remaining
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Volume Control During Playback */}
+                        <div className="p-3 bg-white/50 dark:bg-black/20 rounded-lg text-left">
+                            <div className="flex justify-between text-xs mb-1">
+                                <span className="text-day-text-secondary dark:text-night-text-secondary">Volume</span>
+                                <span className="font-mono text-day-accent dark:text-night-accent">{Math.round(volume * 100)}%</span>
+                            </div>
+                            <input
+                                type="range"
+                                min="0"
+                                max="1"
+                                step="0.05"
+                                value={volume}
+                                onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+                                className="w-full accent-day-accent dark:accent-night-accent cursor-pointer"
+                            />
+                        </div>
+
+                        {/* Stop Button */}
+                        <button
+                            onClick={handleStop}
+                            className="w-full py-4 bg-red-500/90 hover:bg-red-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-colors"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+                            </svg>
+                            Stop Sound
+                        </button>
+
+                        {/* Minimize hint */}
+                        <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">
+                            Tap outside or press Esc to minimize
+                        </p>
+                    </div>
                 ) : (
                     <>
                         {/* Quick Duration Buttons */}
