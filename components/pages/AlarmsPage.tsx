@@ -54,9 +54,10 @@ const AnalogClock: React.FC<{ initialTime: string; onChange: (time: string) => v
         setMinute(m);
     };
 
-    // Calculate clock hand angles (offset by -90 so 12 o'clock is at top)
-    const hourAngle = -90 + (displayHour % 12) * 30 + (minute / 60) * 30; // 30 degrees per hour + minute offset
-    const minuteAngle = -90 + minute * 6; // 6 degrees per minute
+    // Calculate clock hand angles
+    // With bottom:50% positioning, hands naturally point UP (12 o'clock), so no offset needed
+    const hourAngle = (displayHour % 12) * 30 + (minute / 60) * 30; // 30 degrees per hour + minute offset
+    const minuteAngle = minute * 6; // 6 degrees per minute
 
     const handleManualHourChange = (value: string) => {
         const num = parseInt(value, 10);
