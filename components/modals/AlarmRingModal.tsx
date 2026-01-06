@@ -279,7 +279,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                             onClick={handleFinish}
                             className="w-full py-4 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold rounded-2xl text-lg shadow-lg hover:shadow-xl transition-all"
                         >
-                            {alertnessOn ? 'Continue with Boost' : 'Start My Day'}
+                            Start My Day
                         </button>
                     </div>
                 )}
