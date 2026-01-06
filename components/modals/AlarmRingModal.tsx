@@ -67,6 +67,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ onRecordDream, o
         if (isListening) {
             stopListening();
         } else {
+            stopAlarmSound(); // Stop alarm when user starts speaking
             startListening();
             setShowInput(true);
         }
@@ -161,8 +162,8 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ onRecordDream, o
                 <button
                     onClick={toggleAlertnessBoost}
                     className={`w-full mt-4 py-2 rounded-full text-sm flex items-center justify-center gap-2 transition-all ${alertnessOn
-                            ? 'bg-amber-500/80 text-white'
-                            : 'bg-white/10 border border-white/20 text-white/70'
+                        ? 'bg-amber-500/80 text-white'
+                        : 'bg-white/10 border border-white/20 text-white/70'
                         }`}
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
