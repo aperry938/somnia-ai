@@ -67,13 +67,17 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
     };
 
     const handleFinish = (startBoost: boolean) => {
+        if (startBoost && !boostActive) {
+            // Start the boost if not already playing
+            playAlertnessBoost();
+        } else if (!startBoost) {
+            // Stop boost if skipping
+            stopAlertnessBoost();
+        }
+        // Save the dream
         if (savedDataRef.current) {
             onSave(savedDataRef.current.text, savedDataRef.current.quality, savedDataRef.current.mood);
         }
-        if (!startBoost) {
-            stopAlertnessBoost();
-        }
-        // If startBoost is true, leave the audio playing
     };
 
     // Cleanup audio on unmount
@@ -89,50 +93,50 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
         ? (dreamText ? dreamText + ' ' : '') + interimTranscript
         : dreamText;
 
-    // Step 1: Record dream
+    // Step 1: Record dream - Purple alarm theme
     if (step === 'record') {
         return (
-            <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={onClose}>
-                <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-lg animate-fadeIn max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="fixed inset-0 bg-gradient-to-b from-indigo-900/95 to-purple-900/95 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={onClose}>
+                <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-6 w-full max-w-lg animate-fadeIn max-h-[90vh] overflow-y-auto text-white" onClick={(e) => e.stopPropagation()}>
                     <h2 className="font-serif text-2xl text-center mb-4">The Dream Scribe</h2>
                     <div className="relative">
                         <textarea
                             value={displayText}
                             onChange={(e) => setDreamText(e.target.value)}
-                            className="w-full h-40 p-4 pr-12 bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-lg focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent focus:outline-none transition-all custom-scrollbar"
+                            className="w-full h-40 p-4 pr-12 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-purple-400 focus:outline-none transition-all custom-scrollbar text-white placeholder-white/50"
                             placeholder="Speak or write your dream here..."
                             disabled={isListening}
                         ></textarea>
                         {isSupported && (
-                            <button onClick={isListening ? stopListening : startListening} className={`absolute top-3 right-3 transition-colors ${isListening ? 'text-red-500' : 'text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent'}`}>
+                            <button onClick={isListening ? stopListening : startListening} className={`absolute top-3 right-3 transition-colors ${isListening ? 'text-red-400' : 'text-white/60 hover:text-white'}`}>
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
                             </button>
                         )}
                     </div>
                     {isListening && (
-                        <div className="flex items-center justify-center gap-2 text-sm text-red-500 mt-2">
-                            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                        <div className="flex items-center justify-center gap-2 text-sm text-red-400 mt-2">
+                            <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
                             <span>Recording...</span>
                         </div>
                     )}
 
                     {/* Sleep Quality Rating */}
                     <div className="my-4">
-                        <p className="text-center text-day-text-secondary dark:text-night-text-secondary mb-2">How was your sleep?</p>
+                        <p className="text-center text-white/70 mb-2">How was your sleep?</p>
                         <SleepQualityRating rating={sleepQuality} onRate={setSleepQuality} />
                     </div>
 
                     {/* Mood Selector */}
                     <div className="my-4">
-                        <p className="text-center text-day-text-secondary dark:text-night-text-secondary mb-2">How did the dream feel?</p>
+                        <p className="text-center text-white/70 mb-2">How did the dream feel?</p>
                         <div className="flex flex-wrap justify-center gap-2">
                             {MOODS.map(({ value, emoji, label }) => (
                                 <button
                                     key={value}
                                     onClick={() => setMood(mood === value ? null : value)}
                                     className={`px-3 py-1.5 rounded-full text-sm transition-all flex items-center gap-1 ${mood === value
-                                        ? 'bg-day-accent dark:bg-night-accent text-white scale-105'
-                                        : 'bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border hover:border-day-accent dark:hover:border-night-accent'
+                                        ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white scale-105'
+                                        : 'bg-white/10 border border-white/20 text-white/80 hover:border-white/40'
                                         }`}
                                     title={label}
                                 >
@@ -144,10 +148,10 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                     </div>
 
                     <div className="flex justify-center gap-4 mt-4">
-                        <button onClick={onClose} className="py-2 px-6 bg-gray-200 dark:bg-gray-700 text-slate-800 dark:text-slate-200 rounded-full">Cancel</button>
+                        <button onClick={onClose} className="py-2 px-6 bg-white/20 hover:bg-white/30 text-white rounded-full transition-all">Cancel</button>
                         <button
                             onClick={handleSave}
-                            className="py-2 px-6 bg-day-accent dark:bg-night-accent text-white font-bold rounded-full disabled:opacity-50"
+                            className="py-2 px-6 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold rounded-full disabled:opacity-50 transition-all"
                             disabled={!dreamText.trim() || isListening}
                         >
                             Save & Illuminate
@@ -158,54 +162,33 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
         );
     }
 
-    // Step 2: Wake Up Boost offer
+    // Step 2: Wake Up Boost offer - simplified with just Skip/Start
     return (
         <div className="fixed inset-0 bg-gradient-to-b from-indigo-900/95 to-purple-900/95 backdrop-blur-md flex items-center justify-center p-4 z-50">
             <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-6 w-full max-w-sm animate-fadeIn text-white text-center">
-                <div className="mb-4">
+                <div className="mb-6">
                     <div className="w-16 h-16 mx-auto bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mb-3">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                         </svg>
                     </div>
-                    <h3 className="font-serif text-xl mb-1">Dream Saved!</h3>
-                    <p className="text-white/70 text-sm">Would you like a Wake Up Boost?</p>
-                </div>
-
-                <div className="bg-white/10 rounded-xl p-4 mb-4">
-                    <p className="text-sm text-white/80 mb-3">
-                        12Hz beta waves to enhance alertness and mental clarity
-                    </p>
-                    <button
-                        onClick={toggleBoost}
-                        className={`w-full py-3 rounded-xl font-medium transition-all ${boostActive
-                            ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white'
-                            : 'bg-white/20 text-white hover:bg-white/30'
-                            }`}
-                    >
-                        {boostActive ? (
-                            <span className="flex items-center justify-center gap-2">
-                                <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
-                                Playing - Tap to Stop
-                            </span>
-                        ) : (
-                            'Preview Wake Up Boost'
-                        )}
-                    </button>
+                    <h3 className="font-serif text-xl mb-2">Dream Saved!</h3>
+                    <p className="text-white/70 text-sm mb-1">Would you like a Wake Up Boost?</p>
+                    <p className="text-white/50 text-xs">12Hz beta waves for alertness & mental clarity</p>
                 </div>
 
                 <div className="flex gap-3">
                     <button
                         onClick={() => handleFinish(false)}
-                        className="flex-1 py-3 bg-white/20 hover:bg-white/30 rounded-xl font-medium transition-all"
+                        className="flex-1 py-4 bg-white/20 hover:bg-white/30 rounded-xl font-medium transition-all text-lg"
                     >
                         Skip
                     </button>
                     <button
                         onClick={() => handleFinish(true)}
-                        className="flex-1 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 rounded-xl font-medium transition-all"
+                        className="flex-1 py-4 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 rounded-xl font-medium transition-all text-lg"
                     >
-                        Start Boost
+                        Start
                     </button>
                 </div>
             </div>

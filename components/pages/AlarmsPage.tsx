@@ -297,10 +297,19 @@ const ALARM_SOUNDS = [
 
 const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
+// Helper to get current time in HH:MM format
+const getCurrentTimeString = (): string => {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+};
+
 // AlarmModal component
 const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onSaveSuccess?: () => void }> = ({ alarmToEdit, onClose, onSaveSuccess }) => {
     const { addAlarm, updateAlarm, deleteAlarm } = useAppContext();
-    const [time, setTime] = useState(alarmToEdit?.time || '07:00');
+    // Use current time for new alarms, existing time for edits
+    const [time, setTime] = useState(alarmToEdit?.time || getCurrentTimeString());
     const [selectedSound, setSelectedSound] = useState(alarmToEdit?.soundId || 'somnia');
     const [showSmartWakeInfo, setShowSmartWakeInfo] = useState(false);
 

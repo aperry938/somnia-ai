@@ -19,7 +19,9 @@ const DREAM_PROMPTS = [
     "What was the last thing you remember?"
 ];
 
-type WakeStep = 'alarm' | 'dream' | 'boost';
+type WakeStep = 'alarm' | 'snooze' | 'dream' | 'boost';
+
+const SNOOZE_DURATION = 5 * 60; // 5 minutes in seconds
 
 export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordDream, onSnooze, onAwake }) => {
     const [step, setStep] = useState<WakeStep>('alarm');
@@ -27,6 +29,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
     const [currentPrompt] = useState(() => DREAM_PROMPTS[Math.floor(Math.random() * DREAM_PROMPTS.length)]);
     const [showInput, setShowInput] = useState(false);
     const [alertnessOn, setAlertnessOn] = useState(false);
+    const [snoozeRemaining, setSnoozeRemaining] = useState(SNOOZE_DURATION);
 
     // Callback for when speech is finalized
     const handleFinalTranscript = useCallback((text: string) => {
@@ -45,12 +48,37 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
         };
     }, [alarm.soundId]);
 
-    // Handle snooze
+    // Handle snooze - show countdown instead of dismissing
     const handleSnooze = useCallback(() => {
         stopAlarmSound();
         if (isListening) stopListening();
-        onSnooze();
-    }, [isListening, stopListening, onSnooze]);
+        setSnoozeRemaining(SNOOZE_DURATION);
+        setStep('snooze');
+    }, [isListening, stopListening]);
+
+    // Snooze countdown timer
+    useEffect(() => {
+        if (step !== 'snooze') return;
+
+        const interval = setInterval(() => {
+            setSnoozeRemaining(prev => {
+                if (prev <= 1) {
+                    // Timer done - ring again
+                    setStep('alarm');
+                    playAlarmBySound(alarm.soundId || 'somnia');
+                    return SNOOZE_DURATION;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [step, alarm.soundId]);
+
+    // Cancel snooze and wake up
+    const cancelSnooze = useCallback(() => {
+        setStep('dream');
+    }, []);
 
     // Handle "I'm Awake" - advance to dream capture
     const handleAwake = useCallback(() => {
@@ -124,6 +152,25 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                                 I'm Awake
                             </button>
                         </div>
+                    </div>
+                )}
+
+                {/* SNOOZE: Countdown display */}
+                {step === 'snooze' && (
+                    <div className="animate-fadeIn">
+                        <div className="bg-white/10 backdrop-blur rounded-2xl p-6 mb-4 border border-white/10">
+                            <p className="text-white/50 text-sm mb-2">Snoozing...</p>
+                            <p className="text-5xl font-light text-white mb-4">
+                                {Math.floor(snoozeRemaining / 60)}:{String(snoozeRemaining % 60).padStart(2, '0')}
+                            </p>
+                            <p className="text-white/40 text-xs">Alarm will ring again</p>
+                        </div>
+                        <button
+                            onClick={cancelSnooze}
+                            className="w-full py-4 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold rounded-2xl text-lg shadow-lg hover:shadow-xl transition-all"
+                        >
+                            I'm Awake Now
+                        </button>
                     </div>
                 )}
 
