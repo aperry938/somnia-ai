@@ -1,5 +1,7 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode, useCallback } from 'react';
 import { Alarm, Dream, SleepAids, Biometrics, Theme, CoachPersonality, AnalysisPersonality, DreamMood, SleepSession, AlarmPurpose } from '../types';
+
+export type ArtStyle = 'surreal' | 'watercolor' | 'oil-painting' | 'anime' | 'photorealistic' | 'abstract' | 'fantasy' | 'minimalist';
 import { enqueueAction } from '../services/syncService';
 import { cacheDreamTitle } from '../services/geminiService';
 
@@ -38,6 +40,13 @@ interface AppContextType {
     setVolume: (volume: number) => void;
     analysisPersonality: AnalysisPersonality;
     setAnalysisPersonality: (personality: AnalysisPersonality) => void;
+    // Chronicle notification (unread dreams)
+    lastSeenDreamCount: number;
+    markDreamsAsSeen: () => void;
+    getUnreadDreamCount: () => number;
+    // Art style preference
+    artStyle: ArtStyle;
+    setArtStyle: (style: ArtStyle) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -77,6 +86,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [analysisPersonality, setAnalysisPersonality] = useLocalStorage<AnalysisPersonality>('somnia_analysis_personality', 'oneironaut');
     const [isScribeOpen, setIsScribeOpen] = useState(false);
     const [activeSleepSession, setActiveSleepSession] = useLocalStorage<SleepSession | null>('somnia_active_sleep_session', null);
+    const [lastSeenDreamCount, setLastSeenDreamCount] = useLocalStorage<number>('somnia_last_seen_dream_count', 0);
+    const [artStyle, setArtStyle] = useLocalStorage<ArtStyle>('somnia_art_style', 'surreal');
 
     // Pre-populate title cache with existing dream titles to prevent unnecessary API calls
     useEffect(() => {
@@ -172,6 +183,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const clearSleepSession = useCallback(() => {
         setActiveSleepSession(null);
     }, [setActiveSleepSession]);
+
+    // Mark all dreams as seen (called when Chronicle tab is visited)
+    const markDreamsAsSeen = useCallback(() => {
+        setLastSeenDreamCount(dreams.length);
+    }, [dreams.length, setLastSeenDreamCount]);
+
+    // Get count of unread/new dreams
+    const getUnreadDreamCount = useCallback(() => {
+        return Math.max(0, dreams.length - lastSeenDreamCount);
+    }, [dreams.length, lastSeenDreamCount]);
 
     const updateAlarm = (id: number, time: string, smartWake: boolean, days: number[] = [], soundId: string = 'somnia', purpose: AlarmPurpose = 'sleep', label?: string) => {
         setAlarms(prev => prev.map(a => a.id === id ? { ...a, time, smartWake, days, soundId, purpose, label } : a));
@@ -279,6 +300,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setVolume,
         analysisPersonality,
         setAnalysisPersonality,
+        lastSeenDreamCount,
+        markDreamsAsSeen,
+        getUnreadDreamCount,
+        artStyle,
+        setArtStyle,
     };
 
     return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

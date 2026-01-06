@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo } from 'react';
-import { useAppContext } from '../../contexts/AppContext';
+import { useAppContext, ArtStyle } from '../../contexts/AppContext';
 import { exportDreamJournalToPDF, exportDreamsAsJSON, importDreamsFromJSON } from '../../services/exportService';
 import { Biometrics } from '../../types';
 import { useToast } from '../shared/Toast';
@@ -262,6 +262,47 @@ const ThemePreferenceCard: React.FC = () => {
                     >
                         <p className="text-2xl mb-1">{opt.icon}</p>
                         <p className="text-sm font-medium">{opt.label}</p>
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+// Art Style Preference Card
+const ArtStyleCard: React.FC = () => {
+    const { artStyle, setArtStyle } = useAppContext();
+
+    const artStyles: { value: ArtStyle; label: string; preview: string }[] = [
+        { value: 'surreal', label: 'Surreal', preview: '🌀' },
+        { value: 'watercolor', label: 'Watercolor', preview: '🎨' },
+        { value: 'oil-painting', label: 'Oil', preview: '🖼️' },
+        { value: 'anime', label: 'Anime', preview: '✨' },
+        { value: 'photorealistic', label: 'Photo', preview: '📷' },
+        { value: 'abstract', label: 'Abstract', preview: '🔷' },
+        { value: 'fantasy', label: 'Fantasy', preview: '🏰' },
+        { value: 'minimalist', label: 'Minimal', preview: '◻️' },
+    ];
+
+    return (
+        <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">
+            <h2 className="font-serif text-xl mb-2">Dream Art Style</h2>
+            <p className="text-day-text-secondary dark:text-night-text-secondary text-sm mb-4">
+                Choose how your dream images are generated.
+            </p>
+            <div className="grid grid-cols-4 gap-2">
+                {artStyles.map(style => (
+                    <button
+                        key={style.value}
+                        onClick={() => setArtStyle(style.value)}
+                        className={`p-3 rounded-lg border-2 transition-all ${
+                            artStyle === style.value
+                                ? 'border-day-accent dark:border-night-accent bg-day-accent/10 dark:bg-night-accent/10'
+                                : 'border-day-border dark:border-night-border hover:border-day-accent/50 dark:hover:border-night-accent/50'
+                        }`}
+                    >
+                        <p className="text-xl mb-1">{style.preview}</p>
+                        <p className="text-xs font-medium truncate">{style.label}</p>
                     </button>
                 ))}
             </div>
@@ -577,6 +618,7 @@ export const ProfilePage: React.FC<{ onBack?: () => void; onNavigateTo?: (page: 
                 <ProfileInfoCard />
                 <MembershipCard />
                 <ThemePreferenceCard />
+                <ArtStyleCard />
                 <NotificationsCard />
                 <DataManagementCard />
                 <AccountManagementCard />

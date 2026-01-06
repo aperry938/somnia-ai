@@ -138,37 +138,49 @@ export const analyzeDream = async (dreamText: string, sleepAids?: SleepAids, bio
     }
 };
 
-// Art style presets for dream imagery
-export type DreamArtStyle = 'surrealist' | 'watercolor' | 'anime' | 'cosmic' | 'vintage';
+// Art style presets for dream imagery (matches ArtStyle from AppContext)
+export type DreamArtStyle = 'surreal' | 'watercolor' | 'oil-painting' | 'anime' | 'photorealistic' | 'abstract' | 'fantasy' | 'minimalist';
 
 /**
  * Presets for AI image generation styles.
  * Each style includes a user-friendly name and a specific prompt modifier.
  */
 export const DREAM_ART_STYLES: Record<DreamArtStyle, { name: string; prompt: string }> = {
-    surrealist: {
-        name: 'Surrealist',
-        prompt: 'Photorealistic surrealism, ethereal lighting, atmospheric, style of Salvador Dalí and Remedios Varo'
+    surreal: {
+        name: 'Surreal',
+        prompt: 'Photorealistic surrealism, ethereal lighting, atmospheric, style of Salvador Dalí and Remedios Varo, dreamlike impossible geometry'
     },
     watercolor: {
         name: 'Watercolor',
-        prompt: 'Soft watercolor painting, dreamy washes, flowing colors, delicate brushstrokes, studio ghibli inspired'
+        prompt: 'Soft watercolor painting, dreamy washes, flowing colors, delicate brushstrokes, studio ghibli inspired, luminous'
+    },
+    'oil-painting': {
+        name: 'Oil Painting',
+        prompt: 'Classical oil painting, rich textures, chiaroscuro lighting, baroque influences, museum quality, painterly brushwork'
     },
     anime: {
         name: 'Anime',
-        prompt: 'Anime art style, vibrant colors, detailed background, Makoto Shinkai lighting, ethereal atmosphere'
+        prompt: 'Anime art style, vibrant colors, detailed background, Makoto Shinkai lighting, ethereal atmosphere, cel-shaded'
     },
-    cosmic: {
-        name: 'Cosmic',
-        prompt: 'Cosmic dreamscape, nebulas and stars, deep space colors, celestial, mystical, astronomically beautiful'
+    photorealistic: {
+        name: 'Photorealistic',
+        prompt: 'Ultra photorealistic, cinematic photography, volumetric lighting, hyper-detailed, 8k resolution, film grain'
     },
-    vintage: {
-        name: 'Vintage Film',
-        prompt: 'Vintage film photography, grainy texture, warm muted tones, nostalgic, Polaroid aesthetic, dreamy haze'
+    abstract: {
+        name: 'Abstract',
+        prompt: 'Abstract expressionism, bold colors, emotional brushstrokes, Kandinsky and Rothko inspired, psychological depth'
+    },
+    fantasy: {
+        name: 'Fantasy',
+        prompt: 'High fantasy illustration, epic magical atmosphere, detailed environments, concept art, mystical glowing elements'
+    },
+    minimalist: {
+        name: 'Minimalist',
+        prompt: 'Minimalist illustration, clean lines, limited color palette, negative space, modern design, simple geometric forms'
     }
 };
 
-function createImagePrompt(dreamText: string, style: DreamArtStyle = 'surrealist'): string {
+function createImagePrompt(dreamText: string, style: DreamArtStyle = 'surreal'): string {
     const styleData = DREAM_ART_STYLES[style];
     return `A dream of: "${dreamText}". ${styleData.prompt}, emotionally resonant, sophisticated, cinematic, trending on artstation.`;
 }
@@ -181,7 +193,7 @@ function createImagePrompt(dreamText: string, style: DreamArtStyle = 'surrealist
  * @param style - The artistic style to use (default: 'surrealist')
  * @returns Promise<string> - The base64 encoded image data
  */
-export const generateDreamImage = async (dreamText: string, style: DreamArtStyle = 'surrealist'): Promise<string> => {
+export const generateDreamImage = async (dreamText: string, style: DreamArtStyle = 'surreal'): Promise<string> => {
     try {
         const ai = getAi();
         const prompt = createImagePrompt(dreamText, style);

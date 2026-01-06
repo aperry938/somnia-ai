@@ -103,7 +103,7 @@ const AccordionItem: React.FC<{ title: string; content: string; isOpenDefault?: 
 
 // Main Dream Detail Component
 export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => void; }> = ({ dreamId, onBack }) => {
-    const { getDreamById, updateDream, deleteDream, biometrics, dreams, analysisPersonality, setAnalysisPersonality } = useAppContext();
+    const { getDreamById, updateDream, deleteDream, biometrics, dreams, analysisPersonality, setAnalysisPersonality, artStyle } = useAppContext();
     const { showToast } = useToast();
     const dream = dreamId ? getDreamById(dreamId) : null;
     const [analysisState, setAnalysisState] = useState<'pending' | 'loading' | 'success' | 'error'>('pending');
@@ -111,7 +111,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
     const [isEditing, setIsEditing] = useState(false);
     const [editedText, setEditedText] = useState(dream?.dreamText || '');
     const [isImageModalOpen, setIsImageModalOpen] = useState(false);
-    const [selectedArtStyle, setSelectedArtStyle] = useState<DreamArtStyle>('surrealist');
+    const [selectedArtStyle, setSelectedArtStyle] = useState<DreamArtStyle>(artStyle);
     const [isRegeneratingTitle, setIsRegeneratingTitle] = useState(false);
     const [isNarrating, setIsNarrating] = useState(false);
 
