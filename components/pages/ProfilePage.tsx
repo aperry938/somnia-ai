@@ -1,11 +1,14 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { useAppContext, ArtStyle } from '../../contexts/AppContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { exportDreamJournalToPDF, exportDreamsAsJSON, importDreamsFromJSON } from '../../services/exportService';
 import { Biometrics } from '../../types';
 import { useToast } from '../shared/Toast';
 import { calculateUserStats } from '../../services/userStatsService';
 import { useClock } from '../../hooks/useClock';
-import { isPremium, getRemainingCredits, getMaxCredits } from '../../services/secureSubscriptionService';
+import { isPremium, getRemainingCredits, getCredits } from '../../services/secureSubscriptionService';
+
+const FREE_TIER_MAX_CREDITS = 3; // Same as in secureSubscriptionService
 
 // Profile Info Card - expanded biometrics
 const ProfileInfoCard: React.FC = () => {
@@ -178,7 +181,7 @@ const ProfileInfoCard: React.FC = () => {
 const MembershipCard: React.FC = () => {
     const premium = isPremium();
     const credits = getRemainingCredits();
-    const maxCredits = getMaxCredits();
+    const maxCredits = FREE_TIER_MAX_CREDITS;
 
     return (
         <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">
@@ -455,13 +458,25 @@ const DataManagementCard: React.FC = () => {
 // Account Management Card
 const AccountManagementCard: React.FC = () => {
     const { showToast } = useToast();
+    const { user, isAuthenticated, signOut } = useAuth();
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deleteInput, setDeleteInput] = useState('');
+    const [isSigningOut, setIsSigningOut] = useState(false);
 
-    const handleSignOut = () => {
-        // Clear session data but keep dreams
-        localStorage.removeItem('somnia_session');
-        showToast('Signed out successfully');
+    const handleSignOut = async () => {
+        setIsSigningOut(true);
+        try {
+            await signOut();
+            // Clear local auth skip flag so user sees auth page again
+            localStorage.removeItem('somnia_skipped_auth');
+            showToast('Signed out successfully');
+            // Reload to reset app state
+            window.location.reload();
+        } catch (error) {
+            showToast('Failed to sign out', 'error');
+        } finally {
+            setIsSigningOut(false);
+        }
     };
 
     const handleDeleteAccount = () => {
@@ -486,15 +501,46 @@ const AccountManagementCard: React.FC = () => {
         <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">
             <h2 className="font-serif text-xl mb-4">Account</h2>
 
+            {/* User info if authenticated */}
+            {isAuthenticated && user && (
+                <div className="mb-4 p-3 bg-white/30 dark:bg-black/20 rounded-lg">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-day-accent/20 dark:bg-night-accent/20 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <p className="font-medium truncate">{user.email}</p>
+                            <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">Signed in</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Local only notice */}
+            {!isAuthenticated && (
+                <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                    <p className="text-sm text-amber-700 dark:text-amber-300">
+                        Your data is stored locally on this device only.
+                    </p>
+                </div>
+            )}
+
             <div className="space-y-3">
                 <button
                     onClick={handleSignOut}
-                    className="w-full py-2.5 border border-day-border dark:border-night-border rounded-lg text-day-text-secondary dark:text-night-text-secondary font-medium flex items-center justify-center gap-2 hover:bg-white/10 dark:hover:bg-black/10 transition-colors"
+                    disabled={isSigningOut}
+                    className="w-full py-2.5 border border-day-border dark:border-night-border rounded-lg text-day-text-secondary dark:text-night-text-secondary font-medium flex items-center justify-center gap-2 hover:bg-white/10 dark:hover:bg-black/10 transition-colors disabled:opacity-50"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    Sign Out
+                    {isSigningOut ? (
+                        <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+                    ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                    )}
+                    {isAuthenticated ? 'Sign Out' : 'Sign In / Create Account'}
                 </button>
 
                 {!showDeleteConfirm ? (

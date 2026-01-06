@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { AppProvider } from './contexts/AppContext';
+import { AuthProvider } from './contexts/AuthContext';
 import { ErrorBoundary } from './components/shared/ErrorBoundary';
 import { ToastProvider } from './components/shared/Toast';
 
@@ -14,11 +15,13 @@ const root = ReactDOM.createRoot(rootElement);
 root.render(
     <React.StrictMode>
         <ErrorBoundary>
-            <AppProvider>
-                <ToastProvider>
-                    <App />
-                </ToastProvider>
-            </AppProvider>
+            <AuthProvider>
+                <AppProvider>
+                    <ToastProvider>
+                        <App />
+                    </ToastProvider>
+                </AppProvider>
+            </AuthProvider>
         </ErrorBoundary>
     </React.StrictMode>
 );

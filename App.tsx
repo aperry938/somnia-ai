@@ -2,6 +2,7 @@ import React, { useState, useEffect, Suspense, lazy, useCallback } from 'react';
 import { Page, DreamMood } from './types';
 import { useClock } from './hooks/useClock';
 import { useAppContext } from './contexts/AppContext';
+import { useAuth } from './contexts/AuthContext';
 import { useAlarmManager } from './hooks/useAlarmManager';
 import { initAudioContext } from './services/audioService';
 import { useRealityChecks } from './hooks/useRealityChecks';
@@ -32,15 +33,20 @@ const DreamDetailPage = lazy(() => import('./components/pages/DreamDetailPage').
 const PrivacyPage = lazy(() => import('./components/pages/PrivacyPage').then(m => ({ default: m.PrivacyPage })));
 const TermsPage = lazy(() => import('./components/pages/TermsPage').then(m => ({ default: m.TermsPage })));
 const ProfilePage = lazy(() => import('./components/pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
+const AuthPage = lazy(() => import('./components/pages/AuthPage').then(m => ({ default: m.AuthPage })));
 
 
 
 const App: React.FC = () => {
     const { addDream, isScribeOpen, setIsScribeOpen } = useAppContext();
+    const { isAuthenticated, isLoading: authLoading, isConfigured: authConfigured } = useAuth();
     const [currentPage, setCurrentPage] = useState<Page>('alarms');
     const [selectedDreamId, setSelectedDreamId] = useState<number | null>(null);
     const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(() => {
         return localStorage.getItem('somnia_onboarding_complete') === 'true';
+    });
+    const [hasSkippedAuth, setHasSkippedAuth] = useState(() => {
+        return localStorage.getItem('somnia_skipped_auth') === 'true';
     });
     const { timeString, dateString } = useClock();
     const { ringingAlarm, stopRinging, snooze, triggerSleepDetectionAlarm } = useAlarmManager();
@@ -199,9 +205,37 @@ const App: React.FC = () => {
         setHasCompletedOnboarding(true);
     }, []);
 
+    const handleSkipAuth = useCallback(() => {
+        localStorage.setItem('somnia_skipped_auth', 'true');
+        setHasSkippedAuth(true);
+    }, []);
+
     // Show onboarding for first-time users
     if (!hasCompletedOnboarding) {
         return <OnboardingCarousel onComplete={handleOnboardingComplete} />;
+    }
+
+    // Show auth loading state
+    if (authLoading) {
+        return (
+            <div className="flex flex-col h-screen items-center justify-center bg-gradient-to-b from-day-bg-start to-day-bg-end dark:from-night-bg-start dark:to-night-bg-end">
+                <div className="w-16 h-16 rounded-full bg-indigo-500/20 flex items-center justify-center mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-day-accent dark:text-night-accent animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                    </svg>
+                </div>
+                <p className="text-day-text-secondary dark:text-night-text-secondary">Loading...</p>
+            </div>
+        );
+    }
+
+    // Show auth page if configured and not authenticated and hasn't skipped
+    if (authConfigured && !isAuthenticated && !hasSkippedAuth) {
+        return (
+            <Suspense fallback={<PageLoading message="Loading..." />}>
+                <AuthPage onSkip={handleSkipAuth} />
+            </Suspense>
+        );
     }
 
     return (
