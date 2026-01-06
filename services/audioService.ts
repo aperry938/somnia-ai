@@ -67,10 +67,10 @@ export const playSomniaAlarm = () => {
     const now = context.currentTime;
     alarmOscillator.type = 'sine';
     alarmOscillator.frequency.setValueAtTime(180, now); // Very low starting frequency
-    alarmGainNode.gain.setValueAtTime(0.0001, now); // Almost inaudible start
+    alarmGainNode.gain.setValueAtTime(0.015, now); // Audible but gentle start
 
-    // Very slow ramp up over 60 seconds - the gentlest wake-up
-    alarmGainNode.gain.exponentialRampToValueAtTime(0.4, now + 60);
+    // Very slow ramp up over 60 seconds - the gentlest wake-up, reaching full volume
+    alarmGainNode.gain.exponentialRampToValueAtTime(1.0, now + 60);
     alarmOscillator.frequency.exponentialRampToValueAtTime(500, now + 60);
 
     alarmOscillator.start(now);
