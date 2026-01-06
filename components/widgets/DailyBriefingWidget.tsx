@@ -28,10 +28,11 @@ export const DailyBriefingWidget: React.FC = () => {
                     </div>
                 </div>
             </div>
-            {/* Tiny progress bar */}
-            <div className="mt-1 flex gap-1 h-1 w-full px-1">
-                <div className="h-full bg-day-accent dark:bg-night-accent rounded-full transition-all duration-500" style={{ width: `${stats.nextLevelProgress}%` }}></div>
-                <div className="h-full bg-gray-200 dark:bg-white/10 flex-grow rounded-full"></div>
+            {/* Progress bar to next level */}
+            <div className="mt-1 h-1 w-full px-1">
+                <div className="h-full bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-full bg-day-accent dark:bg-night-accent rounded-full transition-all duration-500" style={{ width: `${stats.nextLevelProgress}%` }}></div>
+                </div>
             </div>
         </div>
     );
