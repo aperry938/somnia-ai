@@ -174,19 +174,19 @@ const App: React.FC = () => {
             case 'privacy':
                 return (
                     <Suspense fallback={<PageLoading message="Loading..." />}>
-                        <PrivacyPage onBack={() => setCurrentPage('alarms')} />
+                        <PrivacyPage onBack={() => setCurrentPage('profile')} />
                     </Suspense>
                 );
             case 'terms':
                 return (
                     <Suspense fallback={<PageLoading message="Loading..." />}>
-                        <TermsPage onBack={() => setCurrentPage('alarms')} />
+                        <TermsPage onBack={() => setCurrentPage('profile')} />
                     </Suspense>
                 );
             case 'profile':
                 return (
                     <Suspense fallback={<PageLoading message="Loading profile..." />}>
-                        <ProfilePage />
+                        <ProfilePage onNavigateTo={(page) => setCurrentPage(page)} />
                     </Suspense>
                 );
             default:

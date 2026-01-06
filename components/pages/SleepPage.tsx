@@ -245,14 +245,6 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                 </div>
             ) : (
                 <div className="max-w-2xl mx-auto space-y-8">
-                    <div className="flex justify-between items-center px-2">
-                        <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest">Tools</h2>
-                        <button onClick={() => setActiveModal('sync')} className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                            Sync Wearable
-                        </button>
-                    </div>
-
                     <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl cursor-pointer hover:shadow-xl transition-shadow" onClick={openCoach}>
                         <div className="flex items-center gap-4">
                             <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg>
@@ -460,27 +452,6 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                     />
                 )
             }
-            {activeModal === 'sync' && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn" onClick={closeModal}>
-                    <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 max-w-sm w-full shadow-2xl text-center" onClick={e => e.stopPropagation()}>
-                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 mb-4">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                        <h2 className="font-serif text-2xl mb-2">Coming Soon</h2>
-                        <p className="text-day-text-secondary dark:text-night-text-secondary mb-4">
-                            Wearable sync will allow you to connect your smartwatch or fitness tracker to automatically import sleep data, heart rate variability, and movement patterns for more accurate sleep analysis.
-                        </p>
-                        <p className="text-xs text-day-accent dark:text-night-accent mb-4">
-                            Apple Watch, Fitbit, Garmin & more
-                        </p>
-                        <button onClick={closeModal} className="w-full py-2 bg-day-accent dark:bg-night-accent text-white font-bold rounded-full">
-                            Got It
-                        </button>
-                    </div>
-                </div>
-            )}
             <TechniqueInfoModal
                 technique={selectedTechnique}
                 onClose={() => setSelectedTechnique(null)}

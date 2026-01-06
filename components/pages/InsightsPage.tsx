@@ -44,6 +44,7 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
     const [isHabitLoading, setIsHabitLoading] = useState(false);
     const [habitError, setHabitError] = useState<string | null>(null);
     const [isCompareOpen, setIsCompareOpen] = useState(false);
+    const [isSyncOpen, setIsSyncOpen] = useState(false);
 
     // Swipe handling
     const containerRef = useRef<HTMLDivElement>(null);
@@ -242,6 +243,25 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                     </div>
                 ) : (
                     <div className="space-y-6 animate-fadeIn">
+                        {/* Sync Wearable Card */}
+                        <button
+                            onClick={() => setIsSyncOpen(true)}
+                            className="w-full bg-gradient-to-r from-indigo-500/10 to-purple-500/10 dark:from-indigo-900/30 dark:to-purple-900/30 border border-indigo-300 dark:border-indigo-700 p-4 rounded-xl flex items-center gap-4 hover:border-indigo-400 dark:hover:border-indigo-600 transition-colors"
+                        >
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center flex-shrink-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                            </div>
+                            <div className="text-left flex-grow">
+                                <h3 className="font-medium text-indigo-700 dark:text-indigo-300">Sync Wearable</h3>
+                                <p className="text-sm text-indigo-600/70 dark:text-indigo-400/70">Connect your smartwatch or fitness tracker</p>
+                            </div>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                        </button>
+
                         <LucidDreamProgress dreams={dreams} />
                         <SleepDurationChart dreams={dreams} />
                         <DreamLengthInsights dreams={dreams} />
@@ -342,6 +362,29 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
             </div>
 
             {isCompareOpen && <DreamCompareModal dreams={dreams} onClose={() => setIsCompareOpen(false)} />}
+
+            {/* Sync Wearable Modal */}
+            {isSyncOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn" onClick={() => setIsSyncOpen(false)}>
+                    <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 max-w-sm w-full shadow-2xl text-center" onClick={e => e.stopPropagation()}>
+                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <h2 className="font-serif text-2xl mb-2">Coming Soon</h2>
+                        <p className="text-day-text-secondary dark:text-night-text-secondary mb-4">
+                            Wearable sync will allow you to connect your smartwatch or fitness tracker to automatically import sleep data, heart rate variability, and movement patterns for more accurate sleep analysis.
+                        </p>
+                        <p className="text-xs text-day-accent dark:text-night-accent mb-4">
+                            Apple Watch, Fitbit, Garmin & more
+                        </p>
+                        <button onClick={() => setIsSyncOpen(false)} className="w-full py-2 bg-day-accent dark:bg-night-accent text-white font-bold rounded-full">
+                            Got It
+                        </button>
+                    </div>
+                </div>
+            )}
         </>
     );
 };

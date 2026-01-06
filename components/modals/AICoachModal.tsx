@@ -11,7 +11,7 @@ const COACH_HISTORY_KEY = 'somnia_coach_history';
 const MAX_SAVED_MESSAGES = 20; // Limit saved history to prevent storage bloat
 
 export const AICoachModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const { coachPersonality, setCoachPersonality } = useAppContext();
+    const { coachPersonality } = useAppContext();
     const [history, setHistory] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(true);
@@ -222,7 +222,7 @@ export const AICoachModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
                             <svg className="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
-                            <span>Mystical & Scientific personalities</span>
+                            <span>Personalized coaching style</span>
                         </div>
                         <div className="flex items-center gap-2 text-sm">
                             <svg className="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -252,25 +252,9 @@ export const AICoachModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
         <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={onClose}>
             <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-lg animate-fadeIn flex flex-col h-[80vh]" onClick={(e) => e.stopPropagation()}>
                 <div className="flex justify-between items-start mb-4 flex-shrink-0">
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <h2 className="font-serif text-2xl">AI Sleep Coach</h2>
-                            <span className="text-[10px] bg-gradient-to-r from-amber-500 to-orange-500 text-white px-1.5 py-0.5 rounded-full font-medium">PRO</span>
-                        </div>
-                        <div className="flex gap-2 mt-1">
-                            <button
-                                onClick={() => { haptics.selection(); setCoachPersonality('mystical'); handleClearHistory(); }}
-                                className={`text-xs px-2 py-0.5 rounded-full border ${coachPersonality === 'mystical' ? 'bg-indigo-500 text-white border-indigo-500' : 'border-day-border dark:border-night-border text-day-text-secondary dark:text-night-text-secondary'}`}
-                            >
-                                Mystical
-                            </button>
-                            <button
-                                onClick={() => { haptics.selection(); setCoachPersonality('scientific'); handleClearHistory(); }}
-                                className={`text-xs px-2 py-0.5 rounded-full border ${coachPersonality === 'scientific' ? 'bg-teal-600 text-white border-teal-600' : 'border-day-border dark:border-night-border text-day-text-secondary dark:text-night-text-secondary'}`}
-                            >
-                                Scientific
-                            </button>
-                        </div>
+                    <div className="flex items-center gap-2">
+                        <h2 className="font-serif text-2xl">AI Sleep Coach</h2>
+                        <span className="text-[10px] bg-gradient-to-r from-amber-500 to-orange-500 text-white px-1.5 py-0.5 rounded-full font-medium">PRO</span>
                     </div>
                     <div className="flex items-center gap-2">
                         {/* Voice Mode Toggle */}
