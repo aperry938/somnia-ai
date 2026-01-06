@@ -1,14 +1,20 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
 import { calculateUserStats } from '../../services/userStatsService';
 
 export const DailyBriefingWidget: React.FC = () => {
     const { dreams } = useAppContext();
     const stats = useMemo(() => calculateUserStats(dreams), [dreams]);
+    const [showInfo, setShowInfo] = useState(false);
+
+    const dreamsToNextLevel = Math.ceil((100 - stats.nextLevelProgress) / 20);
 
     return (
         <div className="mx-auto w-full max-w-sm mb-6 animate-fadeIn">
-            <div className="bg-white/10 dark:bg-black/20 backdrop-blur-md border border-white/20 rounded-xl p-3 flex items-center justify-between shadow-sm">
+            <div
+                className="bg-white/10 dark:bg-black/20 backdrop-blur-md border border-white/20 rounded-xl p-3 flex items-center justify-between shadow-sm cursor-pointer hover:bg-white/15 dark:hover:bg-black/25 transition-colors"
+                onClick={() => setShowInfo(!showInfo)}
+            >
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center text-xl">
                         ✨
@@ -34,6 +40,13 @@ export const DailyBriefingWidget: React.FC = () => {
                     <div className="h-full bg-day-accent dark:bg-night-accent rounded-full transition-all duration-500" style={{ width: `${stats.nextLevelProgress}%` }}></div>
                 </div>
             </div>
+            {/* Expandable Info */}
+            {showInfo && (
+                <div className="mt-2 px-3 py-2 bg-white/5 dark:bg-black/10 rounded-lg text-xs text-day-text-secondary dark:text-night-text-secondary animate-fadeIn">
+                    <p className="mb-1"><strong className="text-day-accent dark:text-night-accent">Level:</strong> Earn 1 level for every 5 dreams logged. {dreamsToNextLevel > 0 ? `${dreamsToNextLevel} more to Level ${stats.level + 1}!` : 'Level up imminent!'}</p>
+                    <p><strong className="text-orange-500">Streak:</strong> Consecutive days with dream entries. Keep journaling daily!</p>
+                </div>
+            )}
         </div>
     );
 };
