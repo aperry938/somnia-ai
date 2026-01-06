@@ -106,15 +106,19 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, setCurrentPag
             <div className="border-l border-day-border dark:border-night-border h-8 mx-1" />
             {/* Profile button */}
             <button
-                onClick={() => setCurrentPage('settings' as Page)}
-                className="flex flex-col items-center w-12 py-1 rounded-lg transition-colors duration-300 text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent"
-                title="Profile & Settings"
-                aria-label="Profile & Settings"
+                onClick={() => setCurrentPage('profile')}
+                className={`flex flex-col items-center w-12 py-1 rounded-lg transition-colors duration-300 ${
+                    currentPage === 'profile'
+                        ? 'text-day-accent dark:text-night-accent'
+                        : 'text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent'
+                }`}
+                title="Profile"
+                aria-label="Profile"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
-                <span className="text-[10px] mt-0.5 opacity-70">Profile</span>
+                <span className={`text-[10px] mt-0.5 ${currentPage === 'profile' ? 'font-medium' : 'opacity-70'}`}>Profile</span>
             </button>
             <div className="border-l border-day-border dark:border-night-border h-8 mx-1" />
             <button

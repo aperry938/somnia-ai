@@ -31,6 +31,7 @@ const InsightsPage = lazy(() => import('./components/pages/InsightsPage').then(m
 const DreamDetailPage = lazy(() => import('./components/pages/DreamDetailPage').then(m => ({ default: m.DreamDetailPage })));
 const PrivacyPage = lazy(() => import('./components/pages/PrivacyPage').then(m => ({ default: m.PrivacyPage })));
 const TermsPage = lazy(() => import('./components/pages/TermsPage').then(m => ({ default: m.TermsPage })));
+const ProfilePage = lazy(() => import('./components/pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
 
 
 
@@ -180,6 +181,12 @@ const App: React.FC = () => {
                 return (
                     <Suspense fallback={<PageLoading message="Loading..." />}>
                         <TermsPage onBack={() => setCurrentPage('alarms')} />
+                    </Suspense>
+                );
+            case 'profile':
+                return (
+                    <Suspense fallback={<PageLoading message="Loading profile..." />}>
+                        <ProfilePage />
                     </Suspense>
                 );
             default:
