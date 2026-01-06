@@ -4,24 +4,81 @@ import { Alarm } from '../../types';
 import { DailyBriefingWidget } from '../widgets/DailyBriefingWidget';
 import { playAlarmPreview, stopAlarmPreview } from '../../services/audioService';
 
-// Memoized component for a single alarm item
+// Helper to format alarm repetition text
+const formatRepeatText = (days: number[]): string => {
+    if (!days || days.length === 0) return 'Ring once';
+    if (days.length === 7) return 'Every day';
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    if (days.length === 5 && days.every((d, i) => d === i + 1)) return 'Weekdays';
+    if (days.length === 2 && days.includes(0) && days.includes(6)) return 'Weekends';
+    return days.map(d => dayNames[d]).join(', ');
+};
+
+// Memoized component for a single alarm item - fully clickable with dynamic styling
 const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = React.memo(({ alarm, onEdit }) => {
     const { toggleAlarmActive } = useAppContext();
     const id = `toggle-${alarm.id}`;
 
+    // Format time in 12h format
+    const [hourStr, minuteStr] = alarm.time.split(':');
+    const hour = parseInt(hourStr, 10);
+    const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+    const period = hour >= 12 ? 'PM' : 'AM';
+    const displayTime = `${String(displayHour).padStart(2, '0')}:${minuteStr}`;
+
+    const handleToggle = (e: React.MouseEvent) => {
+        e.stopPropagation(); // Prevent card click
+        toggleAlarmActive(alarm.id);
+    };
+
     return (
-        <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border shadow-lg rounded-2xl p-4 transition-all duration-300 flex flex-col justify-between h-32">
-            <div className="flex justify-between items-start">
-                <div className="cursor-pointer" onClick={() => onEdit(alarm)}>
-                    <p className="text-4xl font-light">{alarm.time}</p>
+        <div
+            onClick={() => onEdit(alarm)}
+            className={`group relative bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border shadow-lg rounded-2xl p-4 cursor-pointer transition-all duration-300 flex flex-col justify-between h-32 hover:shadow-xl hover:scale-[1.02] hover:border-day-accent dark:hover:border-night-accent active:scale-[0.98] ${
+                alarm.isActive
+                    ? 'ring-2 ring-day-accent/30 dark:ring-night-accent/30'
+                    : 'opacity-60 hover:opacity-100'
+            }`}
+        >
+            {/* Active indicator glow */}
+            {alarm.isActive && (
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-day-accent/5 to-purple-500/5 dark:from-night-accent/10 dark:to-purple-500/10 pointer-events-none" />
+            )}
+
+            <div className="flex justify-between items-start relative z-10">
+                <div className="flex items-baseline gap-2">
+                    <p className={`text-4xl font-light transition-colors ${alarm.isActive ? 'text-day-text dark:text-night-text' : 'text-gray-400'}`}>
+                        {displayTime}
+                    </p>
+                    <span className={`text-sm font-medium ${alarm.isActive ? 'text-day-accent dark:text-night-accent' : 'text-gray-400'}`}>
+                        {period}
+                    </span>
                 </div>
-                <div className="relative inline-block w-11 mr-2 align-middle select-none">
-                    <input type="checkbox" id={id} className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" checked={alarm.isActive} onChange={() => toggleAlarmActive(alarm.id)} />
+                <div
+                    className="relative inline-block w-11 align-middle select-none"
+                    onClick={handleToggle}
+                >
+                    <input
+                        type="checkbox"
+                        id={id}
+                        className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
+                        checked={alarm.isActive}
+                        readOnly
+                    />
                     <label htmlFor={id} className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 dark:bg-gray-700 cursor-pointer transition-colors"></label>
                 </div>
             </div>
-            <div className="text-sm text-day-text-secondary dark:text-night-text-secondary">
-                <p>Ring once</p>
+            <div className="flex items-center justify-between relative z-10">
+                <p className={`text-sm ${alarm.isActive ? 'text-day-text-secondary dark:text-night-text-secondary' : 'text-gray-400'}`}>
+                    {formatRepeatText(alarm.days)}
+                </p>
+                {/* Sound indicator */}
+                <div className="flex items-center gap-1 text-xs text-day-text-secondary dark:text-night-text-secondary opacity-0 group-hover:opacity-100 transition-opacity">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                    </svg>
+                    <span>Tap to edit</span>
+                </div>
             </div>
         </div>
     );
