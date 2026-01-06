@@ -267,7 +267,99 @@ export const stopAlarmPreview = () => {
 // --- SLEEP SOUND FUNCTIONS ---
 
 /**
- * Creates a raw noise buffer (unprocessed) for use in synthesis chains
+ * PRODUCTION-GRADE NOISE GENERATION
+ * 
+ * Using "Dual-Mono Decorrelation" for stereo width:
+ * - Each channel gets unique buffer with different random seed
+ * - Creates "3D Space" surrounding the head vs flat skull sound
+ * 
+ * Buffer duration: 5 seconds to prevent repetition fatigue
+ */
+
+const NOISE_BUFFER_DURATION = 5; // seconds
+
+/**
+ * Gaussian White Noise - "Soft Air"
+ * Uses Box-Muller Transform for creamy Gaussian distribution
+ * (Standard uniform random is too harsh/spiky)
+ */
+const createGaussianWhiteBuffer = (context: AudioContext): AudioBuffer => {
+    const bufferSize = context.sampleRate * NOISE_BUFFER_DURATION;
+    // STEREO buffer for decorrelation
+    const buffer = context.createBuffer(2, bufferSize, context.sampleRate);
+
+    for (let channel = 0; channel < 2; channel++) {
+        const data = buffer.getChannelData(channel);
+        for (let i = 0; i < bufferSize; i++) {
+            // Box-Muller Transform: Converts uniform random to Gaussian
+            const u1 = Math.random();
+            const u2 = Math.random();
+            // Avoid log(0) by ensuring u1 > 0
+            const safeU1 = Math.max(u1, 0.0001);
+            const z0 = Math.sqrt(-2.0 * Math.log(safeU1)) * Math.cos(2.0 * Math.PI * u2);
+            data[i] = z0 * 0.15; // Scale for comfortable volume
+        }
+    }
+    return buffer;
+};
+
+/**
+ * Paul Kellett's Pink Noise - "Bio Base"
+ * Industry standard for smooth 1/f slope with ±0.05dB accuracy
+ */
+const createPinkBuffer = (context: AudioContext): AudioBuffer => {
+    const bufferSize = context.sampleRate * NOISE_BUFFER_DURATION;
+    // STEREO buffer for decorrelation
+    const buffer = context.createBuffer(2, bufferSize, context.sampleRate);
+
+    for (let channel = 0; channel < 2; channel++) {
+        const data = buffer.getChannelData(channel);
+        let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+
+        for (let i = 0; i < bufferSize; i++) {
+            const white = Math.random() * 2 - 1;
+
+            b0 = 0.99886 * b0 + white * 0.0555179;
+            b1 = 0.99332 * b1 + white * 0.0750759;
+            b2 = 0.96900 * b2 + white * 0.1538520;
+            b3 = 0.86650 * b3 + white * 0.3104856;
+            b4 = 0.55000 * b4 + white * 0.5329522;
+            b5 = -0.7616 * b5 - white * 0.0168980;
+
+            data[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11;
+            b6 = white * 0.115926;
+        }
+    }
+    return buffer;
+};
+
+/**
+ * Leaky Brown Noise - "Deep Magma"
+ * Uses Leaky Integrator to prevent DC offset drift
+ * Formula: output = (lastOutput * 0.98) + (white * 0.02)
+ * The "leak" (division by 1.02) forces wave to center itself
+ */
+const createBrownBuffer = (context: AudioContext): AudioBuffer => {
+    const bufferSize = context.sampleRate * NOISE_BUFFER_DURATION;
+    // STEREO buffer for decorrelation
+    const buffer = context.createBuffer(2, bufferSize, context.sampleRate);
+
+    for (let channel = 0; channel < 2; channel++) {
+        const data = buffer.getChannelData(channel);
+        let lastOut = 0.0;
+
+        for (let i = 0; i < bufferSize; i++) {
+            const white = Math.random() * 2 - 1;
+            // Leaky Integrator: 0.02 is slew rate, 1.02 is the leak
+            lastOut = (lastOut + (0.02 * white)) / 1.02;
+            data[i] = lastOut * 3.5; // Gain compensation for warm presence
+        }
+    }
+    return buffer;
+};
+
+/**
+ * Creates a raw noise buffer (for backwards compatibility with mono synthesis chains)
  */
 const createRawNoiseBuffer = (context: AudioContext, type: 'white' | 'pink' | 'brown'): AudioBuffer => {
     const bufferSize = context.sampleRate * 2;
@@ -275,8 +367,12 @@ const createRawNoiseBuffer = (context: AudioContext, type: 'white' | 'pink' | 'b
     const output = buffer.getChannelData(0);
 
     if (type === 'white') {
+        // Gaussian white noise for synthesis chains
         for (let i = 0; i < bufferSize; i++) {
-            output[i] = Math.random() * 2 - 1;
+            const u1 = Math.max(Math.random(), 0.0001);
+            const u2 = Math.random();
+            const z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+            output[i] = z0 * 0.15;
         }
     } else if (type === 'pink') {
         // Paul Kellet's refined pink noise algorithm
@@ -293,44 +389,12 @@ const createRawNoiseBuffer = (context: AudioContext, type: 'white' | 'pink' | 'b
             b6 = white * 0.115926;
         }
     } else if (type === 'brown') {
-        // === DEEP SMOOTHED BROWN NOISE ===
-        // Brownian noise is created by integrating white noise (cumulative sum)
-        // This creates authentic 1/f² spectrum - deep rumble like distant waterfall
-
-        // Step 1: Generate white noise and integrate (cumulative sum)
-        let cumulative = 0;
-        const rawBrown: number[] = [];
-
+        // Leaky integrator brown noise
+        let lastOut = 0.0;
         for (let i = 0; i < bufferSize; i++) {
-            // Generate white noise sample
             const white = Math.random() * 2 - 1;
-            // Integrate: currentSample = lastSample + (white * step)
-            // Small step size (0.02) prevents runaway values
-            cumulative += white * 0.02;
-            // Soft clipping to prevent extreme values
-            cumulative = Math.max(-1, Math.min(1, cumulative));
-            rawBrown.push(cumulative);
-        }
-
-        // Step 2: Normalize the integrated noise to -1 to 1 range
-        let maxAbs = 0;
-        for (let i = 0; i < bufferSize; i++) {
-            maxAbs = Math.max(maxAbs, Math.abs(rawBrown[i]));
-        }
-        if (maxAbs > 0) {
-            for (let i = 0; i < bufferSize; i++) {
-                rawBrown[i] = rawBrown[i] / maxAbs;
-            }
-        }
-
-        // Step 3: Apply simple IIR low-pass filter for "smoothing" effect
-        // This removes any remaining harshness above ~300Hz
-        // Using a simple exponential moving average as a basic LPF
-        const smoothingFactor = 0.95; // Higher = more smoothing (lower cutoff)
-        let smoothed = 0;
-        for (let i = 0; i < bufferSize; i++) {
-            smoothed = smoothingFactor * smoothed + (1 - smoothingFactor) * rawBrown[i];
-            output[i] = smoothed * 1.5; // Slight gain boost for presence
+            lastOut = (lastOut + (0.02 * white)) / 1.02;
+            output[i] = lastOut * 3.5;
         }
     }
 
@@ -352,95 +416,92 @@ const createNoiseNode = (context: AudioContext, type: 'white' | 'pink' | 'brown'
 let somniaEqFilters: BiquadFilterNode[] = [];
 
 /**
- * Creates "Somnia-Grey" EQ-shaped noise for premium sleep audio
+ * Creates "Somnia-Polish" EQ-shaped noise for premium sleep audio
  *
- * Psychoacoustic EQ curve optimized for sleep:
- * - Boost (+5dB) @ 60 Hz: Adds physical weight/warmth (chest resonance)
- * - Boost (+2dB) @ 120 Hz: Additional low-end body
- * - Cut (-4dB) @ 400 Hz: Removes "cardboard" boxy sound
- * - Deep Notch (-12dB) @ 3,500 Hz: CRITICAL - cuts ear canal resonance for silky feel
- * - Notch (-8dB) @ 5,000 Hz: Additional harshness removal
- * - Aggressive rolloff @ 4kHz: Removes ALL high-frequency harshness
+ * Type-specific psychoacoustic optimization:
+ * - WHITE: LPF @ 10kHz (removes digital harshness, "soft-air")
+ * - PINK: Notch @ 3500Hz (ear canal resonance - makes it feel surrounding vs inside skull)
+ * - BROWN: HPF @ 40Hz (protects speakers from DC/sub-bass) + aggressive LPF @ 250Hz (deep rumble)
+ *
+ * Plus universal warmth boost at 60Hz
  */
 const createSomniaGreyNoise = (
     context: AudioContext,
     type: 'white' | 'pink' | 'brown',
     outputNode: AudioNode
 ): AudioBufferSourceNode => {
-    const noiseNode = createNoiseNode(context, type);
-
-    // 60 Hz Low Shelf Boost (+5dB) - Adds warmth/weight
-    const lowBoost = context.createBiquadFilter();
-    lowBoost.type = 'lowshelf';
-    lowBoost.frequency.setValueAtTime(60, context.currentTime);
-    lowBoost.gain.setValueAtTime(5, context.currentTime); // +5dB (more warmth)
-
-    // 120 Hz Peaking Boost (+2dB) - Additional body
-    const subBoost = context.createBiquadFilter();
-    subBoost.type = 'peaking';
-    subBoost.frequency.setValueAtTime(120, context.currentTime);
-    subBoost.Q.setValueAtTime(1, context.currentTime);
-    subBoost.gain.setValueAtTime(2, context.currentTime); // +2dB
-
-    // 400 Hz Peaking Cut (-4dB) - Removes boxy mud
-    const midCut = context.createBiquadFilter();
-    midCut.type = 'peaking';
-    midCut.frequency.setValueAtTime(400, context.currentTime);
-    midCut.Q.setValueAtTime(1.5, context.currentTime);
-    midCut.gain.setValueAtTime(-4, context.currentTime); // -4dB (deeper cut)
-
-    // 3500 Hz Deep Notch (-12dB) - CRITICAL: Removes ear canal resonance harshness
-    const highNotch = context.createBiquadFilter();
-    highNotch.type = 'peaking';
-    highNotch.frequency.setValueAtTime(3500, context.currentTime);
-    highNotch.Q.setValueAtTime(2.5, context.currentTime); // Wide but deep notch
-    highNotch.gain.setValueAtTime(-12, context.currentTime); // -12dB (much deeper)
-
-    // 5000 Hz Secondary Notch (-8dB) - Additional harshness removal
-    const highNotch2 = context.createBiquadFilter();
-    highNotch2.type = 'peaking';
-    highNotch2.frequency.setValueAtTime(5000, context.currentTime);
-    highNotch2.Q.setValueAtTime(2, context.currentTime);
-    highNotch2.gain.setValueAtTime(-8, context.currentTime); // -8dB
-
-    // Aggressive high-frequency rolloff for silky smoothness
-    // Use different rolloff frequencies based on noise type
-    const highRolloff = context.createBiquadFilter();
-    highRolloff.type = 'lowpass';
-    // White noise: moderate filtering, Pink: medium, Brown: VERY aggressive for deep rumble
+    // Use stereo buffer for premium spatial feel
+    let buffer: AudioBuffer;
     if (type === 'white') {
-        highRolloff.frequency.setValueAtTime(2500, context.currentTime); // Moderate for white
+        buffer = createGaussianWhiteBuffer(context);
     } else if (type === 'pink') {
-        highRolloff.frequency.setValueAtTime(3500, context.currentTime); // Medium for pink
+        buffer = createPinkBuffer(context);
     } else {
-        // DEEP SMOOTHED BROWN NOISE: Aggressive 250Hz cutoff
-        // This creates the "submarine ambience / distant waterfall" rumble
-        // Per audio expert specs: cut all frequencies above 250-400Hz
-        highRolloff.frequency.setValueAtTime(250, context.currentTime); // Very aggressive for deep rumble
+        buffer = createBrownBuffer(context);
     }
-    highRolloff.Q.setValueAtTime(0.707, context.currentTime); // Butterworth response
 
-    // Second stage lowpass for extra smoothness
-    const highRolloff2 = context.createBiquadFilter();
-    highRolloff2.type = 'lowpass';
-    highRolloff2.frequency.setValueAtTime(6000, context.currentTime);
-    highRolloff2.Q.setValueAtTime(0.5, context.currentTime);
+    const noiseNode = context.createBufferSource();
+    noiseNode.buffer = buffer;
+    noiseNode.loop = true;
 
-    // Chain: noise -> lowBoost -> subBoost -> midCut -> highNotch -> highNotch2 -> highRolloff -> highRolloff2 -> output
-    noiseNode.connect(lowBoost);
-    lowBoost.connect(subBoost);
-    subBoost.connect(midCut);
-    midCut.connect(highNotch);
-    highNotch.connect(highNotch2);
-    highNotch2.connect(highRolloff);
-    highRolloff.connect(highRolloff2);
-    highRolloff2.connect(outputNode);
+    // Universal: 60 Hz Low Shelf Boost (+4dB) - Adds warmth/weight
+    const warmthBoost = context.createBiquadFilter();
+    warmthBoost.type = 'lowshelf';
+    warmthBoost.frequency.setValueAtTime(60, context.currentTime);
+    warmthBoost.gain.setValueAtTime(4, context.currentTime);
 
-    // Track filters for cleanup
-    somniaEqFilters = [lowBoost, subBoost, midCut, highNotch, highNotch2, highRolloff, highRolloff2];
+    // Type-specific "Polish" filters
+    const polishFilter = context.createBiquadFilter();
+
+    if (type === 'white') {
+        // SOFT-AIR: Cut harsh digital bite above 10kHz
+        polishFilter.type = 'lowpass';
+        polishFilter.frequency.setValueAtTime(10000, context.currentTime);
+        polishFilter.Q.setValueAtTime(0.7, context.currentTime);
+
+        noiseNode.connect(warmthBoost);
+        warmthBoost.connect(polishFilter);
+        polishFilter.connect(outputNode);
+
+        somniaEqFilters = [warmthBoost, polishFilter];
+
+    } else if (type === 'pink') {
+        // EAR CANAL RESONANCE: Notch at 3500Hz makes it feel surrounding vs skull
+        polishFilter.type = 'notch';
+        polishFilter.frequency.setValueAtTime(3500, context.currentTime);
+        polishFilter.Q.setValueAtTime(1.0, context.currentTime);
+
+        noiseNode.connect(warmthBoost);
+        warmthBoost.connect(polishFilter);
+        polishFilter.connect(outputNode);
+
+        somniaEqFilters = [warmthBoost, polishFilter];
+
+    } else {
+        // BROWN: HPF @ 40Hz (protect speakers) + aggressive LPF @ 250Hz (deep rumble only)
+
+        // HPF @ 40Hz: Cut inaudible 1-30Hz sub-bass that rattles phone speakers
+        polishFilter.type = 'highpass';
+        polishFilter.frequency.setValueAtTime(40, context.currentTime);
+        polishFilter.Q.setValueAtTime(0.7, context.currentTime);
+
+        // LPF @ 250Hz: Aggressive cut for pure low-end rumble
+        const brownLPF = context.createBiquadFilter();
+        brownLPF.type = 'lowpass';
+        brownLPF.frequency.setValueAtTime(250, context.currentTime);
+        brownLPF.Q.setValueAtTime(0.707, context.currentTime);
+
+        noiseNode.connect(warmthBoost);
+        warmthBoost.connect(polishFilter);
+        polishFilter.connect(brownLPF);
+        brownLPF.connect(outputNode);
+
+        somniaEqFilters = [warmthBoost, polishFilter, brownLPF];
+    }
 
     return noiseNode;
 };
+
 
 /**
  * Creates optimized binaural beats using the scientifically superior 110 Hz carrier
