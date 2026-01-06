@@ -8,7 +8,7 @@ import { MOOD_ICONS, MOOD_LABELS } from '../../constants/uiIcons';
 
 const MOOD_OPTIONS: DreamMood[] = ['joyful', 'peaceful', 'neutral', 'confused', 'anxious', 'sad', 'fearful'];
 
-type ScribeStep = 'record' | 'boost' | 'playing';
+type ScribeStep = 'record' | 'boost';
 
 interface DreamScribeModalProps {
     onSave: (dreamText: string, sleepQuality: number | null, mood?: DreamMood) => void;
@@ -61,14 +61,6 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
             playAlertnessBoost();
             setBoostActive(true);
         }
-    };
-
-    const handleStartBoost = () => {
-        haptics.boostStart();
-        // Start the boost and go to playing step - dream will be saved when user dismisses
-        playAlertnessBoost();
-        setBoostActive(true);
-        setStep('playing');
     };
 
     const handleSkip = () => {
@@ -172,59 +164,27 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
         );
     }
 
-    // Step 2: Wake Up Boost offer - Skip/Start
-    if (step === 'boost') {
-        return (
-            <div className="fixed inset-0 bg-gradient-to-b from-indigo-900/95 to-purple-900/95 backdrop-blur-md flex items-center justify-center p-4 z-50">
-                <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-6 w-full max-w-sm animate-fadeIn text-white text-center">
-                    <div className="mb-6">
-                        <div className="w-16 h-16 mx-auto bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mb-3">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                            </svg>
-                        </div>
-                        <h3 className="font-serif text-xl mb-2">Dream Saved!</h3>
-                        <p className="text-white/70 text-sm mb-1">Would you like a Wake Up Boost?</p>
-                        <p className="text-white/50 text-xs">12Hz beta waves for alertness & mental clarity</p>
-                    </div>
-
-                    <div className="flex gap-3">
-                        <button
-                            onClick={handleSkip}
-                            className="flex-1 py-4 bg-white/20 hover:bg-white/30 rounded-xl font-medium transition-all text-lg"
-                        >
-                            Skip
-                        </button>
-                        <button
-                            onClick={handleStartBoost}
-                            className="flex-1 py-4 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 rounded-xl font-medium transition-all text-lg"
-                        >
-                            Start
-                        </button>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    // Step 3: Boost playing - toggle and Start My Day
+    // Step 2 & 3 Combined: Wake Up Boost offer with "Start My Day"
+    // Clear layout: Good Morning header, Wake Up Boost card, Start My Day button
     return (
-        <div className="fixed inset-0 bg-gradient-to-b from-indigo-900/95 to-purple-900/95 backdrop-blur-md flex items-center justify-center p-4 z-50">
-            <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-6 w-full max-w-sm animate-fadeIn text-white text-center">
-                <div className="mb-6">
-                    <div className="w-16 h-16 mx-auto bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mb-3 shadow-lg shadow-orange-500/30">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                    </div>
-                    <h3 className="font-serif text-xl mb-2">Wake Up Boost</h3>
-                    <p className="text-white/60 text-sm">12Hz beta waves for alertness</p>
-                </div>
+        <div className="fixed inset-0 bg-gradient-to-b from-indigo-900/95 to-purple-900/95 backdrop-blur-md flex flex-col items-center justify-center p-4 z-50">
+            {/* Good Morning Header */}
+            <h2 className="font-serif text-3xl text-white mb-6">Good Morning</h2>
 
-                {/* Toggle boost button */}
+            {/* Wake Up Boost Card */}
+            <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-6 w-full max-w-sm animate-fadeIn text-white text-center mb-6">
+                <div className="w-16 h-16 mx-auto bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mb-4 shadow-lg shadow-orange-500/30">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                </div>
+                <h3 className="font-serif text-xl mb-2">Wake Up Boost</h3>
+                <p className="text-white/60 text-sm mb-4">12Hz Beta waves for gentle alertness and cognitive readiness</p>
+
+                {/* Start/Stop Wake Up Boost button */}
                 <button
                     onClick={toggleBoost}
-                    className={`w-full py-4 rounded-xl font-semibold text-lg mb-4 transition-all ${boostActive
+                    className={`w-full py-4 rounded-xl font-semibold text-lg transition-all ${boostActive
                         ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/30'
                         : 'bg-white/20 text-white hover:bg-white/30'
                         }`}
@@ -235,18 +195,18 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                             Boost Active - Tap to Stop
                         </span>
                     ) : (
-                        'Start Boost Again'
+                        'Start Wake Up Boost'
                     )}
                 </button>
-
-                {/* Start My Day button */}
-                <button
-                    onClick={handleStartMyDay}
-                    className="w-full py-4 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold rounded-xl text-lg shadow-lg hover:shadow-xl transition-all"
-                >
-                    Start My Day
-                </button>
             </div>
+
+            {/* Start My Day button - goes to homepage */}
+            <button
+                onClick={handleStartMyDay}
+                className="w-full max-w-sm py-4 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold rounded-xl text-lg shadow-lg hover:shadow-xl transition-all"
+            >
+                Start My Day
+            </button>
         </div>
     );
 };
