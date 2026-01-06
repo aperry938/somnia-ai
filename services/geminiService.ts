@@ -14,6 +14,17 @@ export class NoCreditsError extends Error {
 
 let aiInstance: GoogleGenAI | null = null;
 
+// Cache for dream titles to prevent redundant API calls
+const dreamTitleCache = new Map<string, string>();
+
+// In-flight request deduplication - prevents duplicate API calls during re-renders
+const pendingTitleRequests = new Map<string, Promise<string>>();
+
+// Generate a cache key from dream text (use first 200 chars as key)
+const getTitleCacheKey = (dreamText: string): string => {
+    return dreamText.slice(0, 200).trim().toLowerCase();
+};
+
 const getAi = (): GoogleGenAI => {
     if (aiInstance) {
         return aiInstance;
@@ -260,30 +271,69 @@ export const generateDreamImage = async (dreamText: string, style: DreamArtStyle
  */
 /**
  * Generate a creative, poetic title for a dream entry.
- * 
+ * Results are cached and deduplicated to prevent redundant API calls.
+ *
  * @param dreamText - The dream content
  * @returns Promise<string> - A short title (3-6 words)
  */
 export const generateDreamTitle = async (dreamText: string): Promise<string> => {
-    try {
-        const ai = getAi();
-        const prompt = `Generate a short, evocative title (3-6 words) for this dream:
+    const cacheKey = getTitleCacheKey(dreamText);
+
+    // 1. Check cache first (instant return)
+    const cached = dreamTitleCache.get(cacheKey);
+    if (cached) {
+        return cached;
+    }
+
+    // 2. Check if request is already in-flight (deduplicate)
+    const pending = pendingTitleRequests.get(cacheKey);
+    if (pending) {
+        return pending;
+    }
+
+    // 3. Create new request and track it
+    const request = (async () => {
+        try {
+            const ai = getAi();
+            const prompt = `Generate a short, evocative title (3-6 words) for this dream:
 
 "${dreamText.slice(0, 500)}"
 
 Return ONLY the title, nothing else. No quotes, no explanation.`;
 
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: [{ parts: [{ text: prompt }] }],
-        });
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: [{ parts: [{ text: prompt }] }],
+            });
 
-        const title = response.text?.trim();
-        return title || 'Untitled Dream';
-    } catch (error) {
-        console.error("Error generating dream title:", error);
-        return 'Untitled Dream';
-    }
+            const title = response.text?.trim() || 'Untitled Dream';
+
+            // Cache the result
+            dreamTitleCache.set(cacheKey, title);
+
+            return title;
+        } catch (error) {
+            console.error("Error generating dream title:", error);
+            return 'Untitled Dream';
+        } finally {
+            // Clean up pending request tracker
+            pendingTitleRequests.delete(cacheKey);
+        }
+    })();
+
+    // Track the in-flight request
+    pendingTitleRequests.set(cacheKey, request);
+
+    return request;
+};
+
+/**
+ * Pre-populate title cache with existing dream title
+ * Called when loading dreams from storage to prevent unnecessary API calls
+ */
+export const cacheDreamTitle = (dreamText: string, title: string): void => {
+    const cacheKey = getTitleCacheKey(dreamText);
+    dreamTitleCache.set(cacheKey, title);
 };
 
 const createCoachSystemPrompt = (personality: 'mystical' | 'scientific') => {
@@ -384,7 +434,7 @@ export const synthesizeDreamThemes = async (dreams: Dream[]): Promise<DreamSynth
         const ai = getAi();
         const prompt = createDreamSynthesisPrompt(dreams);
         const response: GenerateContentResponse = await ai.models.generateContent({
-            model: 'gemini-2.5-pro', // Using a more powerful model for deep analysis
+            model: 'gemini-2.5-flash', // Switched from Pro to Flash for cost optimization (~10x cheaper)
             contents: [{ parts: [{ text: prompt }] }],
             config: {
                 responseMimeType: "application/json",
@@ -458,7 +508,7 @@ export const analyzeSleepHabits = async (dreams: Dream[]): Promise<SleepHabitAna
         const ai = getAi();
         const prompt = createSleepHabitAnalysisPrompt(dreams);
         const response: GenerateContentResponse = await ai.models.generateContent({
-            model: 'gemini-2.5-pro',
+            model: 'gemini-2.5-flash', // Switched from Pro to Flash for cost optimization (~10x cheaper)
             contents: [{ parts: [{ text: prompt }] }],
             config: {
                 responseMimeType: "application/json",

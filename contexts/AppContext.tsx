@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode, useCallback } from 'react';
 import { Alarm, Dream, SleepAids, Biometrics, Theme, CoachPersonality, AnalysisPersonality, DreamMood } from '../types';
 import { enqueueAction } from '../services/syncService';
+import { cacheDreamTitle } from '../services/geminiService';
 
 interface AppContextType {
     alarms: Alarm[];
@@ -69,6 +70,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [volume, setVolume] = useLocalStorage<number>('somnia_volume', 0.5);
     const [analysisPersonality, setAnalysisPersonality] = useLocalStorage<AnalysisPersonality>('somnia_analysis_personality', 'oneironaut');
     const [isScribeOpen, setIsScribeOpen] = useState(false);
+
+    // Pre-populate title cache with existing dream titles to prevent unnecessary API calls
+    useEffect(() => {
+        dreams.forEach(dream => {
+            if (dream.aiAnalysis?.title && dream.dreamText) {
+                cacheDreamTitle(dream.dreamText, dream.aiAnalysis.title);
+            }
+        });
+    }, []); // Only run on initial mount
 
     const addAlarm = (time: string, smartWake: boolean = false) => {
         const newAlarm: Alarm = {
