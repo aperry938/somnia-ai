@@ -3,6 +3,7 @@ import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { SleepQualityRating } from '../shared/SleepQualityRating';
 import { DreamMood } from '../../types';
 import { playAlertnessBoost, stopAlertnessBoost } from '../../services/audioService';
+import haptics from '../../services/hapticsService';
 
 const MOODS: { value: DreamMood; emoji: string; label: string }[] = [
     { value: 'joyful', emoji: '😊', label: 'Joyful' },
@@ -51,12 +52,14 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
 
     const handleSave = () => {
         if (!dreamText.trim() || isListening) return;
+        haptics.dreamSaved();
         // Store the data and show boost offer
         savedDataRef.current = { text: dreamText, quality: sleepQuality, mood: mood || undefined };
         setStep('boost');
     };
 
     const toggleBoost = () => {
+        haptics.boostStart();
         if (boostActive) {
             stopAlertnessBoost();
             setBoostActive(false);
@@ -68,6 +71,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
     };
 
     const handleStartBoost = () => {
+        haptics.boostStart();
         // Start the boost and go to playing step - dream will be saved when user dismisses
         playAlertnessBoost();
         setBoostActive(true);
@@ -75,6 +79,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
     };
 
     const handleSkip = () => {
+        haptics.light();
         // Save dream and close without boost
         stopAlertnessBoost();
         if (savedDataRef.current && !dreamSavedRef.current) {
@@ -84,6 +89,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
     };
 
     const handleStartMyDay = () => {
+        haptics.success();
         // User is done - boost keeps playing if active, just close modal
         if (savedDataRef.current && !dreamSavedRef.current) {
             dreamSavedRef.current = true;
@@ -144,7 +150,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                             {MOODS.map(({ value, emoji, label }) => (
                                 <button
                                     key={value}
-                                    onClick={() => setMood(mood === value ? null : value)}
+                                    onClick={() => { haptics.selection(); setMood(mood === value ? null : value); }}
                                     className={`px-3 py-1.5 rounded-full text-sm transition-all flex items-center gap-1 ${mood === value
                                         ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white scale-105'
                                         : 'bg-white/10 border border-white/20 text-white/80 hover:border-white/40'

@@ -16,6 +16,7 @@ import { WakeWindowViz } from '../WakeWindowViz';
 import { PremiumBadge } from '../shared/PremiumBadge';
 import { isPremium } from '../../services/secureSubscriptionService';
 import { SleepDetectionSettingsCard } from '../settings/SleepDetectionSettingsCard';
+import haptics from '../../services/hapticsService';
 
 const DayRating: React.FC<{ rating: number | null; onRate: (rating: number) => void; }> = ({ rating, onRate }) => {
     return (
@@ -190,8 +191,13 @@ export const SleepPage: React.FC = () => {
                             <h2 className="font-serif text-2xl text-center">Soundscapes</h2>
                             <button
                                 onClick={() => {
-                                    const randomIndex = Math.floor(Math.random() * SOUNDSCAPES.length);
-                                    openSoundscapeModal(SOUNDSCAPES[randomIndex]);
+                                    haptics.light();
+                                    // Only select from non-premium soundscapes (or all if user is premium)
+                                    const availableSounds = isPremium()
+                                        ? SOUNDSCAPES
+                                        : SOUNDSCAPES.filter(s => !s.isPremium);
+                                    const randomIndex = Math.floor(Math.random() * availableSounds.length);
+                                    openSoundscapeModal(availableSounds[randomIndex]);
                                 }}
                                 className="px-3 py-1 text-sm bg-day-accent/10 dark:bg-night-accent/10 text-day-accent dark:text-night-accent rounded-full hover:bg-day-accent/20 dark:hover:bg-night-accent/20 transition-colors flex items-center gap-1"
                             >
