@@ -3,7 +3,7 @@ import { getDreamChatResponse } from '../../services/geminiService';
 import { ChatMessage, Dream } from '../../types';
 import { useAppContext } from '../../contexts/AppContext';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
-import { speakText, stopSpeaking } from '../../services/ttsService';
+import { speakText, stopSpeaking, isVoiceAvailable } from '../../services/ttsService';
 import haptics from '../../services/hapticsService';
 
 interface DreamChatModalProps {
@@ -27,16 +27,17 @@ export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }
     }, []);
     const { isListening, interimTranscript, startListening, stopListening, isSupported: speechSupported } = useSpeechRecognition(handleVoiceInput);
 
-    // Check if TTS is supported
-    const ttsSupported = 'speechSynthesis' in window;
+    // Check if AI voice is available (premium + configured)
+    const voiceAvailable = isVoiceAvailable();
 
-    const speakResponse = (text: string) => {
-        if (!ttsSupported) return;
+    const speakResponse = async (text: string) => {
+        if (!voiceAvailable) return;
         setIsSpeaking(true);
-        speakText(text);
-        const wordCount = text.split(/\s+/).length;
-        const estimatedDuration = (wordCount / 150) * 60 * 1000;
-        setTimeout(() => setIsSpeaking(false), Math.max(estimatedDuration, 2000));
+        try {
+            await speakText(text);
+        } finally {
+            setIsSpeaking(false);
+        }
     };
 
     const handleStopSpeaking = () => {
@@ -52,7 +53,7 @@ export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }
             const initialHistory = [{ id: Date.now(), role: 'model' as const, parts: [{ text: responseText }] }];
             setHistory(initialHistory);
             updateDream({ ...dream, chatHistory: initialHistory });
-            if (voiceModeEnabled && ttsSupported) {
+            if (voiceModeEnabled && voiceAvailable) {
                 speakResponse(responseText);
             }
         } catch (e) {
@@ -110,7 +111,7 @@ export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }
             const finalHistory = [...newHistory, { id: Date.now(), role: 'model' as const, parts: [{ text: responseText }] }];
             setHistory(finalHistory);
             updateDream({ ...dream, chatHistory: finalHistory });
-            if (voiceModeEnabled && ttsSupported) {
+            if (voiceModeEnabled && voiceAvailable) {
                 speakResponse(responseText);
             }
             haptics.success();
@@ -167,8 +168,8 @@ export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }
                         <p className="text-xs text-day-text-secondary dark:text-night-text-secondary truncate max-w-[200px]">{dream.title}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                        {/* Voice Mode Toggle */}
-                        {(speechSupported || ttsSupported) && (
+                        {/* Voice Mode Toggle - only for premium users with AI voice */}
+                        {voiceAvailable && (
                             <button
                                 onClick={toggleVoiceMode}
                                 className={`p-2 rounded-lg transition-colors ${voiceModeEnabled
@@ -205,8 +206,8 @@ export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }
                             ) : (
                                 <div className={`my-2 p-3 rounded-lg text-sm md:text-base ${msg.role === 'user' ? 'bg-indigo-100 dark:bg-indigo-900/50 text-right ml-auto' : 'bg-white/50 dark:bg-slate-700/50 text-left mr-auto'} max-w-[85%]`}>
                                     <p className="whitespace-pre-wrap">{msg.parts[0].text}</p>
-                                    {/* Speak button for AI responses */}
-                                    {msg.role === 'model' && ttsSupported && !msg.isError && (
+                                    {/* Speak button for AI responses - only when AI voice is available */}
+                                    {msg.role === 'model' && voiceAvailable && !msg.isError && (
                                         <button
                                             onClick={() => {
                                                 haptics.light();
