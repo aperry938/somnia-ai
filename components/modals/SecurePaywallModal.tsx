@@ -74,7 +74,7 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
     ];
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
             <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl">
                 {/* Header */}
                 <div className="relative p-6 pb-0">
