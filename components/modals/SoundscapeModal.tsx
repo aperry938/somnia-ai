@@ -21,30 +21,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
     const [playStartTime, setPlayStartTime] = useState<number | null>(null);
     const [playDuration, setPlayDuration] = useState<number>(0); // Duration in seconds
 
-    // Start preview automatically when modal opens (except for ramp type which can't be previewed)
-    useEffect(() => {
-        // Skip preview for Sleep Ramp - it's a multi-stage progression that can't be demoed
-        if (sound.type === 'ramp') {
-            return;
-        }
-
-        const startPreview = async () => {
-            const soundToPlay = { ...sound };
-            if (sound.type === 'binaural') {
-                soundToPlay.params = { ...sound.params, diff: beatFreq };
-            }
-            // Play with duration 0 (infinite) for preview - we'll stop it manually
-            await playSleepSound(soundToPlay, 0, volume);
-            setIsPreviewing(true);
-        };
-
-        // Small delay to ensure modal is rendered
-        const timeout = setTimeout(startPreview, 100);
-
-        return () => {
-            clearTimeout(timeout);
-        };
-    }, []); // Only run on mount
+    // No auto-preview - user must click to start preview
 
     // Cleanup preview on unmount (if not transitioning to full play)
     useEffect(() => {
@@ -133,19 +110,17 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
     }, [isPreviewing, sound, beatFreq, volume]);
 
     const handlePlay = async () => {
-        // Stop preview first, then start with duration
-        if (isPreviewing) {
-            stopSleepSound(0.1);
-            setIsPreviewing(false);
-        }
+        // Always stop any current sound first (preview or otherwise)
+        stopSleepSound(0.1);
+        setIsPreviewing(false);
 
         const soundToPlay = { ...sound };
         if (sound.type === 'binaural') {
             soundToPlay.params = { ...sound.params, diff: beatFreq };
         }
 
-        // Longer delay to ensure clean audio transition from preview
-        await new Promise(resolve => setTimeout(resolve, 300));
+        // Wait for audio to fully stop before starting new playback
+        await new Promise(resolve => setTimeout(resolve, 400));
         await playSleepSound(soundToPlay, duration, volume);
         onPlay(sound.id);
 
@@ -158,19 +133,17 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
     const handleDurationClick = async (mins: number) => {
         setDuration(mins);
 
-        // Stop preview first
-        if (isPreviewing) {
-            stopSleepSound(0.1);
-            setIsPreviewing(false);
-        }
+        // Always stop any current sound first
+        stopSleepSound(0.1);
+        setIsPreviewing(false);
 
         const soundToPlay = { ...sound };
         if (sound.type === 'binaural') {
             soundToPlay.params = { ...sound.params, diff: beatFreq };
         }
 
-        // Longer delay to ensure clean audio transition from preview
-        await new Promise(resolve => setTimeout(resolve, 300));
+        // Wait for audio to fully stop before starting new playback
+        await new Promise(resolve => setTimeout(resolve, 400));
         await playSleepSound(soundToPlay, mins, volume);
         onPlay(sound.id);
 
