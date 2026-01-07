@@ -17,7 +17,7 @@ const DEFAULT_SETTINGS: SleepDetectionSettings = {
 
 const ALARM_SOUNDS = [
     { id: 'somnia', name: 'Somnia' },
-    { id: 'gentle', name: 'Gentle Rise' },
+    { id: 'gentle', name: 'Gentle' },
     { id: 'classic', name: 'Classic' },
     { id: 'prism', name: 'Prism' },
     { id: 'aether', name: 'Aether' },
