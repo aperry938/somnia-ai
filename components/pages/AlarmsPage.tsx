@@ -163,7 +163,25 @@ const DrumTimePicker: React.FC<{ initialTime: string; onChange: (time: string) =
         return () => cancelAnimationFrame(rafId);
     }, [hour, minute, period]);
 
-    const handleScroll = (ref: React.RefObject<HTMLDivElement>, setter: (val: any) => void, values: any[]) => {
+    // Scroll handler for number-based time picker wheels (hours, minutes)
+    const handleNumberScroll = (
+        ref: React.RefObject<HTMLDivElement | null>,
+        setter: React.Dispatch<React.SetStateAction<number>>,
+        values: readonly number[]
+    ) => {
+        if (!ref.current) return;
+        const scrollTop = ref.current.scrollTop;
+        const index = Math.round(scrollTop / ITEM_HEIGHT);
+        const clampedIndex = Math.max(0, Math.min(index, values.length - 1));
+        setter(values[clampedIndex]);
+    };
+
+    // Scroll handler for string-based time picker wheels (AM/PM)
+    const handleStringScroll = (
+        ref: React.RefObject<HTMLDivElement | null>,
+        setter: React.Dispatch<React.SetStateAction<string>>,
+        values: readonly string[]
+    ) => {
         if (!ref.current) return;
         const scrollTop = ref.current.scrollTop;
         const index = Math.round(scrollTop / ITEM_HEIGHT);
@@ -198,7 +216,7 @@ const DrumTimePicker: React.FC<{ initialTime: string; onChange: (time: string) =
                     <div
                         ref={hourRef}
                         className="h-44 w-20 overflow-y-auto scroll-snap-y scroll-snap-mandatory hide-scrollbar"
-                        onScroll={() => handleScroll(hourRef, setHour, hours)}
+                        onScroll={() => handleNumberScroll(hourRef, setHour, hours)}
                         style={{ scrollSnapType: 'y mandatory' }}
                     >
                         <div className="h-[calc(50%-28px)]" /> {/* Top padding */}
@@ -226,7 +244,7 @@ const DrumTimePicker: React.FC<{ initialTime: string; onChange: (time: string) =
                     <div
                         ref={minuteRef}
                         className="h-44 w-20 overflow-y-auto scroll-snap-y scroll-snap-mandatory hide-scrollbar"
-                        onScroll={() => handleScroll(minuteRef, setMinute, minutes)}
+                        onScroll={() => handleNumberScroll(minuteRef, setMinute, minutes)}
                         style={{ scrollSnapType: 'y mandatory' }}
                     >
                         <div className="h-[calc(50%-28px)]" />
@@ -252,7 +270,7 @@ const DrumTimePicker: React.FC<{ initialTime: string; onChange: (time: string) =
                     <div
                         ref={periodRef}
                         className="h-44 w-16 overflow-y-auto scroll-snap-y scroll-snap-mandatory hide-scrollbar"
-                        onScroll={() => handleScroll(periodRef, setPeriod, periods)}
+                        onScroll={() => handleStringScroll(periodRef, setPeriod, periods)}
                         style={{ scrollSnapType: 'y mandatory' }}
                     >
                         <div className="h-[calc(50%-28px)]" />

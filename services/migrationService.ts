@@ -1,5 +1,5 @@
 
-import { Dream } from '../types';
+import { Dream, SleepAids } from '../types';
 
 const MIGRATION_VERSION = 1;
 
@@ -9,13 +9,15 @@ interface MigrationLog {
     details: string;
 }
 
+// Type for potentially incomplete dream data during migration
+type PartialDream = Partial<Dream> & { id?: number; sleepAids?: SleepAids; tags?: string[] };
+
 export const checkAndMigrateData = () => {
-    console.log("Checking data integrity...");
     try {
         const dreamsRaw = localStorage.getItem('somnia_dreams');
         if (!dreamsRaw) return;
 
-        let dreams: any[] = JSON.parse(dreamsRaw);
+        let dreams: PartialDream[] = JSON.parse(dreamsRaw);
         if (!Array.isArray(dreams)) return;
 
         let hasChanges = false;
