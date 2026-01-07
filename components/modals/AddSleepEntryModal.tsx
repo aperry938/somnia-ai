@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SleepQualityRating } from '../shared/SleepQualityRating';
 import { SleepAids } from '../../types';
 import haptics from '../../services/hapticsService';
@@ -14,6 +14,14 @@ export const AddSleepEntryModal: React.FC<AddSleepEntryModalProps> = ({
     onSaveWithDream,
     onClose
 }) => {
+    // Handle Escape key to close modal
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onClose]);
     const [sleepDate, setSleepDate] = useState<string>(new Date().toISOString().split('T')[0]);
     const [sleepQuality, setSleepQuality] = useState<number | null>(null);
     const [notes, setNotes] = useState('');

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { DreamMood } from '../../types';
 import haptics from '../../services/hapticsService';
@@ -21,6 +21,15 @@ export const AddDreamToEntryModal: React.FC<AddDreamToEntryModalProps> = ({
 }) => {
     const [dreamText, setDreamText] = useState('');
     const [mood, setMood] = useState<DreamMood | null>(null);
+
+    // Handle Escape key to close modal
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onClose]);
 
     const handleFinalTranscript = useCallback((transcript: string) => {
         setDreamText(prev => (prev ? prev.trim() + ' ' : '') + transcript);

@@ -141,23 +141,18 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
         isMountedRef.current = true;
 
         // Play the user-selected alarm sound
-        console.log('[AlarmRingModal] Playing alarm with soundId:', alarm.soundId, 'at', new Date().toISOString());
         playAlarmBySound(alarm.soundId || 'somnia');
 
         return () => {
             // Only stop sound on actual unmount, not strict mode remount
             // Delay cleanup slightly to allow re-mount to cancel it
-            const shouldCleanup = isMountedRef.current;
             isMountedRef.current = false;
 
             setTimeout(() => {
                 // If component hasn't re-mounted, perform cleanup
                 if (!isMountedRef.current) {
-                    console.log('[AlarmRingModal] Cleanup - component unmounted');
                     stopAlarmSound();
                     stopAlertnessBoost();
-                } else {
-                    console.log('[AlarmRingModal] Cleanup skipped - component re-mounted');
                 }
             }, 50);
         };
