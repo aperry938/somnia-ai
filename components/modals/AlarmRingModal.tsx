@@ -161,6 +161,25 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                 {/* STEP 1: Alarm - Just Snooze and I'm Awake/Dismiss */}
                 {step === 'alarm' && (
                     <div className="animate-fadeIn">
+                        {/* DEV TOOLS: Sound Switcher */}
+                        <div className="mb-6 p-3 bg-black/30 rounded-xl border border-yellow-500/50">
+                            <p className="text-yellow-400 text-xs font-mono mb-2">🔧 DEV: Test Alarm Sounds</p>
+                            <div className="flex flex-wrap gap-2 justify-center">
+                                {['somnia', 'gentle', 'classic', 'prism', 'aether', 'bamboo'].map(soundId => (
+                                    <button
+                                        key={soundId}
+                                        onClick={() => {
+                                            stopAlarmSound();
+                                            setTimeout(() => playAlarmBySound(soundId), 100);
+                                        }}
+                                        className="px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-300 text-xs font-mono rounded-lg border border-yellow-500/30 transition-all"
+                                    >
+                                        {soundId}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
                         <div className="flex gap-3">
                             <button
                                 onClick={handleSnooze}
