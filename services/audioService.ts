@@ -549,8 +549,9 @@ let previewTimeout: ReturnType<typeof setTimeout> | null = null;
 let currentPreviewId: string | null = null; // Track which sound is previewing
 
 /**
- * Plays a 10-second preview of an alarm sound style.
- * @param soundId - The alarm sound to preview ('somnia', 'progressive', 'gentle', 'chimes', 'nature', 'classic')
+ * Plays the actual 60-second crescendo alarm sound as a preview.
+ * User taps again to stop - this lets them hear exactly what will wake them up.
+ * @param soundId - The alarm sound to preview
  */
 export const playAlarmPreview = (soundId: string) => {
     // Stop any current preview first
@@ -559,104 +560,133 @@ export const playAlarmPreview = (soundId: string) => {
     const ctx = getAudioContext();
     if (!ctx) return;
 
+    if (ctx.state === 'suspended') {
+        ctx.resume();
+    }
+
     // Track which sound is playing
     currentPreviewId = soundId;
 
     previewGainNode = ctx.createGain();
     previewGainNode.connect(ctx.destination);
-    previewGainNode.gain.setValueAtTime(0.3, ctx.currentTime);
 
     previewOscillator = ctx.createOscillator();
     previewOscillator.connect(previewGainNode);
 
-    // Different sound characteristics for each alarm type
+    const now = ctx.currentTime;
+
+    // Previews match the actual alarm crescendo exactly
     switch (soundId) {
         case 'somnia':
-            // Very slow and growing - our signature alarm
-            // Starts almost inaudible, grows to VERY LOUD over 60 seconds
+            // Matches playSomniaAlarm: 0.015 → 1.0 over 60s, 180Hz → 500Hz
             previewOscillator.type = 'sine';
-            previewOscillator.frequency.setValueAtTime(180, ctx.currentTime); // Start very low
-            previewGainNode.gain.setValueAtTime(0.01, ctx.currentTime);
-            // Grows to maximum volume over 60 seconds
-            previewOscillator.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 60);
-            previewGainNode.gain.exponentialRampToValueAtTime(1.0, ctx.currentTime + 60);
+            previewOscillator.frequency.setValueAtTime(180, now);
+            previewGainNode.gain.setValueAtTime(0.015, now);
+            previewGainNode.gain.exponentialRampToValueAtTime(1.0, now + 60);
+            previewOscillator.frequency.exponentialRampToValueAtTime(500, now + 60);
             break;
+
         case 'gentle':
-            // Soft, low frequency sine wave with slow pulse - 30 second cycle
+            // Matches playGentleAlarm: Pulsing 0.05→0.50 min, 0.15→1.0 max over 60s
             previewOscillator.type = 'sine';
-            previewOscillator.frequency.setValueAtTime(220, ctx.currentTime);
-            previewGainNode.gain.setValueAtTime(0.1, ctx.currentTime);
-            // Create gentle pulsing over 30 seconds
-            for (let i = 0; i < 15; i++) {
-                previewGainNode.gain.linearRampToValueAtTime(0.25, ctx.currentTime + i * 2 + 1);
-                previewGainNode.gain.linearRampToValueAtTime(0.1, ctx.currentTime + i * 2 + 2);
-            }
-            break;
-        case 'classic':
-            // Traditional beeping alarm pattern - 30 second cycle
-            previewOscillator.type = 'square';
-            previewOscillator.frequency.setValueAtTime(880, ctx.currentTime);
-            previewGainNode.gain.setValueAtTime(0.2, ctx.currentTime);
-            // Classic beep pattern over 30 seconds
+            previewOscillator.frequency.setValueAtTime(220, now);
             for (let i = 0; i < 30; i++) {
-                previewGainNode.gain.setValueAtTime(0.2, ctx.currentTime + i);
-                previewGainNode.gain.setValueAtTime(0, ctx.currentTime + i + 0.5);
+                const t = now + i * 2;
+                const progress = i / 30;
+                const minVol = 0.05 + progress * 0.45;
+                const maxVol = 0.15 + progress * 0.85;
+                previewGainNode.gain.linearRampToValueAtTime(maxVol, t + 1);
+                previewGainNode.gain.linearRampToValueAtTime(minVol, t + 2);
             }
             break;
+
+        case 'classic':
+            // Matches playClassicAlarm: Beeping 0.05 → 0.90 over 60s
+            previewOscillator.type = 'square';
+            previewOscillator.frequency.setValueAtTime(880, now);
+            for (let i = 0; i < 60; i++) {
+                const t = now + i;
+                const progress = i / 60;
+                const volume = 0.05 + progress * 0.85;
+                previewGainNode.gain.setValueAtTime(volume, t);
+                previewGainNode.gain.setValueAtTime(0, t + 0.5);
+            }
+            break;
+
         case 'prism':
-            // Ethereal glass chimes - pentatonic shimmer
+            // Matches playPrismAlarm: Master 0.1 → 1.0 over 60s, chimes at 0.7 attack
             previewOscillator.type = 'sine';
-            previewGainNode.gain.setValueAtTime(0.15, ctx.currentTime);
-            // Play pentatonic sequence like crystalline chimes
-            const prismNotes = [523.25, 392, 440, 329.63, 293.66, 261.63];
-            for (let i = 0; i < 10; i++) {
+            // Use a secondary gain for master volume crescendo
+            const prismMasterGain = ctx.createGain();
+            prismMasterGain.gain.setValueAtTime(0.1, now);
+            prismMasterGain.gain.linearRampToValueAtTime(1.0, now + 60);
+            previewOscillator.disconnect();
+            previewOscillator.connect(previewGainNode);
+            previewGainNode.disconnect();
+            previewGainNode.connect(prismMasterGain);
+            prismMasterGain.connect(ctx.destination);
+            // Schedule chimes
+            const prismNotes = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25];
+            for (let i = 0; i < 24; i++) { // 24 chimes over 60s
                 const note = prismNotes[i % prismNotes.length];
-                const t = ctx.currentTime + i * 2 + Math.random() * 0.5;
+                const t = now + i * 2.5;
                 previewOscillator.frequency.setValueAtTime(note, t);
-                previewGainNode.gain.setValueAtTime(0.2, t);
-                previewGainNode.gain.exponentialRampToValueAtTime(0.05, t + 1.5);
+                previewGainNode.gain.setValueAtTime(0.7, t);
+                previewGainNode.gain.exponentialRampToValueAtTime(0.15, t + 1.5);
             }
             break;
+
         case 'aether':
-            // Cinematic sunrise drone - detuned sawtooth with filter sweep feel
+            // Matches playAetherAlarm: 0.05 → 0.9 over 60s, 110Hz → 220Hz
             previewOscillator.type = 'sawtooth';
-            previewOscillator.frequency.setValueAtTime(110, ctx.currentTime);
-            previewGainNode.gain.setValueAtTime(0.05, ctx.currentTime);
-            // Simulate filter opening (brighter over time)
-            previewOscillator.frequency.exponentialRampToValueAtTime(220, ctx.currentTime + 30);
-            previewGainNode.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 30);
+            previewOscillator.frequency.setValueAtTime(110, now);
+            previewGainNode.gain.setValueAtTime(0.05, now);
+            previewOscillator.frequency.exponentialRampToValueAtTime(220, now + 60);
+            previewGainNode.gain.linearRampToValueAtTime(0.9, now + 60);
             break;
+
         case 'bamboo':
-            // Hollow wood pulse - rhythmic with acceleration
+            // Matches playBambooAlarm: Master 0.1 → 1.0 over 60s, pulses at 0.8
             previewOscillator.type = 'sine';
-            previewOscillator.frequency.setValueAtTime(150, ctx.currentTime);
-            // Create accelerating pulse pattern like heartbeat
+            previewOscillator.frequency.setValueAtTime(150, now);
+            // Master volume crescendo
+            const bambooMasterGain = ctx.createGain();
+            bambooMasterGain.gain.setValueAtTime(0.1, now);
+            bambooMasterGain.gain.linearRampToValueAtTime(1.0, now + 60);
+            previewOscillator.disconnect();
+            previewOscillator.connect(previewGainNode);
+            previewGainNode.disconnect();
+            previewGainNode.connect(bambooMasterGain);
+            bambooMasterGain.connect(ctx.destination);
+            // Schedule accelerating pulses for 60s
             let baseBeat = 0;
             let interval = 1.0;
-            for (let i = 0; i < 20 && baseBeat < 20; i++) {
-                // Soft attack: 20ms fade-in to avoid click/pop (matches alarm)
-                previewGainNode.gain.setValueAtTime(0.01, ctx.currentTime + baseBeat);
-                previewGainNode.gain.linearRampToValueAtTime(0.3, ctx.currentTime + baseBeat + 0.02);
-                previewOscillator.frequency.setValueAtTime(300, ctx.currentTime + baseBeat);
-                previewGainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + baseBeat + 0.15);
-                previewOscillator.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + baseBeat + 0.15);
+            while (baseBeat < 60) {
+                previewGainNode.gain.setValueAtTime(0.8, now + baseBeat);
+                previewOscillator.frequency.setValueAtTime(300, now + baseBeat);
+                previewGainNode.gain.exponentialRampToValueAtTime(0.01, now + baseBeat + 0.15);
+                previewOscillator.frequency.exponentialRampToValueAtTime(150, now + baseBeat + 0.15);
                 baseBeat += interval;
-                interval = Math.max(0.4, interval * 0.92); // Accelerate
+                interval = Math.max(0.4, interval * 0.92);
+                if (interval <= 0.4) interval = 1.0; // Reset wave
             }
             break;
+
         default:
             // Fallback to classic
             previewOscillator.type = 'square';
-            previewOscillator.frequency.setValueAtTime(880, ctx.currentTime);
-            previewGainNode.gain.setValueAtTime(0.2, ctx.currentTime);
-            for (let i = 0; i < 30; i++) {
-                previewGainNode.gain.setValueAtTime(0.2, ctx.currentTime + i);
-                previewGainNode.gain.setValueAtTime(0, ctx.currentTime + i + 0.5);
+            previewOscillator.frequency.setValueAtTime(880, now);
+            for (let i = 0; i < 60; i++) {
+                const t = now + i;
+                const progress = i / 60;
+                const volume = 0.05 + progress * 0.85;
+                previewGainNode.gain.setValueAtTime(volume, t);
+                previewGainNode.gain.setValueAtTime(0, t + 0.5);
             }
             break;
     }
 
-    previewOscillator.start(ctx.currentTime);
+    previewOscillator.start(now);
 
     // No auto-stop - user clicks again to stop
 };

@@ -7,6 +7,7 @@ import { useAlarmManager } from './hooks/useAlarmManager';
 import { initAudioContext } from './services/audioService';
 import { useRealityChecks } from './hooks/useRealityChecks';
 import { useStreakNotification } from './hooks/useStreakNotification';
+import { useAlarmNotification } from './hooks/useAlarmNotification';
 import { calculateUserStats } from './services/userStatsService';
 import { useToast } from './components/shared/Toast';
 import { checkAndMigrateData } from './services/migrationService';
@@ -288,6 +289,7 @@ const App: React.FC = () => {
             <KeyboardShortcutsHelp isOpen={isHelpOpen} onClose={closeHelp} />
             <RealityCheckManager />
             <StreakNotificationManager />
+            <AlarmNotificationManager />
             <OfflineIndicator />
             <ThemeToggle />
             <DevModeToggle />
@@ -316,6 +318,14 @@ const StreakNotificationManager: React.FC = () => {
     const stats = calculateUserStats(dreams);
     // Hook handles notification logic internally
     useStreakNotification(dreams, stats.currentStreak);
+    return null;
+};
+
+// Internal component for Alarm Status Bar Notification
+const AlarmNotificationManager: React.FC = () => {
+    const { alarms } = useAppContext();
+    // Hook shows persistent notification when alarm is set
+    useAlarmNotification(alarms);
     return null;
 };
 

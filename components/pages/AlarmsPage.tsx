@@ -287,12 +287,12 @@ const DrumTimePicker: React.FC<{ initialTime: string; onChange: (time: string) =
 
 // Alarm sound options
 const ALARM_SOUNDS = [
-    { id: 'somnia', name: 'Somnia', description: 'Very slow & growing - our signature (Default)' },
-    { id: 'gentle', name: 'Gentle Rise', description: 'Soft, gradual wake-up' },
-    { id: 'classic', name: 'Classic', description: 'Traditional alarm tone' },
-    { id: 'prism', name: 'Prism', description: 'Ethereal glass chimes - preserves recall' },
+    { id: 'classic', name: 'Classic', description: 'Traditional alarm beeps' },
     { id: 'aether', name: 'Aether', description: 'Cinematic sunrise drone' },
-    { id: 'bamboo', name: 'Bamboo', description: 'Hollow wood pulse - accelerating' },
+    { id: 'somnia', name: 'Somnia', description: 'Very slow crescendo tone' },
+    { id: 'gentle', name: 'Gentle', description: 'Soft pulsing wake-up' },
+    { id: 'prism', name: 'Prism', description: 'Ethereal glass chimes' },
+    { id: 'bamboo', name: 'Bamboo', description: 'Hollow wood pulse' },
 ];
 
 const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -581,7 +581,7 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
                                     : 'bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border hover:border-day-accent/50'
                                     }`}
                             >
-                                <span className="text-sm font-medium block flex items-center justify-center gap-1">{sound.name} {sound.id === 'somnia' && <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-amber-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" /></svg>}</span>
+                                <span className="text-sm font-medium block">{sound.name}</span>
                                 <span className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-1 block">{sound.description}</span>
                             </button>
                         ))}
