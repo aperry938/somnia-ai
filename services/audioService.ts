@@ -1632,7 +1632,7 @@ export const playAlertnessBoost = (volume: number = 0.25) => {
 
     const now = context.currentTime;
     gainNode.gain.setValueAtTime(0, now);
-    gainNode.gain.linearRampToValueAtTime(Math.min(volume, 0.5), now + 2); // Gentle fade in, cap at 0.5
+    gainNode.gain.linearRampToValueAtTime(volume, now + 2); // Gentle fade in
 
     oscLeft.connect(merger, 0, 0);
     oscRight.connect(merger, 0, 1);
@@ -1682,6 +1682,6 @@ export const isAlertnessBoostPlaying = (): boolean => {
  */
 export const setAlertnessVolume = (volume: number) => {
     if (alertnessNodes && audioContext) {
-        alertnessNodes.gainNode.gain.setTargetAtTime(Math.min(volume, 0.5), audioContext.currentTime, 0.1);
+        alertnessNodes.gainNode.gain.setTargetAtTime(volume, audioContext.currentTime, 0.1);
     }
 };
