@@ -105,10 +105,13 @@ export const InsightsGrid: React.FC<InsightsGridProps> = ({ dreams }) => {
     return (
         <div className="space-y-4">
             {/* Tab Navigation */}
-            <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-hide">
+            <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-hide" role="tablist" aria-label="Insights categories">
                 {TABS.map(tab => (
                     <button
                         key={tab}
+                        role="tab"
+                        aria-selected={activeTab === tab}
+                        aria-controls={`panel-${tab.replace(/\s+/g, '-').toLowerCase()}`}
                         onClick={() => setActiveTab(tab)}
                         className={`px-4 py-2 rounded-full text-sm whitespace-nowrap transition-all ${activeTab === tab
                             ? 'bg-day-accent dark:bg-night-accent text-white'
@@ -121,7 +124,12 @@ export const InsightsGrid: React.FC<InsightsGridProps> = ({ dreams }) => {
             </div>
 
             {/* Tab Content */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div
+                role="tabpanel"
+                id={`panel-${activeTab.replace(/\s+/g, '-').toLowerCase()}`}
+                aria-label={`${activeTab} insights`}
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+            >
                 {activeTab === 'Quick Stats' && (
                     <>
                         <RecentDreamSummary dreams={dreams} />
