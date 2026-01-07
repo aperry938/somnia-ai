@@ -25,7 +25,7 @@ const slides = [
     },
     {
         title: 'Science-Backed Sleep Tools',
-        description: 'Binaural beats, guided breathing exercises, and soundscapes all synthesized in real-time to prepare your mind for deep, restorative rest.',
+        description: 'Binaural beats, guided breathwork, and soundscapes all synthesized in real-time to prepare your mind for deep, restorative rest.',
         icon: (
             <svg xmlns="http://www.w3.org/2000/svg" className="h-24 w-24 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
