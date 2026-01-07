@@ -52,10 +52,14 @@ const getAudioContext = (): AudioContext => {
  * Automatically stops any playing sleep sounds.
  */
 export const playSomniaAlarm = () => {
-    stopSleepSound(); // Ensure sleep sounds are stopped
+    stopSleepSound();
     const context = getAudioContext();
     if (alarmOscillator) {
         stopAlarmSound();
+    }
+
+    if (context.state === 'suspended') {
+        context.resume();
     }
 
     alarmOscillator = context.createOscillator();
@@ -66,14 +70,18 @@ export const playSomniaAlarm = () => {
 
     const now = context.currentTime;
     alarmOscillator.type = 'sine';
-    alarmOscillator.frequency.setValueAtTime(180, now); // Very low starting frequency
-    alarmGainNode.gain.setValueAtTime(0.015, now); // Audible but gentle start
+    alarmOscillator.frequency.setValueAtTime(180, now);
+    alarmGainNode.gain.setValueAtTime(0.015, now);
 
-    // Very slow ramp up over 60 seconds - the gentlest wake-up, reaching full volume
+    // CRESCENDO: 60s gentle wake-up from quiet to full volume
     alarmGainNode.gain.exponentialRampToValueAtTime(1.0, now + 60);
     alarmOscillator.frequency.exponentialRampToValueAtTime(500, now + 60);
 
+    // SUSTAIN: After 60s, oscillator continues at 500Hz and 1.0 volume indefinitely
+    // No additional scheduling needed - Web Audio holds the final values
+
     alarmOscillator.start(now);
+    console.log('[playSomniaAlarm] Started - 60s crescendo to full volume, then sustains');
 };
 
 /**
@@ -157,18 +165,15 @@ export const playAlarmBySound = (soundId: string = 'somnia') => {
 };
 
 /**
- * Gentle Rise alarm - very soft gradual wake-up
- */
-/**
- * Gentle Rise alarm - very soft gradual wake-up
- * Matches preview: Sine wave 220Hz with pulsing
+ * Gentle Rise alarm - soft gradual wake-up with crescendo
+ * Sine wave 220Hz with pulsing, crescendos over 60s then continues loud
+ * Bulletproof: 30 minutes of patterns scheduled
  */
 const playGentleAlarm = () => {
     stopSleepSound();
     const context = getAudioContext();
     if (alarmOscillator) stopAlarmSound();
 
-    // Resume context if suspended
     if (context.state === 'suspended') {
         context.resume();
     }
@@ -180,28 +185,30 @@ const playGentleAlarm = () => {
     alarmGainNode.connect(context.destination);
 
     const now = context.currentTime;
-
-    // EXACT MATCH TO PREVIEW: Sine wave at 220Hz
     alarmOscillator.type = 'sine';
     alarmOscillator.frequency.setValueAtTime(220, now);
 
-    // Start audible
-    alarmGainNode.gain.setValueAtTime(0.1, now);
+    // CRESCENDO PHASE (0-60s): Start quiet, pulse louder each cycle
+    // Each pulse is 2 seconds, so 30 pulses in crescendo phase
+    for (let i = 0; i < 30; i++) {
+        const t = now + i * 2;
+        const progress = i / 30; // 0 to 1
+        const minVol = 0.05 + progress * 0.25; // 0.05 -> 0.30
+        const maxVol = 0.15 + progress * 0.55; // 0.15 -> 0.70
+        alarmGainNode.gain.linearRampToValueAtTime(maxVol, t + 1);
+        alarmGainNode.gain.linearRampToValueAtTime(minVol, t + 2);
+    }
 
-    // Loop the pulsing effect continuously
-    let i = 0;
-    const pulseLoop = () => {
-        if (!alarmOscillator) return;
-        const cycleStart = context.currentTime;
-        alarmGainNode.gain.linearRampToValueAtTime(0.25, cycleStart + 1);
-        alarmGainNode.gain.linearRampToValueAtTime(0.1, cycleStart + 2);
+    // SUSTAIN PHASE (60s+): Continue at full volume for 30 minutes
+    // 900 more cycles (30 min = 1800s, minus 60s crescendo = 1740s / 2s = 870 cycles)
+    for (let i = 0; i < 870; i++) {
+        const t = now + 60 + i * 2;
+        alarmGainNode.gain.linearRampToValueAtTime(0.7, t + 1);
+        alarmGainNode.gain.linearRampToValueAtTime(0.3, t + 2);
+    }
 
-        // Loop every 2 seconds
-        setTimeout(pulseLoop, 2000);
-    };
-
-    pulseLoop();
     alarmOscillator.start(now);
+    console.log('[playGentleAlarm] Started - 60s crescendo, then 30min sustain');
 };
 
 /**
@@ -257,18 +264,15 @@ const playNatureAlarm = () => {
 };
 
 /**
- * Classic Alarm - traditional alarm tone
- */
-/**
- * Classic Alarm - traditional alarm tone
- * Matches preview: Square wave at 880Hz with beeping
+ * Classic Alarm - traditional alarm tone with crescendo
+ * Square wave at 880Hz with beeping, crescendos over 60s then continues loud
+ * Bulletproof: 30 minutes of beeping scheduled
  */
 const playClassicAlarm = () => {
     stopSleepSound();
     const context = getAudioContext();
     if (alarmOscillator) stopAlarmSound();
 
-    // Resume context if suspended
     if (context.state === 'suspended') {
         context.resume();
     }
@@ -280,20 +284,28 @@ const playClassicAlarm = () => {
     alarmGainNode.connect(context.destination);
 
     const now = context.currentTime;
-
-    // EXACT MATCH TO PREVIEW: Square wave at 880Hz
     alarmOscillator.type = 'square';
     alarmOscillator.frequency.setValueAtTime(880, now);
-    alarmGainNode.gain.setValueAtTime(0.2, now);
 
-    // Classic beep pattern loop
-    // Schedule 2 minutes of beeping
-    for (let i = 0; i < 120; i++) {
-        alarmGainNode.gain.setValueAtTime(0.2, now + i);
-        alarmGainNode.gain.setValueAtTime(0, now + i + 0.5);
+    // CRESCENDO PHASE (0-60s): Start quiet, beep louder each second
+    for (let i = 0; i < 60; i++) {
+        const t = now + i;
+        const progress = i / 60; // 0 to 1
+        const volume = 0.05 + progress * 0.45; // 0.05 -> 0.50
+        alarmGainNode.gain.setValueAtTime(volume, t);
+        alarmGainNode.gain.setValueAtTime(0, t + 0.5);
+    }
+
+    // SUSTAIN PHASE (60s+): Continue at full volume for 30 minutes
+    // 1740 more beeps (30 min = 1800s, minus 60s crescendo)
+    for (let i = 0; i < 1740; i++) {
+        const t = now + 60 + i;
+        alarmGainNode.gain.setValueAtTime(0.5, t);
+        alarmGainNode.gain.setValueAtTime(0, t + 0.5);
     }
 
     alarmOscillator.start(now);
+    console.log('[playClassicAlarm] Started - 60s crescendo, then 30min sustain');
 };
 
 // === PROCEDURAL ALARM SYSTEM ("SOMNIA WAKE ENGINE") ===
@@ -309,74 +321,69 @@ let proceduralAlarmStop: (() => void) | null = null;
 let proceduralGainNode: GainNode | null = null;
 
 /**
- * PRISM Alarm - Ethereal glass chimes
- * Uses continuous oscillator + scheduled chimes for reliability
+ * PRISM Alarm - Ethereal glass chimes with crescendo
+ * Pentatonic chimes that crescendo over 60s then continue loud
+ * Bulletproof: 30 minutes of chimes scheduled
  */
 const playPrismAlarm = () => {
     console.log('[playPrismAlarm] Starting Prism alarm');
     stopSleepSound();
     const context = getAudioContext();
-    console.log('[playPrismAlarm] AudioContext state:', context.state);
     if (alarmOscillator) stopAlarmSound();
     cleanupProceduralAlarm();
+
+    if (context.state === 'suspended') {
+        context.resume();
+    }
 
     proceduralGainNode = context.createGain();
     proceduralGainNode.connect(context.destination);
 
     const now = context.currentTime;
-    proceduralGainNode.gain.setValueAtTime(0.2, now);
-    proceduralGainNode.gain.linearRampToValueAtTime(0.5, now + WAKE_DURATION);
 
-    // Create a CONTINUOUS base oscillator that always plays
+    // Master volume crescendo over 60s, then sustain
+    proceduralGainNode.gain.setValueAtTime(0.1, now);
+    proceduralGainNode.gain.linearRampToValueAtTime(0.6, now + WAKE_DURATION);
+
     const baseOsc = context.createOscillator();
     const baseGain = context.createGain();
     baseOsc.type = 'sine';
-    baseOsc.frequency.value = PENTATONIC_SCALE[0]; // Start with first note
     baseGain.gain.setValueAtTime(0.15, now);
     baseOsc.connect(baseGain);
     baseGain.connect(proceduralGainNode);
-    baseOsc.start(now);
-    console.log('[playPrismAlarm] Base oscillator started at freq:', PENTATONIC_SCALE[0]);
 
-    let isPlaying = true;
-
-    // Schedule frequency changes for chime effect
-    function scheduleChimeChange() {
-        if (!isPlaying) return;
-        const newFreq = PENTATONIC_SCALE[Math.floor(Math.random() * PENTATONIC_SCALE.length)];
-        baseOsc.frequency.setValueAtTime(newFreq, context.currentTime);
-        baseGain.gain.setValueAtTime(0.25, context.currentTime);
-        baseGain.gain.exponentialRampToValueAtTime(0.1, context.currentTime + 1.5);
-        setTimeout(scheduleChimeChange, 2000 + Math.random() * 2000);
+    // Schedule 30 minutes of chimes (720 chimes at 2.5s each)
+    const prismNotes = PENTATONIC_SCALE;
+    for (let i = 0; i < 720; i++) {
+        const note = prismNotes[i % prismNotes.length];
+        const t = now + i * 2.5;
+        baseOsc.frequency.setValueAtTime(note, t);
+        // Chime envelope: loud attack, decay to soft
+        baseGain.gain.setValueAtTime(0.4, t);
+        baseGain.gain.exponentialRampToValueAtTime(0.1, t + 1.5);
     }
 
-    // Start chime changes after 1 second
-    setTimeout(scheduleChimeChange, 1000);
+    baseOsc.start(now);
+    console.log('[playPrismAlarm] Started - 60s crescendo, 720 chimes over 30min');
 
     proceduralAlarmStop = () => {
-        console.log('[playPrismAlarm] Stopping Prism alarm');
-        isPlaying = false;
+        console.log('[playPrismAlarm] Stopping');
         try { baseOsc.stop(); } catch { }
     };
 };
 
 /**
- * AETHER Alarm - Cinematic drone with filter sweep
- * Uses continuous oscillators for reliability
- */
-/**
- * AETHER Alarm - Cinematic drone with filter sweep
- * Matches preview: Sawtooth at 110Hz->220Hz
+ * AETHER Alarm - Cinematic drone with filter sweep and crescendo
+ * Sawtooth at 110Hz->220Hz, crescendos then continues loud
+ * Bulletproof: Continuous drone plays indefinitely
  */
 const playAetherAlarm = () => {
     console.log('[playAetherAlarm] Starting Aether alarm');
     stopSleepSound();
     const context = getAudioContext();
-    console.log('[playAetherAlarm] AudioContext state:', context.state);
     if (alarmOscillator) stopAlarmSound();
     cleanupProceduralAlarm();
 
-    // Resume context if suspended
     if (context.state === 'suspended') {
         context.resume();
     }
@@ -386,47 +393,40 @@ const playAetherAlarm = () => {
 
     const now = context.currentTime;
 
-    // EXACT MATCH TO PREVIEW: Sawtooth at 110Hz sweeping to 220Hz
-    // Note: Preview uses ONE oscillator, previous code used two. 
-    // Reverting to single oscillator to match preview exactly.
     const osc = context.createOscillator();
     osc.type = 'sawtooth';
     osc.frequency.setValueAtTime(110, now);
 
-    // Sweep frequency over 60s
+    // CRESCENDO: Sweep frequency 110->220Hz and volume 0.05->0.5 over 60s
     osc.frequency.exponentialRampToValueAtTime(220, now + WAKE_DURATION);
-
-    // Master volume - start audible (0.05) and fade in to 0.4
     proceduralGainNode.gain.setValueAtTime(0.05, now);
-    proceduralGainNode.gain.linearRampToValueAtTime(0.3, now + WAKE_DURATION);
+    proceduralGainNode.gain.linearRampToValueAtTime(0.5, now + WAKE_DURATION);
+
+    // SUSTAIN: After crescendo, continue at 220Hz and 0.5 volume indefinitely
+    // The oscillator keeps playing - no need to schedule more
 
     osc.connect(proceduralGainNode);
     osc.start(now);
-    console.log('[playAetherAlarm] Oscillator started');
+    console.log('[playAetherAlarm] Started - 60s crescendo to 0.5 volume, then sustains');
 
     proceduralAlarmStop = () => {
-        console.log('[playAetherAlarm] Stopping Aether alarm');
+        console.log('[playAetherAlarm] Stopping');
         try { osc.stop(); } catch { }
     };
 };
 
 /**
- * BAMBOO Alarm - Hollow wooden pulse that accelerates
- * Uses continuous oscillator with amplitude modulation for reliability
- */
-/**
- * BAMBOO Alarm - Hollow wooden pulse that accelerates
- * Matches preview: Sine 150Hz with pulse envelope, accelerating
+ * BAMBOO Alarm - Hollow wooden pulse that accelerates with crescendo
+ * Accelerating pulse pattern, crescendos over 60s then continues loud
+ * Bulletproof: 30 minutes of pulses scheduled
  */
 const playBambooAlarm = () => {
     console.log('[playBambooAlarm] Starting Bamboo alarm');
     stopSleepSound();
     const context = getAudioContext();
-    console.log('[playBambooAlarm] AudioContext state:', context.state);
     if (alarmOscillator) stopAlarmSound();
     cleanupProceduralAlarm();
 
-    // Resume context if suspended
     if (context.state === 'suspended') {
         context.resume();
     }
@@ -436,59 +436,44 @@ const playBambooAlarm = () => {
 
     const now = context.currentTime;
 
-    // EXACT MATCH TO PREVIEW: Sine at 150Hz
-    // Create base oscillator
+    // Master volume crescendo over 60s
+    proceduralGainNode.gain.setValueAtTime(0.1, now);
+    proceduralGainNode.gain.linearRampToValueAtTime(0.6, now + WAKE_DURATION);
+
     const osc = context.createOscillator();
     osc.type = 'sine';
     osc.frequency.setValueAtTime(150, now);
 
-    // Use an internal gain node for the pulsing logic so we can modulate it without losing the base connection
     const pulseGain = context.createGain();
     pulseGain.gain.setValueAtTime(0, now);
 
     osc.connect(pulseGain);
     pulseGain.connect(proceduralGainNode);
-    osc.start(now);
 
-    console.log('[playBambooAlarm] Oscillator started');
-
-    let isPlaying = true;
-
-    // Recreate the accelerating pulse loop from preview
-    // Preview: 20 hits, baseBeat += interval, interval *= 0.92
-
-    // We need to loop this continuously
-    let nextNoteTime = now;
+    // Schedule 30 minutes of pulses (1800 seconds)
+    let baseBeat = 0;
     let interval = 1.0;
+    let pulseCount = 0;
 
-    function scheduleNextPulse() {
-        if (!isPlaying) return;
+    while (baseBeat < 1800) { // 30 minutes
+        pulseGain.gain.setValueAtTime(0.5, now + baseBeat);
+        osc.frequency.setValueAtTime(300, now + baseBeat);
+        pulseGain.gain.exponentialRampToValueAtTime(0.01, now + baseBeat + 0.15);
+        osc.frequency.exponentialRampToValueAtTime(150, now + baseBeat + 0.15);
 
-        // Schedule pulses up to 2 seconds ahead
-        while (nextNoteTime < context.currentTime + 2.0) {
-            // Pulse envelope: Gain 0.3 -> exp ramp to 0.01 over 0.15s
-            // Also modulate frequency slightly: 300->150 (ping)
-            pulseGain.gain.setValueAtTime(0.3, nextNoteTime);
-            osc.frequency.setValueAtTime(300, nextNoteTime);
+        baseBeat += interval;
+        interval = Math.max(0.4, interval * 0.92);
 
-            pulseGain.gain.exponentialRampToValueAtTime(0.01, nextNoteTime + 0.15);
-            osc.frequency.exponentialRampToValueAtTime(150, nextNoteTime + 0.15);
-
-            nextNoteTime += interval;
-            interval = Math.max(0.4, interval * 0.92); // Accelerate
-
-            // Reset acceleration periodically to create a "wave" of rhythmic intensity
-            if (interval <= 0.4) interval = 1.0;
-        }
-
-        setTimeout(scheduleNextPulse, 1000);
+        // Reset acceleration every ~20 pulses to create waves
+        if (interval <= 0.4) interval = 1.0;
+        pulseCount++;
     }
 
-    scheduleNextPulse();
+    osc.start(now);
+    console.log('[playBambooAlarm] Started - 60s crescendo,', pulseCount, 'pulses over 30min');
 
     proceduralAlarmStop = () => {
-        console.log('[playBambooAlarm] Stopping Bamboo alarm');
-        isPlaying = false;
+        console.log('[playBambooAlarm] Stopping');
         try { osc.stop(); } catch { }
     };
 };
@@ -497,6 +482,8 @@ const playBambooAlarm = () => {
  * Cleanup procedural alarm resources
  */
 const cleanupProceduralAlarm = () => {
+    console.log('[cleanupProceduralAlarm] Called, proceduralAlarmStop exists:', !!proceduralAlarmStop);
+
     if (proceduralAlarmStop) {
         proceduralAlarmStop();
         proceduralAlarmStop = null;
@@ -531,6 +518,8 @@ const cleanupProceduralAlarm = () => {
  * Fades out volume over 0.5s to prevent clicking artifacts.
  */
 export const stopAlarmSound = () => {
+    console.log('[stopAlarmSound] Called at', new Date().toISOString());
+
     // Stop regular oscillator-based alarms
     if (alarmGainNode && alarmOscillator && audioContext) {
         const now = audioContext.currentTime;
