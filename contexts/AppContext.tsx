@@ -107,6 +107,72 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         });
     }, []); // Only run on initial mount
 
+    // Migration: Convert legacy dreams (without sleepEntryId) to sleep entries
+    useEffect(() => {
+        const migrationKey = 'somnia_migration_v1_complete';
+        if (localStorage.getItem(migrationKey)) return; // Already migrated
+
+        const legacyDreams = dreams.filter(d => !d.sleepEntryId);
+        if (legacyDreams.length === 0) {
+            localStorage.setItem(migrationKey, 'true');
+            return;
+        }
+
+        console.log('[Migration] Converting', legacyDreams.length, 'legacy dreams to sleep entries');
+
+        // Group legacy dreams by date
+        const dreamsByDate = new Map<string, typeof legacyDreams>();
+        legacyDreams.forEach(dream => {
+            const date = dream.timestamp.split('T')[0]; // Get YYYY-MM-DD
+            const existing = dreamsByDate.get(date) || [];
+            dreamsByDate.set(date, [...existing, dream]);
+        });
+
+        // Create sleep entries for each date
+        const newSleepEntries: SleepEntry[] = [];
+        const updatedDreams: Dream[] = [...dreams];
+
+        dreamsByDate.forEach((dateDreams, date) => {
+            const entryId = Date.now() + newSleepEntries.length; // Unique ID
+            const dreamIds = dateDreams.map(d => d.id);
+
+            // Get best sleep quality from dreams on this date
+            const qualities = dateDreams.map(d => d.sleepQuality).filter((q): q is number => q !== null);
+            const avgQuality = qualities.length > 0
+                ? Math.round(qualities.reduce((a, b) => a + b, 0) / qualities.length)
+                : null;
+
+            // Get sleep aids from first dream (if any)
+            const firstDreamWithAids = dateDreams.find(d => d.sleepAids);
+
+            newSleepEntries.push({
+                id: entryId,
+                date,
+                sleepQuality: avgQuality,
+                sleepAids: firstDreamWithAids?.sleepAids,
+                dreamIds,
+                createdAt: new Date().toISOString(),
+            });
+
+            // Update dreams with sleepEntryId
+            dreamIds.forEach(dreamId => {
+                const idx = updatedDreams.findIndex(d => d.id === dreamId);
+                if (idx !== -1) {
+                    updatedDreams[idx] = { ...updatedDreams[idx], sleepEntryId: entryId };
+                }
+            });
+        });
+
+        // Apply migration
+        if (newSleepEntries.length > 0) {
+            console.log('[Migration] Created', newSleepEntries.length, 'sleep entries');
+            setSleepEntries(prev => [...prev, ...newSleepEntries]);
+            setDreams(updatedDreams);
+        }
+
+        localStorage.setItem(migrationKey, 'true');
+    }, []); // Only run on initial mount
+
     // Clear stale sleep sessions when linked alarm no longer exists or is inactive
     useEffect(() => {
         if (activeSleepSession?.alarmId) {
