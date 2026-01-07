@@ -33,7 +33,7 @@ export const SleepQualityRating: React.FC<SleepQualityRatingProps> = ({ rating, 
                 onMouseLeave={() => setHoverRating(0)}
                 aria-label={`Rate ${starValue} out of 5 stars - ${QUALITY_LABELS[index]}`}
                 aria-pressed={rating === starValue}
-                className={`p-0 bg-transparent border-none cursor-pointer transition-all duration-200 ease-in-out transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent focus:ring-offset-2 rounded ${isSelected || isHovered ? 'text-day-accent dark:text-night-accent' : 'text-day-border dark:text-night-border'}`}
+                className={`p-1 min-w-[44px] min-h-[44px] flex items-center justify-center bg-transparent border-none cursor-pointer transition-all duration-200 ease-in-out transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent focus:ring-offset-2 rounded ${isSelected || isHovered ? 'text-day-accent dark:text-night-accent' : 'text-day-border dark:text-night-border'}`}
             >
                 <svg
                     className="w-8 h-8"
