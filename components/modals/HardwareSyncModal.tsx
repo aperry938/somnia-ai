@@ -18,7 +18,6 @@ export const HardwareSyncModal: React.FC<HardwareSyncModalProps> = ({ onClose })
         { name: 'Apple Watch', color: 'bg-gray-400', description: 'Sleep stages, heart rate' },
         { name: 'Oura Ring', color: 'bg-amber-400', description: 'Sleep quality, HRV' },
         { name: 'Fitbit', color: 'bg-pink-400', description: 'Sleep tracking, SpO2' },
-        { name: 'Whoop', color: 'bg-teal-400', description: 'Recovery, strain' },
         { name: 'Garmin', color: 'bg-blue-400', description: 'Body Battery, stress' },
         { name: 'Samsung Galaxy', color: 'bg-indigo-400', description: 'Sleep score, phases' },
     ];
