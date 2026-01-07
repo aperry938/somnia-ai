@@ -11,7 +11,7 @@ const MOOD_OPTIONS: DreamMood[] = ['joyful', 'peaceful', 'neutral', 'confused', 
 type ScribeStep = 'record' | 'boost';
 
 interface DreamScribeModalProps {
-    onSave: (dreamText: string, sleepQuality: number | null, mood?: DreamMood, timestamp?: string) => void;
+    onSave: (dreamText: string, sleepQuality: number | null, mood?: DreamMood) => void;
     onClose: () => void;
     initialText?: string;
 }
@@ -22,8 +22,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
     const [sleepQuality, setSleepQuality] = useState<number | null>(null);
     const [mood, setMood] = useState<DreamMood | null>(null);
     const [boostActive, setBoostActive] = useState(false);
-    const [customDate, setCustomDate] = useState<string>(''); // For backdating
-    const savedDataRef = useRef<{ text: string; quality: number | null; mood?: DreamMood; timestamp?: string } | null>(null);
+    const savedDataRef = useRef<{ text: string; quality: number | null; mood?: DreamMood } | null>(null);
     const dreamSavedRef = useRef(false);
 
     const handleFinalTranscript = useCallback((transcript: string) => {
@@ -47,10 +46,8 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
     const handleSave = () => {
         if (!dreamText.trim() || isListening) return;
         haptics.dreamSaved();
-        // Create timestamp: use custom date if set, otherwise now
-        const timestamp = customDate ? new Date(customDate).toISOString() : new Date().toISOString();
         // Store the data and show boost offer
-        savedDataRef.current = { text: dreamText, quality: sleepQuality, mood: mood || undefined, timestamp };
+        savedDataRef.current = { text: dreamText, quality: sleepQuality, mood: mood || undefined };
         setStep('boost');
     };
 
@@ -72,7 +69,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
         stopAlertnessBoost();
         if (savedDataRef.current && !dreamSavedRef.current) {
             dreamSavedRef.current = true;
-            onSave(savedDataRef.current.text, savedDataRef.current.quality, savedDataRef.current.mood, savedDataRef.current.timestamp);
+            onSave(savedDataRef.current.text, savedDataRef.current.quality, savedDataRef.current.mood);
         }
     };
 
@@ -81,7 +78,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
         // User is done - boost keeps playing if active, just close modal
         if (savedDataRef.current && !dreamSavedRef.current) {
             dreamSavedRef.current = true;
-            onSave(savedDataRef.current.text, savedDataRef.current.quality, savedDataRef.current.mood, savedDataRef.current.timestamp);
+            onSave(savedDataRef.current.text, savedDataRef.current.quality, savedDataRef.current.mood);
         }
     };
 
@@ -150,29 +147,6 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                                 </button>
                             ))}
                         </div>
-                    </div>
-
-                    {/* Date Override for Backdating */}
-                    <div className="my-4">
-                        <details className="bg-white/5 rounded-lg">
-                            <summary className="text-center text-white/50 text-sm cursor-pointer py-2 hover:text-white/70">
-                                Logging a past dream? Set date...
-                            </summary>
-                            <div className="p-3">
-                                <input
-                                    type="date"
-                                    value={customDate}
-                                    onChange={(e) => setCustomDate(e.target.value)}
-                                    max={new Date().toISOString().split('T')[0]}
-                                    className="w-full p-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:ring-2 focus:ring-purple-400 focus:outline-none"
-                                />
-                                {customDate && (
-                                    <p className="text-xs text-amber-300 mt-2 text-center">
-                                        This dream will be logged as {new Date(customDate).toLocaleDateString()}
-                                    </p>
-                                )}
-                            </div>
-                        </details>
                     </div>
 
                     <div className="flex justify-center gap-4 mt-4">

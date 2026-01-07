@@ -135,11 +135,11 @@ const App: React.FC = () => {
     const { showToast } = useToast();
     const { dreams } = useAppContext();
 
-    const handleScribeSave = useCallback((dreamText: string, sleepQuality: number | null, mood?: DreamMood, timestamp?: string) => {
+    const handleScribeSave = useCallback((dreamText: string, sleepQuality: number | null, mood?: DreamMood) => {
         // Calculate pre-save stats
         const oldStats = calculateUserStats(dreams);
 
-        const newDreamId = addDream(dreamText, sleepQuality, mood, timestamp);
+        const newDreamId = addDream(dreamText, sleepQuality, mood);
 
         // Calculate post-save stats (addDream updates state but we can predict or use updated state if available, 
         // but addDream is sync in AppContext logic, however the 'dreams' var from context is closure-bound.
@@ -274,8 +274,8 @@ const App: React.FC = () => {
                             <div
                                 key={i}
                                 className={`w-2 h-2 rounded-full transition-all duration-300 ${i === currentIndex
-                                        ? 'bg-day-accent dark:bg-night-accent w-6'
-                                        : 'bg-gray-300 dark:bg-gray-600'
+                                    ? 'bg-day-accent dark:bg-night-accent w-6'
+                                    : 'bg-gray-300 dark:bg-gray-600'
                                     }`}
                             />
                         ))}

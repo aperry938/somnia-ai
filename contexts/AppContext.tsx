@@ -21,7 +21,7 @@ interface AppContextType {
     updateAlarm: (id: number, time: string, smartWake: boolean, days?: number[], soundId?: string, purpose?: AlarmPurpose, label?: string) => void;
     toggleAlarmActive: (id: number) => void;
     deleteAlarm: (id: number) => void;
-    addDream: (dreamText: string, sleepQuality: number | null, mood?: DreamMood, timestamp?: string) => number;
+    addDream: (dreamText: string, sleepQuality: number | null, mood?: DreamMood) => number;
     updateDream: (updatedDream: Partial<Dream> & { id: number }) => void;
     getDreamById: (id: number) => Dream | undefined;
     deleteDream: (id: number) => void;
@@ -232,12 +232,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         enqueueAction('DELETE_ALARM', { id });
     };
 
-    const addDream = (dreamText: string, sleepQuality: number | null, mood?: DreamMood, timestamp?: string): number => {
+    const addDream = (dreamText: string, sleepQuality: number | null, mood?: DreamMood): number => {
         // Use sleep session data if available, otherwise fall back to pendingSleepData
         const sleepData = activeSleepSession?.sleepGatewayData ?? pendingSleepData ?? {};
         const newDream: Dream = {
             id: Date.now(),
-            timestamp: timestamp || new Date().toISOString(),
+            timestamp: new Date().toISOString(),
             dreamText,
             sleepQuality,
             title: "Untitled Dream",
