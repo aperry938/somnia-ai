@@ -497,6 +497,8 @@ const playBambooAlarm = () => {
  * Cleanup procedural alarm resources
  */
 const cleanupProceduralAlarm = () => {
+    console.log('[cleanupProceduralAlarm] Called, proceduralAlarmStop exists:', !!proceduralAlarmStop);
+
     if (proceduralAlarmStop) {
         proceduralAlarmStop();
         proceduralAlarmStop = null;
@@ -531,6 +533,9 @@ const cleanupProceduralAlarm = () => {
  * Fades out volume over 0.5s to prevent clicking artifacts.
  */
 export const stopAlarmSound = () => {
+    console.log('[stopAlarmSound] Called at', new Date().toISOString());
+    console.trace('[stopAlarmSound] Call stack');
+
     // Stop regular oscillator-based alarms
     if (alarmGainNode && alarmOscillator && audioContext) {
         const now = audioContext.currentTime;

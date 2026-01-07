@@ -42,15 +42,34 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
 
     const { isListening, startListening, stopListening, isSupported } = useSpeechRecognition(handleFinalTranscript);
 
+    // Track mount state for cleanup
+    const isMountedRef = React.useRef(true);
+
     useEffect(() => {
+        isMountedRef.current = true;
+
         // Play the user-selected alarm sound
-        console.log('[AlarmRingModal] Playing alarm with soundId:', alarm.soundId, 'Full alarm:', alarm);
+        console.log('[AlarmRingModal] Playing alarm with soundId:', alarm.soundId, 'at', new Date().toISOString());
         playAlarmBySound(alarm.soundId || 'somnia');
+
         return () => {
-            stopAlarmSound();
-            stopAlertnessBoost();
+            // Only stop sound on actual unmount, not strict mode remount
+            // Delay cleanup slightly to allow re-mount to cancel it
+            const shouldCleanup = isMountedRef.current;
+            isMountedRef.current = false;
+
+            setTimeout(() => {
+                // If component hasn't re-mounted, perform cleanup
+                if (!isMountedRef.current) {
+                    console.log('[AlarmRingModal] Cleanup - component unmounted');
+                    stopAlarmSound();
+                    stopAlertnessBoost();
+                } else {
+                    console.log('[AlarmRingModal] Cleanup skipped - component re-mounted');
+                }
+            }, 50);
         };
-    }, [alarm.soundId]);
+    }, []); // Empty deps - only run once on mount
 
     // Handle snooze - show countdown instead of dismissing
     const handleSnooze = useCallback(() => {
