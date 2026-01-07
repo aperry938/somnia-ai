@@ -899,7 +899,7 @@ export const AlarmsPage: React.FC<{ timeString: string, dateString: string, onNa
                 <header className="text-center mb-6 pt-16">
                     <h1 className="font-serif text-6xl md:text-8xl font-bold tracking-tight">{timeString}</h1>
                     <p className="text-md mt-2 tracking-wide">{dateString}</p>
-                    <div className="mt-6">
+                    <div className="mt-10">
                         <DailyBriefingWidget />
                     </div>
                 </header>

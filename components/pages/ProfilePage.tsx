@@ -452,6 +452,30 @@ const NotificationsCard: React.FC = () => {
     );
 };
 
+// Sync Wearable Card - Coming Soon
+const SyncWearableCard: React.FC = () => {
+    return (
+        <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">
+            <div className="flex items-center justify-between mb-2">
+                <h2 className="font-serif text-xl">Sync Wearable</h2>
+                <span className="text-xs bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full">Coming Soon</span>
+            </div>
+            <p className="text-day-text-secondary dark:text-night-text-secondary text-sm mb-4">
+                Connect your smartwatch or fitness tracker to automatically import sleep data, heart rate variability, and movement patterns for more accurate sleep analysis.
+            </p>
+            <button
+                disabled
+                className="w-full py-3 min-h-[48px] border border-day-border dark:border-night-border rounded-lg text-day-text-secondary dark:text-night-text-secondary font-medium flex items-center justify-center gap-2 opacity-50 cursor-not-allowed"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Connect Device
+            </button>
+        </div>
+    );
+};
+
 // Export/Import card
 const DataManagementCard: React.FC = () => {
     const { dreams, importDreams } = useAppContext();
@@ -783,6 +807,7 @@ export const ProfilePage: React.FC<{ onBack?: () => void; onNavigateTo?: (page: 
                 <ThemePreferenceCard />
                 <ArtStyleCard />
                 <NotificationsCard />
+                <SyncWearableCard />
                 <DataManagementCard />
                 <AccountManagementCard />
                 <LegalCard onNavigateTo={onNavigateTo} />
