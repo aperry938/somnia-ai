@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
-import { Dream, DreamMood, SleepEntry } from '../../types';
+import { Dream, DreamMood, SleepEntry, SleepAids } from '../../types';
 import { exportDreamsAsJSON, exportDreamJournalToPDF, exportDreamsEncrypted, importDreamsEncrypted } from '../../services/exportService';
 import { MOOD_ICONS, MOOD_LABELS } from '../../constants/uiIcons';
 import { AchievementsCard } from '../insights/AchievementsCard';
@@ -121,7 +121,7 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
         );
     }, [legacyDreams, debouncedSearch]);
 
-    const handleAddSleepEntry = useCallback((date: string, quality: number | null, notes?: string, sleepAids?: any) => {
+    const handleAddSleepEntry = useCallback((date: string, quality: number | null, notes?: string, sleepAids?: SleepAids) => {
         return addSleepEntry(date, quality, notes, sleepAids);
     }, [addSleepEntry]);
 
