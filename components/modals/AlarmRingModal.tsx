@@ -296,14 +296,14 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                             <button
                                 onClick={handleSnooze}
                                 aria-label="Snooze alarm for 5 minutes"
-                                className="flex-1 py-5 bg-white/15 backdrop-blur border border-white/20 text-white font-semibold rounded-2xl text-lg hover:bg-white/25 transition-all active:scale-95"
+                                className="flex-1 py-5 min-h-[56px] bg-white/15 backdrop-blur border border-white/20 text-white font-semibold rounded-2xl text-lg hover:bg-white/25 transition-all active:scale-95 flex items-center justify-center"
                             >
                                 Snooze 5m
                             </button>
                             <button
                                 onClick={handleAwake}
                                 aria-label={isSleepAlarm ? "Dismiss alarm and wake up" : "Dismiss reminder"}
-                                className="flex-1 py-5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold rounded-2xl text-lg shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all active:scale-95"
+                                className="flex-1 py-5 min-h-[56px] bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold rounded-2xl text-lg shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all active:scale-95 flex items-center justify-center"
                             >
                                 {isSleepAlarm ? "I'm Awake" : 'Dismiss'}
                             </button>
@@ -323,7 +323,8 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                         </div>
                         <button
                             onClick={cancelSnooze}
-                            className="w-full py-4 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold rounded-2xl text-lg shadow-lg hover:shadow-xl transition-all"
+                            aria-label="Cancel snooze and wake up"
+                            className="w-full py-4 min-h-[56px] bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold rounded-2xl text-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center"
                         >
                             I'm Awake Now
                         </button>
@@ -366,7 +367,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                                     onChange={(e) => setQuickNote(e.target.value)}
                                     placeholder="Key words, images, feelings..."
                                     aria-label="Quick dream notes"
-                                    className="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 text-sm resize-none focus:outline-none focus:border-white/40 mb-4"
+                                    className="w-full p-3 min-h-[48px] text-base bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 resize-none focus:outline-none focus:border-white/40 mb-4"
                                     rows={3}
                                     autoFocus={!isSupported}
                                 />
@@ -438,7 +439,8 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                         {/* Done button */}
                         <button
                             onClick={handleFinish}
-                            className="w-full py-4 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold rounded-2xl text-lg shadow-lg hover:shadow-xl transition-all"
+                            aria-label="Finish and start the day"
+                            className="w-full py-4 min-h-[56px] bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold rounded-2xl text-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center"
                         >
                             Start My Day
                         </button>
