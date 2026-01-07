@@ -1,13 +1,16 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
-import { Dream, DreamMood } from '../../types';
+import { Dream, DreamMood, SleepEntry } from '../../types';
 import { exportDreamsAsJSON, exportDreamJournalToPDF, exportDreamsEncrypted, importDreamsEncrypted } from '../../services/exportService';
 import { MOOD_ICONS, MOOD_LABELS } from '../../constants/uiIcons';
 import { AchievementsCard } from '../insights/AchievementsCard';
-import { AddPastDreamModal } from '../modals/AddPastDreamModal';
+import { SleepEntryCard } from '../chronicle/SleepEntryCard';
+import { AddSleepEntryModal } from '../modals/AddSleepEntryModal';
+import { AddDreamToEntryModal } from '../modals/AddDreamToEntryModal';
 
-const DreamItem: React.FC<{ dream: Dream; onSelect: (id: number) => void; onTagClick: (tag: string) => void }> = React.memo(({ dream, onSelect, onTagClick }) => {
+// Legacy DreamItem for backwards compatibility (dreams without sleepEntryId)
+const LegacyDreamItem: React.FC<{ dream: Dream; onSelect: (id: number) => void; onTagClick: (tag: string) => void }> = React.memo(({ dream, onSelect, onTagClick }) => {
     return (
         <div
             className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-4 rounded-lg cursor-pointer hover:shadow-xl transition-shadow flex gap-4"
@@ -51,124 +54,89 @@ const DreamItem: React.FC<{ dream: Dream; onSelect: (id: number) => void; onTagC
     );
 });
 
-// Tag filter pill component
-const TagFilter: React.FC<{
-    tag: string;
-    isActive: boolean;
-    onClick: () => void;
-    onRemove: () => void;
-}> = ({ tag, isActive, onClick, onRemove }) => (
-    <button
-        onClick={onClick}
-        className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm transition-colors ${isActive
-            ? 'bg-day-accent dark:bg-night-accent text-white'
-            : 'bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border hover:border-day-accent dark:hover:border-night-accent'
-            }`}
-    >
-        <span>#{tag}</span>
-        {isActive && (
-            <span
-                onClick={(e) => { e.stopPropagation(); onRemove(); }}
-                className="hover:text-red-200 ml-1"
-            >
-                ×
-            </span>
-        )}
-    </button>
-);
-
 
 export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = ({ onDreamSelect }) => {
-    const { dreams, importDreams, addPastDream } = useAppContext();
-    const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
+    const {
+        dreams,
+        importDreams,
+        sleepEntries,
+        addSleepEntry,
+        addDreamToSleepEntry,
+        getSleepEntryById
+    } = useAppContext();
+
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
-    const [isAddDreamModalOpen, setIsAddDreamModalOpen] = useState(false);
+    const [isAddSleepModalOpen, setIsAddSleepModalOpen] = useState(false);
+    const [addDreamToEntryId, setAddDreamToEntryId] = useState<number | null>(null);
+    const [showExportMenu, setShowExportMenu] = useState(false);
 
-    const handleAddPastDream = useCallback((dreamText: string, sleepQuality: number | null, mood?: DreamMood, timestamp?: string) => {
-        if (timestamp) {
-            addPastDream(dreamText, sleepQuality, mood, timestamp);
-        }
-        setIsAddDreamModalOpen(false);
-    }, [addPastDream]);
-
-    // Debounce search query for performance
+    // Debounce search query
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setDebouncedSearch(searchQuery);
-        }, 300);
+        const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
         return () => clearTimeout(timer);
     }, [searchQuery]);
 
-    // Extract all unique tags from dreams with frequency count
-    const allTags = useMemo(() => {
-        const tagCounts = new Map<string, number>();
-        dreams.forEach(dream => {
-            dream.tags?.forEach(tag => {
-                tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
-            });
-        });
-        // Sort by frequency (most used first), then alphabetically
-        return Array.from(tagCounts.entries())
-            .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-            .map(([tag]) => tag);
+    // Get legacy dreams (those not linked to a sleep entry)
+    const legacyDreams = useMemo(() => {
+        return dreams.filter(d => !d.sleepEntryId);
     }, [dreams]);
 
-    // Filter dreams by active tag and search query
-    const filteredDreams = useMemo(() => {
-        let result = dreams;
+    // Sort sleep entries by date (newest first)
+    const sortedSleepEntries = useMemo(() => {
+        return [...sleepEntries].sort((a, b) =>
+            new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+    }, [sleepEntries]);
 
-        // Filter by tag first
-        if (activeTagFilter) {
-            result = result.filter(dream => dream.tags?.includes(activeTagFilter));
-        }
+    // Filter sleep entries based on search
+    const filteredEntries = useMemo(() => {
+        if (!debouncedSearch.trim()) return sortedSleepEntries;
 
-        // Then filter by debounced search query
-        if (debouncedSearch.trim()) {
-            const query = debouncedSearch.toLowerCase();
-            result = result.filter(dream =>
-                dream.title?.toLowerCase().includes(query) ||
-                dream.dreamText.toLowerCase().includes(query) ||
-                dream.tags?.some(tag => tag.includes(query))
+        const search = debouncedSearch.toLowerCase();
+        return sortedSleepEntries.filter(entry => {
+            // Check notes
+            if (entry.notes?.toLowerCase().includes(search)) return true;
+
+            // Check associated dreams
+            const entryDreams = dreams.filter(d => entry.dreamIds.includes(d.id));
+            return entryDreams.some(d =>
+                d.dreamText.toLowerCase().includes(search) ||
+                d.title?.toLowerCase().includes(search) ||
+                d.tags?.some(t => t.toLowerCase().includes(search))
             );
-        }
-
-        return result;
-    }, [dreams, activeTagFilter, debouncedSearch]);
-
-    const handleTagClick = (tag: string) => {
-        setActiveTagFilter(tag === activeTagFilter ? null : tag);
-    };
-
-    const clearFilters = () => {
-        setActiveTagFilter(null);
-        setSearchQuery('');
-    };
-
-    const hasFilters = activeTagFilter || searchQuery.trim();
-
-    // Group dreams by time period
-    const groupedDreams = useMemo(() => {
-        const now = new Date();
-        const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-        const groups: { label: string; dreams: typeof filteredDreams }[] = [];
-        const thisWeek = filteredDreams.filter(d => new Date(d.timestamp) >= oneWeekAgo);
-        const thisMonth = filteredDreams.filter(d => {
-            const date = new Date(d.timestamp);
-            return date < oneWeekAgo && date >= oneMonthAgo;
         });
-        const older = filteredDreams.filter(d => new Date(d.timestamp) < oneMonthAgo);
+    }, [sortedSleepEntries, debouncedSearch, dreams]);
 
-        if (thisWeek.length > 0) groups.push({ label: 'This Week', dreams: thisWeek });
-        if (thisMonth.length > 0) groups.push({ label: 'Earlier This Month', dreams: thisMonth });
-        if (older.length > 0) groups.push({ label: 'Older', dreams: older });
+    // Filter legacy dreams based on search
+    const filteredLegacyDreams = useMemo(() => {
+        if (!debouncedSearch.trim()) return legacyDreams;
 
-        return groups;
-    }, [filteredDreams]);
+        const search = debouncedSearch.toLowerCase();
+        return legacyDreams.filter(d =>
+            d.dreamText.toLowerCase().includes(search) ||
+            d.title?.toLowerCase().includes(search) ||
+            d.tags?.some(t => t.toLowerCase().includes(search))
+        );
+    }, [legacyDreams, debouncedSearch]);
 
-    const [showExportMenu, setShowExportMenu] = useState(false);
+    const handleAddSleepEntry = useCallback((date: string, quality: number | null, notes?: string, sleepAids?: any) => {
+        return addSleepEntry(date, quality, notes, sleepAids);
+    }, [addSleepEntry]);
+
+    const handleSaveWithDream = useCallback((entryId: number) => {
+        setIsAddSleepModalOpen(false);
+        setAddDreamToEntryId(entryId);
+    }, []);
+
+    const handleAddDreamToEntry = useCallback((sleepEntryId: number, dreamText: string, mood?: DreamMood) => {
+        addDreamToSleepEntry(sleepEntryId, dreamText, mood);
+        setAddDreamToEntryId(null);
+    }, [addDreamToSleepEntry]);
+
+    const currentEntryForModal = addDreamToEntryId ? getSleepEntryById(addDreamToEntryId) : null;
+
+    const hasContent = sleepEntries.length > 0 || legacyDreams.length > 0;
 
     return (
         <div>
@@ -217,11 +185,11 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
                                     onChange={async (e) => {
                                         if (e.target.files?.[0]) {
                                             try {
-                                                const imported = await importDreamsEncrypted(e.target.files[0], dreams);
-                                                importDreams(imported);
-                                                alert(`Successfully restored ${imported.length} dreams!`);
-                                            } catch (err) {
-                                                alert(`Restore failed: ${(err as Error).message}`);
+                                                const restored = await importDreamsEncrypted(e.target.files[0], dreams);
+                                                importDreams(restored);
+                                                alert(`Successfully restored ${restored.length} dreams!`);
+                                            } catch (error: any) {
+                                                alert(`Restore failed: ${error.message}`);
                                             }
                                             setShowExportMenu(false);
                                         }
@@ -238,23 +206,17 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
                 <AchievementsCard dreams={dreams} />
             </div>
 
-            {/* Search bar */}
+            {/* Search */}
             <div className="max-w-2xl mx-auto mb-4">
                 <div className="relative">
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5 absolute left-3 top-1/2 -translate-y-1/2 text-day-text-secondary dark:text-night-text-secondary"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                    >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 absolute left-3 top-1/2 -translate-y-1/2 text-day-text-secondary dark:text-night-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                     <input
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search dreams..."
+                        placeholder="Search sleep entries & dreams..."
                         className="w-full pl-10 pr-10 py-2 bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-full focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent"
                     />
                     {searchQuery && (
@@ -270,109 +232,109 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
                 </div>
             </div>
 
-            {/* Tag filter bar */}
-            {allTags.length > 0 && (
-                <div className="max-w-2xl mx-auto mb-6">
-                    <div className="flex flex-wrap gap-2 justify-center">
-                        {allTags.slice(0, 10).map(tag => (
-                            <TagFilter
-                                key={tag}
-                                tag={tag}
-                                isActive={activeTagFilter === tag}
-                                onClick={() => handleTagClick(tag)}
-                                onRemove={() => setActiveTagFilter(null)}
+            {/* Content */}
+            <div className="space-y-4 max-w-2xl mx-auto">
+                {hasContent ? (
+                    <>
+                        {/* Sleep Entries */}
+                        {filteredEntries.map(entry => (
+                            <SleepEntryCard
+                                key={entry.id}
+                                entry={entry}
+                                dreams={dreams}
+                                onEntryClick={() => { }}
+                                onDreamClick={onDreamSelect}
+                                onAddDream={(entryId) => setAddDreamToEntryId(entryId)}
                             />
                         ))}
-                        {allTags.length > 10 && (
-                            <span className="text-xs text-day-text-secondary dark:text-night-text-secondary self-center">
-                                +{allTags.length - 10} more
-                            </span>
-                        )}
-                    </div>
-                    {activeTagFilter && (
-                        <p className="text-center text-sm text-day-text-secondary dark:text-night-text-secondary mt-3">
-                            Showing {filteredDreams.length} dream{filteredDreams.length !== 1 ? 's' : ''} with #{activeTagFilter}
-                            <button
-                                onClick={() => setActiveTagFilter(null)}
-                                className="ml-2 text-day-accent dark:text-night-accent hover:underline"
-                            >
-                                Clear
-                            </button>
-                        </p>
-                    )}
-                </div>
-            )}
 
-            <div className="space-y-6 max-w-2xl mx-auto">
-                {filteredDreams.length > 0 ? (
-                    groupedDreams.map(group => (
-                        <div key={group.label}>
-                            <h2 className="font-serif text-lg text-day-text-secondary dark:text-night-text-secondary mb-3 border-b border-day-border dark:border-night-border pb-2">
-                                {group.label}
-                            </h2>
-                            <div className="space-y-4">
-                                {group.dreams.map(dream => (
-                                    <DreamItem
+                        {/* Legacy Dreams (not linked to sleep entries) */}
+                        {filteredLegacyDreams.length > 0 && (
+                            <>
+                                {sleepEntries.length > 0 && (
+                                    <div className="flex items-center gap-3 py-2">
+                                        <div className="flex-1 h-px bg-day-border dark:bg-night-border"></div>
+                                        <span className="text-xs text-day-text-secondary dark:text-night-text-secondary uppercase tracking-wider">
+                                            Legacy Dreams
+                                        </span>
+                                        <div className="flex-1 h-px bg-day-border dark:bg-night-border"></div>
+                                    </div>
+                                )}
+                                {filteredLegacyDreams.map(dream => (
+                                    <LegacyDreamItem
                                         key={dream.id}
                                         dream={dream}
                                         onSelect={onDreamSelect}
-                                        onTagClick={handleTagClick}
+                                        onTagClick={() => { }}
                                     />
                                 ))}
+                            </>
+                        )}
+
+                        {/* No results message */}
+                        {filteredEntries.length === 0 && filteredLegacyDreams.length === 0 && debouncedSearch && (
+                            <div className="text-center py-8">
+                                <p className="text-day-text-secondary dark:text-night-text-secondary mb-2">No results found</p>
+                                <button
+                                    onClick={() => setSearchQuery('')}
+                                    className="text-day-accent dark:text-night-accent hover:underline text-sm"
+                                >
+                                    Clear search
+                                </button>
                             </div>
-                        </div>
-                    ))
-                ) : hasFilters ? (
-                    <div className="text-center py-8">
-                        <p className="text-day-text-secondary dark:text-night-text-secondary mb-2">
-                            No dreams match your filters
-                        </p>
-                        <button
-                            onClick={clearFilters}
-                            className="text-day-accent dark:text-night-accent hover:underline text-sm"
-                        >
-                            Clear all filters
-                        </button>
-                    </div>
+                        )}
+                    </>
                 ) : (
+                    // Empty state
                     <div className="text-center py-12">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-day-text-secondary/30 dark:text-night-text-secondary/30 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v11.494m-9-5.747h18" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                         </svg>
-                        <h3 className="font-serif text-xl mb-2">Your Dream Journal Awaits</h3>
+                        <h3 className="font-serif text-xl mb-2">Your Sleep Journal Awaits</h3>
                         <p className="text-day-text-secondary dark:text-night-text-secondary mb-6 max-w-xs mx-auto">
-                            Begin your journey into the subconscious. Set an alarm and record your first dream upon waking.
+                            Log your sleep to track patterns and record the dreams that follow.
                         </p>
                         <button
-                            onClick={() => setIsAddDreamModalOpen(true)}
+                            onClick={() => setIsAddSleepModalOpen(true)}
                             className="inline-flex items-center gap-2 px-6 py-3 bg-day-accent dark:bg-night-accent text-white rounded-full font-medium hover:opacity-90 transition-opacity"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                             </svg>
-                            Log Your First Dream
+                            Log Your First Sleep
                         </button>
                     </div>
                 )}
             </div>
 
-            {/* Floating Action Button - Always visible for manual dream logging */}
+            {/* Floating Action Button */}
             <button
-                onClick={() => setIsAddDreamModalOpen(true)}
+                onClick={() => setIsAddSleepModalOpen(true)}
                 className="fixed bottom-24 right-6 w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center z-40"
-                title="Log a past dream"
-                aria-label="Log a past dream"
+                title="Log sleep"
+                aria-label="Log sleep"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                 </svg>
             </button>
 
-            {/* Add Past Dream Modal */}
-            {isAddDreamModalOpen && (
-                <AddPastDreamModal
-                    onSave={handleAddPastDream}
-                    onClose={() => setIsAddDreamModalOpen(false)}
+            {/* Add Sleep Entry Modal */}
+            {isAddSleepModalOpen && (
+                <AddSleepEntryModal
+                    onSave={handleAddSleepEntry}
+                    onSaveWithDream={handleSaveWithDream}
+                    onClose={() => setIsAddSleepModalOpen(false)}
+                />
+            )}
+
+            {/* Add Dream to Entry Modal */}
+            {addDreamToEntryId && currentEntryForModal && (
+                <AddDreamToEntryModal
+                    sleepEntryId={addDreamToEntryId}
+                    sleepDate={currentEntryForModal.date}
+                    onSave={handleAddDreamToEntry}
+                    onClose={() => setAddDreamToEntryId(null)}
                 />
             )}
         </div>

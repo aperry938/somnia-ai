@@ -39,6 +39,7 @@ export interface Dream {
     sleepAids?: SleepAids;
     tags?: string[];
     mood?: DreamMood; // Emotional tone of the dream
+    sleepEntryId?: number; // Link to parent sleep entry (optional for migration)
 }
 
 // Moods for tracking emotional patterns
@@ -140,7 +141,7 @@ export interface SyncAction {
 export type CoachPersonality = 'mystical' | 'scientific';
 export type AnalysisPersonality = 'oneironaut' | 'jungian' | 'scientific';
 
-// Sleep Session - links alarm to sleep gateway data to dream
+// Sleep Session - links alarm to sleep gateway data to dream (for active session tracking)
 export interface SleepSession {
     id: number; // Session ID (timestamp)
     alarmId: number | null; // Linked alarm ID
@@ -148,4 +149,15 @@ export interface SleepSession {
     startedAt: string; // When session was created
     sleepGatewayData: SleepAids; // Pre-sleep data from Sleep Gateway
     isActive: boolean; // Whether this session is still active (not yet logged)
+}
+
+// Sleep Entry - a logged night of sleep (primary entity in Chronicle)
+export interface SleepEntry {
+    id: number;                     // Entry ID (timestamp when created)
+    date: string;                   // Date of sleep (YYYY-MM-DD format)
+    sleepQuality: number | null;    // 1-5 rating
+    sleepAids?: SleepAids;          // Pre-sleep data (sound, relaxation, checklist, day rating)
+    notes?: string;                 // Optional notes about the sleep
+    dreamIds: number[];             // IDs of dreams logged for this session
+    createdAt: string;              // ISO timestamp when entry was created
 }

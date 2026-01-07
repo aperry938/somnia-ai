@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode, useCallback } from 'react';
-import { Alarm, Dream, SleepAids, Biometrics, Theme, CoachPersonality, AnalysisPersonality, DreamMood, SleepSession, AlarmPurpose } from '../types';
+import { Alarm, Dream, SleepAids, Biometrics, Theme, CoachPersonality, AnalysisPersonality, DreamMood, SleepSession, AlarmPurpose, SleepEntry } from '../types';
 
 export type ArtStyle = 'surreal' | 'watercolor' | 'oil-painting' | 'anime' | 'photorealistic' | 'abstract' | 'fantasy' | 'minimalist';
 import { enqueueAction } from '../services/syncService';
@@ -48,6 +48,13 @@ interface AppContextType {
     // Art style preference
     artStyle: ArtStyle;
     setArtStyle: (style: ArtStyle) => void;
+    // Sleep Entries (Chronicle primary entity)
+    sleepEntries: SleepEntry[];
+    addSleepEntry: (date: string, sleepQuality: number | null, notes?: string, sleepAids?: SleepAids) => number;
+    updateSleepEntry: (entry: Partial<SleepEntry> & { id: number }) => void;
+    deleteSleepEntry: (id: number) => void;
+    getSleepEntryById: (id: number) => SleepEntry | undefined;
+    addDreamToSleepEntry: (sleepEntryId: number, dreamText: string, mood?: DreamMood) => number;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -89,6 +96,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [activeSleepSession, setActiveSleepSession] = useLocalStorage<SleepSession | null>('somnia_active_sleep_session', null);
     const [lastSeenDreamCount, setLastSeenDreamCount] = useLocalStorage<number>('somnia_last_seen_dream_count', 0);
     const [artStyle, setArtStyle] = useLocalStorage<ArtStyle>('somnia_art_style', 'surreal');
+    const [sleepEntries, setSleepEntries] = useLocalStorage<SleepEntry[]>('somnia_sleep_entries', []);
 
     // Pre-populate title cache with existing dream titles to prevent unnecessary API calls
     useEffect(() => {
@@ -303,6 +311,69 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setActiveSleepAids({});
     };
 
+    // ========== Sleep Entry CRUD ==========
+    const addSleepEntry = (date: string, sleepQuality: number | null, notes?: string, sleepAids?: SleepAids): number => {
+        const newEntry: SleepEntry = {
+            id: Date.now(),
+            date,
+            sleepQuality,
+            notes,
+            sleepAids,
+            dreamIds: [],
+            createdAt: new Date().toISOString(),
+        };
+        setSleepEntries(prev => [newEntry, ...prev]);
+        return newEntry.id;
+    };
+
+    const updateSleepEntry = useCallback((updatedEntry: Partial<SleepEntry> & { id: number }) => {
+        setSleepEntries(prev => prev.map(e => e.id === updatedEntry.id ? { ...e, ...updatedEntry } : e));
+    }, [setSleepEntries]);
+
+    const deleteSleepEntry = (id: number) => {
+        // Also delete associated dreams
+        const entry = sleepEntries.find(e => e.id === id);
+        if (entry) {
+            entry.dreamIds.forEach(dreamId => {
+                setDreams(prev => prev.filter(d => d.id !== dreamId));
+            });
+        }
+        setSleepEntries(prev => prev.filter(e => e.id !== id));
+    };
+
+    const getSleepEntryById = useCallback((id: number) => {
+        return sleepEntries.find(e => e.id === id);
+    }, [sleepEntries]);
+
+    const addDreamToSleepEntry = (sleepEntryId: number, dreamText: string, mood?: DreamMood): number => {
+        const entry = sleepEntries.find(e => e.id === sleepEntryId);
+        if (!entry) return -1;
+
+        const newDream: Dream = {
+            id: Date.now(),
+            timestamp: new Date().toISOString(),
+            dreamText,
+            sleepQuality: entry.sleepQuality, // Inherit from parent entry
+            title: "Untitled Dream",
+            imageUrl: null,
+            aiAnalysis: null,
+            chatHistory: [],
+            mood,
+            sleepEntryId,
+        };
+        setDreams(prev => [newDream, ...prev]);
+
+        // Add dream ID to the sleep entry
+        setSleepEntries(prev => prev.map(e =>
+            e.id === sleepEntryId
+                ? { ...e, dreamIds: [...e.dreamIds, newDream.id] }
+                : e
+        ));
+
+        enqueueAction('ADD_DREAM', newDream);
+        return newDream.id;
+    };
+
     const value: AppContextType = {
         alarms,
         dreams,
@@ -343,6 +414,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         getUnreadDreamCount,
         artStyle,
         setArtStyle,
+        // Sleep Entries
+        sleepEntries,
+        addSleepEntry,
+        updateSleepEntry,
+        deleteSleepEntry,
+        getSleepEntryById,
+        addDreamToSleepEntry,
     };
 
     return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
