@@ -115,7 +115,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSkip }) => {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                         </svg>
                     </div>
-                    <h1 className="font-serif text-4xl mb-2 text-day-text-primary dark:text-night-text-primary">Somnia</h1>
+                    <h1 className="font-serif text-5xl mb-2 text-day-text-primary dark:text-night-text-primary">Somnia</h1>
                     <p className="text-day-text-secondary dark:text-night-text-secondary">
                         {mode === 'signup' && 'Start your wellness journey'}
                         {mode === 'reset' && 'Reset your password'}
