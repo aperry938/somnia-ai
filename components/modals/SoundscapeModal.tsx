@@ -233,7 +233,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
             <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-sm animate-fadeIn text-center relative" onClick={(e) => e.stopPropagation()}>
                 <button
                     onClick={handleClose}
-                    className="absolute top-4 right-4 text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent"
+                    className="absolute top-2 right-2 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
                     aria-label="Close soundscape modal"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -344,9 +344,9 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                     <>
                         {/* Quick Duration Buttons */}
                         <div className="grid grid-cols-3 gap-2 mt-2" role="group" aria-label="Quick duration options">
-                            <button onClick={() => handleDurationClick(15)} aria-label="15 minute duration" className="duration-btn py-2 border border-day-border dark:border-night-border rounded-lg text-sm hover:bg-day-accent/10 dark:hover:bg-night-accent/10 transition-colors">15m</button>
-                            <button onClick={() => handleDurationClick(30)} aria-label="30 minute duration" className="duration-btn py-2 border border-day-border dark:border-night-border rounded-lg text-sm hover:bg-day-accent/10 dark:hover:bg-night-accent/10 transition-colors">30m</button>
-                            <button onClick={() => handleDurationClick(60)} aria-label="60 minute duration" className="duration-btn py-2 border border-day-border dark:border-night-border rounded-lg text-sm hover:bg-day-accent/10 dark:hover:bg-night-accent/10 transition-colors">60m</button>
+                            <button onClick={() => handleDurationClick(15)} aria-label="15 minute duration" className="duration-btn py-3 min-h-[48px] border border-day-border dark:border-night-border rounded-lg text-sm hover:bg-day-accent/10 dark:hover:bg-night-accent/10 transition-colors flex items-center justify-center">15m</button>
+                            <button onClick={() => handleDurationClick(30)} aria-label="30 minute duration" className="duration-btn py-3 min-h-[48px] border border-day-border dark:border-night-border rounded-lg text-sm hover:bg-day-accent/10 dark:hover:bg-night-accent/10 transition-colors flex items-center justify-center">30m</button>
+                            <button onClick={() => handleDurationClick(60)} aria-label="60 minute duration" className="duration-btn py-3 min-h-[48px] border border-day-border dark:border-night-border rounded-lg text-sm hover:bg-day-accent/10 dark:hover:bg-night-accent/10 transition-colors flex items-center justify-center">60m</button>
                         </div>
 
 
@@ -375,7 +375,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                             onClick={togglePreview}
                             aria-label={isPreviewing ? 'Stop preview' : 'Preview sound'}
                             aria-pressed={isPreviewing}
-                            className={`mt-3 w-full py-2 rounded-lg text-sm font-medium transition-all ${isPreviewing
+                            className={`mt-3 w-full py-3 min-h-[48px] rounded-lg text-sm font-medium transition-all ${isPreviewing
                                 ? 'bg-green-500/20 text-green-600 dark:text-green-400 border border-green-500/30'
                                 : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-transparent'
                                 }`}
@@ -404,12 +404,12 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                                 value={duration}
                                 onChange={(e) => setDuration(parseInt(e.target.value) || 30)}
                                 aria-label="Custom duration in minutes"
-                                className="w-full p-3 bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-lg text-center"
+                                className="w-full p-3 min-h-[48px] text-base bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-lg text-center"
                                 placeholder="Custom mins"
                                 min="1"
                                 max="480"
                             />
-                            <button onClick={handlePlay} aria-label={`Play for ${duration} minutes`} className="bg-day-accent dark:bg-night-accent text-white rounded-lg p-3 px-6 font-bold whitespace-nowrap">
+                            <button onClick={handlePlay} aria-label={`Play for ${duration} minutes`} className="bg-day-accent dark:bg-night-accent text-white rounded-lg p-3 px-6 min-h-[48px] font-bold whitespace-nowrap flex items-center justify-center">
                                 Play
                             </button>
                         </div>
