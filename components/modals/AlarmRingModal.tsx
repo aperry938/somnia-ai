@@ -3,6 +3,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { playAlarmBySound, stopAlarmSound, playAlertnessBoost, stopAlertnessBoost } from '../../services/audioService';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { Alarm } from '../../types';
+import { isDevMode } from '../../services/secureSubscriptionService';
 import haptics from '../../services/hapticsService';
 
 // Pulsing visual component that crescendos over 60 seconds
@@ -270,24 +271,26 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                 {/* STEP 1: Alarm - Just Snooze and I'm Awake/Dismiss */}
                 {step === 'alarm' && (
                     <div className="animate-fadeIn">
-                        {/* DEV TOOLS: Sound Switcher */}
-                        <div className="mb-6 p-3 bg-black/30 rounded-xl border border-yellow-500/50">
-                            <p className="text-yellow-400 text-xs font-mono mb-2">🔧 DEV: Test Alarm Sounds</p>
-                            <div className="flex flex-wrap gap-2 justify-center">
-                                {['somnia', 'gentle', 'classic', 'prism', 'aether', 'bamboo'].map(soundId => (
-                                    <button
-                                        key={soundId}
-                                        onClick={() => {
-                                            stopAlarmSound();
-                                            setTimeout(() => playAlarmBySound(soundId), 100);
-                                        }}
-                                        className="px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-300 text-xs font-mono rounded-lg border border-yellow-500/30 transition-all"
-                                    >
-                                        {soundId}
-                                    </button>
-                                ))}
+                        {/* DEV TOOLS: Sound Switcher - only visible in dev mode */}
+                        {isDevMode() && (
+                            <div className="mb-6 p-3 bg-black/30 rounded-xl border border-yellow-500/50">
+                                <p className="text-yellow-400 text-xs font-mono mb-2">DEV: Test Alarm Sounds</p>
+                                <div className="flex flex-wrap gap-2 justify-center">
+                                    {['somnia', 'gentle', 'classic', 'prism', 'aether', 'bamboo'].map(soundId => (
+                                        <button
+                                            key={soundId}
+                                            onClick={() => {
+                                                stopAlarmSound();
+                                                setTimeout(() => playAlarmBySound(soundId), 100);
+                                            }}
+                                            className="px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-300 text-xs font-mono rounded-lg border border-yellow-500/30 transition-all"
+                                        >
+                                            {soundId}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         <div className="flex gap-3">
                             <button
