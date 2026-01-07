@@ -98,6 +98,7 @@ const App: React.FC = () => {
                 case '2': setCurrentPage('sleep'); break;
                 case '3': setCurrentPage('chronicle'); break;
                 case '4': setCurrentPage('insights'); break;
+                case '5': setCurrentPage('profile'); break;
             }
         };
         window.addEventListener('keydown', handleKeyNav);
