@@ -189,8 +189,9 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
                                                 const restored = await importDreamsEncrypted(e.target.files[0], dreams);
                                                 importDreams(restored);
                                                 alert(`Successfully restored ${restored.length} dreams!`);
-                                            } catch (error: any) {
-                                                alert(`Restore failed: ${error.message}`);
+                                            } catch (error) {
+                                                const message = error instanceof Error ? error.message : 'Unknown error';
+                                                alert(`Restore failed: ${message}`);
                                             }
                                             setShowExportMenu(false);
                                         }

@@ -19,7 +19,7 @@ const formatRepeatText = (days: number[]): string => {
 const getSoundName = (soundId: string | undefined): string => {
     const soundMap: Record<string, string> = {
         'somnia': 'Somnia',
-        'gentle': 'Gentle Rise',
+        'gentle': 'Gentle',
         'classic': 'Classic',
         'prism': 'Prism',
         'aether': 'Aether',
@@ -376,16 +376,6 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
         let finalDays = selectedDays;
         if (frequency === 'once') finalDays = [];
         if (frequency === 'daily') finalDays = [0, 1, 2, 3, 4, 5, 6];
-
-        // Log the values being saved for debugging
-        console.log('[AlarmModal] Saving alarm:', {
-            time,
-            selectedSound,
-            finalDays,
-            purpose,
-            label,
-            isEdit: !!alarmToEdit
-        });
 
         let alarmId: number;
         if (alarmToEdit) {
@@ -893,7 +883,7 @@ export const AlarmsPage: React.FC<{ timeString: string, dateString: string, onNa
                     )}
                 </div>
             </div>
-            <button onClick={() => openModal()} className="fixed bottom-24 right-6 bg-day-accent dark:bg-night-accent text-white rounded-full p-4 shadow-lg shadow-indigo-500/30 hover:bg-indigo-600 dark:hover:bg-indigo-500 transition-colors">
+            <button onClick={() => openModal()} aria-label="Add new alarm" className="fixed bottom-24 right-6 bg-day-accent dark:bg-night-accent text-white rounded-full p-4 shadow-lg shadow-indigo-500/30 hover:bg-indigo-600 dark:hover:bg-indigo-500 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
             </button>
             {isModalOpen && <AlarmModal alarmToEdit={alarmToEdit} onClose={closeModal} onConfigureSleepGateway={handleConfigureSleepGateway} />}
