@@ -23,6 +23,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
     const [sleepQuality, setSleepQuality] = useState<number | null>(null);
     const [mood, setMood] = useState<DreamMood | null>(null);
     const [boostActive, setBoostActive] = useState(false);
+    const [boostTimer, setBoostTimer] = useState(0);
     const savedDataRef = useRef<{ text: string; quality: number | null; mood?: DreamMood } | null>(null);
     const dreamSavedRef = useRef(false);
 
@@ -74,10 +75,12 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
         if (boostActive) {
             stopAlertnessBoost();
             setBoostActive(false);
+            setBoostTimer(0);
         } else {
             // 12Hz beta waves for alertness
             playAlertnessBoost();
             setBoostActive(true);
+            setBoostTimer(0);
         }
     };
 
@@ -108,6 +111,25 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
             }
         };
     }, [boostActive]);
+
+    // Timer for boost
+    useEffect(() => {
+        let interval: ReturnType<typeof setInterval> | null = null;
+        if (boostActive) {
+            interval = setInterval(() => {
+                setBoostTimer(prev => prev + 1);
+            }, 1000);
+        }
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [boostActive]);
+
+    const formatTimer = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
 
     const displayText = isListening
         ? (dreamText ? dreamText + ' ' : '') + interimTranscript
@@ -229,6 +251,11 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                         'Start Wake Up Boost'
                     )}
                 </button>
+                {boostActive && (
+                    <p className="text-white/60 text-sm mt-3 font-mono">
+                        {formatTimer(boostTimer)}
+                    </p>
+                )}
             </div>
 
             {/* Start My Day button - goes to homepage */}

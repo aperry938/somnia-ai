@@ -127,6 +127,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
     const [showInput, setShowInput] = useState(false);
     const [alertnessOn, setAlertnessOn] = useState(false);
     const [boostVolume, setBoostVolume] = useState(0.25);
+    const [boostTimer, setBoostTimer] = useState(0);
     const [snoozeRemaining, setSnoozeRemaining] = useState(SNOOZE_DURATION);
 
     // Callback for when speech is finalized
@@ -237,11 +238,32 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
         if (alertnessOn) {
             stopAlertnessBoost();
             setAlertnessOn(false);
+            setBoostTimer(0);
         } else {
             playAlertnessBoost(boostVolume);
             setAlertnessOn(true);
+            setBoostTimer(0);
         }
     }, [alertnessOn, boostVolume]);
+
+    // Timer for boost
+    useEffect(() => {
+        let interval: ReturnType<typeof setInterval> | null = null;
+        if (alertnessOn) {
+            interval = setInterval(() => {
+                setBoostTimer(prev => prev + 1);
+            }, 1000);
+        }
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [alertnessOn]);
+
+    const formatTimer = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
 
     // Handle volume change
     const handleVolumeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -438,12 +460,17 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                                 {alertnessOn ? (
                                     <span className="flex items-center justify-center gap-2">
                                         <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
-                                        Boost Active
+                                        Boost Active - Tap to Stop
                                     </span>
                                 ) : (
                                     'Start Wake Up Boost'
                                 )}
                             </button>
+                            {alertnessOn && (
+                                <p className="text-white/60 text-sm mt-3 font-mono text-center">
+                                    {formatTimer(boostTimer)}
+                                </p>
+                            )}
 
                             {/* Volume Slider */}
                             <div className="mt-4 px-2">
