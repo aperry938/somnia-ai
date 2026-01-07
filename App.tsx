@@ -20,6 +20,7 @@ import { PageLoading } from './components/shared/LoadingStates';
 import { KeyboardShortcutsHelp, useKeyboardHelp } from './components/shared/KeyboardHelp';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { ThemeToggle } from './components/shared/ThemeToggle';
+import { SignInButton } from './components/shared/SignInButton';
 import { OnboardingCarousel } from './components/onboarding/OnboardingCarousel';
 import { useSleepDetection } from './hooks/useSleepDetection';
 import { DevModeToggle } from './components/DevModeToggle';
@@ -300,6 +301,7 @@ const App: React.FC = () => {
             <AlarmNotificationManager />
             <OfflineIndicator />
             <ThemeToggle />
+            <SignInButton />
             {/* DevModeToggle only rendered in development - SECURITY FIX */}
             {import.meta.env.DEV && <DevModeToggle />}
         </div>

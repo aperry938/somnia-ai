@@ -106,8 +106,8 @@ const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = Re
                         </p>
                         {/* Type badge */}
                         <span className={`text-xs px-1.5 py-0.5 rounded ${alarm.purpose === 'reminder'
-                                ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
-                                : 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                            ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
+                            : 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
                             }`}>
                             {alarm.purpose === 'reminder' ? 'Reminder' : 'Sleep'}
                         </span>
@@ -236,8 +236,8 @@ const DrumTimePicker: React.FC<{ initialTime: string; onChange: (time: string) =
                                 key={h}
                                 onClick={() => { setHour(h); scrollToValue(hourRef, h - 1); }}
                                 className={`h-14 flex items-center justify-center text-3xl font-medium cursor-pointer transition-all scroll-snap-align-center ${hour === h
-                                        ? 'text-day-accent dark:text-night-accent scale-110'
-                                        : 'text-gray-400 dark:text-gray-500'
+                                    ? 'text-day-accent dark:text-night-accent scale-110'
+                                    : 'text-gray-400 dark:text-gray-500'
                                     }`}
                                 style={{ scrollSnapAlign: 'center' }}
                             >
@@ -264,8 +264,8 @@ const DrumTimePicker: React.FC<{ initialTime: string; onChange: (time: string) =
                                 key={m}
                                 onClick={() => { setMinute(m); scrollToValue(minuteRef, m); }}
                                 className={`h-14 flex items-center justify-center text-3xl font-medium cursor-pointer transition-all scroll-snap-align-center ${minute === m
-                                        ? 'text-day-accent dark:text-night-accent scale-110'
-                                        : 'text-gray-400 dark:text-gray-500'
+                                    ? 'text-day-accent dark:text-night-accent scale-110'
+                                    : 'text-gray-400 dark:text-gray-500'
                                     }`}
                                 style={{ scrollSnapAlign: 'center' }}
                             >
@@ -290,8 +290,8 @@ const DrumTimePicker: React.FC<{ initialTime: string; onChange: (time: string) =
                                 key={p}
                                 onClick={() => { setPeriod(p); scrollToValue(periodRef, p === 'AM' ? 0 : 1); }}
                                 className={`h-14 flex items-center justify-center text-2xl font-medium cursor-pointer transition-all scroll-snap-align-center ${period === p
-                                        ? 'text-day-accent dark:text-night-accent scale-110'
-                                        : 'text-gray-400 dark:text-gray-500'
+                                    ? 'text-day-accent dark:text-night-accent scale-110'
+                                    : 'text-gray-400 dark:text-gray-500'
                                     }`}
                                 style={{ scrollSnapAlign: 'center' }}
                             >
@@ -794,8 +794,8 @@ const TonightsSleepCard: React.FC<{
                                         key={rating}
                                         onClick={() => handleRatingSelect(rating)}
                                         className={`flex-1 py-2 px-1 rounded-lg flex flex-col items-center gap-1 transition-all ${dayRating === rating
-                                                ? 'bg-indigo-500 dark:bg-indigo-600 text-white scale-105 shadow-md'
-                                                : 'bg-white/50 dark:bg-gray-800/50 text-day-text-secondary dark:text-night-text-secondary hover:bg-white dark:hover:bg-gray-800'
+                                            ? 'bg-indigo-500 dark:bg-indigo-600 text-white scale-105 shadow-md'
+                                            : 'bg-white/50 dark:bg-gray-800/50 text-day-text-secondary dark:text-night-text-secondary hover:bg-white dark:hover:bg-gray-800'
                                             }`}
                                     >
                                         <span className="w-6 h-6">
@@ -896,7 +896,7 @@ export const AlarmsPage: React.FC<{ timeString: string, dateString: string, onNa
     return (
         <>
             <div className="flex flex-col h-full">
-                <header className="text-center mb-8 pt-8">
+                <header className="text-center mb-6 pt-16">
                     <h1 className="font-serif text-6xl md:text-8xl font-bold tracking-tight">{timeString}</h1>
                     <p className="text-md mt-2 tracking-wide">{dateString}</p>
                     <div className="mt-6">
