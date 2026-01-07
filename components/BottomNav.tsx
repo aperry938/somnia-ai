@@ -28,11 +28,13 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, setCurrentPag
     ];
 
     return (
-        <nav className="flex justify-around items-center px-2 py-2 pb-3 safe-area-bottom bg-day-card-bg/80 dark:bg-night-card-bg/80 backdrop-blur-lg border-t border-day-border dark:border-night-border">
+        <nav className="flex justify-around items-center px-2 py-2 pb-3 safe-area-bottom bg-day-card-bg/80 dark:bg-night-card-bg/80 backdrop-blur-lg border-t border-day-border dark:border-night-border" aria-label="Main navigation">
             {navItems.map(item => (
                 <button
                     key={item.page}
                     onClick={() => handleNavClick(item.page)}
+                    aria-label={`${item.label}${item.badge ? `, ${item.badge} new items` : ''}`}
+                    aria-current={currentPage === item.page ? 'page' : undefined}
                     className={`flex flex-col items-center flex-1 py-1 rounded-lg transition-colors duration-300 relative ${
                         currentPage === item.page
                             ? 'text-day-accent dark:text-night-accent'
@@ -40,14 +42,14 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, setCurrentPag
                     }`}
                 >
                     <div className="relative">
-                        {item.icon}
+                        <span aria-hidden="true">{item.icon}</span>
                         {item.badge && (
-                            <span className="absolute -top-1 -right-2 bg-day-accent dark:bg-night-accent text-white text-[10px] min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center">
+                            <span className="absolute -top-1 -right-2 bg-day-accent dark:bg-night-accent text-white text-[10px] min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center" aria-hidden="true">
                                 {item.badge > 99 ? '99+' : item.badge}
                             </span>
                         )}
                     </div>
-                    <span className={`text-xs mt-1 ${currentPage === item.page ? 'font-medium' : ''}`}>
+                    <span className={`text-xs mt-1 ${currentPage === item.page ? 'font-medium' : ''}`} aria-hidden="true">
                         {item.label}
                     </span>
                 </button>
