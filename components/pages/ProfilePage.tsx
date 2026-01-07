@@ -382,7 +382,7 @@ const ArtStyleCard: React.FC = () => {
                         }`}
                     >
                         <div className="mb-1" aria-hidden="true">{artStyleIcons[style.value]}</div>
-                        <p className="text-xs font-medium truncate">{style.label}</p>
+                        <p className="text-sm font-medium truncate">{style.label}</p>
                     </button>
                 ))}
             </div>
@@ -430,7 +430,7 @@ const NotificationsCard: React.FC = () => {
                     <div key={item.key} className="flex items-center justify-between">
                         <div>
                             <p className="font-medium text-sm">{item.label}</p>
-                            <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">{item.desc}</p>
+                            <p className="text-sm text-day-text-secondary dark:text-night-text-secondary">{item.desc}</p>
                         </div>
                         <button
                             onClick={() => updateSetting(item.key, !settings[item.key])}
