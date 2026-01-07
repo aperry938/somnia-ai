@@ -7,7 +7,7 @@ interface OnboardingCarouselProps {
 const slides = [
     {
         title: 'Rest Better. Live Better.',
-        description: 'Your complete sleep wellness ecosystem. Soothing sounds, guided breathwork, and intelligent dream analysis.',
+        description: 'Your complete sleep wellness ecosystem. Designed for deeper rest and clearer mornings.',
         subtitle: 'Where science meets the art of restful sleep.',
         icon: (
             <svg xmlns="http://www.w3.org/2000/svg" className="h-24 w-24 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
