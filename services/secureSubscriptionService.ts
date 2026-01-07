@@ -53,30 +53,42 @@ const DEV_PREMIUM_KEY = 'somnia_dev_premium';
 
 /**
  * DEV MODE: Check if developer mode is enabled
+ * SECURITY FIX: Only works in development environment
  */
 export function isDevMode(): boolean {
+    // SECURITY: Dev mode is ONLY available in development builds
+    if (!import.meta.env.DEV) return false;
     return localStorage.getItem(DEV_MODE_KEY) === 'true';
 }
 
 /**
  * DEV MODE: Toggle developer mode on/off
+ * SECURITY FIX: Only works in development environment
  */
 export function setDevMode(enabled: boolean): void {
+    // SECURITY: Silently ignore in production
+    if (!import.meta.env.DEV) return;
     localStorage.setItem(DEV_MODE_KEY, String(enabled));
     window.dispatchEvent(new CustomEvent('devModeChanged', { detail: { enabled } }));
 }
 
 /**
  * DEV MODE: Check if dev premium override is active
+ * SECURITY FIX: Only works in development environment
  */
 export function isDevPremium(): boolean {
+    // SECURITY: Dev premium is ONLY available in development builds
+    if (!import.meta.env.DEV) return false;
     return localStorage.getItem(DEV_PREMIUM_KEY) === 'true';
 }
 
 /**
  * DEV MODE: Set premium status for testing
+ * SECURITY FIX: Only works in development environment
  */
 export function setDevPremium(premium: boolean): void {
+    // SECURITY: Silently ignore in production
+    if (!import.meta.env.DEV) return;
     localStorage.setItem(DEV_PREMIUM_KEY, String(premium));
     window.dispatchEvent(new CustomEvent('subscriptionChanged', { detail: { isPremium: premium } }));
 }

@@ -1,5 +1,6 @@
 // services/exportService.ts
 import { Dream } from '../types';
+import { escapeHtml } from './validationService';
 
 /**
  * Generates a printable HTML document for dream journal export
@@ -17,25 +18,28 @@ const generatePrintableHTML = (dreams: Dream[]): string => {
             ? '★'.repeat(dream.sleepQuality) + '☆'.repeat(5 - dream.sleepQuality)
             : 'Not rated';
 
+        // SECURITY FIX: Escape all user-provided content to prevent XSS
+        const escapedTitle = escapeHtml(dream.title || 'Untitled Dream');
+        const escapedDreamText = escapeHtml(dream.dreamText);
         const tags = dream.tags?.length
-            ? dream.tags.map(t => `#${t}`).join(' ')
+            ? dream.tags.map(t => `#${escapeHtml(t)}`).join(' ')
             : '';
 
         const analysis = dream.aiAnalysis?.analysis
-            .map(a => `<h4>${a.title}</h4><p>${a.content}</p>`)
+            .map(a => `<h4>${escapeHtml(a.title)}</h4><p>${escapeHtml(a.content)}</p>`)
             .join('') || '';
 
         return `
             <div class="dream-entry">
                 <div class="dream-header">
-                    <h2>${dream.title || 'Untitled Dream'}</h2>
+                    <h2>${escapedTitle}</h2>
                     <p class="date">${date}</p>
                     <p class="quality">Sleep Quality: ${qualityStars}</p>
                     ${tags ? `<p class="tags">${tags}</p>` : ''}
                 </div>
                 <div class="dream-content">
                     <h3>Dream</h3>
-                    <p>${dream.dreamText}</p>
+                    <p>${escapedDreamText}</p>
                 </div>
                 ${analysis ? `
                     <div class="dream-analysis">
@@ -208,10 +212,42 @@ export const exportDreamsAsJSON = (dreams: Dream[]): void => {
 };
 
 /**
+ * SECURITY FIX: Validate imported dream object against expected schema
+ * Only allows known Dream properties, strips arbitrary data
+ */
+const validateDreamSchema = (obj: unknown, newId: number): Dream | null => {
+    if (!obj || typeof obj !== 'object') return null;
+
+    const raw = obj as Record<string, unknown>;
+
+    // Validate required fields exist and have correct types
+    if (typeof raw.dreamText !== 'string' || raw.dreamText.length === 0) return null;
+    if (typeof raw.timestamp !== 'string') return null;
+
+    // Construct clean Dream object with only valid properties
+    const validDream: Dream = {
+        id: newId,
+        timestamp: raw.timestamp as string,
+        dreamText: raw.dreamText as string,
+        title: typeof raw.title === 'string' ? raw.title : 'Untitled Dream',
+        sleepQuality: typeof raw.sleepQuality === 'number' && raw.sleepQuality >= 1 && raw.sleepQuality <= 5
+            ? raw.sleepQuality : null,
+        imageUrl: typeof raw.imageUrl === 'string' ? raw.imageUrl : null,
+        aiAnalysis: raw.aiAnalysis && typeof raw.aiAnalysis === 'object' ? raw.aiAnalysis as Dream['aiAnalysis'] : null,
+        chatHistory: Array.isArray(raw.chatHistory) ? raw.chatHistory : [],
+        sleepAids: raw.sleepAids && typeof raw.sleepAids === 'object' ? raw.sleepAids as Dream['sleepAids'] : undefined,
+        mood: typeof raw.mood === 'string' ? raw.mood as Dream['mood'] : undefined,
+        tags: Array.isArray(raw.tags) ? raw.tags.filter((t): t is string => typeof t === 'string') : undefined,
+    };
+
+    return validDream;
+};
+
+/**
  * Imports dreams from a JSON backup file.
  * Automatically re-assigns IDs to prevent collisions with existing dreams.
  * Validates the JSON structure before processing.
- * 
+ *
  * @param file - The JSON file selected by the user
  * @param existingDreams - Current dreams in state (used for ID generation)
  * @returns Promise<Dream[]> - Array of validated dreams with new unique IDs
@@ -229,7 +265,7 @@ export const importDreamsFromJSON = (
                 const parsed = JSON.parse(content);
 
                 // Support both versioned format { version, dreams } and raw array
-                let imported: Dream[];
+                let imported: unknown[];
                 if (Array.isArray(parsed)) {
                     imported = parsed;
                 } else if (parsed && Array.isArray(parsed.dreams)) {
@@ -241,13 +277,20 @@ export const importDreamsFromJSON = (
                 // Get max existing ID to avoid collisions
                 const maxExistingId = Math.max(0, ...existingDreams.map(d => d.id));
 
-                // Re-assign IDs to avoid collisions
-                const withNewIds = imported.map((dream, index) => ({
-                    ...dream,
-                    id: maxExistingId + index + 1
-                }));
+                // SECURITY FIX: Validate each dream against schema instead of spreading
+                const validDreams: Dream[] = [];
+                imported.forEach((dream, index) => {
+                    const validated = validateDreamSchema(dream, maxExistingId + index + 1);
+                    if (validated) {
+                        validDreams.push(validated);
+                    }
+                });
 
-                resolve(withNewIds);
+                if (validDreams.length === 0 && imported.length > 0) {
+                    throw new Error('No valid dreams found in import file');
+                }
+
+                resolve(validDreams);
             } catch (error) {
                 reject(new Error('Failed to parse JSON file'));
             }

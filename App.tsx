@@ -299,7 +299,8 @@ const App: React.FC = () => {
             <AlarmNotificationManager />
             <OfflineIndicator />
             <ThemeToggle />
-            <DevModeToggle />
+            {/* DevModeToggle only rendered in development - SECURITY FIX */}
+            {import.meta.env.DEV && <DevModeToggle />}
         </div>
     );
 };

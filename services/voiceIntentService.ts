@@ -66,6 +66,54 @@ USER COMMAND: "{command}"
 Respond with ONLY the JSON object, no explanation.`;
 
 /**
+ * SECURITY FIX: Sanitize voice transcript to prevent prompt injection
+ * Removes characters that could be used to escape the prompt context
+ */
+function sanitizeTranscript(transcript: string): string {
+    return transcript
+        // Remove JSON-like characters that could inject structure
+        .replace(/[{}\[\]"'`]/g, '')
+        // Remove potential escape sequences
+        .replace(/\\/g, '')
+        // Limit length to prevent overflow attacks
+        .slice(0, 200)
+        .trim();
+}
+
+/**
+ * SECURITY FIX: Validate parsed intent matches expected schema
+ */
+function validateIntent(parsed: unknown): VoiceIntent {
+    if (!parsed || typeof parsed !== 'object') {
+        return { type: 'UNKNOWN', rawText: 'Invalid response' };
+    }
+
+    const obj = parsed as Record<string, unknown>;
+    const validTypes = ['SET_ALARM', 'NAVIGATE', 'PLAY_SOUND', 'STOP_SOUND', 'LOG_DREAM', 'START_SLEEP_SESSION', 'UNKNOWN'];
+
+    if (!validTypes.includes(obj.type as string)) {
+        return { type: 'UNKNOWN', rawText: 'Invalid intent type' };
+    }
+
+    // Validate specific intent types
+    if (obj.type === 'NAVIGATE') {
+        const validPages = ['sleep', 'alarms', 'chronicle', 'insights'];
+        if (!validPages.includes(obj.page as string)) {
+            return { type: 'UNKNOWN', rawText: 'Invalid page' };
+        }
+    }
+
+    if (obj.type === 'PLAY_SOUND') {
+        const validSounds = ['gentle_rain', 'ocean_waves', 'fireplace', 'white_noise', 'pink_noise', 'brown_noise'];
+        if (!validSounds.includes(obj.soundId as string)) {
+            return { type: 'UNKNOWN', rawText: 'Invalid sound' };
+        }
+    }
+
+    return parsed as VoiceIntent;
+}
+
+/**
  * Parse voice command using Gemini AI
  */
 export async function parseVoiceIntent(transcript: string): Promise<VoiceIntent> {
@@ -77,7 +125,9 @@ export async function parseVoiceIntent(transcript: string): Promise<VoiceIntent>
 
     try {
         const ai = getAi();
-        const prompt = INTENT_PROMPT.replace('{command}', transcript);
+        // SECURITY FIX: Sanitize transcript before injecting into prompt
+        const sanitizedTranscript = sanitizeTranscript(transcript);
+        const prompt = INTENT_PROMPT.replace('{command}', sanitizedTranscript);
 
         const result = await ai.models.generateContent({
             model: 'gemini-2.0-flash',
@@ -88,8 +138,13 @@ export async function parseVoiceIntent(transcript: string): Promise<VoiceIntent>
         // Extract JSON from response
         const jsonMatch = response.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
-            const intent = JSON.parse(jsonMatch[0]) as VoiceIntent;
-            return intent;
+            try {
+                const parsed = JSON.parse(jsonMatch[0]);
+                // SECURITY FIX: Validate parsed intent against schema
+                return validateIntent(parsed);
+            } catch {
+                return { type: 'UNKNOWN', rawText: transcript };
+            }
         }
 
         return { type: 'UNKNOWN', rawText: transcript };

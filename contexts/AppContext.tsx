@@ -5,6 +5,19 @@ export type ArtStyle = 'surreal' | 'watercolor' | 'oil-painting' | 'anime' | 'ph
 import { enqueueAction } from '../services/syncService';
 import { cacheDreamTitle } from '../services/geminiService';
 
+/**
+ * SECURITY FIX: Generate cryptographically secure random ID
+ * Uses crypto.getRandomValues for unpredictable IDs instead of Date.now()
+ * Returns a positive integer in the safe integer range
+ */
+const generateSecureId = (): number => {
+    const array = new Uint32Array(2);
+    crypto.getRandomValues(array);
+    // Combine two 32-bit values to create a larger random number
+    // Use bitwise operations to ensure positive number in safe integer range
+    return Math.abs((array[0] * 0x100000000 + array[1]) % Number.MAX_SAFE_INTEGER);
+};
+
 interface AppContextType {
     alarms: Alarm[];
     dreams: Dream[];
@@ -186,7 +199,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const addAlarm = (time: string, smartWake: boolean = false, days: number[] = [], soundId: string = 'somnia', purpose: AlarmPurpose = 'sleep', label?: string): number => {
         const newAlarm: Alarm = {
-            id: Date.now(),
+            id: generateSecureId(),
             time,
             isActive: true, // New alarms are ALWAYS active
             smartWake,
@@ -245,7 +258,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const startSleepSession = useCallback((alarmId?: number) => {
         const alarm = alarmId ? alarms.find(a => a.id === alarmId) : getNextActiveAlarm();
         const newSession: SleepSession = {
-            id: Date.now(),
+            id: generateSecureId(),
             alarmId: alarm?.id ?? null,
             alarmTime: alarm?.time ?? null,
             startedAt: new Date().toISOString(),
@@ -311,7 +324,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         // Use sleep session data if available, otherwise fall back to pendingSleepData
         const sleepData = activeSleepSession?.sleepGatewayData ?? pendingSleepData ?? {};
         const newDream: Dream = {
-            id: Date.now(),
+            id: generateSecureId(),
             timestamp: new Date().toISOString(),
             dreamText,
             sleepQuality,
@@ -333,7 +346,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Add a past dream with custom timestamp (for Chronicle manual logging)
     const addPastDream = (dreamText: string, sleepQuality: number | null, mood: DreamMood | undefined, timestamp: string): number => {
         const newDream: Dream = {
-            id: Date.now(),
+            id: generateSecureId(),
             timestamp,
             dreamText,
             sleepQuality,
@@ -380,7 +393,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // ========== Sleep Entry CRUD ==========
     const addSleepEntry = (date: string, sleepQuality: number | null, notes?: string, sleepAids?: SleepAids): number => {
         const newEntry: SleepEntry = {
-            id: Date.now(),
+            id: generateSecureId(),
             date,
             sleepQuality,
             notes,
@@ -416,7 +429,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         if (!entry) return -1;
 
         const newDream: Dream = {
-            id: Date.now(),
+            id: generateSecureId(),
             timestamp: new Date().toISOString(),
             dreamText,
             sleepQuality: entry.sleepQuality, // Inherit from parent entry
