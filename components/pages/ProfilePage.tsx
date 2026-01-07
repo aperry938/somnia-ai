@@ -58,7 +58,7 @@ const ProfileInfoCard: React.FC = () => {
                                 value={localBiometrics.age || ''}
                                 onChange={handleChange}
                                 placeholder="Enter age"
-                                className="w-full p-2 mt-1 bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-md"
+                                className="w-full p-3 min-h-[48px] mt-1 text-base bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-md"
                             />
                         </div>
                         <div>
@@ -67,7 +67,7 @@ const ProfileInfoCard: React.FC = () => {
                                 name="gender"
                                 value={localBiometrics.gender}
                                 onChange={handleChange}
-                                className="w-full p-2 mt-1 bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-md"
+                                className="w-full p-3 min-h-[48px] mt-1 text-base bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-md"
                             >
                                 <option value="">Select...</option>
                                 <option value="Male">Male</option>
@@ -86,7 +86,7 @@ const ProfileInfoCard: React.FC = () => {
                             value={localBiometrics.occupation || ''}
                             onChange={handleChange}
                             placeholder="e.g., Software Engineer, Student, Artist"
-                            className="w-full p-2 mt-1 bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-md"
+                            className="w-full p-3 min-h-[48px] mt-1 text-base bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-md"
                         />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
@@ -101,7 +101,7 @@ const ProfileInfoCard: React.FC = () => {
                                 min="4"
                                 max="12"
                                 step="0.5"
-                                className="w-full p-2 mt-1 bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-md"
+                                className="w-full p-3 min-h-[48px] mt-1 text-base bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-md"
                             />
                         </div>
                         <div>
@@ -111,7 +111,7 @@ const ProfileInfoCard: React.FC = () => {
                                 name="wakeGoal"
                                 value={localBiometrics.wakeGoal || ''}
                                 onChange={handleChange}
-                                className="w-full p-2 mt-1 bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-md"
+                                className="w-full p-3 min-h-[48px] mt-1 text-base bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-md"
                             />
                         </div>
                     </div>
@@ -124,7 +124,7 @@ const ProfileInfoCard: React.FC = () => {
                             onChange={handleChange}
                             placeholder="e.g., 7"
                             step="0.5"
-                            className="w-full p-2 mt-1 bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-md"
+                            className="w-full p-3 min-h-[48px] mt-1 text-base bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-md"
                         />
                     </div>
                     <div className="flex gap-2 pt-2">
@@ -321,7 +321,7 @@ const ThemePreferenceCard: React.FC = () => {
                         onClick={() => setThemeOverride(opt.value)}
                         aria-pressed={themeOverride === opt.value}
                         aria-label={`${opt.label} theme`}
-                        className={`p-3 rounded-lg border-2 transition-all flex flex-col items-center ${
+                        className={`p-3 min-h-[64px] rounded-lg border-2 transition-all flex flex-col items-center justify-center ${
                             themeOverride === opt.value
                                 ? 'border-day-accent dark:border-night-accent bg-day-accent/10 dark:bg-night-accent/10 text-day-accent dark:text-night-accent'
                                 : 'border-day-border dark:border-night-border hover:border-day-accent/50 dark:hover:border-night-accent/50 text-day-text-secondary dark:text-night-text-secondary'
@@ -375,7 +375,7 @@ const ArtStyleCard: React.FC = () => {
                         onClick={() => setArtStyle(style.value)}
                         aria-pressed={artStyle === style.value}
                         aria-label={`${style.label} art style`}
-                        className={`p-3 rounded-lg border-2 transition-all flex flex-col items-center ${
+                        className={`p-3 min-h-[60px] rounded-lg border-2 transition-all flex flex-col items-center justify-center ${
                             artStyle === style.value
                                 ? 'border-day-accent dark:border-night-accent bg-day-accent/10 dark:bg-night-accent/10 text-day-accent dark:text-night-accent'
                                 : 'border-day-border dark:border-night-border hover:border-day-accent/50 dark:hover:border-night-accent/50 text-day-text-secondary dark:text-night-text-secondary'
