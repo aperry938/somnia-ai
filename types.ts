@@ -43,7 +43,7 @@ export interface Dream {
 }
 
 // Moods for tracking emotional patterns
-export type DreamMood = 'joyful' | 'peaceful' | 'anxious' | 'sad' | 'fearful' | 'confused' | 'neutral';
+export type DreamMood = 'joyful' | 'peaceful' | 'anxious' | 'sad' | 'fearful' | 'confused' | 'neutral' | 'nostalgic' | 'hopeful';
 
 export interface DreamAnalysis {
     title: string;

@@ -44,8 +44,8 @@ const getAi = (): GoogleGenAI => {
     }
     const API_KEY = process.env.API_KEY;
     if (!API_KEY) {
-        alert("Gemini API Key is not configured. Please set it up to use AI features.");
-        throw new Error("API_KEY is not set in process.env.");
+        logger.error("Gemini API Key is not configured.");
+        throw new Error("API_KEY is not set. Please configure the Gemini API key to use AI features.");
     }
     aiInstance = new GoogleGenAI({ apiKey: API_KEY });
     return aiInstance;
