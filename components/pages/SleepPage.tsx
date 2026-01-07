@@ -7,7 +7,7 @@ import { HardwareSyncModal } from '../modals/HardwareSyncModal';
 import { TechniqueInfoModal } from '../modals/TechniqueInfoModal';
 import { RealityCheckInfoModal } from '../modals/RealityCheckInfoModal';
 import { useAppContext } from '../../contexts/AppContext';
-import { setLiveVolume, stopSleepSound } from '../../services/audioService';
+import { stopSleepSound } from '../../services/audioService';
 import { REALITY_CHECKS, LUCID_TECHNIQUES, LucidDreamTechnique } from '../../constants/lucidDreaming';
 import { predictSleepQuality, SleepPrediction } from '../../services/sleepPredictionService';
 import { useWakeWindow } from '../../hooks/useWakeWindow';
@@ -56,15 +56,11 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
     const [lucidExpanded, setLucidExpanded] = useState(false);
 
     // Wake Window Hook
-    const { isSupported: motionSupported, movementLog, requestPermission } = useWakeWindow(isSleeping);
+    const { isSupported: motionSupported, movementLog } = useWakeWindow(isSleeping);
 
-    const { setActiveSleepAid, activeSleepAids, setPendingSleepData, dreams, volume, activeSleepSession, updateSleepSessionData, startSleepSession, getNextActiveAlarm, alarms } = useAppContext();
+    const { setActiveSleepAid, activeSleepAids, setPendingSleepData, dreams, volume, activeSleepSession, updateSleepSessionData, startSleepSession, alarms } = useAppContext();
 
-    // Check if user has an active alarm set
-    const nextAlarm = getNextActiveAlarm();
-    const hasActiveAlarm = alarms.some(a => a.isActive);
-
-    // Initialize session data from existing session if present
+    // Initialize session data from existing session if present (runs once on mount)
     useEffect(() => {
         if (activeSleepSession) {
             if (activeSleepSession.sleepGatewayData.dayRating !== undefined) {
@@ -74,6 +70,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                 setDayNotes(activeSleepSession.sleepGatewayData.dayNotes || '');
             }
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Update session data whenever dayRating or dayNotes change
@@ -444,7 +441,15 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                     }
 
                                     return (
-                                        <div key={sound.id} onClick={() => openSoundscapeModal(sound)} className={`${cardClasses} text-day-accent dark:text-night-accent`}>
+                                        <div
+                                            key={sound.id}
+                                            role="button"
+                                            tabIndex={0}
+                                            onClick={() => openSoundscapeModal(sound)}
+                                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openSoundscapeModal(sound); } }}
+                                            aria-label={`Play ${sound.name} soundscape`}
+                                            className={`${cardClasses} text-day-accent dark:text-night-accent focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent`}
+                                        >
                                             <div className="flex justify-center items-center h-12 w-12 mx-auto">{sound.icon}</div>
                                             <p className="mt-2 font-medium text-day-text-primary dark:text-night-text-primary">{sound.name}</p>
                                         </div>
@@ -481,7 +486,15 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                     }
 
                                     return (
-                                        <div key={item.id} onClick={() => openRelaxationModal(item)} className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-4 rounded-xl cursor-pointer transition-all hover:border-day-accent dark:hover:border-night-accent">
+                                        <div
+                                            key={item.id}
+                                            role="button"
+                                            tabIndex={0}
+                                            onClick={() => openRelaxationModal(item)}
+                                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openRelaxationModal(item); } }}
+                                            aria-label={`Open ${item.name} relaxation exercise`}
+                                            className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-4 rounded-xl cursor-pointer transition-all hover:border-day-accent dark:hover:border-night-accent focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent"
+                                        >
                                             <div className="flex flex-col items-center text-center">
                                                 <div className="text-day-accent dark:text-night-accent w-12 h-12 flex items-center justify-center">{item.icon}</div>
                                                 <h3 className="font-serif text-xl mt-2 text-day-text-primary dark:text-night-text-primary">{item.name}</h3>
