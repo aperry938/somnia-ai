@@ -4,6 +4,7 @@ import { useAppContext } from '../../contexts/AppContext';
 import { Dream, DreamMood, SleepEntry, SleepAids } from '../../types';
 import { exportDreamsAsJSON, exportDreamJournalToPDF, exportDreamsEncrypted, importDreamsEncrypted } from '../../services/exportService';
 import { MOOD_ICONS, MOOD_LABELS } from '../../constants/uiIcons';
+import { validateSearchQuery } from '../../services/validationService';
 import { AchievementsCard } from '../insights/AchievementsCard';
 import { SleepEntryCard } from '../chronicle/SleepEntryCard';
 import { AddSleepEntryModal } from '../modals/AddSleepEntryModal';
@@ -148,6 +149,8 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
                         onClick={() => setShowExportMenu(!showExportMenu)}
                         className="p-2 text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent transition-colors"
                         title="Export options"
+                        aria-label="Export options"
+                        aria-expanded={showExportMenu}
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -217,7 +220,7 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
                     <input
                         type="text"
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e) => setSearchQuery(validateSearchQuery(e.target.value))}
                         placeholder="Search sleep entries & dreams..."
                         aria-label="Search sleep entries and dreams"
                         className="w-full pl-10 pr-10 py-2 bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-full focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent"
