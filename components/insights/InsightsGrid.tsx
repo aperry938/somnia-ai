@@ -31,11 +31,10 @@ const EmotionsTab = lazy(() => import('./tabs/EmotionsTab'));
 const ThemesTab = lazy(() => import('./tabs/ThemesTab'));
 const PeopleTab = lazy(() => import('./tabs/PeopleTab'));
 const ContentTab = lazy(() => import('./tabs/ContentTab'));
-const LinguisticsTab = lazy(() => import('./tabs/LinguisticsTab'));
 const SettingsTab = lazy(() => import('./tabs/SettingsTab'));
 const TemporalTab = lazy(() => import('./tabs/TemporalTab'));
 
-const TABS = ['Quick Stats', 'Emotions', 'Themes', 'People', 'Content', 'Linguistics', 'Settings', 'Temporal'] as const;
+const TABS = ['Quick Stats', 'Emotions', 'Themes', 'People', 'Content', 'Settings', 'Temporal'] as const;
 
 export const InsightsGrid: React.FC<InsightsGridProps> = ({ dreams }) => {
     const [activeTab, setActiveTab] = useState<typeof TABS[number]>('Quick Stats');
@@ -58,8 +57,6 @@ export const InsightsGrid: React.FC<InsightsGridProps> = ({ dreams }) => {
                 return <PeopleTab {...props} />;
             case 'Content':
                 return <ContentTab {...props} />;
-            case 'Linguistics':
-                return <LinguisticsTab {...props} />;
             case 'Settings':
                 return <SettingsTab {...props} />;
             case 'Temporal':

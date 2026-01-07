@@ -10,7 +10,6 @@ import { SentimentChart } from '../insights/SentimentChart';
 import { DreamCalendar } from '../insights/DreamCalendar';
 import { DreamWordCloud } from '../insights/DreamWordCloud';
 import { DreamMoodTracker } from '../insights/DreamMoodTracker';
-import { LucidDreamProgress } from '../insights/LucidDreamProgress';
 import { SleepDurationChart } from '../insights/SleepDurationChart';
 import { DreamLengthInsights } from '../insights/DreamLengthInsights';
 import { DreamStreakCalendar } from '../insights/DreamStreakCalendar';
@@ -253,7 +252,6 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                             </svg>
                         </button>
 
-                        <LucidDreamProgress dreams={displayDreams} />
                         <SleepDurationChart dreams={displayDreams} />
                         <DreamLengthInsights dreams={displayDreams} />
 
