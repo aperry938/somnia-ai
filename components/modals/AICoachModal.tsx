@@ -169,13 +169,13 @@ export const AICoachModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
                     </div>
                     <button
                         onClick={onClose}
-                        className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-full hover:opacity-90 transition-opacity"
+                        className="w-full py-3 min-h-[48px] bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-full hover:opacity-90 transition-opacity flex items-center justify-center"
                     >
                         Upgrade to PRO
                     </button>
                     <button
                         onClick={onClose}
-                        className="mt-3 text-sm text-day-text-secondary dark:text-night-text-secondary hover:underline"
+                        className="mt-3 py-2 min-h-[44px] text-sm text-day-text-secondary dark:text-night-text-secondary hover:underline"
                     >
                         Maybe later
                     </button>
@@ -196,7 +196,7 @@ export const AICoachModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
                         <button
                             onClick={handleClearHistory}
                             aria-label="Clear chat history"
-                            className="text-xs text-day-text-secondary dark:text-night-text-secondary hover:text-red-500 transition-colors"
+                            className="text-xs min-h-[44px] px-3 py-2 text-day-text-secondary dark:text-night-text-secondary hover:text-red-500 transition-colors flex items-center"
                         >
                             Clear
                         </button>
@@ -209,7 +209,7 @@ export const AICoachModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
                             {msg.isError ? (
                                 <div className="text-center my-2 p-3 rounded-lg bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300">
                                     <p>{msg.parts[0].text}</p>
-                                    <button onClick={handleRetry} aria-label="Retry sending message" className="mt-2 px-3 py-1 bg-red-500 text-white text-sm rounded-full">Retry</button>
+                                    <button onClick={handleRetry} aria-label="Retry sending message" className="mt-2 px-4 py-2 min-h-[44px] bg-red-500 text-white text-sm rounded-full flex items-center justify-center mx-auto">Retry</button>
                                 </div>
                             ) : (
                                 <div className={`my-2 p-3 rounded-lg text-sm md:text-base ${msg.role === 'user' ? 'bg-indigo-100 dark:bg-indigo-900/50 text-right ml-auto' : 'bg-white/50 dark:bg-slate-700/50 text-left mr-auto'} max-w-[85%]`}>
@@ -230,12 +230,12 @@ export const AICoachModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
                         type="text"
                         placeholder="Ask for sleep advice..."
                         aria-label="Chat message input"
-                        className="flex-grow p-2 border rounded-full bg-white/50 dark:bg-black/20 focus:outline-none focus:ring-2 focus:ring-day-accent border-day-border dark:border-night-border"
+                        className="flex-grow p-3 min-h-[48px] text-base border rounded-full bg-white/50 dark:bg-black/20 focus:outline-none focus:ring-2 focus:ring-day-accent border-day-border dark:border-night-border"
                     />
                     <button
                         onClick={() => handleSend(input)}
                         aria-label="Send message"
-                        className="bg-day-accent dark:bg-night-accent text-white rounded-full px-4 disabled:opacity-50"
+                        className="bg-day-accent dark:bg-night-accent text-white rounded-full px-5 min-h-[48px] disabled:opacity-50 flex items-center justify-center"
                         disabled={isLoading || !input.trim()}
                     >
                         Send
