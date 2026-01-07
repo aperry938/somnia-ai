@@ -9,7 +9,6 @@
 export type PremiumFeature =
     | 'ai_analysis'
     | 'ai_imagery'
-    | 'ai_video'
     | 'ai_coach'
     | 'dream_synthesis'
     | 'sleep_habits'
@@ -21,13 +20,12 @@ export type PremiumFeature =
     | 'custom_alarm_sounds';
 
 // Subscription tier levels for feature gating
-export type SubscriptionTier = 'free' | 'premium' | 'ultra';
+export type SubscriptionTier = 'free' | 'premium';
 
 // Feature tier requirements
 export const FEATURE_TIERS: Record<PremiumFeature, SubscriptionTier> = {
     ai_analysis: 'premium',
     ai_imagery: 'premium',
-    ai_video: 'ultra',  // Higher tier for video generation
     ai_coach: 'premium',
     dream_synthesis: 'premium',
     sleep_habits: 'premium',
@@ -413,11 +411,6 @@ export const PREMIUM_FEATURES: Record<PremiumFeature, { name: string; descriptio
         description: 'Generate stunning AI art from your dreams in 8 unique styles',
         tier: 'premium',
     },
-    ai_video: {
-        name: 'Dream Video Generation',
-        description: 'Transform your dreams into cinematic video sequences',
-        tier: 'ultra',
-    },
     ai_coach: {
         name: 'AI Sleep Coach',
         description: 'Personalized sleep guidance with mystical or scientific personas',
@@ -464,20 +457,3 @@ export const PREMIUM_FEATURES: Record<PremiumFeature, { name: string; descriptio
         tier: 'free',
     },
 };
-
-// Pricing constants (for UI display only - actual prices in Stripe)
-export const ULTRA_PRICING = {
-    monthly: {
-        price: 9.99,
-        currency: 'USD',
-        interval: 'month',
-        priceId: import.meta.env.VITE_STRIPE_ULTRA_MONTHLY_PRICE_ID || '',
-    },
-    yearly: {
-        price: 79.99,
-        currency: 'USD',
-        interval: 'year',
-        savings: 33,
-        priceId: import.meta.env.VITE_STRIPE_ULTRA_YEARLY_PRICE_ID || '',
-    },
-} as const;
