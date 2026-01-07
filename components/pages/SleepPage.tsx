@@ -356,9 +356,9 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                             {GUIDED_RELAXATIONS.map(item => (
                                 <div key={item.id} onClick={() => openRelaxationModal(item)} className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-4 rounded-xl cursor-pointer transition-all hover:border-day-accent dark:hover:border-night-accent">
                                     <div className="flex flex-col items-center text-center">
-                                        <div className="text-day-accent dark:text-night-accent w-12 h-12">{item.icon}</div>
+                                        <div className="text-day-accent dark:text-night-accent w-12 h-12 flex items-center justify-center">{item.icon}</div>
                                         <h3 className="font-serif text-lg mt-2">{item.name}</h3>
-                                        <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-1">{item.description}</p>
+                                        <p className="text-sm text-day-text-secondary dark:text-night-text-secondary mt-1">{item.description}</p>
                                     </div>
                                 </div>
                             ))}
