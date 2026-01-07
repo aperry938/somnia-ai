@@ -68,10 +68,16 @@ export const useClock = () => {
     useEffect(() => {
         const root = document.documentElement;
 
-        if (theme === 'night') {
+        // Apply dark class for night themes
+        if (theme === 'night' || theme === 'deep-night') {
             root.classList.add('dark');
         } else {
             root.classList.remove('dark');
+        }
+
+        // Handle manual deep-night theme
+        if (themeOverride === 'deep-night') {
+            root.dataset.circadianPhase = 'night'; // Uses deep night CSS
         }
 
         // Only apply circadian styling in auto mode

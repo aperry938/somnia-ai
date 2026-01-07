@@ -99,7 +99,7 @@ export interface Achievement {
     icon: ReactElement;
 }
 
-export type Theme = 'day' | 'night';
+export type Theme = 'day' | 'night' | 'deep-night';
 
 export interface DreamSynthesis {
     overallSummary: string;

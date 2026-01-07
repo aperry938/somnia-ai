@@ -11,14 +11,16 @@ export const ThemeToggle: React.FC = () => {
             case 'auto': return 'Circadian';
             case 'day': return 'Day';
             case 'night': return 'Night';
+            case 'deep-night': return 'Deep Night';
             default: return '';
         }
     };
 
     const cycleTheme = () => {
-        let nextTheme: 'auto' | 'day' | 'night';
+        let nextTheme: 'auto' | 'day' | 'night' | 'deep-night';
         if (themeOverride === 'auto') nextTheme = 'day';
         else if (themeOverride === 'day') nextTheme = 'night';
+        else if (themeOverride === 'night') nextTheme = 'deep-night';
         else nextTheme = 'auto';
 
         setThemeOverride(nextTheme);
@@ -52,6 +54,12 @@ export const ThemeToggle: React.FC = () => {
                 return (
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                    </svg>
+                );
+            case 'deep-night':
+                return (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 3a9 9 0 109 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 01-4.4 2.26 5.403 5.403 0 01-3.14-9.8c-.44-.06-.9-.1-1.36-.1z" />
                     </svg>
                 );
         }
