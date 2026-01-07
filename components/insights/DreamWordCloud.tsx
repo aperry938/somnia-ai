@@ -78,13 +78,14 @@ export const DreamWordCloud: React.FC<WordCloudProps> = ({ dreams }) => {
                 Dream Vocabulary
             </h3>
 
-            <div className="flex flex-wrap gap-2 justify-center items-center min-h-[80px]">
+            <div className="flex flex-wrap gap-2 justify-center items-center min-h-[80px]" role="img" aria-label={`Word cloud showing top ${words.length} dream vocabulary words. Most common: ${words.slice(0, 5).map(w => w.word).join(', ')}`}>
                 {words.map(({ word, count, size, opacity }) => (
                     <span
                         key={word}
                         style={{ fontSize: `${size}px`, opacity }}
                         className="text-day-accent dark:text-night-accent hover:opacity-100 cursor-default transition-opacity"
                         title={`"${word}" appears ${count} time${count !== 1 ? 's' : ''}`}
+                        aria-hidden="true"
                     >
                         {word}
                     </span>

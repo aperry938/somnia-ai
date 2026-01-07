@@ -53,7 +53,7 @@ export const WeeklyDigest: React.FC<WeeklyDigestProps> = ({ dreams }) => {
                     <p className="text-sm text-day-text-secondary dark:text-night-text-secondary uppercase tracking-wider mb-1">Avg Sleep Quality</p>
                     <div className="flex items-center justify-center gap-2">
                         <p className="text-4xl font-light font-serif">{stats.avgQuality.toFixed(1)}</p>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" /></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-500" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" /></svg>
                     </div>
                 </div>
                 <div className="bg-white/50 dark:bg-black/20 p-4 rounded-lg text-center">
