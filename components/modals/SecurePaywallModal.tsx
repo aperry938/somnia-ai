@@ -99,7 +99,7 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
                 <div className="relative p-6 pb-0">
                     <button
                         onClick={onClose}
-                        className="absolute top-4 right-4 text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent transition-colors"
+                        className="absolute top-2 right-2 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent transition-colors rounded-full hover:bg-black/5 dark:hover:bg-white/5"
                         aria-label="Close"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -146,7 +146,7 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
                             onClick={() => setSelectedPlan('monthly')}
                             aria-label="Monthly plan"
                             aria-pressed={selectedPlan === 'monthly'}
-                            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${selectedPlan === 'monthly'
+                            className={`px-5 py-2 min-h-[44px] rounded-full text-sm font-medium transition-colors flex items-center justify-center ${selectedPlan === 'monthly'
                                 ? 'bg-day-accent dark:bg-night-accent text-white'
                                 : 'bg-day-border dark:bg-night-border'
                                 }`}
@@ -157,7 +157,7 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
                             onClick={() => setSelectedPlan('yearly')}
                             aria-label={`Yearly plan, save ${PRICING.yearly.savings}%`}
                             aria-pressed={selectedPlan === 'yearly'}
-                            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${selectedPlan === 'yearly'
+                            className={`px-5 py-2 min-h-[44px] rounded-full text-sm font-medium transition-colors flex items-center justify-center ${selectedPlan === 'yearly'
                                 ? 'bg-day-accent dark:bg-night-accent text-white'
                                 : 'bg-day-border dark:bg-night-border'
                                 }`}
@@ -193,7 +193,7 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
                     <button
                         onClick={handleSubscribe}
                         disabled={isProcessing}
-                        className="w-full py-3 bg-gradient-to-r from-day-accent to-purple-600 text-white rounded-full font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                        className="w-full py-3 min-h-[48px] bg-gradient-to-r from-day-accent to-purple-600 text-white rounded-full font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
                     >
                         {isProcessing ? (
                             <span className="flex items-center justify-center gap-2">
