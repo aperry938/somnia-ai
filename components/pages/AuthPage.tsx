@@ -115,7 +115,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSkip }) => {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                         </svg>
                     </div>
-                    <h1 className="font-serif text-4xl mb-2">Somnia</h1>
+                    <h1 className="font-serif text-4xl mb-2 text-day-text-primary dark:text-night-text-primary">Somnia</h1>
                     <p className="text-day-text-secondary dark:text-night-text-secondary">
                         {mode === 'login' && 'Welcome back'}
                         {mode === 'signup' && 'Start your wellness journey'}
@@ -135,7 +135,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSkip }) => {
                                 onChange={(e) => setEmail(e.target.value)}
                                 placeholder="you@example.com"
                                 required
-                                className="w-full px-4 py-3 min-h-[48px] text-base bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-xl focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent transition-all"
+                                className="w-full px-4 py-3 min-h-[48px] text-base text-day-text-primary dark:text-night-text-primary bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-xl focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent transition-all placeholder:text-day-text-secondary/50 dark:placeholder:text-night-text-secondary/50"
                             />
                         </div>
 
@@ -150,7 +150,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSkip }) => {
                                     placeholder="Enter your password"
                                     required
                                     minLength={8}
-                                    className="w-full px-4 py-3 min-h-[48px] text-base bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-xl focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent transition-all"
+                                    className="w-full px-4 py-3 min-h-[48px] text-base text-day-text-primary dark:text-night-text-primary bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-xl focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent transition-all placeholder:text-day-text-secondary/50 dark:placeholder:text-night-text-secondary/50"
                                 />
                             </div>
                         )}
@@ -166,7 +166,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSkip }) => {
                                     placeholder="Confirm your password"
                                     required
                                     minLength={8}
-                                    className="w-full px-4 py-3 min-h-[48px] text-base bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-xl focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent transition-all"
+                                    className="w-full px-4 py-3 min-h-[48px] text-base text-day-text-primary dark:text-night-text-primary bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-xl focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent transition-all placeholder:text-day-text-secondary/50 dark:placeholder:text-night-text-secondary/50"
                                 />
                             </div>
                         )}
