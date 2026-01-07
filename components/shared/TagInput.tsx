@@ -80,17 +80,20 @@ export const TagInput: React.FC<TagInputProps> = ({
                     onFocus={() => setShowSuggestions(true)}
                     onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                     placeholder={tags.length === 0 ? placeholder : ''}
+                    aria-label="Add tag"
                     className="flex-1 min-w-[100px] bg-transparent outline-none text-sm"
                 />
             </div>
 
             {/* Suggestions dropdown */}
             {showSuggestions && inputValue && filteredSuggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-lg shadow-lg z-10 overflow-hidden">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-lg shadow-lg z-10 overflow-hidden" role="listbox" aria-label="Tag suggestions">
                     {filteredSuggestions.map(suggestion => (
                         <button
                             key={suggestion}
                             onClick={() => addTag(suggestion)}
+                            role="option"
+                            aria-label={`Add tag ${suggestion}`}
                             className="w-full text-left px-3 py-2 text-sm hover:bg-day-accent/10 dark:hover:bg-night-accent/10 transition-colors"
                         >
                             #{suggestion}

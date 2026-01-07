@@ -16,12 +16,15 @@ export const KeyboardShortcutsHelp: React.FC<{ isOpen: boolean; onClose: () => v
         <div
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             onClick={onClose}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="keyboard-help-title"
         >
             <div
                 className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-xl p-6 max-w-sm w-full animate-fadeIn"
                 onClick={(e) => e.stopPropagation()}
             >
-                <h2 className="font-serif text-2xl mb-4">Keyboard Shortcuts</h2>
+                <h2 id="keyboard-help-title" className="font-serif text-2xl mb-4">Keyboard Shortcuts</h2>
                 <div className="space-y-2">
                     {shortcuts.map(s => (
                         <div key={s.key} className="flex justify-between items-center">
@@ -34,6 +37,7 @@ export const KeyboardShortcutsHelp: React.FC<{ isOpen: boolean; onClose: () => v
                 </div>
                 <button
                     onClick={onClose}
+                    aria-label="Close keyboard shortcuts help"
                     className="mt-6 w-full py-2 bg-day-accent dark:bg-night-accent text-white rounded-full font-medium"
                 >
                     Got it
