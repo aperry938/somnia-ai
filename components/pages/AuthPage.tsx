@@ -110,12 +110,12 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSkip }) => {
             <div className="max-w-md w-full">
                 {/* Logo */}
                 <div className="text-center mb-12">
-                    <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="w-28 h-28 mx-auto mb-4 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-14 w-14 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                         </svg>
                     </div>
-                    <h1 className="font-serif text-5xl mb-2 text-day-text-primary dark:text-night-text-primary">Somnia</h1>
+                    <h1 className="font-serif text-7xl mb-2 text-day-text-primary dark:text-night-text-primary">Somnia</h1>
                     <p className="text-day-text-secondary dark:text-night-text-secondary">
                         {mode === 'signup' && 'Start your wellness journey'}
                         {mode === 'reset' && 'Reset your password'}
