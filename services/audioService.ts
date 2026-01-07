@@ -534,14 +534,6 @@ export const playAlarmPreview = (soundId: string) => {
             previewOscillator.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 60);
             previewGainNode.gain.exponentialRampToValueAtTime(1.0, ctx.currentTime + 60);
             break;
-        case 'progressive':
-            // Progressive Dream - grows to very loud over 45 seconds
-            previewOscillator.type = 'sine';
-            previewOscillator.frequency.setValueAtTime(300, ctx.currentTime);
-            previewGainNode.gain.setValueAtTime(0.05, ctx.currentTime);
-            previewOscillator.frequency.exponentialRampToValueAtTime(700, ctx.currentTime + 45);
-            previewGainNode.gain.exponentialRampToValueAtTime(1.0, ctx.currentTime + 45);
-            break;
         case 'gentle':
             // Soft, low frequency sine wave with slow pulse - 30 second cycle
             previewOscillator.type = 'sine';
@@ -553,36 +545,61 @@ export const playAlarmPreview = (soundId: string) => {
                 previewGainNode.gain.linearRampToValueAtTime(0.1, ctx.currentTime + i * 2 + 2);
             }
             break;
-        case 'chimes':
-            // Higher frequency with more harmonic content - 30 second cycle
-            previewOscillator.type = 'triangle';
-            previewOscillator.frequency.setValueAtTime(523, ctx.currentTime); // C5
-            // Add shimmer effect over 30 seconds
-            for (let i = 0; i < 10; i++) {
-                previewOscillator.frequency.setValueAtTime(523, ctx.currentTime + i * 3);
-                previewOscillator.frequency.linearRampToValueAtTime(659, ctx.currentTime + i * 3 + 0.75);
-                previewOscillator.frequency.linearRampToValueAtTime(784, ctx.currentTime + i * 3 + 1.5);
-                previewOscillator.frequency.linearRampToValueAtTime(523, ctx.currentTime + i * 3 + 2.25);
-            }
-            break;
-        case 'nature':
-            // Soft binaural-like with nature feel - 30 second cycle
-            previewOscillator.type = 'sine';
-            previewOscillator.frequency.setValueAtTime(174, ctx.currentTime); // Deep earth tone
-            previewGainNode.gain.setValueAtTime(0.15, ctx.currentTime);
-            // Gentle frequency modulation over 30 seconds
-            for (let i = 0; i < 10; i++) {
-                previewOscillator.frequency.linearRampToValueAtTime(196, ctx.currentTime + i * 3 + 1.5);
-                previewOscillator.frequency.linearRampToValueAtTime(174, ctx.currentTime + i * 3 + 3);
-            }
-            break;
         case 'classic':
-        default:
             // Traditional beeping alarm pattern - 30 second cycle
             previewOscillator.type = 'square';
             previewOscillator.frequency.setValueAtTime(880, ctx.currentTime);
             previewGainNode.gain.setValueAtTime(0.2, ctx.currentTime);
             // Classic beep pattern over 30 seconds
+            for (let i = 0; i < 30; i++) {
+                previewGainNode.gain.setValueAtTime(0.2, ctx.currentTime + i);
+                previewGainNode.gain.setValueAtTime(0, ctx.currentTime + i + 0.5);
+            }
+            break;
+        case 'prism':
+            // Ethereal glass chimes - pentatonic shimmer
+            previewOscillator.type = 'sine';
+            previewGainNode.gain.setValueAtTime(0.15, ctx.currentTime);
+            // Play pentatonic sequence like crystalline chimes
+            const prismNotes = [523.25, 392, 440, 329.63, 293.66, 261.63];
+            for (let i = 0; i < 10; i++) {
+                const note = prismNotes[i % prismNotes.length];
+                const t = ctx.currentTime + i * 2 + Math.random() * 0.5;
+                previewOscillator.frequency.setValueAtTime(note, t);
+                previewGainNode.gain.setValueAtTime(0.2, t);
+                previewGainNode.gain.exponentialRampToValueAtTime(0.05, t + 1.5);
+            }
+            break;
+        case 'aether':
+            // Cinematic sunrise drone - detuned sawtooth with filter sweep feel
+            previewOscillator.type = 'sawtooth';
+            previewOscillator.frequency.setValueAtTime(110, ctx.currentTime);
+            previewGainNode.gain.setValueAtTime(0.05, ctx.currentTime);
+            // Simulate filter opening (brighter over time)
+            previewOscillator.frequency.exponentialRampToValueAtTime(220, ctx.currentTime + 30);
+            previewGainNode.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 30);
+            break;
+        case 'bamboo':
+            // Hollow wood pulse - rhythmic with acceleration
+            previewOscillator.type = 'sine';
+            previewOscillator.frequency.setValueAtTime(150, ctx.currentTime);
+            // Create accelerating pulse pattern like heartbeat
+            let baseBeat = 0;
+            let interval = 1.0;
+            for (let i = 0; i < 20 && baseBeat < 20; i++) {
+                previewGainNode.gain.setValueAtTime(0.3, ctx.currentTime + baseBeat);
+                previewOscillator.frequency.setValueAtTime(300, ctx.currentTime + baseBeat);
+                previewGainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + baseBeat + 0.15);
+                previewOscillator.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + baseBeat + 0.15);
+                baseBeat += interval;
+                interval = Math.max(0.4, interval * 0.92); // Accelerate
+            }
+            break;
+        default:
+            // Fallback to classic
+            previewOscillator.type = 'square';
+            previewOscillator.frequency.setValueAtTime(880, ctx.currentTime);
+            previewGainNode.gain.setValueAtTime(0.2, ctx.currentTime);
             for (let i = 0; i < 30; i++) {
                 previewGainNode.gain.setValueAtTime(0.2, ctx.currentTime + i);
                 previewGainNode.gain.setValueAtTime(0, ctx.currentTime + i + 0.5);
