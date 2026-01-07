@@ -54,7 +54,7 @@ const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = Re
             aria-label={`Alarm at ${displayTime} ${period}${alarm.label ? `, ${alarm.label}` : ''}, ${formatRepeatText(alarm.days)}, ${alarm.isActive ? 'enabled' : 'disabled'}`}
             className={`group relative bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border shadow-lg rounded-2xl p-4 cursor-pointer transition-all duration-300 flex flex-col justify-between h-32 hover:shadow-xl hover:scale-[1.02] hover:border-day-accent dark:hover:border-night-accent active:scale-[0.98] ${alarm.isActive
                 ? 'ring-2 ring-day-accent/30 dark:ring-night-accent/30'
-                : 'opacity-60 hover:opacity-100'
+                : 'opacity-80 hover:opacity-100'
                 }`}
         >
             {/* Active indicator glow */}
@@ -324,7 +324,7 @@ const ALARM_SOUNDS = [
     { id: 'bamboo', name: 'Bamboo', description: 'Hollow wood pulse' },
 ];
 
-const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
 // Helper to get current time in HH:MM format
 const getCurrentTimeString = (): string => {
@@ -445,15 +445,15 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
     // Show saved confirmation - only offer Sleep Gateway for sleep alarms
     if (showSavedConfirmation) {
         return (
-            <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={handleDismissConfirmation}>
+            <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={handleDismissConfirmation} role="dialog" aria-modal="true" aria-labelledby="alarm-saved-title">
                 <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-sm animate-fadeIn text-center" onClick={(e) => e.stopPropagation()}>
                     {/* Success checkmark */}
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center" aria-hidden="true">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
                     </div>
-                    <h2 className="font-serif text-2xl mb-2">{purpose === 'sleep' ? 'Alarm Saved!' : 'Reminder Set!'}</h2>
+                    <h2 id="alarm-saved-title" className="font-serif text-2xl mb-2">{purpose === 'sleep' ? 'Alarm Saved!' : 'Reminder Set!'}</h2>
                     <p className="text-day-text-secondary dark:text-night-text-secondary mb-6">
                         {label && <span className="block font-medium mb-1">{label}</span>}
                         Your {purpose === 'sleep' ? 'alarm' : 'reminder'} is set for <span className="font-medium text-day-accent dark:text-night-accent">{time}</span>

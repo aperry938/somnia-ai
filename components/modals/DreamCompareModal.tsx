@@ -119,11 +119,11 @@ export const DreamCompareModal: React.FC<DreamCompareModalProps> = ({ dreams, on
                             <div className="grid grid-cols-3 gap-4 text-xs">
                                 <div>
                                     <p className="text-day-text-secondary dark:text-night-text-secondary mb-1">Only in Left</p>
-                                    {uniqueLeft.map(t => <span key={t} className="inline-block mr-1 mb-1 px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300 rounded-full">#{t}</span>)}
+                                    {uniqueLeft.map(t => <span key={t} className="inline-block mr-1 mb-1 px-2 py-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-300 rounded-full">#{t}</span>)}
                                 </div>
                                 <div className="text-center">
                                     <p className="text-day-text-secondary dark:text-night-text-secondary mb-1">Shared</p>
-                                    {sharedTags.map(t => <span key={t} className="inline-block mr-1 mb-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-300 rounded-full">#{t}</span>)}
+                                    {sharedTags.map(t => <span key={t} className="inline-block mr-1 mb-1 px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 rounded-full">#{t}</span>)}
                                 </div>
                                 <div className="text-right">
                                     <p className="text-day-text-secondary dark:text-night-text-secondary mb-1">Only in Right</p>

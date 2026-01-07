@@ -98,6 +98,7 @@ const App: React.FC = () => {
                 case '2': setCurrentPage('sleep'); break;
                 case '3': setCurrentPage('chronicle'); break;
                 case '4': setCurrentPage('insights'); break;
+                case '5': setCurrentPage('profile'); break;
             }
         };
         window.addEventListener('keydown', handleKeyNav);
@@ -313,10 +314,13 @@ const RealityCheckManager = () => {
         <button
             onClick={requestPermission}
             aria-label="Enable Reality Check Notifications"
-            className="fixed bottom-20 left-4 text-xs min-h-[44px] min-w-[44px] bg-white/10 backdrop-blur px-3 py-2 rounded-lg text-white/50 hover:bg-white/20 transition-all z-50 flex items-center justify-center"
+            className="fixed bottom-20 left-4 text-xs min-h-[44px] bg-white/20 backdrop-blur px-3 py-2 rounded-lg text-white/90 hover:bg-white/30 transition-all z-50 flex items-center justify-center gap-1"
             title="Enable Reality Check Notifications"
         >
-            RC
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            Reality Check
         </button>
     );
 };

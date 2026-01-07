@@ -10,6 +10,7 @@ import { SleepEntryCard } from '../chronicle/SleepEntryCard';
 import { AddSleepEntryModal } from '../modals/AddSleepEntryModal';
 import { AddDreamToEntryModal } from '../modals/AddDreamToEntryModal';
 import { PasswordInputModal } from '../modals/PasswordInputModal';
+import { useToast } from '../shared/Toast';
 
 // Legacy DreamItem for backwards compatibility (dreams without sleepEntryId)
 const LegacyDreamItem: React.FC<{ dream: Dream; onSelect: (id: number) => void; onTagClick: (tag: string) => void }> = React.memo(({ dream, onSelect, onTagClick }) => {
@@ -70,6 +71,7 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
         addDreamToSleepEntry,
         getSleepEntryById
     } = useAppContext();
+    const { showToast } = useToast();
 
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -171,14 +173,14 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
             try {
                 const restored = await importDreamsEncrypted(file, dreams, '');
                 importDreams(restored);
-                alert(`Successfully restored ${restored.length} dreams!`);
+                showToast(`Successfully restored ${restored.length} dreams!`, 'success');
             } catch (error) {
                 const message = error instanceof Error ? error.message : 'Unknown error';
-                alert(`Restore failed: ${message}`);
+                showToast(`Restore failed: ${message}`, 'error');
             }
         }
         setShowExportMenu(false);
-    }, [dreams, importDreams]);
+    }, [dreams, importDreams, showToast]);
 
     // Handle password submission
     const handlePasswordSubmit = useCallback(async (password: string) => {
@@ -193,7 +195,7 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
                 importDreams(restored);
                 setPasswordModalOpen(false);
                 setPendingImportFile(null);
-                alert(`Successfully restored ${restored.length} dreams!`);
+                showToast(`Successfully restored ${restored.length} dreams!`, 'success');
             }
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Unknown error';
@@ -203,7 +205,7 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
                 setPasswordError(message);
             }
         }
-    }, [passwordMode, dreams, pendingImportFile, importDreams]);
+    }, [passwordMode, dreams, pendingImportFile, importDreams, showToast]);
 
     // Handle password modal cancel
     const handlePasswordCancel = useCallback(() => {

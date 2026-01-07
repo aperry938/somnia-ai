@@ -8,6 +8,7 @@ export const KeyboardShortcutsHelp: React.FC<{ isOpen: boolean; onClose: () => v
         { key: '2', description: 'Go to Sleep' },
         { key: '3', description: 'Go to Chronicle' },
         { key: '4', description: 'Go to Insights' },
+        { key: '5', description: 'Go to Profile' },
         { key: '?', description: 'Show this help' },
         { key: 'Esc', description: 'Close dialogs' },
     ];
