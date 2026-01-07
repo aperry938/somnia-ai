@@ -3,6 +3,7 @@ import { ChatMessage, Dream, DreamAnalysis, DreamSynthesis, SleepHabitAnalysis, 
 import { requirePremium, canUseAiAnalysis, useAiCredit, getRemainingCredits } from './secureSubscriptionService';
 import { checkRateLimit, RateLimitError } from './rateLimitService';
 import { logError } from './errorService';
+import { logger } from './logger';
 import {
     SOMNIA_IDENTITY,
     COACH_PERSONAS,
@@ -142,13 +143,13 @@ export const analyzeDream = async (dreamText: string, sleepAids?: SleepAids, bio
         try {
             result = JSON.parse(rawJson) as DreamAnalysis;
         } catch (parseError) {
-            console.error("Failed to parse dream analysis JSON:", parseError, "Raw:", rawJson.slice(0, 200));
+            logger.error("Failed to parse dream analysis JSON:", parseError, "Raw:", rawJson.slice(0, 200));
             throw new Error("Failed to parse AI response. Please try again.");
         }
 
         // Validate required fields
         if (!result.title || !result.analysis || !result.integration) {
-            console.error("Invalid dream analysis structure:", result);
+            logger.error("Invalid dream analysis structure:", result);
             throw new Error("AI returned incomplete analysis. Please try again.");
         }
 
@@ -288,7 +289,7 @@ Return ONLY the title, nothing else. No quotes, no explanation.`;
 
             return title;
         } catch (error) {
-            console.error("Error generating dream title:", error);
+            logger.error("Error generating dream title:", error);
             return 'Untitled Dream';
         } finally {
             // Clean up pending request tracker
@@ -420,13 +421,13 @@ export const synthesizeDreamThemes = async (dreams: Dream[]): Promise<DreamSynth
         try {
             result = JSON.parse(rawJson) as DreamSynthesis;
         } catch (parseError) {
-            console.error("Failed to parse dream synthesis JSON:", parseError, "Raw:", rawJson.slice(0, 200));
+            logger.error("Failed to parse dream synthesis JSON:", parseError, "Raw:", rawJson.slice(0, 200));
             throw new Error("Failed to parse AI response. Please try again.");
         }
 
         // Validate required fields
         if (!result.overallSummary && !result.recurringThemes) {
-            console.error("Invalid dream synthesis structure:", result);
+            logger.error("Invalid dream synthesis structure:", result);
             throw new Error("AI returned incomplete synthesis. Please try again.");
         }
 
@@ -481,13 +482,13 @@ export const analyzeSleepHabits = async (dreams: Dream[]): Promise<SleepHabitAna
         try {
             result = JSON.parse(rawJson) as SleepHabitAnalysis;
         } catch (parseError) {
-            console.error("Failed to parse sleep habits JSON:", parseError, "Raw:", rawJson.slice(0, 200));
+            logger.error("Failed to parse sleep habits JSON:", parseError, "Raw:", rawJson.slice(0, 200));
             throw new Error("Failed to parse AI response. Please try again.");
         }
 
         // Validate required fields
         if (!result.positiveCorrelations && !result.negativeCorrelations && !result.recommendations) {
-            console.error("Invalid sleep habits structure:", result);
+            logger.error("Invalid sleep habits structure:", result);
             throw new Error("AI returned incomplete analysis. Please try again.");
         }
 

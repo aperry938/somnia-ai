@@ -147,7 +147,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
             });
             setAnalysisState('success');
         } catch (e) {
-            console.error(e);
+            logger.error(e);
             setAnalysisState('error');
         }
     }, [dream, updateDream, analysisPersonality, selectedArtStyle, biometrics]);
@@ -198,7 +198,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                                         showToast('Dream copied to clipboard');
                                     }
                                 } catch (err) {
-                                    console.error('Share failed:', err);
+                                    logger.error('Share failed:', err);
                                 }
                             }}
                             aria-label="Share dream"

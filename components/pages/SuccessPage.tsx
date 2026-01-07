@@ -18,7 +18,7 @@ export const SuccessPage: React.FC<SuccessPageProps> = ({ onBack }) => {
                     const newStatus = await verifySubscription(session.access_token);
                     setStatus(newStatus);
                 } catch (error) {
-                    console.error('Failed to verify subscription:', error);
+                    logger.error('Failed to verify subscription:', error);
                 }
             }
             setIsVerifying(false);

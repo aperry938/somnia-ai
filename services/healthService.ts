@@ -76,7 +76,7 @@ export const isHealthKitAvailable = (): boolean => {
  */
 export const requestHealthAuthorization = async (): Promise<boolean> => {
     if (!isHealthKitAvailable()) {
-        console.warn('[HealthService] Native health integration not available');
+        logger.warn('[HealthService] Native health integration not available');
         return false;
     }
 
@@ -86,7 +86,7 @@ export const requestHealthAuthorization = async (): Promise<boolean> => {
         // return result.authorized;
         return false; // Not implemented without native plugin
     } catch (e) {
-        console.error('[HealthService] Authorization failed:', e);
+        logger.error('[HealthService] Authorization failed:', e);
         return false;
     }
 };
@@ -99,12 +99,12 @@ export const fetchSleepSamples = async (_days: number = 7): Promise<HKCategorySa
     const status = getHealthConnectionStatus();
 
     if (!status.isConnected) {
-        console.warn('[HealthService] No health platform connected');
+        logger.warn('[HealthService] No health platform connected');
         return [];
     }
 
     if (!isHealthKitAvailable()) {
-        console.warn('[HealthService] Native integration not available');
+        logger.warn('[HealthService] Native integration not available');
         return [];
     }
 
@@ -114,7 +114,7 @@ export const fetchSleepSamples = async (_days: number = 7): Promise<HKCategorySa
         // return result.samples;
         return []; // Not implemented without native plugin
     } catch (e) {
-        console.error('[HealthService] Failed to fetch sleep samples:', e);
+        logger.error('[HealthService] Failed to fetch sleep samples:', e);
         return [];
     }
 };
@@ -152,7 +152,7 @@ export const syncBiometrics = async (): Promise<Partial<Biometrics> | null> => {
         // return { avgSleep: result.avgSleepHours, ... };
         return null; // Not implemented without native plugin
     } catch (e) {
-        console.error('[HealthService] Failed to sync biometrics:', e);
+        logger.error('[HealthService] Failed to sync biometrics:', e);
         return null;
     }
 };

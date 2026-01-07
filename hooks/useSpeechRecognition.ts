@@ -76,7 +76,7 @@ export const useSpeechRecognition = (onFinalTranscript: (transcript: string) => 
     useEffect(() => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
-            console.error("Speech Recognition not supported by this browser.");
+            logger.error("Speech Recognition not supported by this browser.");
             return;
         }
 
@@ -95,7 +95,7 @@ export const useSpeechRecognition = (onFinalTranscript: (transcript: string) => 
         };
 
         recognition.onerror = (event) => {
-            console.error("Speech recognition error:", event.error);
+            logger.error("Speech recognition error:", event.error);
         };
 
         recognition.onresult = (event) => {

@@ -54,7 +54,7 @@ export const AICoachModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
             const responseText = await getCoachResponse([], coachPersonality);
             setHistory([{ id: Date.now(), role: 'model', parts: [{ text: responseText }] }]);
         } catch (e) {
-            console.error(e);
+            logger.error(e);
             setHistory([{ id: Date.now(), role: 'model', parts: [{ text: "I'm having trouble connecting right now. Please ensure your API key is configured and try again." }], isError: true }]);
         } finally {
             setIsLoading(false);

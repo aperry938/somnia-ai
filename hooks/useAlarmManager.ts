@@ -60,7 +60,7 @@ export const useAlarmManager = () => {
                 lastMinuteRef.current = currentTime;
 
                 // Debug log alarm status once per minute (including soundId)
-                console.log('[Alarm Check]', { currentTime, currentDay, alarms: alarms.map(a => ({ id: a.id, time: a.time, days: a.days, isActive: a.isActive, soundId: a.soundId })) });
+                logger.log('[Alarm Check]', { currentTime, currentDay, alarms: alarms.map(a => ({ id: a.id, time: a.time, days: a.days, isActive: a.isActive, soundId: a.soundId })) });
             }
 
             // Check for normal alarm or smart wake
@@ -76,14 +76,14 @@ export const useAlarmManager = () => {
                 if (!willTriggerToday) {
                     // Debug: log when an alarm is skipped due to day mismatch
                     if (alarm.time === currentTime) {
-                        console.log('[Alarm Skip - Day Mismatch]', { alarmTime: alarm.time, days: alarm.days, currentDay, willTriggerToday });
+                        logger.log('[Alarm Skip - Day Mismatch]', { alarmTime: alarm.time, days: alarm.days, currentDay, willTriggerToday });
                     }
                     return false;
                 }
 
                 // Normal trigger - exact time match
                 if (alarm.time === currentTime) {
-                    console.log('[Alarm Trigger]', { alarmId: alarm.id, alarmTime: alarm.time, currentTime, days: alarm.days, currentDay, soundId: alarm.soundId });
+                    logger.log('[Alarm Trigger]', { alarmId: alarm.id, alarmTime: alarm.time, currentTime, days: alarm.days, currentDay, soundId: alarm.soundId });
                     triggeredThisMinuteRef.current.add(alarmKey);
                     return true;
                 }

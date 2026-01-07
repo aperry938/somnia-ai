@@ -42,7 +42,7 @@ class VoiceCommandService {
             };
 
             this.recognition.onerror = (event) => {
-                console.error("Speech recognition error", event.error);
+                logger.error("Speech recognition error", event.error);
             };
 
             this.recognition.onend = () => {
@@ -59,7 +59,7 @@ class VoiceCommandService {
                 this.recognition.start();
                 this.isListening = true;
             } catch (e) {
-                console.error("Failed to start speech recognition", e);
+                logger.error("Failed to start speech recognition", e);
             }
         }
     }

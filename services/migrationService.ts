@@ -48,19 +48,19 @@ export const checkAndMigrateData = () => {
         });
 
         if (hasChanges) {
-            console.log("Migrating data to schema v1...");
+            logger.log("Migrating data to schema v1...");
             localStorage.setItem('somnia_dreams', JSON.stringify(migrated));
             localStorage.setItem('somnia_migration_log', JSON.stringify({
                 version: MIGRATION_VERSION,
                 timestamp: new Date().toISOString(),
                 details: "Backfilled missing IDs, sleepAids, and tags."
             }));
-            console.log("Migration complete.");
+            logger.log("Migration complete.");
         } else {
-            console.log("Data integrity clean.");
+            logger.log("Data integrity clean.");
         }
 
     } catch (e) {
-        console.error("Migration failed:", e);
+        logger.error("Migration failed:", e);
     }
 };

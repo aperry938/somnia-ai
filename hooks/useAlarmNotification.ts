@@ -101,7 +101,7 @@ const showAlarmNotification = async (timeStr: string, label?: string): Promise<v
             });
         }
     } catch (e) {
-        console.warn('[AlarmNotification] Failed to show notification:', e);
+        logger.warn('[AlarmNotification] Failed to show notification:', e);
     }
 };
 
@@ -116,7 +116,7 @@ const clearAlarmNotification = async (): Promise<void> => {
             notifications.forEach(n => n.close());
         }
     } catch (e) {
-        console.warn('[AlarmNotification] Failed to clear notification:', e);
+        logger.warn('[AlarmNotification] Failed to clear notification:', e);
     }
 };
 

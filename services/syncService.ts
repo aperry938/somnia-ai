@@ -1,4 +1,5 @@
 import { SyncAction, SyncActionType } from '../types';
+import { logger } from './logger';
 
 const SYNC_QUEUE_KEY = 'somnia_sync_queue';
 const MAX_RETRIES = 3;
@@ -100,7 +101,7 @@ export const processSyncQueue = async (): Promise<{ success: number; failed: num
             successCount++;
             return { ...action, status: 'SYNCED' as const };
         } catch (e) {
-            console.error(`[SyncService] Failed to sync action ${action.id}:`, e);
+            logger.error(`[SyncService] Failed to sync action ${action.id}:`, e);
             failCount++;
             return { ...action, retryCount: action.retryCount + 1 };
         }

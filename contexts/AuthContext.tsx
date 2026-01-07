@@ -59,10 +59,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
                 // Verify subscription if authenticated
                 if (currentSession?.access_token) {
-                    verifySubscription(currentSession.access_token).catch(console.error);
+                    verifySubscription(currentSession.access_token).catch(logger.error);
                 }
             } catch (error) {
-                console.error('Auth initialization error:', error);
+                logger.error('Auth initialization error:', error);
             } finally {
                 setIsLoading(false);
             }
@@ -81,7 +81,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             // Verify subscription on auth changes
             if (newSession?.access_token) {
-                verifySubscription(newSession.access_token).catch(console.error);
+                verifySubscription(newSession.access_token).catch(logger.error);
             } else {
                 clearSubscriptionCache();
             }
@@ -107,7 +107,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             // Verify subscription after login
             if (result.session?.access_token) {
-                verifySubscription(result.session.access_token).catch(console.error);
+                verifySubscription(result.session.access_token).catch(logger.error);
             }
         }
         return { success: result.success, error: result.error };
@@ -135,7 +135,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setUser(currentUser);
 
         if (currentSession?.access_token) {
-            verifySubscription(currentSession.access_token).catch(console.error);
+            verifySubscription(currentSession.access_token).catch(logger.error);
         }
     }, [isConfigured]);
 

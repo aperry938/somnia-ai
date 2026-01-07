@@ -140,7 +140,7 @@ export const withRateLimit = <T extends unknown[], R>(
 
         // Log remaining capacity for monitoring
         if (remaining <= 2) {
-            console.warn(`[RateLimit] Low capacity for ${category}: ${remaining} remaining`);
+            logger.warn(`[RateLimit] Low capacity for ${category}: ${remaining} remaining`);
         }
 
         return fn(...args);

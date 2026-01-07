@@ -1,9 +1,11 @@
 /**
  * Secure Subscription Service for Somnia.ai
- * 
+ *
  * This service replaces the insecure client-side-only subscription logic
  * with server-verified subscription status via JWT tokens.
  */
+
+import { logger } from './logger';
 
 // Types
 export type PremiumFeature =
@@ -156,7 +158,7 @@ export function getCachedStatus(): SubscriptionStatus {
  */
 export async function verifySubscription(authToken: string): Promise<SubscriptionStatus> {
     if (!SUPABASE_URL) {
-        console.warn('Supabase not configured, returning free tier');
+        logger.warn('Supabase not configured, returning free tier');
         return getCachedStatus();
     }
 
@@ -170,7 +172,7 @@ export async function verifySubscription(authToken: string): Promise<Subscriptio
         });
 
         if (!response.ok) {
-            console.error('Subscription verification failed:', response.status);
+            logger.error('Subscription verification failed:', response.status);
             return getCachedStatus();
         }
 
@@ -196,7 +198,7 @@ export async function verifySubscription(authToken: string): Promise<Subscriptio
 
         return status;
     } catch (error) {
-        console.error('Subscription verification error:', error);
+        logger.error('Subscription verification error:', error);
         return getCachedStatus();
     }
 }
@@ -344,7 +346,7 @@ export async function createCheckoutSession(
         const data = await response.json();
         return { url: data.url };
     } catch (error) {
-        console.error('Checkout session error:', error);
+        logger.error('Checkout session error:', error);
         return { url: null, error: 'Network error' };
     }
 }
@@ -389,7 +391,7 @@ export async function createCustomerPortalSession(
         const data = await response.json();
         return { url: data.url };
     } catch (error) {
-        console.error('Portal session error:', error);
+        logger.error('Portal session error:', error);
         return { url: null, error: 'Network error' };
     }
 }

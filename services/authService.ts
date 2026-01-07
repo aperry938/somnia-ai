@@ -184,7 +184,7 @@ export async function refreshSession(): Promise<Session | null> {
     try {
         const { data: { session }, error } = await supabase.auth.refreshSession();
         if (error) {
-            console.error('Session refresh error:', error);
+            logger.error('Session refresh error:', error);
             return null;
         }
         return session;

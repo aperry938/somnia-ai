@@ -149,7 +149,7 @@ export async function parseVoiceIntent(transcript: string): Promise<VoiceIntent>
 
         return { type: 'UNKNOWN', rawText: transcript };
     } catch (error) {
-        console.error('AI intent parsing failed:', error);
+        logger.error('AI intent parsing failed:', error);
         // Fall back to basic parsing
         return parseBasicIntent(transcript);
     }

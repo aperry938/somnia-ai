@@ -68,7 +68,7 @@ export const useWakeWindow = (isActive: boolean, onWakeDetected?: (event: WakeEv
                 setPermissionStatus(response === 'granted' ? 'granted' : 'denied');
                 return response === 'granted';
             } catch (error) {
-                console.error("Permission request failed", error);
+                logger.error("Permission request failed", error);
                 setPermissionStatus('denied');
                 return false;
             }

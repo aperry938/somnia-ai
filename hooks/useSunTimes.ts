@@ -69,9 +69,9 @@ export const useSunTimes = () => {
             } catch (e) {
                 clearTimeout(timeoutId);
                 if (e instanceof Error && e.name === 'AbortError') {
-                    console.warn('Sun times fetch timed out, using fallback');
+                    logger.warn('Sun times fetch timed out, using fallback');
                 } else {
-                    console.error('Failed to fetch sun times:', e);
+                    logger.error('Failed to fetch sun times:', e);
                 }
             }
             return null;
