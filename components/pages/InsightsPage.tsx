@@ -121,6 +121,8 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                 <div className="flex bg-day-card-bg/50 dark:bg-night-card-bg/50 backdrop-blur-sm rounded-xl p-1 border border-day-border dark:border-night-border">
                     <button
                         onClick={() => setActiveTab('dreams')}
+                        aria-pressed={activeTab === 'dreams'}
+                        aria-label="My Dreams tab"
                         className={`flex-1 py-2.5 px-4 rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
                             activeTab === 'dreams'
                                 ? 'bg-day-accent dark:bg-night-accent text-white shadow-lg'
@@ -134,6 +136,8 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                     </button>
                     <button
                         onClick={() => setActiveTab('analysis')}
+                        aria-pressed={activeTab === 'analysis'}
+                        aria-label="Analysis tab"
                         className={`flex-1 py-2.5 px-4 rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
                             activeTab === 'analysis'
                                 ? 'bg-day-accent dark:bg-night-accent text-white shadow-lg'
@@ -280,7 +284,7 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                             ) : dreamSynthError ? (
                                 <div className="text-center">
                                     <p className="text-red-500 py-4">{dreamSynthError}</p>
-                                    <button onClick={handleSynthesizeDreams} className="px-4 py-1 bg-red-500 text-white text-sm rounded-full">Retry</button>
+                                    <button onClick={handleSynthesizeDreams} aria-label="Retry dream synthesis" className="px-4 py-1 bg-red-500 text-white text-sm rounded-full">Retry</button>
                                 </div>
                             ) : (
                                 <PremiumBadge feature="dream_synthesis" className="w-full">
@@ -315,7 +319,7 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                             ) : habitError ? (
                                 <div className="text-center">
                                     <p className="text-red-500 py-4">{habitError}</p>
-                                    <button onClick={handleAnalyzeHabits} className="px-4 py-1 bg-red-500 text-white text-sm rounded-full">Retry</button>
+                                    <button onClick={handleAnalyzeHabits} aria-label="Retry sleep habit analysis" className="px-4 py-1 bg-red-500 text-white text-sm rounded-full">Retry</button>
                                 </div>
                             ) : (
                                 <PremiumBadge feature="sleep_habits" className="w-full">
@@ -335,14 +339,14 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
 
             {/* Sync Wearable Modal */}
             {isSyncOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn" onClick={() => setIsSyncOpen(false)}>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn" onClick={() => setIsSyncOpen(false)} role="dialog" aria-modal="true" aria-labelledby="sync-modal-title">
                     <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 max-w-sm w-full shadow-2xl text-center" onClick={e => e.stopPropagation()}>
-                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 mb-4">
+                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 mb-4" aria-hidden="true">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </div>
-                        <h2 className="font-serif text-2xl mb-2">Coming Soon</h2>
+                        <h2 id="sync-modal-title" className="font-serif text-2xl mb-2">Coming Soon</h2>
                         <p className="text-day-text-secondary dark:text-night-text-secondary mb-4">
                             Wearable sync will allow you to connect your smartwatch or fitness tracker to automatically import sleep data, heart rate variability, and movement patterns for more accurate sleep analysis.
                         </p>

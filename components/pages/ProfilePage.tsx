@@ -39,7 +39,7 @@ const ProfileInfoCard: React.FC = () => {
             <div className="flex justify-between items-center mb-4">
                 <h2 className="font-serif text-xl">Profile Info</h2>
                 {!isEditing && (
-                    <button onClick={() => setIsEditing(true)} className="text-sm text-day-accent dark:text-night-accent">
+                    <button onClick={() => setIsEditing(true)} aria-label="Edit profile information" className="text-sm text-day-accent dark:text-night-accent">
                         Edit
                     </button>
                 )}
