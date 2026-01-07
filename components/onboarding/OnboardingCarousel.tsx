@@ -67,6 +67,7 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({ onComple
             {!slide.isFinal && (
                 <button
                     onClick={handleSkip}
+                    aria-label="Skip onboarding"
                     className="absolute top-6 right-6 text-day-text-secondary dark:text-night-text-secondary text-sm hover:text-day-accent dark:hover:text-night-accent transition-colors"
                 >
                     Skip
@@ -74,8 +75,8 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({ onComple
             )}
 
             {/* Content */}
-            <div className="flex-1 flex flex-col items-center justify-center text-center max-w-md animate-fadeIn">
-                <div className="mb-8">
+            <div className="flex-1 flex flex-col items-center justify-center text-center max-w-md animate-fadeIn" role="region" aria-live="polite" aria-label={`Onboarding slide ${currentSlide + 1} of ${slides.length}`}>
+                <div className="mb-8" aria-hidden="true">
                     {slide.icon}
                 </div>
                 <h1 className="font-serif text-3xl mb-4">{slide.title}</h1>
