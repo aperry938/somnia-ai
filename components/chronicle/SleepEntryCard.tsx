@@ -59,7 +59,7 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
         <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border rounded-xl overflow-hidden">
             {/* Main Entry Row */}
             <div
-                className="p-4 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                className="p-4 min-h-[56px] cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-day-accent dark:focus:ring-night-accent"
                 onClick={() => setIsExpanded(!isExpanded)}
                 role="button"
                 tabIndex={0}
@@ -138,7 +138,7 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
                             entryDreams.map(dream => (
                                 <div
                                     key={dream.id}
-                                    className="px-4 py-3 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer flex items-start gap-3"
+                                    className="px-4 py-3 min-h-[56px] hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer flex items-start gap-3 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-day-accent dark:focus:ring-night-accent"
                                     onClick={(e) => { e.stopPropagation(); onDreamClick(dream.id); }}
                                     role="button"
                                     tabIndex={0}
@@ -179,7 +179,7 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
                         <button
                             onClick={(e) => { e.stopPropagation(); onAddDream(entry.id); }}
                             aria-label={`Add dream to ${displayDate} entry`}
-                            className="flex-1 py-2 flex items-center justify-center gap-2 text-sm text-day-accent dark:text-night-accent hover:bg-day-accent/10 dark:hover:bg-night-accent/10 rounded-lg transition-colors"
+                            className="flex-1 py-2 min-h-[44px] flex items-center justify-center gap-2 text-sm text-day-accent dark:text-night-accent hover:bg-day-accent/10 dark:hover:bg-night-accent/10 rounded-lg transition-colors"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -192,7 +192,7 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
                             <button
                                 onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(true); }}
                                 aria-label="Delete sleep entry"
-                                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                                 title="Delete sleep entry"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -204,14 +204,14 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
                                 <button
                                     onClick={() => { onDeleteEntry(entry.id); }}
                                     aria-label="Confirm delete"
-                                    className="px-3 py-1.5 text-xs bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                                    className="px-4 py-2 min-h-[44px] text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center"
                                 >
                                     Delete
                                 </button>
                                 <button
                                     onClick={() => setShowDeleteConfirm(false)}
                                     aria-label="Cancel delete"
-                                    className="px-3 py-1.5 text-xs bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                                    className="px-4 py-2 min-h-[44px] text-sm bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center"
                                 >
                                     Cancel
                                 </button>
