@@ -171,7 +171,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                                     title={MOOD_LABELS[value]}
                                 >
                                     {MOOD_ICONS[value]}
-                                    <span className="hidden sm:inline">{MOOD_LABELS[value]}</span>
+                                    <span>{MOOD_LABELS[value]}</span>
                                 </button>
                             ))}
                         </div>
