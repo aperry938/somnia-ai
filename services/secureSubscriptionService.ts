@@ -55,11 +55,12 @@ const STATUS_KEY = 'somnia_subscription_status';
 const DEV_MODE_KEY = 'somnia_dev_mode';
 const DEV_PREMIUM_KEY = 'somnia_dev_premium';
 
-// Superuser emails - these get full premium access regardless of subscription
-const SUPERUSER_EMAILS: string[] = [
-    'anthonycperry21@gmail.com',
-    // Add more superuser emails here
-];
+// Superuser emails - loaded from environment for security
+// Set VITE_SUPERUSER_EMAILS in .env as comma-separated list
+const SUPERUSER_EMAILS: string[] = (import.meta.env.VITE_SUPERUSER_EMAILS || '')
+    .split(',')
+    .map((email: string) => email.trim().toLowerCase())
+    .filter((email: string) => email.length > 0);
 
 /**
  * DEV MODE: Check if developer mode is enabled
