@@ -17,14 +17,19 @@ import { PremiumBadge } from '../shared/PremiumBadge';
 import { isPremium } from '../../services/secureSubscriptionService';
 import { SleepDetectionSettingsCard } from '../settings/SleepDetectionSettingsCard';
 import haptics from '../../services/hapticsService';
+import { sanitizeText, INPUT_LIMITS } from '../../services/validationService';
+
+const DAY_RATING_LABELS = ['Terrible', 'Poor', 'Okay', 'Good', 'Great'];
 
 const DayRating: React.FC<{ rating: number | null; onRate: (rating: number) => void; }> = ({ rating, onRate }) => {
     return (
-        <div className="flex justify-center gap-2">
+        <div className="flex justify-center gap-2" role="group" aria-label="Rate your day">
             {[1, 2, 3, 4, 5].map(value => (
                 <button
                     key={value}
                     onClick={() => onRate(value)}
+                    aria-label={`Rate day ${value} out of 5 - ${DAY_RATING_LABELS[value - 1]}`}
+                    aria-pressed={rating === value}
                     className={`w-10 h-10 rounded-full border transition-colors ${rating === value ? 'bg-day-accent text-white border-day-accent' : 'bg-transparent border-day-border dark:border-night-border'}`}
                 >
                     {value}
@@ -267,8 +272,9 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                 <label className="block text-center text-day-text-secondary dark:text-night-text-secondary mb-3">Any thoughts or notable events?</label>
                                 <textarea
                                     value={dayNotes}
-                                    onChange={(e) => setDayNotes(e.target.value)}
+                                    onChange={(e) => setDayNotes(sanitizeText(e.target.value).slice(0, INPUT_LIMITS.notes))}
                                     rows={2}
+                                    maxLength={INPUT_LIMITS.notes}
                                     className="w-full p-2 bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-md custom-scrollbar"
                                     placeholder="e.g., A stressful meeting at work..."
                                 />

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { SleepQualityRating } from '../shared/SleepQualityRating';
 import { SleepAids } from '../../types';
 import haptics from '../../services/hapticsService';
+import { sanitizeText, INPUT_LIMITS } from '../../services/validationService';
 
 interface AddSleepEntryModalProps {
     onSave: (date: string, sleepQuality: number | null, notes?: string, sleepAids?: SleepAids) => number;
@@ -76,17 +77,19 @@ export const AddSleepEntryModal: React.FC<AddSleepEntryModalProps> = ({
                     <p className="text-center text-day-text-secondary dark:text-night-text-secondary mb-2">
                         How was your day? (optional)
                     </p>
-                    <div className="flex justify-center gap-2">
+                    <div className="flex justify-center gap-2" role="group" aria-label="Rate your day">
                         {[1, 2, 3, 4, 5].map((rating) => (
                             <button
                                 key={rating}
                                 onClick={() => { haptics.selection(); setDayRating(dayRating === rating ? null : rating); }}
+                                aria-label={`Rate day ${rating} out of 5 - ${dayLabels[rating - 1]}`}
+                                aria-pressed={dayRating === rating}
                                 className={`flex-1 py-2 px-1 rounded-lg flex flex-col items-center gap-1 transition-all max-w-[60px] ${dayRating === rating
                                         ? 'bg-day-accent dark:bg-night-accent text-white scale-105'
                                         : 'bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border'
                                     }`}
                             >
-                                <span className="text-lg">
+                                <span className="text-lg" aria-hidden="true">
                                     {rating === 1 ? '😓' : rating === 2 ? '😐' : rating === 3 ? '🙂' : rating === 4 ? '😊' : '🌟'}
                                 </span>
                                 <span className="text-[10px]">{dayLabels[rating - 1]}</span>
@@ -102,7 +105,8 @@ export const AddSleepEntryModal: React.FC<AddSleepEntryModalProps> = ({
                     </label>
                     <textarea
                         value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
+                        onChange={(e) => setNotes(sanitizeText(e.target.value).slice(0, INPUT_LIMITS.notes))}
+                        maxLength={INPUT_LIMITS.notes}
                         placeholder="Late coffee, stressful day, exercised..."
                         className="w-full h-20 p-3 bg-white/50 dark:bg-black/30 border border-day-border dark:border-night-border rounded-lg focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent focus:outline-none resize-none"
                     />
