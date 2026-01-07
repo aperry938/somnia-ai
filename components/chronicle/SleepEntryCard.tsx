@@ -8,6 +8,7 @@ interface SleepEntryCardProps {
     onEntryClick: (id: number) => void;
     onDreamClick: (id: number) => void;
     onAddDream: (entryId: number) => void;
+    onDeleteEntry: (id: number) => void;
 }
 
 export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
@@ -15,9 +16,11 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
     dreams,
     onEntryClick,
     onDreamClick,
-    onAddDream
+    onAddDream,
+    onDeleteEntry
 }) => {
     const [isExpanded, setIsExpanded] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     // Get dreams for this entry
     const entryDreams = dreams.filter(d => entry.dreamIds.includes(d.id));
@@ -30,7 +33,7 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
         day: 'numeric'
     });
 
-    // Render quality stars
+    // Render quality stars (hollow outline style matching brand)
     const renderQuality = () => {
         if (!entry.sleepQuality) return null;
         return (
@@ -38,11 +41,13 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
                 {[1, 2, 3, 4, 5].map(i => (
                     <svg
                         key={i}
-                        className={`w-4 h-4 ${i <= entry.sleepQuality! ? 'text-amber-400' : 'text-gray-300 dark:text-gray-600'}`}
-                        fill="currentColor"
+                        className={`w-4 h-4 ${i <= entry.sleepQuality! ? 'text-day-accent dark:text-night-accent' : 'text-gray-300 dark:text-gray-600'}`}
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={1.5}
                         viewBox="0 0 24 24"
                     >
-                        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                     </svg>
                 ))}
             </div>
@@ -160,16 +165,44 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
                     </div>
 
                     {/* Add Dream Button */}
-                    <div className="p-3 border-t border-day-border dark:border-night-border">
+                    <div className="p-3 border-t border-day-border dark:border-night-border flex items-center gap-2">
                         <button
                             onClick={(e) => { e.stopPropagation(); onAddDream(entry.id); }}
-                            className="w-full py-2 flex items-center justify-center gap-2 text-sm text-day-accent dark:text-night-accent hover:bg-day-accent/10 dark:hover:bg-night-accent/10 rounded-lg transition-colors"
+                            className="flex-1 py-2 flex items-center justify-center gap-2 text-sm text-day-accent dark:text-night-accent hover:bg-day-accent/10 dark:hover:bg-night-accent/10 rounded-lg transition-colors"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                             </svg>
                             Add Dream
                         </button>
+
+                        {/* Delete Entry Button */}
+                        {!showDeleteConfirm ? (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(true); }}
+                                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                title="Delete sleep entry"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        ) : (
+                            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                <button
+                                    onClick={() => { onDeleteEntry(entry.id); }}
+                                    className="px-3 py-1.5 text-xs bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                                >
+                                    Delete
+                                </button>
+                                <button
+                                    onClick={() => setShowDeleteConfirm(false)}
+                                    className="px-3 py-1.5 text-xs bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

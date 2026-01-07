@@ -61,6 +61,7 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
         importDreams,
         sleepEntries,
         addSleepEntry,
+        deleteSleepEntry,
         addDreamToSleepEntry,
         getSleepEntryById
     } = useAppContext();
@@ -245,6 +246,7 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
                                 onEntryClick={() => { }}
                                 onDreamClick={onDreamSelect}
                                 onAddDream={(entryId) => setAddDreamToEntryId(entryId)}
+                                onDeleteEntry={deleteSleepEntry}
                             />
                         ))}
 
