@@ -75,11 +75,16 @@ export interface SyntheticParams {
     type: 'rain' | 'ocean' | 'fireplace';
 }
 
+export interface RampParams {
+    base: number;
+}
+
 export type Soundscape =
     | { id: string; name: string; description: string; icon: ReactElement; type: 'noise'; params: NoiseParams; isPremium?: boolean }
     | { id: string; name: string; description: string; icon: ReactElement; type: 'binaural'; params: BinauralParams; isPremium?: boolean }
     | { id: string; name: string; description: string; icon: ReactElement; type: 'file'; params: FileParams; isPremium?: boolean }
-    | { id: string; name: string; description: string; icon: ReactElement; type: 'synthetic'; params: SyntheticParams; isPremium?: boolean };
+    | { id: string; name: string; description: string; icon: ReactElement; type: 'synthetic'; params: SyntheticParams; isPremium?: boolean }
+    | { id: string; name: string; description: string; icon: ReactElement; type: 'ramp'; params: RampParams; isPremium?: boolean };
 
 export interface GuidedRelaxation {
     id: string;
