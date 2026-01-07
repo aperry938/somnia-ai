@@ -55,8 +55,8 @@ export const useClock = () => {
     // Get circadian phase info
     const { phase: circadianPhase, progress: phaseProgress } = getCircadianPhase(hours, minutes);
 
-    // Determine if we should use dark mode
-    const shouldBeDark = circadianPhase === 'night' || circadianPhase === 'dusk';
+    // Only DAY phase uses light mode - night, dawn, and dusk all use dark mode
+    const shouldBeDark = circadianPhase !== 'day';
     const autoTheme: Theme = shouldBeDark ? 'night' : 'day';
 
     // Use override if set, otherwise use auto theme based on time
