@@ -445,15 +445,15 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
     // Show saved confirmation - only offer Sleep Gateway for sleep alarms
     if (showSavedConfirmation) {
         return (
-            <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={handleDismissConfirmation}>
+            <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={handleDismissConfirmation} role="dialog" aria-modal="true" aria-labelledby="alarm-saved-title">
                 <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-sm animate-fadeIn text-center" onClick={(e) => e.stopPropagation()}>
                     {/* Success checkmark */}
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center" aria-hidden="true">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
                     </div>
-                    <h2 className="font-serif text-2xl mb-2">{purpose === 'sleep' ? 'Alarm Saved!' : 'Reminder Set!'}</h2>
+                    <h2 id="alarm-saved-title" className="font-serif text-2xl mb-2">{purpose === 'sleep' ? 'Alarm Saved!' : 'Reminder Set!'}</h2>
                     <p className="text-day-text-secondary dark:text-night-text-secondary mb-6">
                         {label && <span className="block font-medium mb-1">{label}</span>}
                         Your {purpose === 'sleep' ? 'alarm' : 'reminder'} is set for <span className="font-medium text-day-accent dark:text-night-accent">{time}</span>
