@@ -129,7 +129,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                             disabled={isListening}
                         ></textarea>
                         {isSupported && (
-                            <button onClick={isListening ? stopListening : startListening} aria-label={isListening ? "Stop recording" : "Start voice recording"} aria-pressed={isListening} className={`absolute top-3 right-3 transition-colors ${isListening ? 'text-red-400' : 'text-white/60 hover:text-white'}`}>
+                            <button onClick={isListening ? stopListening : startListening} aria-label={isListening ? "Stop recording" : "Start voice recording"} aria-pressed={isListening} className={`absolute top-2 right-2 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full transition-colors ${isListening ? 'text-red-400 bg-red-400/20' : 'text-white/60 hover:text-white hover:bg-white/10'}`}>
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
                             </button>
                         )}
@@ -164,7 +164,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                                     onClick={() => { haptics.selection(); setMood(mood === value ? null : value); }}
                                     aria-label={`${MOOD_LABELS[value]} mood`}
                                     aria-pressed={mood === value}
-                                    className={`px-3 py-1.5 rounded-full text-sm transition-all flex items-center gap-1.5 ${mood === value
+                                    className={`px-4 py-2 min-h-[44px] rounded-full text-sm transition-all flex items-center gap-1.5 ${mood === value
                                         ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white scale-105'
                                         : 'bg-white/10 border border-white/20 text-white/80 hover:border-white/40'
                                         }`}
@@ -178,11 +178,11 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                     </div>
 
                     <div className="flex justify-center gap-4 mt-4">
-                        <button onClick={onClose} aria-label="Cancel and close" className="py-2 px-6 bg-white/20 hover:bg-white/30 text-white rounded-full transition-all">Cancel</button>
+                        <button onClick={onClose} aria-label="Cancel and close" className="py-3 px-6 min-h-[48px] bg-white/20 hover:bg-white/30 text-white rounded-full transition-all flex items-center justify-center">Cancel</button>
                         <button
                             onClick={handleSave}
                             aria-label="Save dream and continue"
-                            className="py-2 px-6 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold rounded-full disabled:opacity-50 transition-all"
+                            className="py-3 px-6 min-h-[48px] bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold rounded-full disabled:opacity-50 transition-all flex items-center justify-center"
                             disabled={!dreamText.trim() || isListening}
                         >
                             Save & Illuminate
