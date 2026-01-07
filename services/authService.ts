@@ -82,6 +82,33 @@ export async function signIn(email: string, password: string): Promise<AuthResul
 }
 
 /**
+ * Sign in with Google OAuth
+ */
+export async function signInWithGoogle(): Promise<AuthResult> {
+    if (!supabase) {
+        return { success: false, error: 'Authentication service not configured' };
+    }
+
+    try {
+        const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: `${window.location.origin}`,
+            },
+        });
+
+        if (error) {
+            return { success: false, error: error.message };
+        }
+
+        // OAuth redirects, so we return success (user will be redirected)
+        return { success: true };
+    } catch (err) {
+        return { success: false, error: 'An unexpected error occurred' };
+    }
+}
+
+/**
  * Sign out the current user
  */
 export async function signOut(): Promise<AuthResult> {
@@ -199,7 +226,7 @@ export async function refreshSession(): Promise<Session | null> {
  */
 export function onAuthStateChange(callback: (user: User | null, session: Session | null) => void) {
     if (!supabase) {
-        return { unsubscribe: () => {} };
+        return { unsubscribe: () => { } };
     }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {

@@ -12,7 +12,7 @@ interface SoundscapeModalProps {
 }
 
 export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlaying, onPlay, onStop, onClose }) => {
-    const { volume, setVolume } = useAppContext();
+    const { volume, setVolume, logSoundActivity, activeSleepSession } = useAppContext();
     const [duration, setDuration] = useState(30);
     const [beatFreq, setBeatFreq] = useState(sound.type === 'binaural' ? sound.params.diff || 5 : 5);
     const [isPreviewing, setIsPreviewing] = useState(false);
@@ -23,6 +23,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
     const [isPaused, setIsPaused] = useState(false); // Track pause state
     const [isReadyToPlay, setIsReadyToPlay] = useState(false); // Show play screen but not started yet
     const pausedTimeRef = useRef<number>(0); // Track time remaining when paused
+    const soundStartTimeRef = useRef<number | null>(null); // Track when sound actually started (for logging)
 
     // No auto-preview - user must click to start preview
 
@@ -159,6 +160,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
         setIsReadyToPlay(false);
         setIsPaused(false);
         setPlayStartTime(Date.now());
+        soundStartTimeRef.current = Date.now(); // Track for activity logging
     };
 
     // Pause the sound and timer
@@ -187,6 +189,15 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
 
     // Fully stop and close (called by X button)
     const handleStop = () => {
+        // Log sound activity if we actually played something and there's an active session
+        if (soundStartTimeRef.current && activeSleepSession) {
+            const durationSeconds = Math.floor((Date.now() - soundStartTimeRef.current) / 1000);
+            if (durationSeconds > 5) { // Only log if played for more than 5 seconds
+                logSoundActivity(sound.name, durationSeconds);
+            }
+        }
+        soundStartTimeRef.current = null;
+
         stopSleepSound();
         setIsPreviewing(false);
         setTimeRemaining(null);

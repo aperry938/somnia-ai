@@ -17,14 +17,25 @@ export interface Alarm {
     label?: string; // Optional label for reminder alarms
 }
 
+export interface SleepActivity {
+    type: 'breathing' | 'sound' | 'relaxation';
+    name: string;
+    duration: number; // seconds
+}
+
 export interface SleepAids {
     sound?: string;
     soundDuration?: number; // Duration in minutes the soundscape was used
     volume?: number; // Volume level (0-1)
     relaxation?: string;
+    relaxationDuration?: number; // Duration in minutes
     checklist?: string[];
     dayRating?: number | null;
     dayNotes?: string;
+    breathingExercises?: SleepActivity[]; // Breathing exercises completed
+    soundsPlayed?: SleepActivity[]; // Sounds/soundscapes played
+    totalPrepTime?: number; // Total prep time in seconds
+    sessionStartedAt?: string; // When the session started
 }
 
 export interface Dream {
@@ -49,6 +60,7 @@ export interface DreamAnalysis {
     title: string;
     analysis: { title: string; content: string }[];
     integration: { title: string; content: string };
+    imagePrompt?: string; // Detailed prompt for external AI image generators
 }
 
 export interface ChatMessage {
@@ -123,6 +135,7 @@ export interface SleepHabitAnalysis {
 }
 
 export interface Biometrics {
+    displayName?: string; // User's display name
     age: number | null;
     gender: string;
     avgSleep: number | null;

@@ -19,7 +19,8 @@ export type PremiumFeature =
     | 'encrypted_backup'
     | 'unlimited_alarms'
     | 'voice_assistant'
-    | 'custom_alarm_sounds';
+    | 'custom_alarm_sounds'
+    | 'breathing';
 
 // Subscription tier levels for feature gating
 export type SubscriptionTier = 'free' | 'premium';
@@ -37,6 +38,7 @@ export const FEATURE_TIERS: Record<PremiumFeature, SubscriptionTier> = {
     unlimited_alarms: 'premium',
     voice_assistant: 'premium',
     custom_alarm_sounds: 'free',  // Available to all
+    breathing: 'premium',
 };
 
 export interface SubscriptionStatus {
@@ -52,6 +54,12 @@ const TOKEN_KEY = 'somnia_subscription_token';
 const STATUS_KEY = 'somnia_subscription_status';
 const DEV_MODE_KEY = 'somnia_dev_mode';
 const DEV_PREMIUM_KEY = 'somnia_dev_premium';
+
+// Superuser emails - these get full premium access regardless of subscription
+const SUPERUSER_EMAILS: string[] = [
+    'anthonycperry21@gmail.com',
+    // Add more superuser emails here
+];
 
 /**
  * DEV MODE: Check if developer mode is enabled
@@ -204,11 +212,34 @@ export async function verifySubscription(authToken: string): Promise<Subscriptio
 }
 
 /**
+ * Check if current user is a superuser (by email)
+ * Superusers get full premium access regardless of subscription
+ */
+export function isSuperuser(): boolean {
+    try {
+        // Get user email from localStorage (set by AuthContext)
+        const userEmail = localStorage.getItem('somnia_user_email');
+        if (userEmail && SUPERUSER_EMAILS.includes(userEmail.toLowerCase())) {
+            return true;
+        }
+    } catch {
+        // Ignore errors
+    }
+    return false;
+}
+
+/**
  * Check if user has premium access
  * Uses cached status with token validation
  * DEV MODE: Respects dev mode override if enabled
+ * SUPERUSER: Superuser emails always get premium
  */
 export function isPremium(): boolean {
+    // SUPERUSER: Always premium for superuser emails
+    if (isSuperuser()) {
+        return true;
+    }
+
     // DEV MODE: Override if dev mode is active
     if (isDevMode()) {
         return isDevPremium();
@@ -416,58 +447,63 @@ export const PRICING = {
 // Feature descriptions
 export const PREMIUM_FEATURES: Record<PremiumFeature, { name: string; description: string; tier: SubscriptionTier }> = {
     ai_analysis: {
-        name: 'Unlimited AI Dream Analysis',
-        description: 'Unlimited psychological interpretations (free tier: 3/month)',
+        name: 'Daily AI Dream Analysis',
+        description: 'Deep psychological interpretations of your dreams each day',
         tier: 'premium',
     },
     ai_imagery: {
         name: 'Dream Visualization',
-        description: 'Generate stunning AI art from your dreams in 8 unique styles',
+        description: 'Generate AI image prompts in multiple artistic styles',
         tier: 'premium',
     },
     ai_coach: {
-        name: 'AI Sleep Coach',
-        description: 'Personalized sleep guidance with mystical or scientific personas',
+        name: 'Dream Chat',
+        description: 'Have meaningful conversations with AI about your dreams',
         tier: 'premium',
     },
     dream_synthesis: {
         name: 'Dream Weaving',
-        description: 'Discover recurring themes and patterns across your dream journal',
+        description: 'Discover recurring themes and patterns across your journal',
         tier: 'premium',
     },
     sleep_habits: {
-        name: 'Sleep Science',
-        description: 'Correlate your habits with sleep quality for personalized insights',
+        name: 'Sleep Analytics',
+        description: 'AI-powered insights into your sleep patterns and quality',
         tier: 'premium',
     },
     binaural_beats: {
-        name: 'Binaural Beats',
-        description: 'Theta and Delta wave frequencies for deep relaxation',
+        name: 'Sleep Sounds Pro',
+        description: 'Binaural beats and advanced frequencies for better sleep',
         tier: 'premium',
     },
     reality_checks: {
         name: 'Lucid Dreaming',
-        description: 'Reality check notifications to induce lucid dreams',
+        description: 'Reality check notifications for lucid dreams',
         tier: 'premium',
     },
     encrypted_backup: {
         name: 'Secure Backup',
-        description: 'Password-protected encrypted exports of your dream journal',
+        description: 'Encrypted exports of your dream journal',
         tier: 'premium',
     },
     unlimited_alarms: {
         name: 'Priority Features',
-        description: 'Early access to new features and priority support',
+        description: 'Early access to new features and support',
         tier: 'premium',
     },
     voice_assistant: {
         name: 'AI Voice Assistant',
-        description: 'Natural language voice commands powered by AI for hands-free control',
+        description: 'Voice commands for hands-free control',
         tier: 'premium',
     },
     custom_alarm_sounds: {
         name: 'Custom Alarm Sounds',
-        description: 'Choose from a variety of soothing alarm sounds',
+        description: 'Choose from a variety of soothing sounds',
         tier: 'free',
+    },
+    breathing: {
+        name: 'Breathing Exercises',
+        description: 'Guided breathwork for relaxation and better sleep',
+        tier: 'premium',
     },
 };

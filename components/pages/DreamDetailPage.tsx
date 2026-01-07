@@ -1,10 +1,9 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
-import { analyzeDream, generateDreamImage, generateDreamTitle, DreamArtStyle, DREAM_ART_STYLES } from '../../services/geminiService';
+import { analyzeDream, generateDreamTitle, generateImagePrompt, DreamArtStyle, DREAM_ART_STYLES } from '../../services/geminiService';
 import { DreamChatModal } from '../modals/DreamChatModal';
-import { ImageModal } from '../modals/ImageModal';
 import { SleepAids, DreamMood } from '../../types';
-import { AnalysisLoading, ImageGenerationLoading } from '../shared/LoadingStates';
+import { AnalysisLoading } from '../shared/LoadingStates';
 import { TagInput, COMMON_DREAM_TAGS } from '../shared/TagInput';
 import { findDreamSymbols, DreamSymbol } from '../../constants/dreamSymbols';
 import { useToast } from '../shared/Toast';
@@ -104,9 +103,10 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
     const [isChatOpen, setIsChatOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editedText, setEditedText] = useState(dream?.dreamText || '');
-    const [isImageModalOpen, setIsImageModalOpen] = useState(false);
-    const [selectedArtStyle, setSelectedArtStyle] = useState<DreamArtStyle>(artStyle);
     const [isRegeneratingTitle, setIsRegeneratingTitle] = useState(false);
+    const [selectedPromptStyle, setSelectedPromptStyle] = useState<DreamArtStyle>('surreal');
+    const [generatedPrompt, setGeneratedPrompt] = useState<string | null>(null);
+    const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
 
     const detectedSymbols = useMemo(() => {
         if (!dream) return [];
@@ -133,25 +133,37 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
             if (dream?.aiAnalysis) setAnalysisState('success');
             return;
         }
+
+        // Check daily analysis limit (5 per day)
+        const today = new Date().toDateString();
+        const storedAnalysis = localStorage.getItem('somnia_daily_analysis');
+        const [lastDateAnalysis, countAnalysisStr] = storedAnalysis ? JSON.parse(storedAnalysis) : ['', '0'];
+        const countAnalysis = lastDateAnalysis === today ? parseInt(countAnalysisStr) : 0;
+
+        if (countAnalysis >= 5) {
+            showToast('Daily dream analysis limit reached (5/day)', 'error');
+            return;
+        }
+
         setAnalysisState('loading');
         try {
-            const [analysisData, imageB64] = await Promise.all([
-                analyzeDream(dream.dreamText, dream.sleepAids, biometrics, analysisPersonality),
-                generateDreamImage(dream.dreamText, selectedArtStyle)
-            ]);
+            // First perform text analysis
+            const analysisData = await analyzeDream(dream.dreamText, dream.sleepAids, biometrics, analysisPersonality);
+
+            // Increment analysis count
+            localStorage.setItem('somnia_daily_analysis', JSON.stringify([today, countAnalysis + 1]));
 
             updateDream({
                 id: dream.id,
                 title: analysisData.title || dream.title,
                 aiAnalysis: analysisData,
-                imageUrl: `data:image/png;base64,${imageB64}`
             });
             setAnalysisState('success');
         } catch (e) {
             logger.error(e);
             setAnalysisState('error');
         }
-    }, [dream, updateDream, analysisPersonality, selectedArtStyle, biometrics]);
+    }, [dream, updateDream, analysisPersonality, biometrics, showToast]);
 
     useEffect(() => {
         if (analysisState === 'pending') {
@@ -226,33 +238,9 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                     </div>
                 </div>
 
-                {dream.imageUrl ? (
-                    <button onClick={() => setIsImageModalOpen(true)} aria-label="View full dream image" className="w-full">
-                        <img src={dream.imageUrl} alt={dream.title} className="w-full h-64 object-cover rounded-lg mb-6" />
-                    </button>
-                ) : analysisState === 'loading' ? (
-                    <div className="w-full h-64 rounded-lg bg-gray-200 dark:bg-gray-700 mb-6 animate-pulse flex items-center justify-center text-day-text-secondary">
-                        Generating in {DREAM_ART_STYLES[selectedArtStyle].name} style...
-                    </div>
-                ) : analysisState === 'pending' ? (
+                {analysisState === 'pending' && (
                     <div className="w-full rounded-lg bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border p-4 mb-6">
-                        <p className="text-sm text-day-text-secondary dark:text-night-text-secondary mb-3">Choose art style for dream image:</p>
-                        <div className="flex flex-wrap gap-2">
-                            {(Object.keys(DREAM_ART_STYLES) as DreamArtStyle[]).map(style => (
-                                <button
-                                    key={style}
-                                    onClick={() => setSelectedArtStyle(style)}
-                                    aria-pressed={selectedArtStyle === style}
-                                    className={`px-4 py-2 min-h-[44px] rounded-full text-sm transition-colors flex items-center ${selectedArtStyle === style
-                                        ? 'bg-day-accent dark:bg-night-accent text-white'
-                                        : 'bg-white/50 dark:bg-black/20 hover:bg-white/70 dark:hover:bg-black/30'
-                                        }`}
-                                >
-                                    {DREAM_ART_STYLES[style].name}
-                                </button>
-                            ))}
-                        </div>
-                        <p className="text-sm text-day-text-secondary dark:text-night-text-secondary mt-4 mb-2">Choose analysis persona:</p>
+                        <p className="text-sm text-day-text-secondary dark:text-night-text-secondary mb-2">Choose analysis persona:</p>
                         <div className="flex flex-wrap gap-2">
                             {(['oneironaut', 'jungian', 'scientific'] as const).map(p => (
                                 <button
@@ -269,8 +257,6 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                             ))}
                         </div>
                     </div>
-                ) : (
-                    <div className="w-full h-64 rounded-lg bg-gray-200 dark:bg-gray-700 mb-6 flex items-center justify-center text-day-text-secondary">Image failed to load</div>
                 )}
 
                 <p className="text-day-text-secondary dark:text-night-text-secondary flex items-center gap-2 flex-wrap">
@@ -284,8 +270,8 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                                 key={rating}
                                 onClick={() => updateDream({ id: dream.id, sleepQuality: rating })}
                                 className={`text-xl p-1 min-w-[32px] min-h-[32px] transition-colors ${dream.sleepQuality && rating <= dream.sleepQuality
-                                        ? 'text-amber-500'
-                                        : 'text-gray-300 dark:text-gray-600 hover:text-amber-300'
+                                    ? 'text-amber-500'
+                                    : 'text-gray-300 dark:text-gray-600 hover:text-amber-300'
                                     }`}
                                 title={`Set quality to ${rating}`}
                                 aria-label={`Set quality to ${rating} stars`}
@@ -431,7 +417,12 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                             </svg>
                             Discuss This Dream with AI
-                            <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">PRO</span>
+                            <span className="inline-flex items-center gap-0.5 text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                                PRO
+                            </span>
                         </button>
                     ) : (
                         <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-700/50 rounded-xl p-4">
@@ -445,7 +436,12 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                                     <p className="font-medium text-amber-800 dark:text-amber-200">Discuss This Dream with AI</p>
                                     <p className="text-sm text-amber-600 dark:text-amber-400">Unlock personalized dream interpretation and deeper insights</p>
                                 </div>
-                                <span className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">PRO</span>
+                                <span className="inline-flex items-center gap-0.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                    </svg>
+                                    PRO
+                                </span>
                             </div>
                         </div>
                     )}
@@ -472,6 +468,177 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                                 <AccordionItem key={i} title={item.title} content={item.content} isOpenDefault={i === 0} />
                             ))}
                             <AccordionItem title={dream.aiAnalysis.integration.title} content={dream.aiAnalysis.integration.content} />
+
+                            {/* Dream Visualization Section */}
+                            <div className="mt-6 rounded-xl overflow-hidden border border-purple-200/50 dark:border-purple-800/50">
+                                {/* Header */}
+                                <div className="bg-gradient-to-r from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30 px-4 py-3">
+                                    <h4 className="font-serif text-base text-purple-800 dark:text-purple-200">✨ Bring Your Dream to Life</h4>
+                                    <p className="text-xs text-purple-600/80 dark:text-purple-300/80 mt-0.5">
+                                        Create a personalized visualization of your dream
+                                    </p>
+                                </div>
+
+                                {/* Content */}
+                                <div className="bg-white/50 dark:bg-black/20 p-4 space-y-4">
+                                    {/* Saved Image Display */}
+                                    {dream.imageUrl && (
+                                        <div className="relative group">
+                                            <img
+                                                src={dream.imageUrl}
+                                                alt="Dream visualization"
+                                                className="w-full h-48 object-cover rounded-lg"
+                                            />
+                                            <button
+                                                onClick={() => updateDream({ id: dream.id, imageUrl: null })}
+                                                className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                                aria-label="Remove image"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {/* Generated Prompt Display */}
+                                    {(generatedPrompt || dream.aiAnalysis?.imagePrompt) && (
+                                        <div className="bg-purple-50/50 dark:bg-purple-900/20 rounded-lg p-3">
+                                            <div className="flex items-start justify-between gap-2 mb-2">
+                                                <span className="text-xs font-medium text-purple-600 dark:text-purple-400">Your Visualization Prompt</span>
+                                                <button
+                                                    onClick={() => {
+                                                        const prompt = generatedPrompt || dream.aiAnalysis?.imagePrompt || '';
+                                                        navigator.clipboard.writeText(prompt);
+                                                        haptics.success();
+                                                        showToast('Prompt copied to clipboard');
+                                                    }}
+                                                    className="px-2.5 py-1 text-xs font-medium bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors flex items-center gap-1 shrink-0"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                                    </svg>
+                                                    Copy
+                                                </button>
+                                            </div>
+                                            <p className="text-xs text-purple-700 dark:text-purple-300 leading-relaxed italic">"{generatedPrompt || dream.aiAnalysis?.imagePrompt}"</p>
+                                        </div>
+                                    )}
+
+                                    {/* Style Picker & Generate Button */}
+                                    {(() => {
+                                        const today = new Date().toDateString();
+                                        const storedPrompt = localStorage.getItem('somnia_daily_prompts');
+                                        const [lastDatePrompt, countPromptStr] = storedPrompt ? JSON.parse(storedPrompt) : ['', '0'];
+                                        const promptCount = lastDatePrompt === today ? parseInt(countPromptStr) : 0;
+                                        const limitReached = promptCount >= 5;
+
+                                        return (
+                                            <div className="space-y-3">
+                                                <div>
+                                                    <label className="text-xs font-medium text-purple-600 dark:text-purple-400 block mb-2">Choose Art Style</label>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {(Object.keys(DREAM_ART_STYLES) as DreamArtStyle[]).map(style => (
+                                                            <button
+                                                                key={style}
+                                                                onClick={() => setSelectedPromptStyle(style)}
+                                                                className={`px-3 py-1.5 text-xs rounded-full transition-colors ${selectedPromptStyle === style
+                                                                    ? 'bg-purple-600 text-white'
+                                                                    : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-800/40'
+                                                                    }`}
+                                                            >
+                                                                {DREAM_ART_STYLES[style].name}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                <button
+                                                    onClick={async () => {
+                                                        if (limitReached) {
+                                                            showToast('Daily prompt limit reached (5/day)', 'info');
+                                                            return;
+                                                        }
+                                                        setIsGeneratingPrompt(true);
+                                                        try {
+                                                            const prompt = await generateImagePrompt(dream.dreamText, selectedPromptStyle);
+                                                            setGeneratedPrompt(prompt);
+                                                            localStorage.setItem('somnia_daily_prompts', JSON.stringify([today, promptCount + 1]));
+                                                            haptics.success();
+                                                            showToast('Prompt generated! Copy and paste into your AI image generator');
+                                                        } catch (e) {
+                                                            logger.error(e);
+                                                            showToast('Failed to generate prompt', 'error');
+                                                        } finally {
+                                                            setIsGeneratingPrompt(false);
+                                                        }
+                                                    }}
+                                                    disabled={isGeneratingPrompt || limitReached}
+                                                    className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg font-medium hover:from-purple-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                                >
+                                                    {isGeneratingPrompt ? (
+                                                        <>
+                                                            <span className="animate-spin">✨</span>
+                                                            Crafting your prompt...
+                                                        </>
+                                                    ) : limitReached ? (
+                                                        <>Daily limit reached (5/day)</>
+                                                    ) : (
+                                                        <>
+                                                            <span>🎨</span>
+                                                            Generate Image Prompt ({promptCount}/5 today)
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        );
+                                    })()}
+
+                                    {/* Instructions */}
+                                    <details className="group/details">
+                                        <summary className="text-xs text-purple-600 dark:text-purple-400 cursor-pointer hover:text-purple-700 dark:hover:text-purple-300 list-none flex items-center gap-1">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 transition-transform group-open/details:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                            </svg>
+                                            How to create your dream visualization
+                                        </summary>
+                                        <div className="mt-3 pl-4 text-xs text-purple-600/80 dark:text-purple-300/80 space-y-2">
+                                            <p><span className="font-medium">1.</span> Pick an art style and generate your prompt above</p>
+                                            <p><span className="font-medium">2.</span> Copy and paste into ChatGPT, Midjourney, DALL·E, or Leonardo AI</p>
+                                            <p><span className="font-medium">3.</span> Upload a photo of yourself for personalized results</p>
+                                            <p><span className="font-medium">4.</span> Save your creation below to keep it with this dream</p>
+                                        </div>
+                                    </details>
+
+                                    {/* Import Button */}
+                                    {!dream.imageUrl && (
+                                        <label className="flex items-center justify-center gap-2 w-full px-4 py-3 border-2 border-dashed border-purple-300 dark:border-purple-700 rounded-lg cursor-pointer hover:border-purple-400 dark:hover:border-purple-600 hover:bg-purple-50/50 dark:hover:bg-purple-900/20 transition-colors">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            </svg>
+                                            <span className="text-sm font-medium text-purple-600 dark:text-purple-400">Import Your Visualization</span>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) {
+                                                        const reader = new FileReader();
+                                                        reader.onload = (event) => {
+                                                            const dataUrl = event.target?.result as string;
+                                                            updateDream({ id: dream.id, imageUrl: dataUrl });
+                                                            haptics.success();
+                                                            showToast('Visualization saved to your dream');
+                                                        };
+                                                        reader.readAsDataURL(file);
+                                                    }
+                                                }}
+                                            />
+                                        </label>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -511,7 +678,6 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
             })()}
 
             {isChatOpen && dream && <DreamChatModal dream={dream} onClose={() => setIsChatOpen(false)} />}
-            {isImageModalOpen && dream?.imageUrl && <ImageModal src={dream.imageUrl} onClose={() => setIsImageModalOpen(false)} />}
         </>
     );
 };

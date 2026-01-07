@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Somnia</string>
+    <string name="title_activity_main">Somnia</string>
+    <string name="package_name">ai.somnia.app</string>
+    <string name="custom_url_scheme">ai.somnia.app</string>
+</resources>

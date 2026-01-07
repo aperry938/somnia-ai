@@ -10,6 +10,13 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/cli": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/haptics": "^8.0.0",
+    "@capacitor/ios": "^8.0.0",
+    "@capacitor/local-notifications": "^8.0.0",
+    "@capacitor/status-bar": "^8.0.0",
     "@google/genai": "^1.27.0",
     "@supabase/supabase-js": "^2.89.0",
     "react": "^19.2.0",

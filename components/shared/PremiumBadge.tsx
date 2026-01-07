@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { PremiumFeature, isPremium, PREMIUM_FEATURES } from '../../services/secureSubscriptionService';
 import { SecurePaywallModal } from '../modals/SecurePaywallModal';
+import { useTermsNavigation } from '../../contexts/NavigationContext';
 
 // Generate or retrieve a persistent device ID for pre-auth purchases
 function getDeviceId(): string {
@@ -19,6 +20,7 @@ interface PremiumBadgeProps {
     className?: string;
     showLabel?: boolean;
     hideBadge?: boolean; // If true, only provides click handler, no visual badge
+    onNavigateToTerms?: () => void; // Navigation callback for Terms link
 }
 
 /**
@@ -32,9 +34,12 @@ export const PremiumBadge: React.FC<PremiumBadgeProps> = ({
     className = '',
     showLabel = true,
     hideBadge = false,
+    onNavigateToTerms,
 }) => {
     const [showPaywall, setShowPaywall] = useState(false);
     const deviceId = useMemo(() => getDeviceId(), []);
+    const contextTermsNav = useTermsNavigation();
+    const termsNav = onNavigateToTerms || contextTermsNav;
 
     // Don't show badge if user is premium
     if (isPremium()) {
@@ -70,6 +75,7 @@ export const PremiumBadge: React.FC<PremiumBadgeProps> = ({
                 onClose={() => setShowPaywall(false)}
                 feature={feature}
                 userId={deviceId}
+                onNavigateToTerms={termsNav}
             />
         </>
     );
@@ -83,16 +89,20 @@ interface PremiumGateProps {
     feature: PremiumFeature;
     children: React.ReactNode;
     fallback?: React.ReactNode;
+    onNavigateToTerms?: () => void; // Navigation callback for Terms link
 }
 
 export const PremiumGate: React.FC<PremiumGateProps> = ({
     feature,
     children,
-    fallback
+    fallback,
+    onNavigateToTerms
 }) => {
     const [showPaywall, setShowPaywall] = useState(false);
     const userIsPremium = isPremium();
     const deviceId = useMemo(() => getDeviceId(), []);
+    const contextTermsNav = useTermsNavigation();
+    const termsNav = onNavigateToTerms || contextTermsNav;
 
     if (userIsPremium) {
         return <>{children}</>;
@@ -129,6 +139,7 @@ export const PremiumGate: React.FC<PremiumGateProps> = ({
                 onClose={() => setShowPaywall(false)}
                 feature={feature}
                 userId={deviceId}
+                onNavigateToTerms={termsNav}
             />
         </>
     );

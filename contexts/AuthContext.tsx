@@ -58,6 +58,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 setSession(currentSession);
                 setUser(currentUser);
 
+                // Save user email for superuser check
+                if (currentUser?.email) {
+                    localStorage.setItem('somnia_user_email', currentUser.email);
+                }
+
                 // Verify subscription if authenticated
                 if (currentSession?.access_token) {
                     verifySubscription(currentSession.access_token).catch(logger.error);
@@ -79,6 +84,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const { unsubscribe } = onAuthStateChange((newUser, newSession) => {
             setUser(newUser);
             setSession(newSession);
+
+            // Save/clear user email for superuser check
+            if (newUser?.email) {
+                localStorage.setItem('somnia_user_email', newUser.email);
+            } else {
+                localStorage.removeItem('somnia_user_email');
+            }
 
             // Verify subscription on auth changes
             if (newSession?.access_token) {
@@ -119,6 +131,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setUser(null);
         setSession(null);
         clearSubscriptionCache();
+        localStorage.removeItem('somnia_user_email');
     }, []);
 
     const resetPassword = useCallback(async (email: string) => {

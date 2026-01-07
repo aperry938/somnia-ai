@@ -12,17 +12,20 @@ interface SecurePaywallModalProps {
     onClose: () => void;
     feature?: PremiumFeature;
     userId: string;
+    onNavigateToTerms?: () => void;
 }
 
 export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
     isOpen,
     onClose,
     feature,
-    userId
+    userId,
+    onNavigateToTerms
 }) => {
     const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [termsAccepted, setTermsAccepted] = useState(false);
 
     const status = getCachedStatus();
 
@@ -122,23 +125,110 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
                     </div>
                 </div>
 
-                {/* Features */}
+                {/* Free vs Premium Comparison */}
                 <div className="p-6">
-                    <ul className="space-y-3 mb-6">
-                        {highlightFeatures.map(f => (
-                            <li key={f} className="flex items-start gap-3">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                                <div>
-                                    <span className="font-medium">{PREMIUM_FEATURES[f].name}</span>
-                                    <p className="text-sm text-day-text-secondary dark:text-night-text-secondary">
-                                        {PREMIUM_FEATURES[f].description}
-                                    </p>
-                                </div>
-                            </li>
-                        ))}
-                    </ul>
+                    <div className="grid grid-cols-3 gap-2 text-sm mb-6">
+                        {/* Header */}
+                        <div className="col-span-1"></div>
+                        <div className="text-center font-medium text-day-text-secondary dark:text-night-text-secondary py-2">Free</div>
+                        <div className="text-center font-medium py-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-t-lg text-amber-600 dark:text-amber-400">Premium</div>
+
+                        {/* Dream Journaling */}
+                        <div className="py-2 text-day-text-secondary dark:text-night-text-secondary">Dream Journal</div>
+                        <div className="text-center py-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 inline" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                        <div className="text-center py-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 inline" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+
+                        {/* Sleep Tracking */}
+                        <div className="py-2 text-day-text-secondary dark:text-night-text-secondary">Sleep Tracker</div>
+                        <div className="text-center py-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 inline" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                        <div className="text-center py-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 inline" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+
+                        {/* Basic Sleep Sounds */}
+                        <div className="py-2 text-day-text-secondary dark:text-night-text-secondary">Sleep Sounds</div>
+                        <div className="text-center py-2 text-xs text-day-text-secondary dark:text-night-text-secondary">Basic</div>
+                        <div className="text-center py-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10 text-xs font-medium text-amber-600 dark:text-amber-400">All + Binaural</div>
+
+                        {/* AI Analysis */}
+                        <div className="py-2 text-day-text-secondary dark:text-night-text-secondary">AI Dream Analysis</div>
+                        <div className="text-center py-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-300 dark:text-gray-600 inline" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                        <div className="text-center py-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 inline" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+
+                        {/* Dream Chat */}
+                        <div className="py-2 text-day-text-secondary dark:text-night-text-secondary">Dream Chat AI</div>
+                        <div className="text-center py-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-300 dark:text-gray-600 inline" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                        <div className="text-center py-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 inline" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+
+                        {/* AI Sleep Coach */}
+                        <div className="py-2 text-day-text-secondary dark:text-night-text-secondary">AI Sleep Coach</div>
+                        <div className="text-center py-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-300 dark:text-gray-600 inline" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                        <div className="text-center py-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 inline" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+
+                        {/* Dream Imagery */}
+                        <div className="py-2 text-day-text-secondary dark:text-night-text-secondary">Dream Imagery</div>
+                        <div className="text-center py-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-300 dark:text-gray-600 inline" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                        <div className="text-center py-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 inline" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+
+                        {/* Breathing Exercises */}
+                        <div className="py-2 text-day-text-secondary dark:text-night-text-secondary">Breathing Exercises</div>
+                        <div className="text-center py-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-300 dark:text-gray-600 inline" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                        <div className="text-center py-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-b-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 inline" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                    </div>
 
                     {/* Pricing Toggle */}
                     <div className="flex justify-center gap-2 mb-4" role="group" aria-label="Subscription plan options">
@@ -189,11 +279,35 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
                         </div>
                     )}
 
+                    {/* Terms Checkbox */}
+                    <label className="flex items-start gap-3 mb-4 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={termsAccepted}
+                            onChange={(e) => setTermsAccepted(e.target.checked)}
+                            className="mt-1 w-4 h-4 rounded border-gray-300 text-day-accent focus:ring-day-accent"
+                        />
+                        <span className="text-sm text-day-text-secondary dark:text-night-text-secondary">
+                            I have read and agree to the{' '}
+                            {onNavigateToTerms ? (
+                                <button
+                                    type="button"
+                                    onClick={(e) => { e.preventDefault(); onClose(); onNavigateToTerms(); }}
+                                    className="text-day-accent dark:text-night-accent underline hover:opacity-80"
+                                >
+                                    Terms of Service
+                                </button>
+                            ) : (
+                                <span className="text-day-accent dark:text-night-accent">Terms of Service</span>
+                            )}
+                        </span>
+                    </label>
+
                     {/* CTA Button */}
                     <button
                         onClick={handleSubscribe}
-                        disabled={isProcessing}
-                        className="w-full py-3 min-h-[48px] bg-gradient-to-r from-day-accent to-purple-600 text-white rounded-full font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                        disabled={isProcessing || !termsAccepted}
+                        className="w-full py-3 min-h-[48px] bg-gradient-to-r from-day-accent to-purple-600 text-white rounded-full font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isProcessing ? (
                             <span className="flex items-center justify-center gap-2">
@@ -203,6 +317,8 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
                                 </svg>
                                 Processing...
                             </span>
+                        ) : !termsAccepted ? (
+                            'Accept terms to continue'
                         ) : (
                             `Subscribe ${selectedPlan === 'yearly' ? 'Yearly' : 'Monthly'}`
                         )}

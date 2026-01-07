@@ -10,7 +10,6 @@ import { SentimentChart } from '../insights/SentimentChart';
 import { DreamCalendar } from '../insights/DreamCalendar';
 import { DreamWordCloud } from '../insights/DreamWordCloud';
 import { DreamMoodTracker } from '../insights/DreamMoodTracker';
-import { SleepDurationChart } from '../insights/SleepDurationChart';
 import { DreamStreakCalendar } from '../insights/DreamStreakCalendar';
 import { RecurringThemes } from '../insights/RecurringThemes';
 import { InsightsGrid } from '../insights/InsightsGrid';
@@ -32,9 +31,10 @@ const AnalysisCard: React.FC<{ title: string; description: string; buttonText: s
 
 export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = ({ onDreamSelect }) => {
     const { dreams } = useAppContext();
+    const userIsPremium = isPremium();
 
-    // Use demo data when user has < 3 dreams
-    const isUsingDemo = dreams.length < 3;
+    // Free users always see demo data, premium users see their own data (or demo if < 3 dreams)
+    const isUsingDemo = !userIsPremium || dreams.length < 3;
     const displayDreams = isUsingDemo ? DEMO_DREAMS : dreams;
 
     const [activeTab, setActiveTab] = useState<InsightTab>('dreams');
@@ -47,6 +47,37 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
     const [habitError, setHabitError] = useState<string | null>(null);
     const [isCompareOpen, setIsCompareOpen] = useState(false);
     const [isSyncOpen, setIsSyncOpen] = useState(false);
+
+    // Weekly rate limit helpers
+    const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+    const DREAM_SYNTH_KEY = 'somnia_last_dream_synth';
+    const HABIT_ANALYSIS_KEY = 'somnia_last_habit_analysis';
+
+    const canUseDreamSynth = (): boolean => {
+        const last = localStorage.getItem(DREAM_SYNTH_KEY);
+        if (!last) return true;
+        return Date.now() - parseInt(last, 10) >= WEEK_MS;
+    };
+
+    const canUseHabitAnalysis = (): boolean => {
+        const last = localStorage.getItem(HABIT_ANALYSIS_KEY);
+        if (!last) return true;
+        return Date.now() - parseInt(last, 10) >= WEEK_MS;
+    };
+
+    const getDaysUntilNextSynth = (): number => {
+        const last = localStorage.getItem(DREAM_SYNTH_KEY);
+        if (!last) return 0;
+        const elapsed = Date.now() - parseInt(last, 10);
+        return Math.max(0, Math.ceil((WEEK_MS - elapsed) / (24 * 60 * 60 * 1000)));
+    };
+
+    const getDaysUntilNextHabit = (): number => {
+        const last = localStorage.getItem(HABIT_ANALYSIS_KEY);
+        if (!last) return 0;
+        const elapsed = Date.now() - parseInt(last, 10);
+        return Math.max(0, Math.ceil((WEEK_MS - elapsed) / (24 * 60 * 60 * 1000)));
+    };
 
     // Swipe handling
     const containerRef = useRef<HTMLDivElement>(null);
@@ -87,13 +118,15 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
     const patterns = useMemo(() => detectRecurringPatterns(dreams), [dreams]);
 
     const handleSynthesizeDreams = async () => {
-        if (!isPremium() && !canUseAiAnalysis()) return;
+        if (!userIsPremium) return; // Premium only
+        if (!canUseDreamSynth()) return; // Weekly limit
+
         setIsDreamSynthLoading(true);
         setDreamSynthError(null);
         try {
-            if (!isPremium()) useAiCredit();
             const result = await synthesizeDreamThemes(dreams);
             setDreamSynthesis(result);
+            localStorage.setItem(DREAM_SYNTH_KEY, Date.now().toString());
         } catch (e) {
             setDreamSynthError("Failed to synthesize dream themes. Please try again.");
         } finally {
@@ -102,13 +135,15 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
     };
 
     const handleAnalyzeHabits = async () => {
-        if (!isPremium() && !canUseAiAnalysis()) return;
+        if (!userIsPremium) return; // Premium only
+        if (!canUseHabitAnalysis()) return; // Weekly limit
+
         setIsHabitLoading(true);
         setHabitError(null);
         try {
-            if (!isPremium()) useAiCredit();
             const result = await analyzeSleepHabits(dreams);
             setHabitAnalysis(result);
+            localStorage.setItem(HABIT_ANALYSIS_KEY, Date.now().toString());
         } catch (e) {
             setHabitError("Failed to analyze sleep habits. Please try again.");
         } finally {
@@ -136,6 +171,14 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                         </svg>
                         My Dreams
+                        {!userIsPremium && (
+                            <span className="inline-flex items-center gap-0.5 text-[10px] bg-gradient-to-r from-amber-500 to-orange-500 text-white px-1.5 py-0.5 rounded-full font-medium">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                                PRO
+                            </span>
+                        )}
                     </button>
                     <button
                         onClick={() => setActiveTab('analysis')}
@@ -150,6 +193,14 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                         </svg>
                         Analysis
+                        {!userIsPremium && (
+                            <span className="inline-flex items-center gap-0.5 text-[10px] bg-gradient-to-r from-amber-500 to-orange-500 text-white px-1.5 py-0.5 rounded-full font-medium">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                                PRO
+                            </span>
+                        )}
                     </button>
                 </div>
                 {/* Swipe indicator */}
@@ -168,17 +219,42 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
             >
                 {activeTab === 'dreams' ? (
                     <div className="space-y-6 animate-fadeIn">
-                        {/* Sample Data Banner */}
+                        {/* Sample Data Banner / Premium Upsell */}
                         {isUsingDemo && (
-                            <div className="flex items-center gap-3 px-4 py-3 bg-day-accent/10 dark:bg-night-accent/10 border border-day-accent/20 dark:border-night-accent/20 rounded-xl">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-day-accent dark:text-night-accent flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <p className="text-sm text-day-accent dark:text-night-accent">
-                                    <span className="font-medium">Sample data</span>
-                                    <span className="opacity-80"> — Log your dreams to see your personal insights</span>
-                                </p>
-                            </div>
+                            !userIsPremium ? (
+                                <PremiumBadge feature="sleep_habits" className="w-full" hideBadge>
+                                    <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-xl p-4 cursor-pointer hover:border-amber-400/50 transition-colors">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center flex-shrink-0">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                                </svg>
+                                            </div>
+                                            <div className="flex-grow">
+                                                <p className="font-medium text-amber-200">
+                                                    Viewing sample data
+                                                </p>
+                                                <p className="text-sm text-amber-300/80">
+                                                    Upgrade to Premium to unlock your personal insights
+                                                </p>
+                                            </div>
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </PremiumBadge>
+                            ) : (
+                                <div className="flex items-center gap-3 px-4 py-3 bg-day-accent/10 dark:bg-night-accent/10 border border-day-accent/20 dark:border-night-accent/20 rounded-xl">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-day-accent dark:text-night-accent flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <p className="text-sm text-day-accent dark:text-night-accent">
+                                        <span className="font-medium">Sample data</span>
+                                        <span className="opacity-80"> — Log at least 3 dreams to see your personal insights</span>
+                                    </p>
+                                </div>
+                            )
                         )}
                         <WeeklyDigest dreams={displayDreams} />
                         <DreamCalendar dreams={displayDreams} />
@@ -232,29 +308,31 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                     </div>
                 ) : (
                     <div className="space-y-6 animate-fadeIn">
-                        <SleepDurationChart dreams={displayDreams} />
-
-                        {/* Dream Analysis Grid */}
-                        <div>
-                            <h2 className="font-serif text-2xl text-center mb-4">Dream Analysis</h2>
-                            <InsightsGrid dreams={displayDreams} />
-                        </div>
-
-                        <GlobalTrendsCard />
-
-                        {/* Sleep Quality Chart */}
-                        {chartData.length > 1 && (
-                            <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">
-                                <h2 className="font-serif text-2xl mb-4">Sleep Quality Trends</h2>
-                                <div className="w-full h-48">
-                                    <SleepQualityChart data={chartData} />
+                        {/* Premium Banner for Analysis Tab */}
+                        {!userIsPremium && (
+                            <PremiumBadge feature="sleep_habits" className="w-full" hideBadge>
+                                <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-xl p-4 cursor-pointer hover:border-amber-400/50 transition-colors">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center flex-shrink-0">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                            </svg>
+                                        </div>
+                                        <div className="flex-grow">
+                                            <p className="font-medium text-amber-200">
+                                                Premium Analytics Preview
+                                            </p>
+                                            <p className="text-sm text-amber-300/80">
+                                                Viewing sample data. Upgrade to unlock your personal sleep & dream analytics.
+                                            </p>
+                                        </div>
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </div>
                                 </div>
-                            </div>
+                            </PremiumBadge>
                         )}
-
-                        {/* Sentiment Chart */}
-                        {dreams.length >= 2 && <SentimentChart dreams={dreams} />}
-
                         {/* AI Analysis: Dream Weaving */}
                         <AnalysisCard title="Dream Weaving" description="Uncover recurring themes and symbols across your dream journal." buttonText="Synthesize" onAnalyze={handleSynthesizeDreams} isLoading={isDreamSynthLoading}>
                             {dreamSynthesis ? (
@@ -281,17 +359,23 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                                 </div>
                             ) : (
                                 <PremiumBadge feature="dream_synthesis" className="w-full">
-                                    <button onClick={handleSynthesizeDreams} disabled={isDreamSynthLoading || dreams.length < 3} className="w-full py-3 min-h-[48px] bg-day-accent dark:bg-night-accent text-white font-bold rounded-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
-                                        {isDreamSynthLoading ? 'Analyzing...' : 'Synthesize Dream Themes'}
+                                    <button
+                                        onClick={handleSynthesizeDreams}
+                                        disabled={isDreamSynthLoading || dreams.length < 3 || (userIsPremium && !canUseDreamSynth())}
+                                        className="w-full py-3 min-h-[48px] bg-day-accent dark:bg-night-accent text-white font-bold rounded-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                                    >
+                                        {isDreamSynthLoading ? 'Analyzing...' :
+                                            userIsPremium && !canUseDreamSynth() ? `Available in ${getDaysUntilNextSynth()} days` :
+                                                'Synthesize Dream Themes'}
                                     </button>
                                 </PremiumBadge>
                             )}
                             {dreams.length < 3 && !dreamSynthesis && <p className="text-xs text-center mt-2 text-day-text-secondary dark:text-night-text-secondary">Requires at least 3 logged dreams.</p>}
-                            {!isPremium() && dreams.length >= 3 && !dreamSynthesis && <p className="text-xs text-center mt-1 text-amber-600 dark:text-amber-400">Uses 1 AI credit</p>}
+                            {userIsPremium && dreams.length >= 3 && !dreamSynthesis && canUseDreamSynth() && <p className="text-xs text-center mt-1 text-indigo-500 dark:text-indigo-400">Once per week</p>}
                         </AnalysisCard>
 
-                        {/* AI Analysis: Sleep Science */}
-                        <AnalysisCard title="Sleep Science" description="Discover how your routines correlate with sleep quality." buttonText="Analyze" onAnalyze={handleAnalyzeHabits} isLoading={isHabitLoading}>
+                        {/* AI Analysis: Sleep Analytics */}
+                        <AnalysisCard title="Sleep Analytics" description="AI-powered insights into your sleep patterns and quality." buttonText="Analyze" onAnalyze={handleAnalyzeHabits} isLoading={isHabitLoading}>
                             {habitAnalysis ? (
                                 <div className="space-y-4 pt-2 animate-fadeIn">
                                     <div>
@@ -316,14 +400,44 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                                 </div>
                             ) : (
                                 <PremiumBadge feature="sleep_habits" className="w-full">
-                                    <button onClick={handleAnalyzeHabits} disabled={isHabitLoading || dreams.filter(d => d.sleepQuality).length < 3} className="w-full py-3 min-h-[48px] bg-day-accent dark:bg-night-accent text-white font-bold rounded-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
-                                        {isHabitLoading ? 'Analyzing...' : 'Analyze Sleep Habits'}
+                                    <button
+                                        onClick={handleAnalyzeHabits}
+                                        disabled={isHabitLoading || dreams.filter(d => d.sleepQuality).length < 3 || (userIsPremium && !canUseHabitAnalysis())}
+                                        className="w-full py-3 min-h-[48px] bg-day-accent dark:bg-night-accent text-white font-bold rounded-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                                    >
+                                        {isHabitLoading ? 'Analyzing...' :
+                                            userIsPremium && !canUseHabitAnalysis() ? `Available in ${getDaysUntilNextHabit()} days` :
+                                                'Analyze Sleep Habits'}
                                     </button>
                                 </PremiumBadge>
                             )}
                             {dreams.filter(d => d.sleepQuality).length < 3 && !habitAnalysis && <p className="text-xs text-center mt-2 text-day-text-secondary dark:text-night-text-secondary">Requires at least 3 nights with sleep quality ratings.</p>}
-                            {!isPremium() && dreams.filter(d => d.sleepQuality).length >= 3 && !habitAnalysis && <p className="text-xs text-center mt-1 text-amber-600 dark:text-amber-400">Uses 1 AI credit</p>}
+                            {userIsPremium && dreams.filter(d => d.sleepQuality).length >= 3 && !habitAnalysis && canUseHabitAnalysis() && <p className="text-xs text-center mt-1 text-indigo-500 dark:text-indigo-400">Once per week</p>}
                         </AnalysisCard>
+
+                        {/* Dream Analysis Grid */}
+                        <div>
+                            <h2 className="font-serif text-2xl text-center mb-4">Dream Analysis</h2>
+                            <InsightsGrid dreams={displayDreams} />
+                        </div>
+
+                        {/* Global Trends */}
+                        <GlobalTrendsCard />
+
+                        {/* Sleep Quality Chart */}
+                        {chartData.length > 1 && (
+                            <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">
+                                <h2 className="font-serif text-2xl mb-4">Sleep Quality Trends</h2>
+                                <div className="w-full h-48">
+                                    <SleepQualityChart data={chartData} />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Sentiment Chart */}
+                        {dreams.length >= 2 && (
+                            <SentimentChart dreams={dreams} />
+                        )}
                     </div>
                 )}
             </div>

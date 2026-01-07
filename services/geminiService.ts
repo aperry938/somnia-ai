@@ -20,7 +20,7 @@ import {
  */
 export class NoCreditsError extends Error {
     constructor() {
-        super('No AI credits remaining this month. Upgrade to Premium for unlimited analyses.');
+        super('Daily AI limit reached. Upgrade to Premium for full access.');
         this.name = 'NoCreditsError';
     }
 }
@@ -132,6 +132,10 @@ export const analyzeDream = async (dreamText: string, sleepAids?: SleepAids, bio
                                 }
                             },
                             required: ['title', 'content']
+                        },
+                        imagePrompt: {
+                            type: Type.STRING,
+                            description: "A detailed, vivid image generation prompt (80-150 words) that captures the dream's key visual elements, mood, colors, and atmosphere. Write it in the style of Midjourney/DALL-E prompts with artistic direction (e.g., 'surreal dreamscape', 'ethereal lighting', 'muted earth tones'). Include specific objects, settings, and emotional qualities from the dream."
                         }
                     },
                     required: ['title', 'analysis', 'integration']
@@ -163,6 +167,52 @@ export const analyzeDream = async (dreamText: string, sleepAids?: SleepAids, bio
     } catch (error) {
         logError(error instanceof Error ? error : new Error(String(error)), 'ai', { operation: 'analyzeDream' });
         throw error instanceof Error ? error : new Error("Failed to analyze dream.");
+    }
+};
+
+/**
+ * Generate an image prompt for a dream with a specific art style.
+ * User-triggered, not automatic.
+ */
+export const generateImagePrompt = async (dreamText: string, style: DreamArtStyle): Promise<string> => {
+    try {
+        const ai = getAi();
+        const styleInfo = DREAM_ART_STYLES[style];
+
+        const prompt = `You are a master prompt engineer for AI image generators like Midjourney, DALL-E, and Leonardo AI.
+
+Given this dream description, create a detailed image generation prompt (80-150 words) that would produce a stunning visualization.
+
+DREAM:
+"${dreamText}"
+
+ART STYLE TO USE:
+${styleInfo.name}: ${styleInfo.prompt}
+
+REQUIREMENTS:
+- Capture the dream's key visual elements, mood, colors, and atmosphere
+- Include the art style direction naturally
+- Be specific about lighting, composition, and emotional tone
+- Write in the format AI image generators expect
+- Do NOT include any meta-commentary, just output the prompt
+- Start directly with the visual description
+
+OUTPUT ONLY THE IMAGE PROMPT, nothing else.`;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: [{ parts: [{ text: prompt }] }],
+        });
+
+        const result = response.text?.trim() ?? '';
+        if (!result) {
+            throw new Error('Failed to generate image prompt');
+        }
+
+        return result;
+    } catch (error) {
+        logError(error instanceof Error ? error : new Error(String(error)), 'ai', { operation: 'generateImagePrompt' });
+        throw error instanceof Error ? error : new Error("Failed to generate image prompt.");
     }
 };
 

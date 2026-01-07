@@ -4,6 +4,7 @@ import { ChatMessage, Dream } from '../../types';
 import { useAppContext } from '../../contexts/AppContext';
 import haptics from '../../services/hapticsService';
 import { sanitizeText, INPUT_LIMITS, containsScriptInjection } from '../../services/validationService';
+import { useToast } from '../shared/Toast';
 
 interface DreamChatModalProps {
     dream: Dream;
@@ -16,6 +17,7 @@ export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const chatBoxRef = useRef<HTMLDivElement>(null);
+    const { showToast } = useToast();
 
     const fetchInitialResponse = async () => {
         setIsLoading(true);
@@ -57,6 +59,18 @@ export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }
     const handleSend = async (messageText: string) => {
         if (!messageText.trim() || isLoading) return;
 
+        // Check daily chat limit (50 per day)
+        const today = new Date().toDateString();
+        const stored = localStorage.getItem('somnia_daily_chat');
+        const [lastDate, countStr] = stored ? JSON.parse(stored) : ['', '0'];
+        const count = lastDate === today ? parseInt(countStr) : 0;
+        const DAILY_LIMIT = 50;
+
+        if (count >= DAILY_LIMIT) {
+            showToast('Daily chat limit reached (50/day)', 'info');
+            return;
+        }
+
         // Sanitize and validate message
         const sanitized = sanitizeText(messageText).slice(0, INPUT_LIMITS.chatMessage);
         if (!sanitized || containsScriptInjection(sanitized)) return;
@@ -73,6 +87,8 @@ export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }
             const finalHistory = [...newHistory, { id: Date.now(), role: 'model' as const, parts: [{ text: responseText }] }];
             setHistory(finalHistory);
             updateDream({ ...dream, chatHistory: finalHistory });
+            // Increment chat count
+            localStorage.setItem('somnia_daily_chat', JSON.stringify([today, count + 1]));
             haptics.success();
         } catch (e) {
             const errorHistory = [...newHistory, { id: Date.now(), role: 'model' as const, parts: [{ text: "Sorry, I couldn't get a response." }], isError: true }];
@@ -104,7 +120,12 @@ export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }
                     <div>
                         <div className="flex items-center gap-2">
                             <h2 id="dream-chat-title" className="font-serif text-2xl">Dream Discussion</h2>
-                            <span className="text-[10px] bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-1.5 py-0.5 rounded-full font-medium">PRO</span>
+                            <span className="inline-flex items-center gap-0.5 text-[10px] bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-1.5 py-0.5 rounded-full font-medium">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                                PRO
+                            </span>
                         </div>
                         <p className="text-xs text-day-text-secondary dark:text-night-text-secondary truncate max-w-[200px]">{dream.title}</p>
                     </div>

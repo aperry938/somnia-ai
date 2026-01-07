@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { GUIDED_RELAXATIONS, SLEEP_CHECKLIST_ITEMS, SOUNDSCAPES } from '../../constants';
 import { GuidedRelaxation, Soundscape, SleepAids } from '../../types';
-import { AICoachModal } from '../modals/AICoachModal';
 import { SoundscapeModal } from '../modals/SoundscapeModal';
 import { GuidedRelaxationModal } from '../modals/GuidedRelaxationModal';
 import { HardwareSyncModal } from '../modals/HardwareSyncModal';
@@ -42,7 +41,7 @@ const DayRating: React.FC<{ rating: number | null; onRate: (rating: number) => v
 
 
 export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNavigateToAlarms }) => {
-    const [activeModal, setActiveModal] = useState<'coach' | 'soundscape' | 'relaxation' | 'sync' | null>(null);
+    const [activeModal, setActiveModal] = useState<'soundscape' | 'relaxation' | 'sync' | null>(null);
     const [selectedSound, setSelectedSound] = useState<Soundscape | null>(null);
     const [selectedRelaxation, setSelectedRelaxation] = useState<GuidedRelaxation | null>(null);
     const [playingSoundId, setPlayingSoundId] = useState<string | null>(null);
@@ -102,7 +101,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
         };
     }, []);
 
-    const openCoach = () => setActiveModal('coach');
+
 
     const openSoundscapeModal = (sound: Soundscape) => {
         setSelectedSound(sound);
@@ -194,27 +193,50 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                 <h1 className="font-serif page-title text-4xl text-center">Sleep Gateway</h1>
             </div>
 
-            {/* No Alarm Set Banner */}
+            {/* Initiate Sleep Gateway - Show when no session active */}
             {
-                !hasActiveAlarm && !isSleeping && (
-                    <div className="max-w-2xl mx-auto mb-6 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-700 rounded-xl p-4 animate-fadeIn">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-800/50 flex items-center justify-center flex-shrink-0">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
+                !activeSleepSession && !isSleeping && (
+                    <div className="max-w-2xl mx-auto mb-6">
+                        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 border border-indigo-200 dark:border-indigo-700/50 rounded-xl p-5">
+                            <div className="text-center space-y-4">
+                                <h2 className="font-serif text-xl text-day-text-primary dark:text-night-text-primary">Initiate Sleep Gateway</h2>
+
+                                {/* Alarm Selector Dropdown */}
+                                <div className="flex flex-col items-center gap-3">
+                                    <select
+                                        id="alarm-selector"
+                                        className="w-full max-w-xs px-4 py-2 min-h-[48px] bg-white/70 dark:bg-black/30 border border-day-border dark:border-night-border rounded-lg text-center"
+                                        onChange={(e) => {
+                                            const alarmId = e.target.value ? Number(e.target.value) : undefined;
+                                            startSleepSession(alarmId);
+                                        }}
+                                        defaultValue=""
+                                    >
+                                        <option value="" disabled>Link to alarm (optional)...</option>
+                                        <option value="">No alarm - track without</option>
+                                        {alarms.filter(a => a.isActive).map(alarm => (
+                                            <option key={alarm.id} value={alarm.id}>
+                                                {formatAlarmTime(alarm.time)} {alarm.days.length > 0 ? '(recurring)' : '(once)'}
+                                            </option>
+                                        ))}
+                                    </select>
+
+                                    <button
+                                        onClick={() => startSleepSession()}
+                                        className="w-full max-w-xs py-3 px-6 min-h-[48px] bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium rounded-xl transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                                        </svg>
+                                        Start Sleep Tracking
+                                    </button>
+                                </div>
+
+                                {/* Fineprint */}
+                                <p className="text-xs text-day-text-secondary dark:text-night-text-secondary opacity-70">
+                                    Track your pre-sleep activities and link them to your morning dream log
+                                </p>
                             </div>
-                            <div className="flex-grow">
-                                <h3 className="font-medium text-amber-800 dark:text-amber-200">Set an Alarm First</h3>
-                                <p className="text-sm text-amber-700 dark:text-amber-300/80">Your sleep data will be linked to your alarm for better tracking</p>
-                            </div>
-                            <button
-                                onClick={onNavigateToAlarms}
-                                aria-label="Set an alarm"
-                                className="px-4 py-2 min-h-[44px] bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg transition-colors flex-shrink-0 flex items-center"
-                            >
-                                Set Alarm
-                            </button>
                         </div>
                     </div>
                 )
@@ -246,29 +268,115 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
 
             {
                 isSleeping ? (
-                    <div className="max-w-2xl mx-auto space-y-8 bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border rounded-xl text-center p-8 animate-fadeIn">
+                    <div className="max-w-2xl mx-auto space-y-6 bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border rounded-xl text-center p-8 animate-fadeIn">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-day-accent dark:text-night-accent mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
                         <h2 className="font-serif text-2xl text-day-accent dark:text-night-accent">Sweet Dreams</h2>
-                        <p className="mt-2 text-day-text-secondary dark:text-night-text-secondary">Your sleep settings are logged. Rest well.</p>
+                        <p className="text-day-text-secondary dark:text-night-text-secondary">Your sleep settings are logged. Rest well.</p>
+
+                        {/* Activity Summary */}
+                        {activeSleepSession && (
+                            <div className="bg-white/30 dark:bg-black/20 rounded-lg p-4 space-y-3 text-left">
+                                {/* Linked Alarm */}
+                                {activeSleepSession.alarmTime && (
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <span className="text-day-text-secondary dark:text-night-text-secondary">Alarm set for</span>
+                                        <span className="font-medium text-day-accent dark:text-night-accent">{formatAlarmTime(activeSleepSession.alarmTime)}</span>
+                                    </div>
+                                )}
+
+                                {/* Breathing Exercises */}
+                                {activeSleepSession.sleepGatewayData.breathingExercises && activeSleepSession.sleepGatewayData.breathingExercises.length > 0 && (
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        <span className="text-day-text-secondary dark:text-night-text-secondary">Breathing:</span>
+                                        <span className="font-medium">{activeSleepSession.sleepGatewayData.breathingExercises.map(b => b.name).join(', ')}</span>
+                                    </div>
+                                )}
+
+                                {/* Sounds Played */}
+                                {activeSleepSession.sleepGatewayData.soundsPlayed && activeSleepSession.sleepGatewayData.soundsPlayed.length > 0 && (
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        <span className="text-day-text-secondary dark:text-night-text-secondary">Sounds:</span>
+                                        <span className="font-medium">{activeSleepSession.sleepGatewayData.soundsPlayed.map(s => s.name).join(', ')}</span>
+                                    </div>
+                                )}
+
+                                {/* Checklist Items */}
+                                {activeSleepSession.sleepGatewayData.checklist && activeSleepSession.sleepGatewayData.checklist.length > 0 && (
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        <span className="text-day-text-secondary dark:text-night-text-secondary">Prep tasks:</span>
+                                        <span className="font-medium">{activeSleepSession.sleepGatewayData.checklist.length} completed</span>
+                                    </div>
+                                )}
+
+                                {/* Day Rating */}
+                                {activeSleepSession.sleepGatewayData.dayRating && (
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                        </svg>
+                                        <span className="text-day-text-secondary dark:text-night-text-secondary">Day rating:</span>
+                                        <span className="font-medium">{activeSleepSession.sleepGatewayData.dayRating}/5</span>
+                                    </div>
+                                )}
+
+                                {/* Total Prep Time */}
+                                {activeSleepSession.sleepGatewayData.totalPrepTime && activeSleepSession.sleepGatewayData.totalPrepTime > 0 && (
+                                    <div className="flex items-center gap-2 text-sm border-t border-day-border dark:border-night-border pt-2 mt-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <span className="text-day-text-secondary dark:text-night-text-secondary">Total prep time:</span>
+                                        <span className="font-medium">{Math.round(activeSleepSession.sleepGatewayData.totalPrepTime / 60)} min</span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
 
                         {/* Wake Window Viz */}
                         {motionSupported && (
                             <WakeWindowViz events={movementLog} />
                         )}
 
-                        <button onClick={() => setIsSleeping(false)} aria-label="Go back to sleep settings" className="mt-4 py-3 px-6 min-h-[48px] bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto">Back</button>
+                        {/* Action Buttons */}
+                        <div className="flex flex-col gap-3 mt-6">
+                            <button
+                                onClick={() => {
+                                    // Session is already saved via activeSleepSession in context
+                                    // Just show confirmation and keep tracking
+                                    haptics.medium();
+                                }}
+                                className="py-4 px-8 min-h-[48px] bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium rounded-xl flex items-center justify-center gap-2 mx-auto"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                                Session Saved - Sweet Dreams!
+                            </button>
+                            <button
+                                onClick={() => setIsSleeping(false)}
+                                className="text-sm text-day-text-secondary dark:text-night-text-secondary hover:underline"
+                            >
+                                ← Edit sleep settings
+                            </button>
+                        </div>
+                        <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-4 opacity-70">
+                            Your session will be attached to your next dream log
+                        </p>
                     </div>
                 ) : (
                     <div className="max-w-2xl mx-auto space-y-8">
-                        <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl cursor-pointer hover:shadow-xl transition-shadow focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent" onClick={openCoach} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openCoach(); } }} aria-label="Open AI Sleep Coach">
-                            <div className="flex items-center gap-4">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg>
-                                <div>
-                                    <h2 className="font-serif text-xl font-bold">AI Sleep Coach</h2>
-                                    <p className="text-sm text-day-text-secondary dark:text-night-text-secondary">Chat for personalized guidance and relaxation techniques.</p>
-                                </div>
-                            </div>
-                        </div>
 
                         <div>
                             <h2 className="font-serif text-2xl text-center my-6">Evening Reflection</h2>
@@ -348,15 +456,40 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                         <div>
                             <h2 className="font-serif text-2xl text-center my-8">Guided Relaxation</h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {GUIDED_RELAXATIONS.map(item => (
-                                    <div key={item.id} onClick={() => openRelaxationModal(item)} className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-4 rounded-xl cursor-pointer transition-all hover:border-day-accent dark:hover:border-night-accent">
-                                        <div className="flex flex-col items-center text-center">
-                                            <div className="text-day-accent dark:text-night-accent w-12 h-12 flex items-center justify-center">{item.icon}</div>
-                                            <h3 className="font-serif text-xl mt-2 text-day-text-primary dark:text-night-text-primary">{item.name}</h3>
-                                            <p className="text-sm text-day-text-secondary dark:text-night-text-secondary mt-1">{item.description}</p>
+                                {GUIDED_RELAXATIONS.map(item => {
+                                    const showProBadge = !isPremium();
+
+                                    if (showProBadge) {
+                                        return (
+                                            <PremiumBadge key={item.id} feature="breathing" className="w-full" hideBadge>
+                                                <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-4 rounded-xl cursor-pointer transition-all hover:border-day-accent dark:hover:border-night-accent relative">
+                                                    {/* PRO badge */}
+                                                    <span className="absolute top-2 right-2 inline-flex items-center gap-0.5 text-[10px] bg-gradient-to-r from-amber-500 to-orange-500 text-white px-1.5 py-0.5 rounded-full font-medium">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                                        </svg>
+                                                        PRO
+                                                    </span>
+                                                    <div className="flex flex-col items-center text-center">
+                                                        <div className="text-gray-400 dark:text-gray-500 w-12 h-12 flex items-center justify-center">{item.icon}</div>
+                                                        <h3 className="font-serif text-xl mt-2 text-gray-500">{item.name}</h3>
+                                                        <p className="text-sm text-gray-400 mt-1">{item.description}</p>
+                                                    </div>
+                                                </div>
+                                            </PremiumBadge>
+                                        );
+                                    }
+
+                                    return (
+                                        <div key={item.id} onClick={() => openRelaxationModal(item)} className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-4 rounded-xl cursor-pointer transition-all hover:border-day-accent dark:hover:border-night-accent">
+                                            <div className="flex flex-col items-center text-center">
+                                                <div className="text-day-accent dark:text-night-accent w-12 h-12 flex items-center justify-center">{item.icon}</div>
+                                                <h3 className="font-serif text-xl mt-2 text-day-text-primary dark:text-night-text-primary">{item.name}</h3>
+                                                <p className="text-sm text-day-text-secondary dark:text-night-text-secondary mt-1">{item.description}</p>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
 
@@ -371,6 +504,38 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                 ))}
                             </div>
                         </div>
+
+                        {/* Premium Sleep Analytics Upsell - only for non-premium users */}
+                        {!isPremium() && (
+                            <PremiumBadge feature="sleep_habits" className="w-full" hideBadge>
+                                <div className="bg-gradient-to-r from-indigo-900/30 to-purple-900/30 border border-indigo-500/30 p-5 rounded-xl cursor-pointer hover:border-indigo-400/50 transition-colors">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                            </svg>
+                                        </div>
+                                        <div className="flex-grow">
+                                            <div className="flex items-center gap-2">
+                                                <h3 className="font-serif text-lg text-indigo-200">Sleep Analytics</h3>
+                                                <span className="inline-flex items-center gap-0.5 text-[10px] bg-gradient-to-r from-amber-500 to-orange-500 text-white px-1.5 py-0.5 rounded-full font-medium">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5" viewBox="0 0 20 20" fill="currentColor">
+                                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                                    </svg>
+                                                    PRO
+                                                </span>
+                                            </div>
+                                            <p className="text-sm text-indigo-300/80 mt-1">
+                                                Discover what habits improve your sleep quality with AI-powered pattern analysis
+                                            </p>
+                                        </div>
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            </PremiumBadge>
+                        )}
 
                         {/* Sleep Quality Prediction */}
                         {prediction && (
@@ -482,7 +647,6 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                     </div >
                 )
             }
-            {activeModal === 'coach' && <AICoachModal onClose={closeModal} />}
             {
                 activeModal === 'soundscape' && selectedSound && (
                     <SoundscapeModal

@@ -3,6 +3,7 @@ import { Page, DreamMood } from './types';
 import { useClock } from './hooks/useClock';
 import { useAppContext } from './contexts/AppContext';
 import { useAuth } from './contexts/AuthContext';
+import { NavigationProvider } from './contexts/NavigationContext';
 import { useAlarmManager } from './hooks/useAlarmManager';
 import { initAudioContext } from './services/audioService';
 import { useRealityChecks } from './hooks/useRealityChecks';
@@ -81,6 +82,21 @@ const App: React.FC = () => {
 
         // Check data integrity
         checkAndMigrateData();
+
+        // Initialize native alarms (iOS/Android)
+        const initNativeAlarms = async () => {
+            const { isNative, requestPermissions, registerAlarmActions, initializeAlarmListeners } = await import('./services/nativeAlarmService');
+            if (isNative) {
+                await requestPermissions();
+                await registerAlarmActions();
+                initializeAlarmListeners(
+                    (alarmId) => console.log('[Native] Alarm received:', alarmId),
+                    (alarmId, actionId) => console.log('[Native] Action:', alarmId, actionId)
+                );
+                console.log('[Native] Alarm service initialized');
+            }
+        };
+        initNativeAlarms();
 
         return () => {
             document.removeEventListener('click', resumeAudio);
@@ -171,6 +187,11 @@ const App: React.FC = () => {
 
     const navigateToSleep = useCallback(() => {
         setCurrentPage('sleep');
+    }, []);
+
+    // Navigation callback for Terms page (used by PremiumBadge throughout app)
+    const handleGlobalNavigate = useCallback((page: 'terms' | 'privacy' | 'profile') => {
+        setCurrentPage(page);
     }, []);
 
     const navigateToAlarms = useCallback(() => {
@@ -271,40 +292,42 @@ const App: React.FC = () => {
     }
 
     return (
-        <div className="flex flex-col h-screen overflow-hidden bg-gradient-to-b from-day-bg-start to-day-bg-end dark:from-night-bg-start dark:to-night-bg-end text-day-text-primary dark:text-night-text-primary transition-colors duration-500">
-            <a href="#main-content" className="skip-link">Skip to main content</a>
-            <main id="main-content" className="flex-grow overflow-y-auto custom-scrollbar p-4 md:p-6">
-                <div className="animate-fadeIn">
-                    {renderPage()}
-                </div>
-                {/* Page indicator dots for swipe navigation */}
-                {currentIndex !== -1 && (
-                    <div className="flex justify-center gap-2 py-3 mt-4">
-                        {Array.from({ length: totalPages }).map((_, i) => (
-                            <div
-                                key={i}
-                                className={`w-2 h-2 rounded-full transition-all duration-300 ${i === currentIndex
-                                    ? 'bg-day-accent dark:bg-night-accent w-6'
-                                    : 'bg-gray-300 dark:bg-gray-600'
-                                    }`}
-                            />
-                        ))}
+        <NavigationProvider onNavigate={handleGlobalNavigate}>
+            <div className="flex flex-col h-screen overflow-hidden bg-gradient-to-b from-day-bg-start to-day-bg-end dark:from-night-bg-start dark:to-night-bg-end text-day-text-primary dark:text-night-text-primary transition-colors duration-500">
+                <a href="#main-content" className="skip-link">Skip to main content</a>
+                <main id="main-content" className="flex-grow overflow-y-auto custom-scrollbar p-4 md:p-6">
+                    <div className="animate-fadeIn">
+                        {renderPage()}
                     </div>
-                )}
-            </main>
-            <BottomNav currentPage={currentPage} setCurrentPage={setCurrentPage} />
-            {ringingAlarm && <AlarmRingModal alarm={ringingAlarm} onSnooze={snooze} onAwake={handleAwake} onRecordDream={handleRecordDream} />}
-            {isScribeOpen && <DreamScribeModal onSave={handleScribeSave} onClose={() => { setIsScribeOpen(false); setWakeQuickNote(''); }} initialText={wakeQuickNote} />}
-            <KeyboardShortcutsHelp isOpen={isHelpOpen} onClose={closeHelp} />
-            <RealityCheckManager />
-            <StreakNotificationManager />
-            <AlarmNotificationManager />
-            <OfflineIndicator />
-            <ThemeToggle />
-            <SignInButton />
-            {/* DevModeToggle only rendered in development - SECURITY FIX */}
-            {import.meta.env.DEV && <DevModeToggle />}
-        </div>
+                    {/* Page indicator dots for swipe navigation */}
+                    {currentIndex !== -1 && (
+                        <div className="flex justify-center gap-2 py-3 mt-4">
+                            {Array.from({ length: totalPages }).map((_, i) => (
+                                <div
+                                    key={i}
+                                    className={`w-2 h-2 rounded-full transition-all duration-300 ${i === currentIndex
+                                        ? 'bg-day-accent dark:bg-night-accent w-6'
+                                        : 'bg-gray-300 dark:bg-gray-600'
+                                        }`}
+                                />
+                            ))}
+                        </div>
+                    )}
+                </main>
+                <BottomNav currentPage={currentPage} setCurrentPage={setCurrentPage} />
+                {ringingAlarm && <AlarmRingModal alarm={ringingAlarm} onSnooze={snooze} onAwake={handleAwake} onRecordDream={handleRecordDream} />}
+                {isScribeOpen && <DreamScribeModal onSave={handleScribeSave} onClose={() => { setIsScribeOpen(false); setWakeQuickNote(''); }} initialText={wakeQuickNote} />}
+                <KeyboardShortcutsHelp isOpen={isHelpOpen} onClose={closeHelp} />
+                <RealityCheckManager />
+                <StreakNotificationManager />
+                <AlarmNotificationManager />
+                <OfflineIndicator />
+                <ThemeToggle />
+                <SignInButton />
+                {/* DevModeToggle only rendered in development - SECURITY FIX */}
+                {import.meta.env.DEV && <DevModeToggle />}
+            </div>
+        </NavigationProvider>
     );
 };
 

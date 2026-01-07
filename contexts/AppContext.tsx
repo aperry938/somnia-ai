@@ -5,6 +5,7 @@ export type ArtStyle = 'surreal' | 'watercolor' | 'oil-painting' | 'anime' | 'ph
 import { enqueueAction } from '../services/syncService';
 import { cacheDreamTitle } from '../services/geminiService';
 import { logger } from '../services/logger';
+import * as NativeAlarm from '../services/nativeAlarmService';
 
 /**
  * SECURITY FIX: Generate cryptographically secure random ID
@@ -29,6 +30,8 @@ interface AppContextType {
     activeSleepSession: SleepSession | null;
     startSleepSession: (alarmId?: number) => void;
     updateSleepSessionData: (data: Partial<SleepAids>) => void;
+    logSoundActivity: (name: string, durationSeconds: number) => void;
+    logBreathingActivity: (name: string, durationSeconds: number) => void;
     clearSleepSession: () => void;
     getNextActiveAlarm: () => Alarm | null;
     addAlarm: (time: string, smartWake: boolean, days?: number[], soundId?: string, purpose?: AlarmPurpose, label?: string) => number;
@@ -213,6 +216,38 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         logger.log('[AppContext] Creating new alarm:', newAlarm);
         setAlarms(prev => [...prev, newAlarm]);
         enqueueAction('ADD_ALARM', newAlarm);
+
+        // Schedule native notification for this alarm (iOS/Android)
+        if (NativeAlarm.isNative) {
+            const [hour, minute] = time.split(':').map(Number);
+            if (days && days.length > 0) {
+                // Recurring alarm - Capacitor uses 1=Sunday, 7=Saturday but our days are 0-6
+                const capacitorDays = days.map(d => d + 1);
+                NativeAlarm.scheduleRecurringAlarm(
+                    newAlarm.id,
+                    label || 'Somnia Alarm',
+                    'Time to wake up!',
+                    hour,
+                    minute,
+                    capacitorDays
+                );
+            } else {
+                // One-time alarm
+                const now = new Date();
+                const alarmDate = new Date();
+                alarmDate.setHours(hour, minute, 0, 0);
+                if (alarmDate <= now) {
+                    alarmDate.setDate(alarmDate.getDate() + 1);
+                }
+                NativeAlarm.scheduleAlarm(
+                    newAlarm.id,
+                    label || 'Somnia Alarm',
+                    'Time to wake up!',
+                    alarmDate
+                );
+            }
+        }
+
         return newAlarm.id;
     };
 
@@ -280,6 +315,40 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         });
     }, [setActiveSleepSession]);
 
+    // Log a sound/soundscape activity to the session
+    const logSoundActivity = useCallback((name: string, durationSeconds: number) => {
+        setActiveSleepSession(prev => {
+            if (!prev) return prev;
+            const existingSounds = prev.sleepGatewayData.soundsPlayed || [];
+            const existingPrepTime = prev.sleepGatewayData.totalPrepTime || 0;
+            return {
+                ...prev,
+                sleepGatewayData: {
+                    ...prev.sleepGatewayData,
+                    soundsPlayed: [...existingSounds, { type: 'sound' as const, name, duration: durationSeconds }],
+                    totalPrepTime: existingPrepTime + durationSeconds,
+                }
+            };
+        });
+    }, [setActiveSleepSession]);
+
+    // Log a breathing exercise activity to the session
+    const logBreathingActivity = useCallback((name: string, durationSeconds: number) => {
+        setActiveSleepSession(prev => {
+            if (!prev) return prev;
+            const existingBreathing = prev.sleepGatewayData.breathingExercises || [];
+            const existingPrepTime = prev.sleepGatewayData.totalPrepTime || 0;
+            return {
+                ...prev,
+                sleepGatewayData: {
+                    ...prev.sleepGatewayData,
+                    breathingExercises: [...existingBreathing, { type: 'breathing' as const, name, duration: durationSeconds }],
+                    totalPrepTime: existingPrepTime + durationSeconds,
+                }
+            };
+        });
+    }, [setActiveSleepSession]);
+
     // Clear the active sleep session (after dream is logged)
     const clearSleepSession = useCallback(() => {
         setActiveSleepSession(null);
@@ -319,6 +388,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             setActiveSleepSession(null);
         }
         enqueueAction('DELETE_ALARM', { id });
+        // Cancel native notification
+        if (NativeAlarm.isNative) {
+            NativeAlarm.cancelAlarm(id);
+        }
     };
 
     const addDream = (dreamText: string, sleepQuality: number | null, mood?: DreamMood): number => {
@@ -463,6 +536,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         activeSleepSession,
         startSleepSession,
         updateSleepSessionData,
+        logSoundActivity,
+        logBreathingActivity,
         clearSleepSession,
         getNextActiveAlarm,
         addAlarm,

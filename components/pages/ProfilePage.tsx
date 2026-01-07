@@ -51,6 +51,18 @@ const ProfileInfoCard: React.FC = () => {
             </p>
             {isEditing ? (
                 <div className="space-y-3">
+                    {/* Display Name */}
+                    <div>
+                        <label className="text-sm text-day-text-secondary dark:text-night-text-secondary">Display Name</label>
+                        <input
+                            type="text"
+                            name="displayName"
+                            value={localBiometrics.displayName || ''}
+                            onChange={handleChange}
+                            placeholder="Your name"
+                            className="w-full p-3 min-h-[48px] mt-1 text-base bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-md"
+                        />
+                    </div>
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <label className="text-sm text-day-text-secondary dark:text-night-text-secondary">Age</label>
@@ -183,7 +195,7 @@ const ProfileInfoCard: React.FC = () => {
 };
 
 // Membership Card
-const MembershipCard: React.FC = () => {
+const MembershipCard: React.FC<{ onNavigateToTerms?: () => void }> = ({ onNavigateToTerms }) => {
     const { user, session, isAuthenticated } = useAuth();
     const { showToast } = useToast();
     const premium = isPremium();
@@ -235,7 +247,7 @@ const MembershipCard: React.FC = () => {
                             </div>
                             <div>
                                 <p className="font-bold text-amber-700 dark:text-amber-300">Premium Member</p>
-                                <p className="text-sm text-amber-600 dark:text-amber-400">Unlimited AI analysis</p>
+                                <p className="text-sm text-amber-600 dark:text-amber-400">Full access to all features</p>
                             </div>
                         </div>
                         <button
@@ -259,14 +271,8 @@ const MembershipCard: React.FC = () => {
                             </div>
                             <div>
                                 <p className="font-bold">Free Plan</p>
-                                <p className="text-sm text-day-text-secondary dark:text-night-text-secondary">{credits}/{maxCredits} AI credits remaining</p>
+                                <p className="text-sm text-day-text-secondary dark:text-night-text-secondary">Limited AI features</p>
                             </div>
-                        </div>
-                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                            <div
-                                className="bg-day-accent dark:bg-night-accent h-2 rounded-full transition-all"
-                                style={{ width: `${(credits / maxCredits) * 100}%` }}
-                            />
                         </div>
                         <button
                             onClick={handleUpgrade}
@@ -287,6 +293,7 @@ const MembershipCard: React.FC = () => {
                     isOpen={showPaywall}
                     onClose={() => setShowPaywall(false)}
                     userId={user.id}
+                    onNavigateToTerms={onNavigateToTerms}
                 />
             )}
         </>
@@ -337,58 +344,6 @@ const ThemePreferenceCard: React.FC = () => {
     );
 };
 
-// Art Style Preference Card
-const ArtStyleCard: React.FC = () => {
-    const { artStyle, setArtStyle } = useAppContext();
-
-    const artStyleIcons: Record<ArtStyle, React.ReactNode> = {
-        surreal: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>,
-        watercolor: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" /></svg>,
-        'oil-painting': <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
-        anime: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>,
-        photorealistic: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>,
-        abstract: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>,
-        fantasy: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>,
-        minimalist: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" /></svg>,
-    };
-
-    const artStyles: { value: ArtStyle; label: string }[] = [
-        { value: 'surreal', label: 'Surreal' },
-        { value: 'watercolor', label: 'Watercolor' },
-        { value: 'oil-painting', label: 'Oil' },
-        { value: 'anime', label: 'Anime' },
-        { value: 'photorealistic', label: 'Photo' },
-        { value: 'abstract', label: 'Abstract' },
-        { value: 'fantasy', label: 'Fantasy' },
-        { value: 'minimalist', label: 'Minimal' },
-    ];
-
-    return (
-        <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">
-            <h2 className="font-serif text-xl mb-2">Dream Art Style</h2>
-            <p className="text-day-text-secondary dark:text-night-text-secondary text-sm mb-4">
-                Choose how your dream images are generated.
-            </p>
-            <div className="grid grid-cols-4 gap-2">
-                {artStyles.map(style => (
-                    <button
-                        key={style.value}
-                        onClick={() => setArtStyle(style.value)}
-                        aria-pressed={artStyle === style.value}
-                        aria-label={`${style.label} art style`}
-                        className={`p-3 min-h-[60px] rounded-lg border-2 transition-all flex flex-col items-center justify-center ${artStyle === style.value
-                            ? 'border-day-accent dark:border-night-accent bg-day-accent/10 dark:bg-night-accent/10 text-day-accent dark:text-night-accent'
-                            : 'border-day-border dark:border-night-border hover:border-day-accent/50 dark:hover:border-night-accent/50 text-day-text-secondary dark:text-night-text-secondary'
-                            }`}
-                    >
-                        <div className="mb-1" aria-hidden="true">{artStyleIcons[style.value]}</div>
-                        <p className="text-sm font-medium truncate">{style.label}</p>
-                    </button>
-                ))}
-            </div>
-        </div>
-    );
-};
 
 // Notifications Card
 const NotificationsCard: React.FC = () => {
@@ -718,7 +673,7 @@ const LegalCard: React.FC<{ onNavigateTo?: (page: 'privacy' | 'terms') => void }
 };
 
 export const ProfilePage: React.FC<{ onBack?: () => void; onNavigateTo?: (page: Page) => void }> = ({ onBack, onNavigateTo }) => {
-    const { dreams } = useAppContext();
+    const { dreams, biometrics } = useAppContext();
     const { showToast } = useToast();
     const stats = useMemo(() => calculateUserStats(dreams), [dreams]);
     const [versionTapCount, setVersionTapCount] = useState(0);
@@ -761,7 +716,9 @@ export const ProfilePage: React.FC<{ onBack?: () => void; onNavigateTo?: (page: 
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                 </div>
-                <h1 className="font-serif text-3xl mb-1">Profile</h1>
+                <h1 className="font-serif text-3xl mb-1">
+                    {biometrics.displayName || 'Profile'}
+                </h1>
                 <button
                     onClick={() => setShowLevelModal(true)}
                     className="text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent transition-colors"
@@ -803,9 +760,8 @@ export const ProfilePage: React.FC<{ onBack?: () => void; onNavigateTo?: (page: 
 
             <div className="space-y-4">
                 <ProfileInfoCard />
-                <MembershipCard />
+                <MembershipCard onNavigateToTerms={onNavigateTo ? () => onNavigateTo('terms') : undefined} />
                 <ThemePreferenceCard />
-                <ArtStyleCard />
                 <NotificationsCard />
                 <SyncWearableCard />
                 <DataManagementCard />

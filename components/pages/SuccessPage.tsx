@@ -63,11 +63,11 @@ export const SuccessPage: React.FC<SuccessPageProps> = ({ onBack }) => {
                             <h2 className="font-medium mb-3">Your new features:</h2>
                             <ul className="space-y-2">
                                 {[
-                                    'Unlimited AI Dream Analysis',
-                                    'Dream Visualization Art',
-                                    'Personal AI Sleep Coach',
-                                    'Dream Pattern Synthesis',
-                                    'Binaural Beats & Soundscapes',
+                                    'Daily AI Dream Analysis',
+                                    'Dream Visualization Prompts',
+                                    'Dream Chat with AI',
+                                    'Sleep Analytics & Insights',
+                                    'Sleep Sounds Pro',
                                 ].map((feature, i) => (
                                     <li key={i} className="flex items-center gap-2 text-sm">
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
