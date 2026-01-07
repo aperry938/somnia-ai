@@ -475,7 +475,7 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
                             </div>
                             <button
                                 onClick={handleConfigureSleepGateway}
-                                className="w-full py-2.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-medium rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all"
+                                className="w-full py-3 min-h-[48px] bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-medium rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all flex items-center justify-center"
                             >
                                 Open Sleep Gateway
                             </button>
@@ -484,7 +484,7 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
 
                     <button
                         onClick={handleDismissConfirmation}
-                        className={`${purpose === 'sleep' ? 'text-day-text-secondary dark:text-night-text-secondary hover:text-day-text dark:hover:text-night-text' : 'w-full py-3 bg-day-accent dark:bg-night-accent text-white font-medium rounded-xl'} transition-colors`}
+                        className={`${purpose === 'sleep' ? 'min-h-[44px] px-4 py-2 text-day-text-secondary dark:text-night-text-secondary hover:text-day-text dark:hover:text-night-text' : 'w-full py-3 min-h-[48px] bg-day-accent dark:bg-night-accent text-white font-medium rounded-xl flex items-center justify-center'} transition-colors`}
                     >
                         {purpose === 'sleep' ? 'Skip for now' : 'Done'}
                     </button>
@@ -506,7 +506,7 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
                         <button
                             onClick={() => setPurpose('sleep')}
                             aria-pressed={purpose === 'sleep'}
-                            className={`flex-1 flex items-center justify-center gap-2 text-sm py-2 rounded-md transition-all ${purpose === 'sleep'
+                            className={`flex-1 flex items-center justify-center gap-2 text-sm py-2 min-h-[44px] rounded-md transition-all ${purpose === 'sleep'
                                 ? 'bg-white dark:bg-gray-700 shadow-sm font-medium text-day-accent dark:text-night-accent'
                                 : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                                 }`}
@@ -519,7 +519,7 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
                         <button
                             onClick={() => setPurpose('reminder')}
                             aria-pressed={purpose === 'reminder'}
-                            className={`flex-1 flex items-center justify-center gap-2 text-sm py-2 rounded-md transition-all ${purpose === 'reminder'
+                            className={`flex-1 flex items-center justify-center gap-2 text-sm py-2 min-h-[44px] rounded-md transition-all ${purpose === 'reminder'
                                 ? 'bg-white dark:bg-gray-700 shadow-sm font-medium text-day-accent dark:text-night-accent'
                                 : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                                 }`}
@@ -558,7 +558,7 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
                                 key={freq}
                                 onClick={() => setFrequency(freq)}
                                 aria-pressed={frequency === freq}
-                                className={`flex-1 text-sm py-1.5 rounded-md capitalize transition-all ${frequency === freq
+                                className={`flex-1 text-sm py-2 min-h-[44px] rounded-md capitalize transition-all flex items-center justify-center ${frequency === freq
                                     ? 'bg-white dark:bg-gray-700 shadow-sm font-medium text-day-accent dark:text-night-accent'
                                     : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                                     }`}
@@ -577,7 +577,7 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
                                     onClick={() => toggleDay(index)}
                                     aria-label={['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][index]}
                                     aria-pressed={selectedDays.includes(index)}
-                                    className={`w-8 h-8 rounded-full text-xs font-medium transition-all ${selectedDays.includes(index)
+                                    className={`w-10 h-10 min-w-[44px] min-h-[44px] rounded-full text-xs font-medium transition-all flex items-center justify-center ${selectedDays.includes(index)
                                         ? 'bg-day-accent text-white dark:bg-night-accent'
                                         : 'bg-gray-100 dark:bg-gray-800 text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                                         }`}
@@ -636,10 +636,10 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
                 </div>
 
                 <div className="flex justify-center gap-4 mt-6">
-                    <button onClick={onClose} aria-label="Cancel" className="py-2 px-6 bg-gray-200 dark:bg-gray-700 rounded-full">Cancel</button>
-                    <button onClick={handleSave} aria-label="Save alarm" className="py-2 px-6 bg-day-accent dark:bg-night-accent text-white font-bold rounded-full">Save</button>
+                    <button onClick={onClose} aria-label="Cancel" className="py-3 px-6 min-h-[48px] bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">Cancel</button>
+                    <button onClick={handleSave} aria-label="Save alarm" className="py-3 px-6 min-h-[48px] bg-day-accent dark:bg-night-accent text-white font-bold rounded-full flex items-center justify-center">Save</button>
                 </div>
-                {alarmToEdit && <button onClick={handleDelete} aria-label="Delete alarm" className="w-full mt-4 py-2 text-red-500">Delete Alarm</button>}
+                {alarmToEdit && <button onClick={handleDelete} aria-label="Delete alarm" className="w-full mt-4 py-3 min-h-[48px] text-red-500">Delete Alarm</button>}
             </div>
         </div>
     );
@@ -849,7 +849,7 @@ const TonightsSleepCard: React.FC<{
                         {/* More options link */}
                         <button
                             onClick={handleOpenFullGateway}
-                            className="w-full py-2.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-medium rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all text-sm flex items-center justify-center gap-2"
+                            className="w-full py-3 min-h-[48px] bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-medium rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all text-sm flex items-center justify-center gap-2"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
