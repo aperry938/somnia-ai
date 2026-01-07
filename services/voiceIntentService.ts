@@ -5,6 +5,7 @@
 
 import { GoogleGenAI } from "@google/genai";
 import { isPremium } from './secureSubscriptionService';
+import { logger } from './logger';
 
 // Lazy AI instance
 let aiInstance: GoogleGenAI | null = null;

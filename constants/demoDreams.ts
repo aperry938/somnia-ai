@@ -27,7 +27,7 @@ export const DEMO_DREAMS: Dream[] = [
         aiAnalysis: null,
         chatHistory: [],
         tags: ['family', 'childhood', 'home', 'wisdom'],
-        mood: 'nostalgic'
+        mood: 'peaceful'
     },
     {
         id: -3,
@@ -99,7 +99,7 @@ export const DEMO_DREAMS: Dream[] = [
         aiAnalysis: null,
         chatHistory: [],
         tags: ['future', 'self', 'garden', 'hope'],
-        mood: 'hopeful'
+        mood: 'joyful'
     }
 ];
 
