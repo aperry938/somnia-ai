@@ -35,11 +35,13 @@ const ToggleRow: React.FC<{ label: string; value: boolean; onChange: (val: boole
 }) => (
     <div className="flex items-center justify-between py-3 border-b border-day-border/50 dark:border-night-border/50 last:border-0">
         <div>
-            <p className="font-medium">{label}</p>
+            <p className="font-medium" id={`toggle-label-${label.replace(/\s+/g, '-').toLowerCase()}`}>{label}</p>
             {description && <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">{description}</p>}
         </div>
         <button
             onClick={() => onChange(!value)}
+            aria-pressed={value}
+            aria-labelledby={`toggle-label-${label.replace(/\s+/g, '-').toLowerCase()}`}
             className={`w-12 h-6 rounded-full transition-colors relative ${
                 value ? 'bg-green-500' : 'bg-gray-400 dark:bg-gray-600'
             }`}
