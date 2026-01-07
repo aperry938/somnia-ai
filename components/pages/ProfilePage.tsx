@@ -319,13 +319,15 @@ const ThemePreferenceCard: React.FC = () => {
                     <button
                         key={opt.value}
                         onClick={() => setThemeOverride(opt.value)}
+                        aria-pressed={themeOverride === opt.value}
+                        aria-label={`${opt.label} theme`}
                         className={`p-3 rounded-lg border-2 transition-all flex flex-col items-center ${
                             themeOverride === opt.value
                                 ? 'border-day-accent dark:border-night-accent bg-day-accent/10 dark:bg-night-accent/10 text-day-accent dark:text-night-accent'
                                 : 'border-day-border dark:border-night-border hover:border-day-accent/50 dark:hover:border-night-accent/50 text-day-text-secondary dark:text-night-text-secondary'
                         }`}
                     >
-                        <div className="mb-1">{themeIcons[opt.value]}</div>
+                        <div className="mb-1" aria-hidden="true">{themeIcons[opt.value]}</div>
                         <p className="text-sm font-medium">{opt.label}</p>
                     </button>
                 ))}
@@ -371,13 +373,15 @@ const ArtStyleCard: React.FC = () => {
                     <button
                         key={style.value}
                         onClick={() => setArtStyle(style.value)}
+                        aria-pressed={artStyle === style.value}
+                        aria-label={`${style.label} art style`}
                         className={`p-3 rounded-lg border-2 transition-all flex flex-col items-center ${
                             artStyle === style.value
                                 ? 'border-day-accent dark:border-night-accent bg-day-accent/10 dark:bg-night-accent/10 text-day-accent dark:text-night-accent'
                                 : 'border-day-border dark:border-night-border hover:border-day-accent/50 dark:hover:border-night-accent/50 text-day-text-secondary dark:text-night-text-secondary'
                         }`}
                     >
-                        <div className="mb-1">{artStyleIcons[style.value]}</div>
+                        <div className="mb-1" aria-hidden="true">{artStyleIcons[style.value]}</div>
                         <p className="text-xs font-medium truncate">{style.label}</p>
                     </button>
                 ))}
@@ -425,6 +429,9 @@ const NotificationsCard: React.FC = () => {
                         </div>
                         <button
                             onClick={() => updateSetting(item.key, !settings[item.key])}
+                            role="switch"
+                            aria-checked={settings[item.key]}
+                            aria-label={`Toggle ${item.label}`}
                             className={`w-12 h-6 rounded-full transition-colors relative ${
                                 settings[item.key]
                                     ? 'bg-day-accent dark:bg-night-accent'

@@ -68,6 +68,7 @@ export const SleepDetectionSettingsCard: React.FC = () => {
                         checked={userIsPremium && settings.enabled}
                         onChange={(e) => userIsPremium && updateSettings({ enabled: e.target.checked })}
                         disabled={!userIsPremium}
+                        aria-label="Enable sleep detection"
                         className="sr-only peer"
                     />
                     <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-day-accent dark:peer-checked:bg-night-accent ${!userIsPremium ? 'opacity-50' : ''}`}></div>
@@ -88,6 +89,7 @@ export const SleepDetectionSettingsCard: React.FC = () => {
                                 step="0.5"
                                 value={settings.inactivityHours}
                                 onChange={(e) => updateSettings({ inactivityHours: parseFloat(e.target.value) })}
+                                aria-label={`Inactivity threshold: ${settings.inactivityHours} hours`}
                                 className="w-full h-2 rounded-lg appearance-none cursor-pointer accent-day-accent dark:accent-night-accent"
                                 style={{
                                     background: `linear-gradient(to right, 
