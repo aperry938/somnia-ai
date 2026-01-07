@@ -219,11 +219,13 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Search sleep entries & dreams..."
+                        aria-label="Search sleep entries and dreams"
                         className="w-full pl-10 pr-10 py-2 bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-full focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent"
                     />
                     {searchQuery && (
                         <button
                             onClick={() => setSearchQuery('')}
+                            aria-label="Clear search"
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
