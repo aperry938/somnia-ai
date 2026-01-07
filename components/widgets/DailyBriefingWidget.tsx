@@ -12,7 +12,7 @@ export const DailyBriefingWidget: React.FC = () => {
     return (
         <div className="mx-auto w-full max-w-sm mb-6 animate-fadeIn">
             <div
-                className="bg-white/10 dark:bg-black/20 backdrop-blur-md border border-white/20 rounded-xl p-3 flex items-center justify-between shadow-sm cursor-pointer hover:bg-white/15 dark:hover:bg-black/25 transition-colors"
+                className="bg-white/10 dark:bg-black/20 backdrop-blur-md border border-white/20 rounded-xl p-3 min-h-[56px] flex items-center justify-between shadow-sm cursor-pointer hover:bg-white/15 dark:hover:bg-black/25 transition-colors"
                 onClick={() => setShowInfo(!showInfo)}
                 role="button"
                 tabIndex={0}
