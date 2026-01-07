@@ -1,6 +1,6 @@
 // components/modals/AlarmRingModal.tsx
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { playAlarmBySound, stopAlarmSound, playAlertnessBoost, stopAlertnessBoost } from '../../services/audioService';
+import { playAlarmBySound, stopAlarmSound, playAlertnessBoost, stopAlertnessBoost, setAlertnessVolume } from '../../services/audioService';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { Alarm } from '../../types';
 import { isDevMode } from '../../services/secureSubscriptionService';
@@ -126,6 +126,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
     const [currentPrompt] = useState(() => DREAM_PROMPTS[Math.floor(Math.random() * DREAM_PROMPTS.length)]);
     const [showInput, setShowInput] = useState(false);
     const [alertnessOn, setAlertnessOn] = useState(false);
+    const [boostVolume, setBoostVolume] = useState(0.25);
     const [snoozeRemaining, setSnoozeRemaining] = useState(SNOOZE_DURATION);
 
     // Callback for when speech is finalized
@@ -237,8 +238,17 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
             stopAlertnessBoost();
             setAlertnessOn(false);
         } else {
-            playAlertnessBoost();
+            playAlertnessBoost(boostVolume);
             setAlertnessOn(true);
+        }
+    }, [alertnessOn, boostVolume]);
+
+    // Handle volume change
+    const handleVolumeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        const newVolume = parseFloat(e.target.value);
+        setBoostVolume(newVolume);
+        if (alertnessOn) {
+            setAlertnessVolume(newVolume);
         }
     }, [alertnessOn]);
 
@@ -434,6 +444,24 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                                     'Start Wake Up Boost'
                                 )}
                             </button>
+
+                            {/* Volume Slider */}
+                            <div className="mt-4 px-2">
+                                <div className="flex justify-between text-xs text-white/50 mb-1">
+                                    <span>Volume</span>
+                                    <span>{Math.round(boostVolume * 100)}%</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="0.05"
+                                    max="0.5"
+                                    step="0.05"
+                                    value={boostVolume}
+                                    onChange={handleVolumeChange}
+                                    className="w-full h-2 bg-white/20 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-400"
+                                    aria-label="Boost volume"
+                                />
+                            </div>
                         </div>
 
                         {/* Done button */}

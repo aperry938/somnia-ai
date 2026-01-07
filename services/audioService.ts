@@ -1613,7 +1613,7 @@ let alertnessNodes: { oscLeft: OscillatorNode; oscRight: OscillatorNode; gainNod
  * 
  * Uses same 110Hz carrier as sleep sounds for consistency
  */
-export const playAlertnessBoost = () => {
+export const playAlertnessBoost = (volume: number = 0.25) => {
     const context = getAudioContext();
     if (!context || alertnessNodes) return; // Already playing
 
@@ -1632,7 +1632,7 @@ export const playAlertnessBoost = () => {
 
     const now = context.currentTime;
     gainNode.gain.setValueAtTime(0, now);
-    gainNode.gain.linearRampToValueAtTime(0.25, now + 2); // Gentle fade in
+    gainNode.gain.linearRampToValueAtTime(Math.min(volume, 0.5), now + 2); // Gentle fade in, cap at 0.5
 
     oscLeft.connect(merger, 0, 0);
     oscRight.connect(merger, 0, 1);
@@ -1675,4 +1675,13 @@ export const stopAlertnessBoost = () => {
  */
 export const isAlertnessBoostPlaying = (): boolean => {
     return alertnessNodes !== null;
+};
+
+/**
+ * Adjust alertness boost volume in real-time
+ */
+export const setAlertnessVolume = (volume: number) => {
+    if (alertnessNodes && audioContext) {
+        alertnessNodes.gainNode.gain.setTargetAtTime(Math.min(volume, 0.5), audioContext.currentTime, 0.1);
+    }
 };
