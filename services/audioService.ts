@@ -549,8 +549,10 @@ let previewTimeout: ReturnType<typeof setTimeout> | null = null;
 let currentPreviewId: string | null = null; // Track which sound is previewing
 
 /**
- * Plays the actual 60-second crescendo alarm sound as a preview.
- * User taps again to stop - this lets them hear exactly what will wake them up.
+ * Plays the alarm sound as a preview, starting at 25% intensity.
+ * This gives users a better idea of what the alarm sounds like without
+ * waiting through the quiet beginning.
+ * User taps again to stop.
  * @param soundId - The alarm sound to preview
  */
 export const playAlarmPreview = (soundId: string) => {
@@ -575,24 +577,25 @@ export const playAlarmPreview = (soundId: string) => {
 
     const now = ctx.currentTime;
 
-    // Previews match the actual alarm crescendo exactly
+    // Previews start at 25% of crescendo (15s in) so user can hear it immediately
+    // Then continue crescendo for remaining 45s to full volume
     switch (soundId) {
         case 'somnia':
-            // Matches playSomniaAlarm: 0.015 → 1.0 over 60s, 180Hz → 500Hz
+            // Start at 25%: ~0.08 volume, ~260Hz, crescendo to 1.0/500Hz over 45s
             previewOscillator.type = 'sine';
-            previewOscillator.frequency.setValueAtTime(180, now);
-            previewGainNode.gain.setValueAtTime(0.015, now);
-            previewGainNode.gain.exponentialRampToValueAtTime(1.0, now + 60);
-            previewOscillator.frequency.exponentialRampToValueAtTime(500, now + 60);
+            previewOscillator.frequency.setValueAtTime(260, now);
+            previewGainNode.gain.setValueAtTime(0.08, now);
+            previewGainNode.gain.exponentialRampToValueAtTime(1.0, now + 45);
+            previewOscillator.frequency.exponentialRampToValueAtTime(500, now + 45);
             break;
 
         case 'gentle':
-            // Matches playGentleAlarm: Pulsing 0.05→0.50 min, 0.15→1.0 max over 60s
+            // Start at pulse 8 (25% of 30 pulses), continue for remaining 22 pulses
             previewOscillator.type = 'sine';
             previewOscillator.frequency.setValueAtTime(220, now);
-            for (let i = 0; i < 30; i++) {
+            for (let i = 0; i < 22; i++) {
                 const t = now + i * 2;
-                const progress = i / 30;
+                const progress = (i + 8) / 30; // Start from pulse 8
                 const minVol = 0.05 + progress * 0.45;
                 const maxVol = 0.15 + progress * 0.85;
                 previewGainNode.gain.linearRampToValueAtTime(maxVol, t + 1);
@@ -601,12 +604,12 @@ export const playAlarmPreview = (soundId: string) => {
             break;
 
         case 'classic':
-            // Matches playClassicAlarm: Beeping 0.05 → 0.90 over 60s
+            // Start at beep 15 (25% of 60), continue for remaining 45 beeps
             previewOscillator.type = 'square';
             previewOscillator.frequency.setValueAtTime(880, now);
-            for (let i = 0; i < 60; i++) {
+            for (let i = 0; i < 45; i++) {
                 const t = now + i;
-                const progress = i / 60;
+                const progress = (i + 15) / 60; // Start from beep 15
                 const volume = 0.05 + progress * 0.85;
                 previewGainNode.gain.setValueAtTime(volume, t);
                 previewGainNode.gain.setValueAtTime(0, t + 0.5);
@@ -614,21 +617,20 @@ export const playAlarmPreview = (soundId: string) => {
             break;
 
         case 'prism':
-            // Matches playPrismAlarm: Master 0.1 → 1.0 over 60s, chimes at 0.7 attack
+            // Start master at 0.325 (25% of 0.1→1.0), crescendo to 1.0 over 45s
             previewOscillator.type = 'sine';
-            // Use a secondary gain for master volume crescendo
             const prismMasterGain = ctx.createGain();
-            prismMasterGain.gain.setValueAtTime(0.1, now);
-            prismMasterGain.gain.linearRampToValueAtTime(1.0, now + 60);
+            prismMasterGain.gain.setValueAtTime(0.325, now);
+            prismMasterGain.gain.linearRampToValueAtTime(1.0, now + 45);
             previewOscillator.disconnect();
             previewOscillator.connect(previewGainNode);
             previewGainNode.disconnect();
             previewGainNode.connect(prismMasterGain);
             prismMasterGain.connect(ctx.destination);
-            // Schedule chimes
+            // Schedule 18 chimes (skip first 6)
             const prismNotes = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25];
-            for (let i = 0; i < 24; i++) { // 24 chimes over 60s
-                const note = prismNotes[i % prismNotes.length];
+            for (let i = 0; i < 18; i++) {
+                const note = prismNotes[(i + 6) % prismNotes.length];
                 const t = now + i * 2.5;
                 previewOscillator.frequency.setValueAtTime(note, t);
                 previewGainNode.gain.setValueAtTime(0.7, t);
@@ -637,48 +639,48 @@ export const playAlarmPreview = (soundId: string) => {
             break;
 
         case 'aether':
-            // Matches playAetherAlarm: 0.05 → 0.9 over 60s, 110Hz → 220Hz
+            // Start at 25%: ~138Hz, ~0.26 volume, crescendo to 220Hz/0.9 over 45s
             previewOscillator.type = 'sawtooth';
-            previewOscillator.frequency.setValueAtTime(110, now);
-            previewGainNode.gain.setValueAtTime(0.05, now);
-            previewOscillator.frequency.exponentialRampToValueAtTime(220, now + 60);
-            previewGainNode.gain.linearRampToValueAtTime(0.9, now + 60);
+            previewOscillator.frequency.setValueAtTime(138, now);
+            previewGainNode.gain.setValueAtTime(0.26, now);
+            previewOscillator.frequency.exponentialRampToValueAtTime(220, now + 45);
+            previewGainNode.gain.linearRampToValueAtTime(0.9, now + 45);
             break;
 
         case 'bamboo':
-            // Matches playBambooAlarm: Master 0.1 → 1.0 over 60s, pulses at 0.8
+            // Start master at 0.325 (25%), crescendo to 1.0 over 45s
             previewOscillator.type = 'sine';
             previewOscillator.frequency.setValueAtTime(150, now);
-            // Master volume crescendo
             const bambooMasterGain = ctx.createGain();
-            bambooMasterGain.gain.setValueAtTime(0.1, now);
-            bambooMasterGain.gain.linearRampToValueAtTime(1.0, now + 60);
+            bambooMasterGain.gain.setValueAtTime(0.325, now);
+            bambooMasterGain.gain.linearRampToValueAtTime(1.0, now + 45);
             previewOscillator.disconnect();
             previewOscillator.connect(previewGainNode);
             previewGainNode.disconnect();
             previewGainNode.connect(bambooMasterGain);
             bambooMasterGain.connect(ctx.destination);
-            // Schedule accelerating pulses for 60s
+            // Schedule accelerating pulses for 45s
             let baseBeat = 0;
-            let interval = 1.0;
-            while (baseBeat < 60) {
-                previewGainNode.gain.setValueAtTime(0.8, now + baseBeat);
+            let interval = 0.7; // Start faster (as if 15s in)
+            while (baseBeat < 45) {
+                previewGainNode.gain.setValueAtTime(0.01, now + baseBeat);
+                previewGainNode.gain.linearRampToValueAtTime(0.8, now + baseBeat + 0.02);
                 previewOscillator.frequency.setValueAtTime(300, now + baseBeat);
                 previewGainNode.gain.exponentialRampToValueAtTime(0.01, now + baseBeat + 0.15);
                 previewOscillator.frequency.exponentialRampToValueAtTime(150, now + baseBeat + 0.15);
                 baseBeat += interval;
                 interval = Math.max(0.4, interval * 0.92);
-                if (interval <= 0.4) interval = 1.0; // Reset wave
+                if (interval <= 0.4) interval = 0.7; // Reset wave
             }
             break;
 
         default:
-            // Fallback to classic
+            // Fallback to classic at 25%
             previewOscillator.type = 'square';
             previewOscillator.frequency.setValueAtTime(880, now);
-            for (let i = 0; i < 60; i++) {
+            for (let i = 0; i < 45; i++) {
                 const t = now + i;
-                const progress = i / 60;
+                const progress = (i + 15) / 60;
                 const volume = 0.05 + progress * 0.85;
                 previewGainNode.gain.setValueAtTime(volume, t);
                 previewGainNode.gain.setValueAtTime(0, t + 0.5);
