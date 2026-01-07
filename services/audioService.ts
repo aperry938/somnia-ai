@@ -342,13 +342,13 @@ const playPrismAlarm = () => {
     const now = context.currentTime;
 
     // Master volume crescendo over 60s to full volume, then sustain
-    proceduralGainNode.gain.setValueAtTime(0.1, now);
+    proceduralGainNode.gain.setValueAtTime(0.2, now);
     proceduralGainNode.gain.linearRampToValueAtTime(1.0, now + WAKE_DURATION);
 
     const baseOsc = context.createOscillator();
     const baseGain = context.createGain();
     baseOsc.type = 'sine';
-    baseGain.gain.setValueAtTime(0.15, now);
+    baseGain.gain.setValueAtTime(0.4, now);
     baseOsc.connect(baseGain);
     baseGain.connect(proceduralGainNode);
 
@@ -358,9 +358,9 @@ const playPrismAlarm = () => {
         const note = prismNotes[i % prismNotes.length];
         const t = now + i * 2.5;
         baseOsc.frequency.setValueAtTime(note, t);
-        // Chime envelope: loud attack, decay to soft
-        baseGain.gain.setValueAtTime(0.7, t);
-        baseGain.gain.exponentialRampToValueAtTime(0.15, t + 1.5);
+        // Chime envelope: LOUD attack, decay to moderate (not silent)
+        baseGain.gain.setValueAtTime(1.0, t);
+        baseGain.gain.exponentialRampToValueAtTime(0.35, t + 1.5);
     }
 
     baseOsc.start(now);
@@ -436,8 +436,8 @@ const playBambooAlarm = () => {
 
     const now = context.currentTime;
 
-    // Master volume crescendo over 60s to full volume
-    proceduralGainNode.gain.setValueAtTime(0.1, now);
+    // Master volume crescendo over 60s to full volume - start louder
+    proceduralGainNode.gain.setValueAtTime(0.25, now);
     proceduralGainNode.gain.linearRampToValueAtTime(1.0, now + WAKE_DURATION);
 
     const osc = context.createOscillator();
@@ -456,14 +456,14 @@ const playBambooAlarm = () => {
     let pulseCount = 0;
 
     while (baseBeat < 1800) { // 30 minutes
-        // Soft attack: start at 0, ramp UP over 20ms to avoid click/pop
-        pulseGain.gain.setValueAtTime(0.01, now + baseBeat);
-        pulseGain.gain.linearRampToValueAtTime(0.8, now + baseBeat + 0.02); // 20ms attack
+        // Soft attack: start low, ramp UP over 20ms to avoid click/pop
+        pulseGain.gain.setValueAtTime(0.05, now + baseBeat);
+        pulseGain.gain.linearRampToValueAtTime(1.0, now + baseBeat + 0.02); // LOUD pulse
         osc.frequency.setValueAtTime(300, now + baseBeat);
 
-        // Decay: ramp down over the remaining 130ms
-        pulseGain.gain.exponentialRampToValueAtTime(0.01, now + baseBeat + 0.15);
-        osc.frequency.exponentialRampToValueAtTime(150, now + baseBeat + 0.15);
+        // Decay: ramp down but not to silence - keep some sustain
+        pulseGain.gain.exponentialRampToValueAtTime(0.15, now + baseBeat + 0.2);
+        osc.frequency.exponentialRampToValueAtTime(150, now + baseBeat + 0.2);
 
         baseBeat += interval;
         interval = Math.max(0.4, interval * 0.92);
@@ -617,24 +617,24 @@ export const playAlarmPreview = (soundId: string) => {
             break;
 
         case 'prism':
-            // Start master at 0.325 (25% of 0.1→1.0), crescendo to 1.0 over 45s
+            // Start master at 0.4 (25% of 0.2→1.0), crescendo to 1.0 over 45s - LOUDER
             previewOscillator.type = 'sine';
             const prismMasterGain = ctx.createGain();
-            prismMasterGain.gain.setValueAtTime(0.325, now);
+            prismMasterGain.gain.setValueAtTime(0.4, now);
             prismMasterGain.gain.linearRampToValueAtTime(1.0, now + 45);
             previewOscillator.disconnect();
             previewOscillator.connect(previewGainNode);
             previewGainNode.disconnect();
             previewGainNode.connect(prismMasterGain);
             prismMasterGain.connect(ctx.destination);
-            // Schedule 18 chimes (skip first 6)
+            // Schedule 18 chimes (skip first 6) - LOUD chimes
             const prismNotes = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25];
             for (let i = 0; i < 18; i++) {
                 const note = prismNotes[(i + 6) % prismNotes.length];
                 const t = now + i * 2.5;
                 previewOscillator.frequency.setValueAtTime(note, t);
-                previewGainNode.gain.setValueAtTime(0.7, t);
-                previewGainNode.gain.exponentialRampToValueAtTime(0.15, t + 1.5);
+                previewGainNode.gain.setValueAtTime(1.0, t);
+                previewGainNode.gain.exponentialRampToValueAtTime(0.35, t + 1.5);
             }
             break;
 
@@ -648,26 +648,26 @@ export const playAlarmPreview = (soundId: string) => {
             break;
 
         case 'bamboo':
-            // Start master at 0.325 (25%), crescendo to 1.0 over 45s
+            // Start master at 0.44 (25% of 0.25→1.0), crescendo to 1.0 over 45s - LOUDER
             previewOscillator.type = 'sine';
             previewOscillator.frequency.setValueAtTime(150, now);
             const bambooMasterGain = ctx.createGain();
-            bambooMasterGain.gain.setValueAtTime(0.325, now);
+            bambooMasterGain.gain.setValueAtTime(0.44, now);
             bambooMasterGain.gain.linearRampToValueAtTime(1.0, now + 45);
             previewOscillator.disconnect();
             previewOscillator.connect(previewGainNode);
             previewGainNode.disconnect();
             previewGainNode.connect(bambooMasterGain);
             bambooMasterGain.connect(ctx.destination);
-            // Schedule accelerating pulses for 45s
+            // Schedule accelerating pulses for 45s - LOUD pulses
             let baseBeat = 0;
             let interval = 0.7; // Start faster (as if 15s in)
             while (baseBeat < 45) {
-                previewGainNode.gain.setValueAtTime(0.01, now + baseBeat);
-                previewGainNode.gain.linearRampToValueAtTime(0.8, now + baseBeat + 0.02);
+                previewGainNode.gain.setValueAtTime(0.05, now + baseBeat);
+                previewGainNode.gain.linearRampToValueAtTime(1.0, now + baseBeat + 0.02);
                 previewOscillator.frequency.setValueAtTime(300, now + baseBeat);
-                previewGainNode.gain.exponentialRampToValueAtTime(0.01, now + baseBeat + 0.15);
-                previewOscillator.frequency.exponentialRampToValueAtTime(150, now + baseBeat + 0.15);
+                previewGainNode.gain.exponentialRampToValueAtTime(0.15, now + baseBeat + 0.2);
+                previewOscillator.frequency.exponentialRampToValueAtTime(150, now + baseBeat + 0.2);
                 baseBeat += interval;
                 interval = Math.max(0.4, interval * 0.92);
                 if (interval <= 0.4) interval = 0.7; // Reset wave
