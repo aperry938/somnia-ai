@@ -1632,7 +1632,7 @@ export const playAlertnessBoost = () => {
 
     const now = context.currentTime;
     gainNode.gain.setValueAtTime(0, now);
-    gainNode.gain.linearRampToValueAtTime(0.1, now + 2); // Gentle fade in
+    gainNode.gain.linearRampToValueAtTime(0.25, now + 2); // Gentle fade in
 
     oscLeft.connect(merger, 0, 0);
     oscRight.connect(merger, 0, 1);
