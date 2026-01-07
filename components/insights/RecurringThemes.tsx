@@ -63,7 +63,7 @@ export const RecurringThemes: React.FC<RecurringThemesProps> = ({ dreams }) => {
                                 ({count} dream{count !== 1 ? 's' : ''})
                             </span>
                         </div>
-                        <div className="flex gap-1">
+                        <div className="flex gap-1" aria-hidden="true">
                             {[...Array(Math.min(count, 5))].map((_, i) => (
                                 <div key={i} className="w-2 h-2 rounded-full bg-day-accent dark:bg-night-accent" />
                             ))}

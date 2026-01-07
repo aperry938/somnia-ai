@@ -101,7 +101,7 @@ export const DreamStreakCalendar: React.FC<DreamStreakCalendarProps> = ({ dreams
             </div>
 
             {/* Last 30 days grid */}
-            <div className="flex flex-wrap gap-1 justify-center">
+            <div className="flex flex-wrap gap-1 justify-center" role="img" aria-label={`Dream streak calendar: ${stats.currentStreak} day current streak, ${stats.longestStreak} day longest streak, ${stats.totalDays} total days logged`}>
                 {stats.last30.map((day, i) => (
                     <div
                         key={i}
@@ -109,6 +109,7 @@ export const DreamStreakCalendar: React.FC<DreamStreakCalendarProps> = ({ dreams
                             ? 'bg-orange-500 dark:bg-red-500'
                             : 'bg-gray-200 dark:bg-gray-700'}`}
                         title={`${day.date.toLocaleDateString()} - ${day.hasDream ? 'Logged' : 'Missed'}`}
+                        aria-hidden="true"
                     />
                 ))}
             </div>
