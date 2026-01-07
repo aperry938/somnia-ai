@@ -130,12 +130,16 @@ describe('exportService', () => {
             const { encryptDataWithPassword } = await import('./securityService');
             const { exportDreamsEncrypted } = await import('./exportService');
 
-            // Mock prompt for password
-            vi.spyOn(window, 'prompt').mockReturnValue('test-password');
-
-            await exportDreamsEncrypted(mockDreams);
+            // SECURITY FIX: Password is now passed as parameter (no more prompt())
+            await exportDreamsEncrypted(mockDreams, 'test-password');
 
             expect(encryptDataWithPassword).toHaveBeenCalled();
+        });
+
+        it('should throw error when password is empty', async () => {
+            const { exportDreamsEncrypted } = await import('./exportService');
+
+            await expect(exportDreamsEncrypted(mockDreams, '')).rejects.toThrow('Password is required');
         });
     });
 });

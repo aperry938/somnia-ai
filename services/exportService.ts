@@ -312,13 +312,15 @@ export const importDreamsFromJSON = (
 
 /**
  * Exports dreams as an encrypted JSON file.
- * Helper that prompts the user for a password before exporting.
+ * SECURITY FIX: Now accepts password as parameter instead of using prompt()
+ * The calling component should use PasswordInputModal to collect the password securely
  */
 import { encryptDataWithPassword, decryptDataWithPassword } from './securityService';
 
-export const exportDreamsEncrypted = async (dreams: Dream[]): Promise<void> => {
-    const password = prompt("Set a password for this encrypted backup:");
-    if (!password) return; // User cancelled
+export const exportDreamsEncrypted = async (dreams: Dream[], password: string): Promise<void> => {
+    if (!password) {
+        throw new Error('Password is required for encrypted export');
+    }
 
     const data = JSON.stringify(dreams);
     const { encrypted, iv, salt } = await encryptDataWithPassword(data, password);
@@ -343,14 +345,46 @@ export const exportDreamsEncrypted = async (dreams: Dream[]): Promise<void> => {
     URL.revokeObjectURL(url);
 };
 
+/**
+ * Checks if a file is an encrypted Somnia backup
+ * Used to determine which password mode to show
+ */
+export const isEncryptedBackup = async (file: File): Promise<boolean> => {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const content = e.target?.result as string;
+                const json = JSON.parse(content);
+                resolve(json.type === 'somnia-encrypted');
+            } catch {
+                resolve(false);
+            }
+        };
+        reader.onerror = () => resolve(false);
+        reader.readAsText(file);
+    });
+};
+
+/**
+ * Imports dreams from an encrypted backup file.
+ * SECURITY FIX: Now accepts password as parameter instead of using prompt()
+ * The calling component should use PasswordInputModal to collect the password securely
+ */
 export const importDreamsEncrypted = async (
     file: File,
-    existingDreams: Dream[]
+    existingDreams: Dream[],
+    password: string
 ): Promise<Dream[]> => {
     return new Promise((resolve, reject) => {
         // SECURITY FIX: Check file size before processing
         if (file.size > MAX_IMPORT_FILE_SIZE) {
             reject(new Error(`File too large. Maximum size is ${MAX_IMPORT_FILE_SIZE / 1024 / 1024}MB`));
+            return;
+        }
+
+        if (!password) {
+            reject(new Error('Password is required for encrypted import'));
             return;
         }
 
@@ -365,9 +399,6 @@ export const importDreamsEncrypted = async (
                     if (Array.isArray(json)) return resolve(importDreamsFromJSON(file, existingDreams));
                     throw new Error('Invalid file format. Expected Somnia Encrypted Backup.');
                 }
-
-                const password = prompt("Enter password to decrypt backup:");
-                if (!password) throw new Error("Password required");
 
                 const decryptedJson = await decryptDataWithPassword(json.payload, json.iv, json.salt, password);
                 const importedDreams = JSON.parse(decryptedJson) as unknown[];
@@ -391,7 +422,6 @@ export const importDreamsEncrypted = async (
                 resolve(validDreams);
 
             } catch (err) {
-                console.error(err);
                 reject(err);
             }
         };
