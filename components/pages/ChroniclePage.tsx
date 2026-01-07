@@ -1,10 +1,11 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
 import { Dream, DreamMood } from '../../types';
 import { exportDreamsAsJSON, exportDreamJournalToPDF, exportDreamsEncrypted, importDreamsEncrypted } from '../../services/exportService';
 import { MOOD_ICONS, MOOD_LABELS } from '../../constants/uiIcons';
 import { AchievementsCard } from '../insights/AchievementsCard';
+import { AddPastDreamModal } from '../modals/AddPastDreamModal';
 
 const DreamItem: React.FC<{ dream: Dream; onSelect: (id: number) => void; onTagClick: (tag: string) => void }> = React.memo(({ dream, onSelect, onTagClick }) => {
     return (
@@ -78,10 +79,18 @@ const TagFilter: React.FC<{
 
 
 export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = ({ onDreamSelect }) => {
-    const { dreams, importDreams } = useAppContext();
+    const { dreams, importDreams, addPastDream } = useAppContext();
     const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
+    const [isAddDreamModalOpen, setIsAddDreamModalOpen] = useState(false);
+
+    const handleAddPastDream = useCallback((dreamText: string, sleepQuality: number | null, mood?: DreamMood, timestamp?: string) => {
+        if (timestamp) {
+            addPastDream(dreamText, sleepQuality, mood, timestamp);
+        }
+        setIsAddDreamModalOpen(false);
+    }, [addPastDream]);
 
     // Debounce search query for performance
     useEffect(() => {
@@ -349,15 +358,23 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
 
             {/* Floating Action Button - Always visible for manual dream logging */}
             <button
-                onClick={() => window.dispatchEvent(new CustomEvent('openDreamScribe'))}
+                onClick={() => setIsAddDreamModalOpen(true)}
                 className="fixed bottom-24 right-6 w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center z-40"
-                title="Log a dream"
-                aria-label="Log a new dream"
+                title="Log a past dream"
+                aria-label="Log a past dream"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
             </button>
+
+            {/* Add Past Dream Modal */}
+            {isAddDreamModalOpen && (
+                <AddPastDreamModal
+                    onSave={handleAddPastDream}
+                    onClose={() => setIsAddDreamModalOpen(false)}
+                />
+            )}
         </div>
     );
 };

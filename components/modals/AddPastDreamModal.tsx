@@ -1,0 +1,134 @@
+import React, { useState, useCallback } from 'react';
+import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
+import { SleepQualityRating } from '../shared/SleepQualityRating';
+import { DreamMood } from '../../types';
+import haptics from '../../services/hapticsService';
+import { MOOD_ICONS, MOOD_LABELS } from '../../constants/uiIcons';
+
+const MOOD_OPTIONS: DreamMood[] = ['joyful', 'peaceful', 'neutral', 'confused', 'anxious', 'sad', 'fearful'];
+
+interface AddPastDreamModalProps {
+    onSave: (dreamText: string, sleepQuality: number | null, mood?: DreamMood, timestamp?: string) => void;
+    onClose: () => void;
+}
+
+export const AddPastDreamModal: React.FC<AddPastDreamModalProps> = ({ onSave, onClose }) => {
+    const [dreamText, setDreamText] = useState('');
+    const [sleepQuality, setSleepQuality] = useState<number | null>(null);
+    const [mood, setMood] = useState<DreamMood | null>(null);
+    const [dreamDate, setDreamDate] = useState<string>(new Date().toISOString().split('T')[0]);
+
+    const handleFinalTranscript = useCallback((transcript: string) => {
+        setDreamText(prev => (prev ? prev.trim() + ' ' : '') + transcript);
+    }, []);
+
+    const { isListening, interimTranscript, startListening, stopListening, isSupported } = useSpeechRecognition(handleFinalTranscript);
+
+    const handleSave = () => {
+        if (!dreamText.trim() || isListening) return;
+        haptics.dreamSaved();
+        // Create timestamp from selected date
+        const timestamp = new Date(dreamDate).toISOString();
+        onSave(dreamText, sleepQuality, mood || undefined, timestamp);
+    };
+
+    const displayText = isListening
+        ? (dreamText ? dreamText + ' ' : '') + interimTranscript
+        : dreamText;
+
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={onClose}>
+            <div
+                className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-lg animate-fadeIn max-h-[90vh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <h2 className="font-serif text-2xl text-center mb-4">Log a Past Dream</h2>
+
+                {/* Date Picker */}
+                <div className="mb-4">
+                    <label className="block text-sm text-day-text-secondary dark:text-night-text-secondary mb-2">
+                        When did you have this dream?
+                    </label>
+                    <input
+                        type="date"
+                        value={dreamDate}
+                        onChange={(e) => setDreamDate(e.target.value)}
+                        max={new Date().toISOString().split('T')[0]}
+                        className="w-full p-3 bg-white/50 dark:bg-black/30 border border-day-border dark:border-night-border rounded-lg focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent focus:outline-none"
+                    />
+                </div>
+
+                {/* Dream Text */}
+                <div className="relative mb-4">
+                    <textarea
+                        value={displayText}
+                        onChange={(e) => setDreamText(e.target.value)}
+                        className="w-full h-32 p-4 pr-12 bg-white/50 dark:bg-black/30 border border-day-border dark:border-night-border rounded-lg focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent focus:outline-none transition-all custom-scrollbar"
+                        placeholder="Describe your dream..."
+                        disabled={isListening}
+                    ></textarea>
+                    {isSupported && (
+                        <button
+                            onClick={isListening ? stopListening : startListening}
+                            className={`absolute top-3 right-3 p-2 rounded-full transition-colors ${isListening ? 'text-red-500 bg-red-100 dark:bg-red-900/30' : 'text-day-text-secondary hover:text-day-accent hover:bg-black/5 dark:hover:bg-white/5'}`}
+                            title={isListening ? "Stop recording" : "Dictate dream"}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                            </svg>
+                        </button>
+                    )}
+                </div>
+                {isListening && (
+                    <div className="flex items-center justify-center gap-2 text-sm text-red-500 mb-4">
+                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                        <span>Recording...</span>
+                    </div>
+                )}
+
+                {/* Sleep Quality Rating */}
+                <div className="mb-4">
+                    <p className="text-center text-day-text-secondary dark:text-night-text-secondary mb-2">How was your sleep?</p>
+                    <SleepQualityRating rating={sleepQuality} onRate={setSleepQuality} />
+                </div>
+
+                {/* Mood Selector */}
+                <div className="mb-6">
+                    <p className="text-center text-day-text-secondary dark:text-night-text-secondary mb-2">How did the dream feel?</p>
+                    <div className="flex flex-wrap justify-center gap-2">
+                        {MOOD_OPTIONS.map((value) => (
+                            <button
+                                key={value}
+                                onClick={() => { haptics.selection(); setMood(mood === value ? null : value); }}
+                                className={`px-3 py-1.5 rounded-full text-sm transition-all flex items-center gap-1.5 ${mood === value
+                                    ? 'bg-day-accent dark:bg-night-accent text-white scale-105'
+                                    : 'bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border hover:border-day-accent dark:hover:border-night-accent'
+                                    }`}
+                                title={MOOD_LABELS[value]}
+                            >
+                                {MOOD_ICONS[value]}
+                                <span className="hidden sm:inline">{MOOD_LABELS[value]}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="flex justify-center gap-4">
+                    <button
+                        onClick={onClose}
+                        className="py-2 px-6 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-full transition-all"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleSave}
+                        className="py-2 px-6 bg-day-accent dark:bg-night-accent text-white font-bold rounded-full disabled:opacity-50 transition-all"
+                        disabled={!dreamText.trim() || isListening}
+                    >
+                        Save Dream
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};

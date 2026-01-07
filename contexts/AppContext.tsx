@@ -22,6 +22,7 @@ interface AppContextType {
     toggleAlarmActive: (id: number) => void;
     deleteAlarm: (id: number) => void;
     addDream: (dreamText: string, sleepQuality: number | null, mood?: DreamMood) => number;
+    addPastDream: (dreamText: string, sleepQuality: number | null, mood: DreamMood | undefined, timestamp: string) => number;
     updateDream: (updatedDream: Partial<Dream> & { id: number }) => void;
     getDreamById: (id: number) => Dream | undefined;
     deleteDream: (id: number) => void;
@@ -255,6 +256,24 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return newDream.id;
     };
 
+    // Add a past dream with custom timestamp (for Chronicle manual logging)
+    const addPastDream = (dreamText: string, sleepQuality: number | null, mood: DreamMood | undefined, timestamp: string): number => {
+        const newDream: Dream = {
+            id: Date.now(),
+            timestamp,
+            dreamText,
+            sleepQuality,
+            title: "Untitled Dream",
+            imageUrl: null,
+            aiAnalysis: null,
+            chatHistory: [],
+            mood,
+        };
+        setDreams(prev => [newDream, ...prev]);
+        enqueueAction('ADD_DREAM', newDream);
+        return newDream.id;
+    };
+
     const importDreams = (dreamsToImport: Dream[]) => {
         setDreams(prev => [...dreamsToImport, ...prev]);
         // Import is local-heavy, maybe don't sync all at once or handle batch?
@@ -300,6 +319,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         toggleAlarmActive,
         deleteAlarm,
         addDream,
+        addPastDream,
         updateDream,
         getDreamById,
         deleteDream,
