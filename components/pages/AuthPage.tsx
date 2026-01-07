@@ -117,7 +117,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSkip }) => {
                     </div>
                     <h1 className="font-serif text-4xl mb-2 text-day-text-primary dark:text-night-text-primary">Somnia</h1>
                     <p className="text-day-text-secondary dark:text-night-text-secondary">
-                        {mode === 'login' && 'Welcome back'}
                         {mode === 'signup' && 'Start your wellness journey'}
                         {mode === 'reset' && 'Reset your password'}
                     </p>
@@ -256,7 +255,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSkip }) => {
                             Continue without account
                         </button>
                         <p className="text-xs text-day-text-secondary/70 dark:text-night-text-secondary/70 mt-2">
-                            Your data will be stored locally on this device
+                            Your data will be stored locally on your device
                         </p>
                     </div>
                 )}
