@@ -224,7 +224,7 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
                                         onClick={() => setSessionDuration(mins)}
                                         aria-label={`${mins} minute session`}
                                         aria-pressed={sessionDuration === mins}
-                                        className={`py-2 rounded-lg text-sm font-medium transition-all ${sessionDuration === mins
+                                        className={`py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all flex items-center justify-center ${sessionDuration === mins
                                                 ? 'bg-day-accent dark:bg-night-accent text-white'
                                                 : 'bg-white/50 dark:bg-black/30 border border-day-border dark:border-night-border hover:border-day-accent dark:hover:border-night-accent'
                                             }`}
@@ -235,8 +235,8 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
                             </div>
                         </div>
 
-                        <button onClick={startSession} aria-label={`Start ${sessionDuration} minute session`} className="w-full py-3 bg-day-accent dark:bg-night-accent text-white font-bold rounded-full text-lg shadow-lg">Start Session</button>
-                        <button onClick={onClose} aria-label="Close relaxation modal" className="w-full mt-3 py-2 text-day-text-secondary dark:text-night-text-secondary">Close</button>
+                        <button onClick={startSession} aria-label={`Start ${sessionDuration} minute session`} className="w-full py-3 min-h-[48px] bg-day-accent dark:bg-night-accent text-white font-bold rounded-full text-lg shadow-lg flex items-center justify-center">Start Session</button>
+                        <button onClick={onClose} aria-label="Close relaxation modal" className="w-full mt-3 py-2 min-h-[44px] text-day-text-secondary dark:text-night-text-secondary flex items-center justify-center">Close</button>
                     </div>
                 ) : (
                     <div className="animate-fadeIn">
@@ -256,7 +256,7 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
                                 {formatTime(totalTimeRemaining)} remaining
                             </p>
                         )}
-                        <button onClick={endSession} aria-label="End session" className="w-full mt-6 py-2 bg-gray-200 dark:bg-gray-700 rounded-full">End Session</button>
+                        <button onClick={endSession} aria-label="End session" className="w-full mt-6 py-2 min-h-[44px] bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">End Session</button>
                     </div>
                 )}
             </div>

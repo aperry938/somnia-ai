@@ -29,7 +29,7 @@ export const HardwareSyncModal: React.FC<HardwareSyncModalProps> = ({ onClose })
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="hardware-sync-title">
             <div className="relative w-full max-w-md bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl shadow-2xl overflow-hidden p-6" onClick={(e) => e.stopPropagation()}>
-                <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-white" aria-label="Close hardware sync modal">
+                <button onClick={onClose} className="absolute top-4 right-4 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-500 hover:text-white rounded-full transition-colors" aria-label="Close hardware sync modal">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
 
@@ -102,7 +102,7 @@ export const HardwareSyncModal: React.FC<HardwareSyncModalProps> = ({ onClose })
                     )}
 
                     {status === 'connected' && (
-                        <button onClick={syncData} className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-colors">
+                        <button onClick={syncData} className="w-full py-3 min-h-[48px] bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-colors flex items-center justify-center">
                             Sync Data
                         </button>
                     )}
@@ -124,14 +124,14 @@ export const HardwareSyncModal: React.FC<HardwareSyncModalProps> = ({ onClose })
                                 </svg>
                                 Sync Complete
                             </p>
-                            <button onClick={onClose} className="w-full py-2 bg-gray-700 hover:bg-gray-600 rounded-xl">Close</button>
+                            <button onClick={onClose} className="w-full py-2 min-h-[44px] bg-gray-700 hover:bg-gray-600 rounded-xl flex items-center justify-center">Close</button>
                         </div>
                     )}
 
                     {status === 'disconnected' && (
                         <div className="py-8">
                             <p className="text-red-400">Device disconnected.</p>
-                            <button onClick={scanForDevices} className="mt-4 px-4 py-2 bg-blue-600 rounded-lg">Retry</button>
+                            <button onClick={scanForDevices} className="mt-4 px-4 py-2 min-h-[44px] bg-blue-600 rounded-lg flex items-center justify-center">Retry</button>
                         </div>
                     )}
                 </div>

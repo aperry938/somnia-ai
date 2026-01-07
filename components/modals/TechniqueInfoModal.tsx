@@ -144,7 +144,8 @@ export const TechniqueInfoModal: React.FC<TechniqueInfoModalProps> = ({ techniqu
                 <div className="p-4 border-t border-day-border dark:border-night-border">
                     <button
                         onClick={onClose}
-                        className="w-full py-3 bg-day-accent dark:bg-night-accent text-white font-medium rounded-xl hover:opacity-90 transition-opacity"
+                        aria-label="Close technique info"
+                        className="w-full py-3 min-h-[48px] bg-day-accent dark:bg-night-accent text-white font-medium rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center"
                     >
                         Got it
                     </button>

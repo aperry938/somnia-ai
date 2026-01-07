@@ -64,7 +64,7 @@ export const AddPastDreamModal: React.FC<AddPastDreamModalProps> = ({ onSave, on
                         onChange={(e) => setDreamDate(e.target.value)}
                         max={new Date().toISOString().split('T')[0]}
                         aria-label="Dream date"
-                        className="w-full p-3 bg-white/50 dark:bg-black/30 border border-day-border dark:border-night-border rounded-lg focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent focus:outline-none"
+                        className="w-full p-3 min-h-[48px] text-base bg-white/50 dark:bg-black/30 border border-day-border dark:border-night-border rounded-lg focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent focus:outline-none"
                     />
                 </div>
 
@@ -81,7 +81,7 @@ export const AddPastDreamModal: React.FC<AddPastDreamModalProps> = ({ onSave, on
                     {isSupported && (
                         <button
                             onClick={isListening ? stopListening : startListening}
-                            className={`absolute top-3 right-3 p-2 rounded-full transition-colors ${isListening ? 'text-red-500 bg-red-100 dark:bg-red-900/30' : 'text-day-text-secondary hover:text-day-accent hover:bg-black/5 dark:hover:bg-white/5'}`}
+                            className={`absolute top-2 right-2 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full transition-colors ${isListening ? 'text-red-500 bg-red-100 dark:bg-red-900/30' : 'text-day-text-secondary hover:text-day-accent hover:bg-black/5 dark:hover:bg-white/5'}`}
                             aria-label={isListening ? "Stop recording" : "Dictate dream"}
                             aria-pressed={isListening}
                             title={isListening ? "Stop recording" : "Dictate dream"}
@@ -115,7 +115,7 @@ export const AddPastDreamModal: React.FC<AddPastDreamModalProps> = ({ onSave, on
                                 onClick={() => { haptics.selection(); setMood(mood === value ? null : value); }}
                                 aria-label={`${MOOD_LABELS[value]} mood`}
                                 aria-pressed={mood === value}
-                                className={`px-3 py-1.5 rounded-full text-sm transition-all flex items-center gap-1.5 ${mood === value
+                                className={`px-4 py-2 min-h-[44px] rounded-full text-sm transition-all flex items-center gap-1.5 ${mood === value
                                     ? 'bg-day-accent dark:bg-night-accent text-white scale-105'
                                     : 'bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border hover:border-day-accent dark:hover:border-night-accent'
                                     }`}
@@ -131,13 +131,15 @@ export const AddPastDreamModal: React.FC<AddPastDreamModalProps> = ({ onSave, on
                 <div className="flex justify-center gap-4">
                     <button
                         onClick={onClose}
-                        className="py-2 px-6 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-full transition-all"
+                        aria-label="Cancel and close"
+                        className="py-3 px-6 min-h-[44px] bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-full transition-all flex items-center justify-center"
                     >
                         Cancel
                     </button>
                     <button
                         onClick={handleSave}
-                        className="py-2 px-6 bg-day-accent dark:bg-night-accent text-white font-bold rounded-full disabled:opacity-50 transition-all"
+                        aria-label="Save dream"
+                        className="py-3 px-6 min-h-[48px] bg-day-accent dark:bg-night-accent text-white font-bold rounded-full disabled:opacity-50 transition-all flex items-center justify-center"
                         disabled={!dreamText.trim() || isListening}
                     >
                         Save Dream

@@ -28,7 +28,7 @@ export const DreamCompareModal: React.FC<DreamCompareModalProps> = ({ dreams, on
                 value={dream?.id || ''}
                 onChange={(e) => onSelect(Number(e.target.value))}
                 aria-label={`Select ${side} dream for comparison`}
-                className="w-full mb-4 p-2 bg-white/50 dark:bg-black/30 border border-day-border dark:border-night-border rounded-lg text-sm"
+                className="w-full mb-4 p-3 min-h-[48px] text-base bg-white/50 dark:bg-black/30 border border-day-border dark:border-night-border rounded-lg focus:outline-none focus:ring-2 focus:ring-day-accent"
             >
                 {dreams.map(d => (
                     <option key={d.id} value={d.id}>
@@ -98,7 +98,7 @@ export const DreamCompareModal: React.FC<DreamCompareModalProps> = ({ dreams, on
             >
                 <div className="p-4 border-b border-day-border dark:border-night-border flex justify-between items-center">
                     <h2 id="compare-modal-title" className="font-serif text-xl">Dream Comparison</h2>
-                    <button onClick={onClose} aria-label="Close comparison" className="text-day-text-secondary dark:text-night-text-secondary hover:text-day-text-primary dark:hover:text-night-text-primary">
+                    <button onClick={onClose} aria-label="Close comparison" className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-day-text-secondary dark:text-night-text-secondary hover:text-day-text-primary dark:hover:text-night-text-primary rounded-full transition-colors hover:bg-black/5 dark:hover:bg-white/5">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
