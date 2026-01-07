@@ -7,13 +7,13 @@ import { detectRecurringPatterns, formatPatternName } from '../../constants/drea
 import { WeeklyDigest } from '../insights/WeeklyDigest';
 import { GlobalTrendsCard } from '../insights/GlobalTrendsCard';
 import { SentimentChart } from '../insights/SentimentChart';
-import { calculateUserStats } from '../../services/userStatsService';
 import { DreamCalendar } from '../insights/DreamCalendar';
 import { DreamWordCloud } from '../insights/DreamWordCloud';
 import { DreamMoodTracker } from '../insights/DreamMoodTracker';
 import { LucidDreamProgress } from '../insights/LucidDreamProgress';
 import { SleepDurationChart } from '../insights/SleepDurationChart';
 import { DreamLengthInsights } from '../insights/DreamLengthInsights';
+import { DreamStreakCalendar } from '../insights/DreamStreakCalendar';
 import { RecurringThemes } from '../insights/RecurringThemes';
 import { InsightsGrid } from '../insights/InsightsGrid';
 import { PremiumBadge } from '../shared/PremiumBadge';
@@ -81,7 +81,6 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
     }, [dreams]);
 
     const patterns = useMemo(() => detectRecurringPatterns(dreams), [dreams]);
-    const stats = useMemo(() => calculateUserStats(dreams), [dreams]);
 
     const handleSynthesizeDreams = async () => {
         if (!isPremium() && !canUseAiAnalysis()) return;
@@ -163,36 +162,11 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
             >
                 {activeTab === 'dreams' ? (
                     <div className="space-y-6 animate-fadeIn">
-                        {/* Stats Card */}
-                        <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-4 rounded-xl">
-                            <div className="grid grid-cols-3 gap-4 text-center">
-                                <div>
-                                    <p className="text-3xl font-bold text-day-accent dark:text-night-accent">{stats.level}</p>
-                                    <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">Somnia Level</p>
-                                </div>
-                                <div>
-                                    <p className="text-3xl font-bold">{stats.currentStreak}</p>
-                                    <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">Day Streak</p>
-                                </div>
-                                <div>
-                                    <p className="text-3xl font-bold">{stats.bestStreak}</p>
-                                    <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">Best Streak</p>
-                                </div>
-                            </div>
-                            <div className="mt-3">
-                                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mb-1">
-                                    <div className="bg-day-accent dark:bg-night-accent h-1.5 rounded-full transition-all duration-500" style={{ width: `${stats.nextLevelProgress}%` }}></div>
-                                </div>
-                                <p className="text-center text-xs text-day-text-secondary dark:text-night-text-secondary">
-                                    {stats.totalDreams} Dreams • {Math.ceil((100 - stats.nextLevelProgress) / 20)} to next level
-                                </p>
-                            </div>
-                        </div>
-
                         <WeeklyDigest dreams={dreams} />
                         <DreamCalendar dreams={dreams} />
                         <DreamWordCloud dreams={dreams} />
                         <DreamMoodTracker dreams={dreams} />
+                        <DreamStreakCalendar dreams={dreams} />
                         <RecurringThemes dreams={dreams} />
 
                         {/* Recurring Patterns */}
