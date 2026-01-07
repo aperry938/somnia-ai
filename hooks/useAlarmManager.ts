@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Alarm } from '../types';
 import { useClock } from './useClock';
 import { useAppContext } from '../contexts/AppContext';
+import { logger } from '../services/logger';
 
 const SNOOZE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 

@@ -1,4 +1,5 @@
 import { Biometrics } from '../types';
+import { logger } from './logger';
 
 export type HKQuantityTypeIdentifier =
     | 'HKQuantityTypeIdentifierHeartRate'

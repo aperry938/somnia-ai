@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { logger } from '../services/logger';
 
 // Add types for Web Speech API
 interface SpeechRecognitionErrorEvent extends Event {

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { logger } from '../services/logger';
 
 interface SunTimes {
     sunrise: Date;

@@ -8,6 +8,7 @@ import { AnalysisLoading, ImageGenerationLoading } from '../shared/LoadingStates
 import { TagInput, COMMON_DREAM_TAGS } from '../shared/TagInput';
 import { findDreamSymbols, DreamSymbol } from '../../constants/dreamSymbols';
 import { useToast } from '../shared/Toast';
+import { logger } from '../../services/logger';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { isPremium } from '../../services/secureSubscriptionService';
 import haptics from '../../services/hapticsService';

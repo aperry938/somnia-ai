@@ -1,5 +1,5 @@
-
 import { Dream, SleepAids } from '../types';
+import { logger } from './logger';
 
 const MIGRATION_VERSION = 1;
 

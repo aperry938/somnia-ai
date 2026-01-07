@@ -7,6 +7,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
+import { logger } from '../services/logger';
 import {
     signUp as authSignUp,
     signIn as authSignIn,

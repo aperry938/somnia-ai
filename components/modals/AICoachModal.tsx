@@ -5,6 +5,7 @@ import { ChatMessage } from '../../types';
 import { isPremium } from '../../services/secureSubscriptionService';
 import haptics from '../../services/hapticsService';
 import { sanitizeText, INPUT_LIMITS, containsScriptInjection } from '../../services/validationService';
+import { logger } from '../../services/logger';
 
 const COACH_HISTORY_KEY = 'somnia_coach_history';
 const MAX_SAVED_MESSAGES = 20; // Limit saved history to prevent storage bloat

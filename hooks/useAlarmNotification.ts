@@ -1,6 +1,7 @@
 // hooks/useAlarmNotification.ts
 import { useEffect, useRef } from 'react';
 import { Alarm } from '../types';
+import { logger } from '../services/logger';
 
 /**
  * Get the next upcoming alarm time from a list of alarms

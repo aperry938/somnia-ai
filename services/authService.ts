@@ -6,6 +6,7 @@
  */
 
 import { createClient, User, Session, AuthError } from '@supabase/supabase-js';
+import { logger } from './logger';
 
 // Supabase configuration
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';

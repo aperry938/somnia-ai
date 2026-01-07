@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { verifySubscription, getCachedStatus } from '../../services/secureSubscriptionService';
 import { useAuth } from '../../contexts/AuthContext';
+import { logger } from '../../services/logger';
 
 interface SuccessPageProps {
     onBack: () => void;

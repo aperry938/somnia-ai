@@ -3,6 +3,8 @@
  * Prevents API abuse and ensures fair usage of resources.
  */
 
+import { logger } from './logger';
+
 interface RateLimitConfig {
     maxRequests: number;
     windowMs: number;

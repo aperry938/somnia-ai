@@ -1,5 +1,6 @@
-
 // Basic Voice Command Service using Web Speech API
+
+import { logger } from './logger';
 
 // Minimal interface for the Web Speech API recognition object
 // Using this approach to avoid conflicts with browser-specific global types

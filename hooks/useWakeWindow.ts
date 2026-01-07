@@ -1,5 +1,5 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { logger } from '../services/logger';
 
 interface WakeEvent {
     timestamp: number;

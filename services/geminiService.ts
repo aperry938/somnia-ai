@@ -138,7 +138,10 @@ export const analyzeDream = async (dreamText: string, sleepAids?: SleepAids, bio
                 },
             },
         });
-        const rawJson = response.text.trim();
+        const rawJson = response.text?.trim() ?? '';
+        if (!rawJson) {
+            throw new Error('AI returned empty response. Please try again.');
+        }
         let result: DreamAnalysis;
         try {
             result = JSON.parse(rawJson) as DreamAnalysis;
@@ -230,9 +233,13 @@ export const generateDreamImage = async (dreamText: string, style: DreamArtStyle
             },
         });
 
-        for (const part of response.candidates[0].content.parts) {
+        const candidate = response.candidates?.[0];
+        if (!candidate?.content?.parts) {
+            throw new Error("No image data found in response.");
+        }
+        for (const part of candidate.content.parts) {
             if (part.inlineData) {
-                return part.inlineData.data; // This is the base64 string
+                return part.inlineData.data ?? ''; // This is the base64 string
             }
         }
         throw new Error("No image data found in response.");
@@ -338,7 +345,7 @@ export const getCoachResponse = async (history: ChatMessage[], personality: 'mys
             model: 'gemini-2.5-flash',
             contents: chatHistory,
         });
-        return response.text;
+        return response.text ?? '';
     } catch (error) {
         logError(error instanceof Error ? error : new Error(String(error)), 'ai', { operation: 'getCoachResponse' });
         throw new Error("Failed to get AI response.");
@@ -369,7 +376,7 @@ export const getDreamChatResponse = async (dream: Dream, history: ChatMessage[])
             model: 'gemini-2.5-flash',
             contents: chatHistory,
         });
-        return response.text;
+        return response.text ?? '';
     } catch (error) {
         logError(error instanceof Error ? error : new Error(String(error)), 'ai', { operation: 'getDreamChatResponse' });
         throw new Error("Failed to get AI response.");
@@ -416,7 +423,10 @@ export const synthesizeDreamThemes = async (dreams: Dream[]): Promise<DreamSynth
                 }
             }
         });
-        const rawJson = response.text.trim();
+        const rawJson = response.text?.trim() ?? '';
+        if (!rawJson) {
+            throw new Error('AI returned empty response. Please try again.');
+        }
         let result: DreamSynthesis;
         try {
             result = JSON.parse(rawJson) as DreamSynthesis;
@@ -477,7 +487,10 @@ export const analyzeSleepHabits = async (dreams: Dream[]): Promise<SleepHabitAna
                 }
             }
         });
-        const rawJson = response.text.trim();
+        const rawJson = response.text?.trim() ?? '';
+        if (!rawJson) {
+            throw new Error('AI returned empty response. Please try again.');
+        }
         let result: SleepHabitAnalysis;
         try {
             result = JSON.parse(rawJson) as SleepHabitAnalysis;
