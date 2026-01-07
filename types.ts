@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 
-export type Page = 'alarms' | 'sleep' | 'chronicle' | 'insights' | 'dream-detail' | 'privacy' | 'terms' | 'profile' | 'success';
+export type Page = 'alarms' | 'sleep' | 'chronicle' | 'insights' | 'dream-detail' | 'privacy' | 'terms' | 'profile' | 'success' | 'admin';
 
 // Alarm purpose determines behavior when it rings
 export type AlarmPurpose = 'sleep' | 'reminder';

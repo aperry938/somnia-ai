@@ -2,14 +2,16 @@ import React, { useState, useRef, useMemo } from 'react';
 import { useAppContext, ArtStyle } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { exportDreamJournalToPDF, exportDreamsAsJSON, importDreamsFromJSON } from '../../services/exportService';
-import { Biometrics } from '../../types';
+import { Biometrics, Page } from '../../types';
 import { useToast } from '../shared/Toast';
 import { calculateUserStats } from '../../services/userStatsService';
 import { useClock } from '../../hooks/useClock';
-import { isPremium, getRemainingCredits, getCredits, createCustomerPortalSession } from '../../services/secureSubscriptionService';
+import { isPremium, getRemainingCredits, getCredits, createCustomerPortalSession, isDevMode } from '../../services/secureSubscriptionService';
 import { SecurePaywallModal } from '../modals/SecurePaywallModal';
 
 const FREE_TIER_MAX_CREDITS = 3; // Same as in secureSubscriptionService
+const APP_VERSION = '1.0.0';
+const ADMIN_TAP_COUNT = 7; // Taps required to unlock admin access
 
 // Profile Info Card - expanded biometrics
 const ProfileInfoCard: React.FC = () => {
@@ -673,9 +675,15 @@ const LegalCard: React.FC<{ onNavigateTo?: (page: 'privacy' | 'terms') => void }
     );
 };
 
-export const ProfilePage: React.FC<{ onBack?: () => void; onNavigateTo?: (page: 'privacy' | 'terms') => void }> = ({ onBack, onNavigateTo }) => {
+export const ProfilePage: React.FC<{ onBack?: () => void; onNavigateTo?: (page: Page) => void }> = ({ onBack, onNavigateTo }) => {
     const { dreams } = useAppContext();
+    const { showToast } = useToast();
     const stats = useMemo(() => calculateUserStats(dreams), [dreams]);
+    const [versionTapCount, setVersionTapCount] = useState(0);
+    const [adminUnlocked, setAdminUnlocked] = useState(() => {
+        return localStorage.getItem('somnia_admin_unlocked') === 'true' || isDevMode();
+    });
+    const tapTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const getLevelTitle = (level: number): string => {
         const titles = [
@@ -683,6 +691,30 @@ export const ProfilePage: React.FC<{ onBack?: () => void; onNavigateTo?: (page: 
             'Seeker', 'Mystic', 'Sage', 'Oneironaut', 'Dream Master',
         ];
         return titles[Math.min(level - 1, titles.length - 1)];
+    };
+
+    const handleVersionTap = () => {
+        // Clear previous timeout
+        if (tapTimeoutRef.current) {
+            clearTimeout(tapTimeoutRef.current);
+        }
+
+        const newCount = versionTapCount + 1;
+        setVersionTapCount(newCount);
+
+        if (newCount >= ADMIN_TAP_COUNT) {
+            localStorage.setItem('somnia_admin_unlocked', 'true');
+            setAdminUnlocked(true);
+            setVersionTapCount(0);
+            showToast('Admin access unlocked!', 'success');
+        } else if (newCount >= 4) {
+            showToast(`${ADMIN_TAP_COUNT - newCount} taps to unlock admin`, 'info');
+        }
+
+        // Reset tap count after 2 seconds of inactivity
+        tapTimeoutRef.current = setTimeout(() => {
+            setVersionTapCount(0);
+        }, 2000);
     };
 
     return (
@@ -740,6 +772,38 @@ export const ProfilePage: React.FC<{ onBack?: () => void; onNavigateTo?: (page: 
                 <DataManagementCard />
                 <AccountManagementCard />
                 <LegalCard onNavigateTo={onNavigateTo} />
+
+                {/* Admin Access Card - visible once unlocked */}
+                {adminUnlocked && (
+                    <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-amber-500/50 dark:border-amber-400/50 p-5 rounded-xl">
+                        <div className="flex items-center gap-2 mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <h2 className="font-serif text-xl text-amber-600 dark:text-amber-400">Admin Tools</h2>
+                        </div>
+                        <button
+                            onClick={() => onNavigateTo?.('admin')}
+                            className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                            Open Admin Dashboard
+                        </button>
+                    </div>
+                )}
+
+                {/* Version Badge - tap to unlock admin */}
+                <div className="text-center pt-4">
+                    <button
+                        onClick={handleVersionTap}
+                        className="text-xs text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent transition-colors"
+                    >
+                        Somnia.ai v{APP_VERSION}
+                    </button>
+                </div>
             </div>
         </div>
     );

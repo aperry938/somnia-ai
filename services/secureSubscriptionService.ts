@@ -9,6 +9,7 @@
 export type PremiumFeature =
     | 'ai_analysis'
     | 'ai_imagery'
+    | 'ai_video'
     | 'ai_coach'
     | 'dream_synthesis'
     | 'sleep_habits'
@@ -16,11 +17,31 @@ export type PremiumFeature =
     | 'reality_checks'
     | 'encrypted_backup'
     | 'unlimited_alarms'
-    | 'voice_assistant';
+    | 'voice_assistant'
+    | 'custom_alarm_sounds';
+
+// Subscription tier levels for feature gating
+export type SubscriptionTier = 'free' | 'premium' | 'ultra';
+
+// Feature tier requirements
+export const FEATURE_TIERS: Record<PremiumFeature, SubscriptionTier> = {
+    ai_analysis: 'premium',
+    ai_imagery: 'premium',
+    ai_video: 'ultra',  // Higher tier for video generation
+    ai_coach: 'premium',
+    dream_synthesis: 'premium',
+    sleep_habits: 'premium',
+    binaural_beats: 'premium',
+    reality_checks: 'premium',
+    encrypted_backup: 'premium',
+    unlimited_alarms: 'premium',
+    voice_assistant: 'premium',
+    custom_alarm_sounds: 'free',  // Available to all
+};
 
 export interface SubscriptionStatus {
     isPremium: boolean;
-    tier: 'free' | 'premium';
+    tier: SubscriptionTier;
     status: 'none' | 'active' | 'canceled' | 'past_due' | 'trialing';
     expiresAt: string | null;
     tokenExpiresAt: string | null;
@@ -380,46 +401,83 @@ export const PRICING = {
     },
 } as const;
 
-// Feature descriptions (unchanged from original)
-export const PREMIUM_FEATURES: Record<PremiumFeature, { name: string; description: string }> = {
+// Feature descriptions
+export const PREMIUM_FEATURES: Record<PremiumFeature, { name: string; description: string; tier: SubscriptionTier }> = {
     ai_analysis: {
         name: 'Unlimited AI Dream Analysis',
         description: 'Unlimited psychological interpretations (free tier: 3/month)',
+        tier: 'premium',
     },
     ai_imagery: {
         name: 'Dream Visualization',
-        description: 'Generate stunning AI art from your dreams in 5 unique styles',
+        description: 'Generate stunning AI art from your dreams in 8 unique styles',
+        tier: 'premium',
+    },
+    ai_video: {
+        name: 'Dream Video Generation',
+        description: 'Transform your dreams into cinematic video sequences',
+        tier: 'ultra',
     },
     ai_coach: {
         name: 'AI Sleep Coach',
         description: 'Personalized sleep guidance with mystical or scientific personas',
+        tier: 'premium',
     },
     dream_synthesis: {
         name: 'Dream Weaving',
         description: 'Discover recurring themes and patterns across your dream journal',
+        tier: 'premium',
     },
     sleep_habits: {
         name: 'Sleep Science',
         description: 'Correlate your habits with sleep quality for personalized insights',
+        tier: 'premium',
     },
     binaural_beats: {
         name: 'Binaural Beats',
         description: 'Theta and Delta wave frequencies for deep relaxation',
+        tier: 'premium',
     },
     reality_checks: {
         name: 'Lucid Dreaming',
         description: 'Reality check notifications to induce lucid dreams',
+        tier: 'premium',
     },
     encrypted_backup: {
         name: 'Secure Backup',
         description: 'Password-protected encrypted exports of your dream journal',
+        tier: 'premium',
     },
     unlimited_alarms: {
         name: 'Priority Features',
         description: 'Early access to new features and priority support',
+        tier: 'premium',
     },
     voice_assistant: {
         name: 'AI Voice Assistant',
         description: 'Natural language voice commands powered by AI for hands-free control',
+        tier: 'premium',
+    },
+    custom_alarm_sounds: {
+        name: 'Custom Alarm Sounds',
+        description: 'Choose from a variety of soothing alarm sounds',
+        tier: 'free',
     },
 };
+
+// Pricing constants (for UI display only - actual prices in Stripe)
+export const ULTRA_PRICING = {
+    monthly: {
+        price: 9.99,
+        currency: 'USD',
+        interval: 'month',
+        priceId: import.meta.env.VITE_STRIPE_ULTRA_MONTHLY_PRICE_ID || '',
+    },
+    yearly: {
+        price: 79.99,
+        currency: 'USD',
+        interval: 'year',
+        savings: 33,
+        priceId: import.meta.env.VITE_STRIPE_ULTRA_YEARLY_PRICE_ID || '',
+    },
+} as const;

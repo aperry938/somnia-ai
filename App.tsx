@@ -36,6 +36,7 @@ const TermsPage = lazy(() => import('./components/pages/TermsPage').then(m => ({
 const ProfilePage = lazy(() => import('./components/pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
 const AuthPage = lazy(() => import('./components/pages/AuthPage').then(m => ({ default: m.AuthPage })));
 const SuccessPage = lazy(() => import('./components/pages/SuccessPage').then(m => ({ default: m.SuccessPage })));
+const AdminPage = lazy(() => import('./components/pages/AdminPage').then(m => ({ default: m.AdminPage })));
 
 
 
@@ -216,6 +217,12 @@ const App: React.FC = () => {
                             window.history.replaceState({}, '', '/');
                             setCurrentPage('alarms');
                         }} />
+                    </Suspense>
+                );
+            case 'admin':
+                return (
+                    <Suspense fallback={<PageLoading message="Loading admin..." />}>
+                        <AdminPage onBack={() => setCurrentPage('profile')} />
                     </Suspense>
                 );
             default:
