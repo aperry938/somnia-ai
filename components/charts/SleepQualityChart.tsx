@@ -36,7 +36,7 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label })
 export const SleepQualityChart: React.FC<SleepQualityChartProps> = ({ data }) => {
     const { theme } = useClock();
     const isDark = theme === 'night';
-    
+
     const colors = {
         grid: isDark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(0, 0, 0, 0.08)',
         text: isDark ? '#94A3B8' : '#475569',
@@ -45,7 +45,14 @@ export const SleepQualityChart: React.FC<SleepQualityChartProps> = ({ data }) =>
         areaEnd: isDark ? '#1E293B' : '#D9E2EC'
     };
 
+    // Calculate stats for accessibility description
+    const validData = data.filter(d => d.quality !== null);
+    const avgQuality = validData.length > 0
+        ? (validData.reduce((sum, d) => sum + (d.quality || 0), 0) / validData.length).toFixed(1)
+        : 0;
+
     return (
+        <div role="img" aria-label={`Sleep quality trend chart showing ${data.length} data points with average quality of ${avgQuality} out of 5`}>
         <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={data} margin={{ top: 5, right: 20, left: -25, bottom: 0 }}>
                 <defs>
@@ -61,5 +68,6 @@ export const SleepQualityChart: React.FC<SleepQualityChartProps> = ({ data }) =>
                 <Area type="monotone" dataKey="quality" stroke={colors.line} strokeWidth={2} fillOpacity={1} fill="url(#colorQuality)" />
             </AreaChart>
         </ResponsiveContainer>
+        </div>
     );
 };
