@@ -273,84 +273,67 @@ let proceduralGainNode: GainNode | null = null;
 
 /**
  * PRISM Alarm - Ethereal glass chimes
- * Uses simple oscillator synthesis for reliability
+ * Uses continuous oscillator + scheduled chimes for reliability
  */
 const playPrismAlarm = () => {
     console.log('[playPrismAlarm] Starting Prism alarm');
     stopSleepSound();
     const context = getAudioContext();
+    console.log('[playPrismAlarm] AudioContext state:', context.state);
     if (alarmOscillator) stopAlarmSound();
     cleanupProceduralAlarm();
-
-    // Resume context if suspended
-    if (context.state === 'suspended') {
-        context.resume();
-    }
 
     proceduralGainNode = context.createGain();
     proceduralGainNode.connect(context.destination);
 
     const now = context.currentTime;
-    proceduralGainNode.gain.setValueAtTime(0.15, now);
-    proceduralGainNode.gain.linearRampToValueAtTime(0.4, now + WAKE_DURATION);
+    proceduralGainNode.gain.setValueAtTime(0.2, now);
+    proceduralGainNode.gain.linearRampToValueAtTime(0.5, now + WAKE_DURATION);
+
+    // Create a CONTINUOUS base oscillator that always plays
+    const baseOsc = context.createOscillator();
+    const baseGain = context.createGain();
+    baseOsc.type = 'sine';
+    baseOsc.frequency.value = PENTATONIC_SCALE[0]; // Start with first note
+    baseGain.gain.setValueAtTime(0.15, now);
+    baseOsc.connect(baseGain);
+    baseGain.connect(proceduralGainNode);
+    baseOsc.start(now);
+    console.log('[playPrismAlarm] Base oscillator started at freq:', PENTATONIC_SCALE[0]);
 
     let isPlaying = true;
-    let oscillators: OscillatorNode[] = [];
 
-    function triggerChime() {
-        if (!isPlaying || !proceduralGainNode) return;
-
-        const t = context.currentTime;
-        const freq = PENTATONIC_SCALE[Math.floor(Math.random() * PENTATONIC_SCALE.length)];
-
-        // Create oscillator for this chime
-        const osc = context.createOscillator();
-        const chimeGain = context.createGain();
-
-        osc.type = 'sine';
-        osc.frequency.value = freq;
-
-        // Envelope: quick attack, slow decay (chime-like)
-        chimeGain.gain.setValueAtTime(0.3, t);
-        chimeGain.gain.exponentialRampToValueAtTime(0.01, t + 2);
-
-        osc.connect(chimeGain);
-        chimeGain.connect(proceduralGainNode);
-
-        osc.start(t);
-        osc.stop(t + 2.5);
-        oscillators.push(osc);
-
-        // Schedule next chime (2-4 seconds)
-        setTimeout(triggerChime, 2000 + Math.random() * 2000);
+    // Schedule frequency changes for chime effect
+    function scheduleChimeChange() {
+        if (!isPlaying) return;
+        const newFreq = PENTATONIC_SCALE[Math.floor(Math.random() * PENTATONIC_SCALE.length)];
+        baseOsc.frequency.setValueAtTime(newFreq, context.currentTime);
+        baseGain.gain.setValueAtTime(0.25, context.currentTime);
+        baseGain.gain.exponentialRampToValueAtTime(0.1, context.currentTime + 1.5);
+        setTimeout(scheduleChimeChange, 2000 + Math.random() * 2000);
     }
 
-    // Start first chime immediately
-    triggerChime();
+    // Start chime changes after 1 second
+    setTimeout(scheduleChimeChange, 1000);
 
     proceduralAlarmStop = () => {
         console.log('[playPrismAlarm] Stopping Prism alarm');
         isPlaying = false;
-        oscillators.forEach(o => { try { o.stop(); } catch { } });
-        oscillators = [];
+        try { baseOsc.stop(); } catch { }
     };
 };
 
 /**
  * AETHER Alarm - Cinematic drone with filter sweep
- * Uses simple oscillator synthesis for reliability
+ * Uses continuous oscillators for reliability
  */
 const playAetherAlarm = () => {
     console.log('[playAetherAlarm] Starting Aether alarm');
     stopSleepSound();
     const context = getAudioContext();
+    console.log('[playAetherAlarm] AudioContext state:', context.state);
     if (alarmOscillator) stopAlarmSound();
     cleanupProceduralAlarm();
-
-    // Resume context if suspended
-    if (context.state === 'suspended') {
-        context.resume();
-    }
 
     proceduralGainNode = context.createGain();
     proceduralGainNode.connect(context.destination);
@@ -370,12 +353,12 @@ const playAetherAlarm = () => {
     filter.type = 'lowpass';
     filter.Q.value = 1;
 
-    // Ramp Filter Cutoff from 200Hz to 2000Hz (audible range)
-    filter.frequency.setValueAtTime(200, now);
+    // Start filter at audible frequency
+    filter.frequency.setValueAtTime(400, now);
     filter.frequency.exponentialRampToValueAtTime(2000, now + WAKE_DURATION);
 
     // Master volume - start audible
-    proceduralGainNode.gain.setValueAtTime(0.2, now);
+    proceduralGainNode.gain.setValueAtTime(0.25, now);
     proceduralGainNode.gain.linearRampToValueAtTime(0.4, now + WAKE_DURATION);
 
     osc1.connect(filter);
@@ -384,6 +367,7 @@ const playAetherAlarm = () => {
 
     osc1.start(now);
     osc2.start(now);
+    console.log('[playAetherAlarm] Oscillators started');
 
     proceduralAlarmStop = () => {
         console.log('[playAetherAlarm] Stopping Aether alarm');
@@ -394,19 +378,15 @@ const playAetherAlarm = () => {
 
 /**
  * BAMBOO Alarm - Hollow wooden pulse that accelerates
- * Uses simple oscillator synthesis for reliability
+ * Uses continuous oscillator with amplitude modulation for reliability
  */
 const playBambooAlarm = () => {
     console.log('[playBambooAlarm] Starting Bamboo alarm');
     stopSleepSound();
     const context = getAudioContext();
+    console.log('[playBambooAlarm] AudioContext state:', context.state);
     if (alarmOscillator) stopAlarmSound();
     cleanupProceduralAlarm();
-
-    // Resume context if suspended
-    if (context.state === 'suspended') {
-        context.resume();
-    }
 
     proceduralGainNode = context.createGain();
     proceduralGainNode.connect(context.destination);
@@ -415,45 +395,37 @@ const playBambooAlarm = () => {
     proceduralGainNode.gain.setValueAtTime(0.3, now);
     proceduralGainNode.gain.linearRampToValueAtTime(0.6, now + WAKE_DURATION);
 
+    // Create a CONTINUOUS base oscillator
+    const baseOsc = context.createOscillator();
+    const pulseGain = context.createGain();
+    baseOsc.type = 'sine';
+    baseOsc.frequency.value = 150; // Low woody tone
+    pulseGain.gain.setValueAtTime(0.3, now);
+    baseOsc.connect(pulseGain);
+    pulseGain.connect(proceduralGainNode);
+    baseOsc.start(now);
+    console.log('[playBambooAlarm] Base oscillator started');
+
     let isPlaying = true;
-    let interval = 1000; // Start at 60 BPM
-    let oscillators: OscillatorNode[] = [];
+    let interval = 1000;
 
-    function triggerPulse() {
-        if (!isPlaying || !proceduralGainNode) return;
+    // Create pulsing effect by modulating gain
+    function schedulePulse() {
+        if (!isPlaying) return;
         const t = context.currentTime;
-
-        // Create oscillator for this pulse (low frequency "thunk")
-        const osc = context.createOscillator();
-        const pulseGain = context.createGain();
-
-        osc.type = 'sine';
-        osc.frequency.value = 150; // Low woody tone
-
-        // Quick envelope for percussive sound
         pulseGain.gain.setValueAtTime(0.5, t);
-        pulseGain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
-
-        osc.connect(pulseGain);
-        pulseGain.connect(proceduralGainNode);
-
-        osc.start(t);
-        osc.stop(t + 0.2);
-        oscillators.push(osc);
-
-        // Accelerate rhythm
+        pulseGain.gain.exponentialRampToValueAtTime(0.1, t + 0.15);
         interval = Math.max(400, interval * 0.97);
-        setTimeout(triggerPulse, interval);
+        setTimeout(schedulePulse, interval);
     }
 
-    // Start first pulse immediately
-    triggerPulse();
+    // Start pulses
+    schedulePulse();
 
     proceduralAlarmStop = () => {
         console.log('[playBambooAlarm] Stopping Bamboo alarm');
         isPlaying = false;
-        oscillators.forEach(o => { try { o.stop(); } catch { } });
-        oscillators = [];
+        try { baseOsc.stop(); } catch { }
     };
 };
 
