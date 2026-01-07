@@ -352,14 +352,14 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
 
                     <div>
                         <h2 className="font-serif text-2xl text-center my-8">Guided Relaxation</h2>
-                        <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-4">
                             {GUIDED_RELAXATIONS.map(item => (
-                                <div key={item.id} onClick={() => openRelaxationModal(item)} className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-4 rounded-xl cursor-pointer transition-all hover:border-day-accent dark:hover:border-night-accent">
-                                    <div className="flex items-center gap-4">
-                                        <div className="text-day-accent dark:text-night-accent w-10 h-10 flex items-center justify-center flex-shrink-0">{item.icon}</div>
+                                <div key={item.id} onClick={() => openRelaxationModal(item)} className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-3 rounded-xl cursor-pointer transition-all hover:border-day-accent dark:hover:border-night-accent">
+                                    <div className="flex items-start gap-3">
+                                        <div className="text-day-accent dark:text-night-accent w-8 h-8 flex items-center justify-center flex-shrink-0">{item.icon}</div>
                                         <div className="flex-1 min-w-0">
-                                            <h3 className="font-serif text-xl font-bold text-day-text-primary dark:text-night-text-primary">{item.name}</h3>
-                                            <p className="text-sm text-day-text-secondary dark:text-night-text-secondary mt-0.5 leading-relaxed">{item.description}</p>
+                                            <h3 className="font-serif text-base font-bold text-day-text-primary dark:text-night-text-primary">{item.name}</h3>
+                                            <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-0.5 leading-snug">{item.description}</p>
                                         </div>
                                     </div>
                                 </div>
