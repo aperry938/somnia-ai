@@ -287,9 +287,9 @@ const playPrismAlarm = () => {
     proceduralGainNode.connect(compressor);
     compressor.connect(context.destination);
 
-    // Master volume ramp: 0% to 100% over 60 seconds
+    // Master volume ramp: Start audible, grow over 60 seconds
     const now = context.currentTime;
-    proceduralGainNode.gain.setValueAtTime(0, now);
+    proceduralGainNode.gain.setValueAtTime(0.1, now);
     proceduralGainNode.gain.linearRampToValueAtTime(0.6, now + WAKE_DURATION);
 
     let isPlaying = true;
@@ -373,8 +373,8 @@ const playAetherAlarm = () => {
     filter.frequency.setValueAtTime(50, now);
     filter.frequency.exponentialRampToValueAtTime(2000, now + WAKE_DURATION);
 
-    // Master volume ramp
-    proceduralGainNode.gain.setValueAtTime(0.001, now);
+    // Master volume ramp - start audible
+    proceduralGainNode.gain.setValueAtTime(0.1, now);
     proceduralGainNode.gain.linearRampToValueAtTime(0.4, now + WAKE_DURATION);
 
     osc1.connect(filter);
@@ -407,7 +407,7 @@ const playBambooAlarm = () => {
     compressor.connect(context.destination);
 
     const now = context.currentTime;
-    proceduralGainNode.gain.setValueAtTime(0, now);
+    proceduralGainNode.gain.setValueAtTime(0.2, now);
     proceduralGainNode.gain.linearRampToValueAtTime(0.7, now + WAKE_DURATION);
 
     let isPlaying = true;
