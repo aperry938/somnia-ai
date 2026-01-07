@@ -206,6 +206,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                         </div>
                         <button
                             onClick={onNavigateToAlarms}
+                            aria-label="Set an alarm"
                             className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg transition-colors flex-shrink-0"
                         >
                             Set Alarm
@@ -247,13 +248,13 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                         <WakeWindowViz events={movementLog} />
                     )}
 
-                    <button onClick={() => setIsSleeping(false)} className="mt-4 py-2 px-6 bg-gray-200 dark:bg-gray-700 rounded-full">Back</button>
+                    <button onClick={() => setIsSleeping(false)} aria-label="Go back to sleep settings" className="mt-4 py-2 px-6 bg-gray-200 dark:bg-gray-700 rounded-full">Back</button>
                 </div>
             ) : (
                 <div className="max-w-2xl mx-auto space-y-8">
-                    <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl cursor-pointer hover:shadow-xl transition-shadow" onClick={openCoach}>
+                    <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl cursor-pointer hover:shadow-xl transition-shadow" onClick={openCoach} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openCoach(); } }} aria-label="Open AI Sleep Coach">
                         <div className="flex items-center gap-4">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg>
                             <div>
                                 <h2 className="font-serif text-xl font-bold">AI Sleep Coach</h2>
                                 <p className="text-sm text-day-text-secondary dark:text-night-text-secondary">Chat for personalized guidance and relaxation techniques.</p>
@@ -269,12 +270,14 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                 <DayRating rating={dayRating} onRate={setDayRating} />
                             </div>
                             <div>
-                                <label className="block text-center text-day-text-secondary dark:text-night-text-secondary mb-3">Any thoughts or notable events?</label>
+                                <label htmlFor="day-notes" className="block text-center text-day-text-secondary dark:text-night-text-secondary mb-3">Any thoughts or notable events?</label>
                                 <textarea
+                                    id="day-notes"
                                     value={dayNotes}
                                     onChange={(e) => setDayNotes(sanitizeText(e.target.value).slice(0, INPUT_LIMITS.notes))}
                                     rows={2}
                                     maxLength={INPUT_LIMITS.notes}
+                                    aria-label="Evening reflection notes"
                                     className="w-full p-2 bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-md custom-scrollbar"
                                     placeholder="e.g., A stressful meeting at work..."
                                 />
