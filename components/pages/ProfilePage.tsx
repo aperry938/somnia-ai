@@ -324,8 +324,8 @@ const ThemePreferenceCard: React.FC = () => {
                         aria-pressed={themeOverride === opt.value}
                         aria-label={`${opt.label} theme`}
                         className={`p-3 min-h-[64px] rounded-lg border-2 transition-all flex flex-col items-center justify-center ${themeOverride === opt.value
-                                ? 'border-day-accent dark:border-night-accent bg-day-accent/10 dark:bg-night-accent/10 text-day-accent dark:text-night-accent'
-                                : 'border-day-border dark:border-night-border hover:border-day-accent/50 dark:hover:border-night-accent/50 text-day-text-secondary dark:text-night-text-secondary'
+                            ? 'border-day-accent dark:border-night-accent bg-day-accent/10 dark:bg-night-accent/10 text-day-accent dark:text-night-accent'
+                            : 'border-day-border dark:border-night-border hover:border-day-accent/50 dark:hover:border-night-accent/50 text-day-text-secondary dark:text-night-text-secondary'
                             }`}
                     >
                         <div className="mb-1" aria-hidden="true">{themeIcons[opt.value]}</div>
@@ -377,8 +377,8 @@ const ArtStyleCard: React.FC = () => {
                         aria-pressed={artStyle === style.value}
                         aria-label={`${style.label} art style`}
                         className={`p-3 min-h-[60px] rounded-lg border-2 transition-all flex flex-col items-center justify-center ${artStyle === style.value
-                                ? 'border-day-accent dark:border-night-accent bg-day-accent/10 dark:bg-night-accent/10 text-day-accent dark:text-night-accent'
-                                : 'border-day-border dark:border-night-border hover:border-day-accent/50 dark:hover:border-night-accent/50 text-day-text-secondary dark:text-night-text-secondary'
+                            ? 'border-day-accent dark:border-night-accent bg-day-accent/10 dark:bg-night-accent/10 text-day-accent dark:text-night-accent'
+                            : 'border-day-border dark:border-night-border hover:border-day-accent/50 dark:hover:border-night-accent/50 text-day-text-secondary dark:text-night-text-secondary'
                             }`}
                     >
                         <div className="mb-1" aria-hidden="true">{artStyleIcons[style.value]}</div>
@@ -438,8 +438,8 @@ const NotificationsCard: React.FC = () => {
                             aria-checked={settings[item.key]}
                             aria-label={`Toggle ${item.label}`}
                             className={`w-14 h-8 min-h-[44px] rounded-full transition-colors relative flex items-center ${settings[item.key]
-                                    ? 'bg-day-accent dark:bg-night-accent'
-                                    : 'bg-gray-300 dark:bg-gray-600'
+                                ? 'bg-day-accent dark:bg-night-accent'
+                                : 'bg-gray-300 dark:bg-gray-600'
                                 }`}
                         >
                             <div className={`absolute w-6 h-6 rounded-full bg-white transition-transform shadow ${settings[item.key] ? 'translate-x-7' : 'translate-x-1'
@@ -807,7 +807,7 @@ export const ProfilePage: React.FC<{ onBack?: () => void; onNavigateTo?: (page: 
                         onClick={handleVersionTap}
                         className="text-xs min-h-[44px] px-4 py-2 text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent transition-colors"
                     >
-                        Somnia.ai v{APP_VERSION}
+                        Somnia v{APP_VERSION}
                     </button>
                 </div>
             </div>
