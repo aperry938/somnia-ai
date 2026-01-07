@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { LEVEL_TITLES, DREAMS_PER_LEVEL, getLevelTitle } from '../../constants/gamification';
 
 interface LevelGuideModalProps {
@@ -22,6 +22,18 @@ const LEVEL_DESCRIPTIONS: Record<number, string> = {
 };
 
 export const LevelGuideModal: React.FC<LevelGuideModalProps> = ({ isOpen, onClose, currentLevel, totalDreams }) => {
+    // Handle escape key to close modal
+    useEffect(() => {
+        if (!isOpen) return;
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                onClose();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, onClose]);
+
     if (!isOpen) return null;
 
     const levels = Object.entries(LEVEL_TITLES).map(([level, title]) => ({
