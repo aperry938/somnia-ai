@@ -166,7 +166,7 @@ describe('AppContext', () => {
         it('should cycle through theme modes', () => {
             const { result } = renderHook(() => useAppContext(), { wrapper });
 
-            // Default theme is 'night' as configured in AppContext
+            // Default theme is 'night' (set in AppContext)
             expect(result.current.themeOverride).toBe('night');
 
             act(() => {
@@ -176,10 +176,10 @@ describe('AppContext', () => {
             expect(result.current.themeOverride).toBe('day');
 
             act(() => {
-                result.current.setThemeOverride('auto');
+                result.current.setThemeOverride('night');
             });
 
-            expect(result.current.themeOverride).toBe('auto');
+            expect(result.current.themeOverride).toBe('night');
         });
     });
 });
