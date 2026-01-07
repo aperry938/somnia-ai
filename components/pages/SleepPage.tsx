@@ -30,7 +30,7 @@ const DayRating: React.FC<{ rating: number | null; onRate: (rating: number) => v
                     onClick={() => onRate(value)}
                     aria-label={`Rate day ${value} out of 5 - ${DAY_RATING_LABELS[value - 1]}`}
                     aria-pressed={rating === value}
-                    className={`w-10 h-10 rounded-full border transition-colors ${rating === value ? 'bg-day-accent text-white border-day-accent' : 'bg-transparent border-day-border dark:border-night-border'}`}
+                    className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-full border transition-colors flex items-center justify-center ${rating === value ? 'bg-day-accent text-white border-day-accent' : 'bg-transparent border-day-border dark:border-night-border'}`}
                 >
                     {value}
                 </button>
@@ -207,7 +207,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                         <button
                             onClick={onNavigateToAlarms}
                             aria-label="Set an alarm"
-                            className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg transition-colors flex-shrink-0"
+                            className="px-4 py-2 min-h-[44px] bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg transition-colors flex-shrink-0 flex items-center"
                         >
                             Set Alarm
                         </button>
@@ -248,11 +248,11 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                         <WakeWindowViz events={movementLog} />
                     )}
 
-                    <button onClick={() => setIsSleeping(false)} aria-label="Go back to sleep settings" className="mt-4 py-2 px-6 bg-gray-200 dark:bg-gray-700 rounded-full">Back</button>
+                    <button onClick={() => setIsSleeping(false)} aria-label="Go back to sleep settings" className="mt-4 py-3 px-6 min-h-[48px] bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto">Back</button>
                 </div>
             ) : (
                 <div className="max-w-2xl mx-auto space-y-8">
-                    <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl cursor-pointer hover:shadow-xl transition-shadow" onClick={openCoach} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openCoach(); } }} aria-label="Open AI Sleep Coach">
+                    <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl cursor-pointer hover:shadow-xl transition-shadow focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent" onClick={openCoach} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openCoach(); } }} aria-label="Open AI Sleep Coach">
                         <div className="flex items-center gap-4">
                             <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg>
                             <div>
@@ -295,7 +295,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                         const randomIndex = Math.floor(Math.random() * SOUNDSCAPES.length);
                                         openSoundscapeModal(SOUNDSCAPES[randomIndex]);
                                     }}
-                                    className="px-3 py-1 text-sm bg-day-accent/10 dark:bg-night-accent/10 text-day-accent dark:text-night-accent rounded-full hover:bg-day-accent/20 dark:hover:bg-night-accent/20 transition-colors flex items-center gap-1"
+                                    className="px-4 py-2 min-h-[44px] text-sm bg-day-accent/10 dark:bg-night-accent/10 text-day-accent dark:text-night-accent rounded-full hover:bg-day-accent/20 dark:hover:bg-night-accent/20 transition-colors flex items-center gap-1"
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -403,7 +403,8 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                     <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-xl p-4 mt-4">
                         <button
                             onClick={() => setLucidExpanded(!lucidExpanded)}
-                            className="w-full flex items-center justify-between"
+                            aria-expanded={lucidExpanded}
+                            className="w-full flex items-center justify-between min-h-[56px] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-day-accent dark:focus:ring-night-accent rounded-lg"
                         >
                             <div>
                                 <h3 className="font-serif text-lg text-left">Lucid Dreaming</h3>
@@ -426,7 +427,10 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                 <div>
                                     <h4 className="text-sm font-medium mb-2">Tonight's Reality Check</h4>
                                     <div
-                                        className="p-3 bg-day-accent/10 dark:bg-night-accent/10 rounded-lg cursor-pointer hover:bg-day-accent/20 dark:hover:bg-night-accent/20 transition-colors"
+                                        role="button"
+                                        tabIndex={0}
+                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowRealityCheckModal(true); } }}
+                                        className="p-3 min-h-[56px] bg-day-accent/10 dark:bg-night-accent/10 rounded-lg cursor-pointer hover:bg-day-accent/20 dark:hover:bg-night-accent/20 transition-colors focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent"
                                         onClick={() => setShowRealityCheckModal(true)}
                                     >
                                         <p className="font-medium text-day-accent dark:text-night-accent text-sm">{REALITY_CHECKS[new Date().getDay()].check}</p>
@@ -440,7 +444,10 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                         {LUCID_TECHNIQUES.slice(0, 2).map(t => (
                                             <div
                                                 key={t.id}
-                                                className="p-3 bg-white/50 dark:bg-black/20 rounded-lg cursor-pointer hover:bg-white/70 dark:hover:bg-black/30 transition-colors"
+                                                role="button"
+                                                tabIndex={0}
+                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedTechnique(t); } }}
+                                                className="p-3 min-h-[56px] bg-white/50 dark:bg-black/20 rounded-lg cursor-pointer hover:bg-white/70 dark:hover:bg-black/30 transition-colors focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent"
                                                 onClick={() => setSelectedTechnique(t)}
                                             >
                                                 <div className="flex justify-between items-start">
