@@ -53,9 +53,26 @@ const mockAudioContext = {
     destination: {},
 };
 
-// Mock the AudioContext constructor
-vi.stubGlobal('AudioContext', vi.fn(() => mockAudioContext));
-vi.stubGlobal('webkitAudioContext', vi.fn(() => mockAudioContext));
+// Mock the AudioContext constructor - must be a constructor function
+class MockAudioContext {
+    state = 'running';
+    currentTime = 0;
+    sampleRate = 44100;
+    destination = {};
+    resume = vi.fn().mockResolvedValue(undefined);
+    suspend = vi.fn().mockResolvedValue(undefined);
+    createGain = vi.fn(() => mockGainNode);
+    createOscillator = vi.fn(() => mockOscillatorNode);
+    createBufferSource = vi.fn(() => mockBufferSource);
+    createBuffer = vi.fn((channels: number, length: number, sampleRate: number) => ({
+        numberOfChannels: channels,
+        length,
+        sampleRate,
+        getChannelData: vi.fn(() => new Float32Array(length)),
+    }));
+}
+vi.stubGlobal('AudioContext', MockAudioContext);
+vi.stubGlobal('webkitAudioContext', MockAudioContext);
 
 describe('audioService', () => {
     beforeEach(() => {
