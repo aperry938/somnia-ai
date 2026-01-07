@@ -12,7 +12,11 @@ export const getSyncQueue = (): SyncAction[] => {
 };
 
 export const saveSyncQueue = (queue: SyncAction[]) => {
-    localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(queue));
+    try {
+        localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(queue));
+    } catch {
+        // Silently fail if storage unavailable or quota exceeded
+    }
 };
 
 export const enqueueAction = (type: SyncActionType, payload: any) => {

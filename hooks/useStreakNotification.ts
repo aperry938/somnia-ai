@@ -21,16 +21,24 @@ const hasLoggedDreamToday = (dreams: Dream[]): boolean => {
  * Check if we should show a notification (not already shown today)
  */
 const shouldShowNotification = (): boolean => {
-    const lastNotificationDate = localStorage.getItem(LAST_NOTIFICATION_KEY);
-    const today = new Date().toDateString();
-    return lastNotificationDate !== today;
+    try {
+        const lastNotificationDate = localStorage.getItem(LAST_NOTIFICATION_KEY);
+        const today = new Date().toDateString();
+        return lastNotificationDate !== today;
+    } catch {
+        return false; // Don't show notification if storage unavailable
+    }
 };
 
 /**
  * Mark that we've shown a notification today
  */
 const markNotificationShown = (): void => {
-    localStorage.setItem(LAST_NOTIFICATION_KEY, new Date().toDateString());
+    try {
+        localStorage.setItem(LAST_NOTIFICATION_KEY, new Date().toDateString());
+    } catch {
+        // Silently fail if storage unavailable
+    }
 };
 
 export const useStreakNotification = (dreams: Dream[], currentStreak: number) => {
