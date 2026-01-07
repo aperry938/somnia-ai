@@ -314,7 +314,7 @@ const RealityCheckManager = () => {
         <button
             onClick={requestPermission}
             aria-label="Enable Reality Check Notifications"
-            className="fixed bottom-20 left-4 text-xs min-h-[44px] bg-white/10 backdrop-blur px-3 py-2 rounded-lg text-white/50 hover:bg-white/20 transition-all z-50 flex items-center justify-center gap-1"
+            className="fixed bottom-20 left-4 text-xs min-h-[44px] bg-white/20 backdrop-blur px-3 py-2 rounded-lg text-white/90 hover:bg-white/30 transition-all z-50 flex items-center justify-center gap-1"
             title="Enable Reality Check Notifications"
         >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
