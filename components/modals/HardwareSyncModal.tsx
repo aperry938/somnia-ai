@@ -56,16 +56,16 @@ export const HardwareSyncModal: React.FC<HardwareSyncModalProps> = ({ onClose })
                     <h3 className="font-medium text-sm mb-3 text-center">What you'll get:</h3>
                     <ul className="space-y-2 text-sm text-day-text-secondary dark:text-night-text-secondary">
                         <li className="flex items-center gap-2">
-                            <svg className="h-4 w-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                            Automatic sleep stage detection (REM, deep, light)
+                            <svg className="h-4 w-4 text-green-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                            <span>See which sleep stages produce your most vivid dreams</span>
                         </li>
                         <li className="flex items-center gap-2">
-                            <svg className="h-4 w-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                            Heart rate & HRV correlation with dreams
+                            <svg className="h-4 w-4 text-green-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                            <span>Discover how HRV and stress affect dream themes</span>
                         </li>
                         <li className="flex items-center gap-2">
-                            <svg className="h-4 w-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                            Optimal wake window detection
+                            <svg className="h-4 w-4 text-green-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                            <span>Optimize sleep for better dream recall</span>
                         </li>
                     </ul>
                 </div>
