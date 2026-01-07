@@ -39,7 +39,7 @@ export const SkeletonDreamCard: React.FC = () => (
 
 // Analysis loading state with thematic message
 export const AnalysisLoading: React.FC = () => (
-    <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+    <div className="flex flex-col items-center justify-center py-12 px-4 text-center" role="status" aria-label="Analyzing dream content">
         <div className="relative w-20 h-20 mb-6">
             {/* Outer ring */}
             <div className="absolute inset-0 rounded-full border-4 border-day-accent/20 dark:border-night-accent/20" />
@@ -59,7 +59,7 @@ export const AnalysisLoading: React.FC = () => (
 
 // Image generation loading state
 export const ImageGenerationLoading: React.FC = () => (
-    <div className="w-full h-64 rounded-lg bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 dark:from-indigo-900/30 dark:via-purple-900/30 dark:to-pink-900/30 flex flex-col items-center justify-center">
+    <div className="w-full h-64 rounded-lg bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 dark:from-indigo-900/30 dark:via-purple-900/30 dark:to-pink-900/30 flex flex-col items-center justify-center" role="status" aria-label="Generating dream visualization">
         <svg
             className="w-12 h-12 text-day-accent dark:text-night-accent animate-pulse mb-3"
             xmlns="http://www.w3.org/2000/svg"
@@ -99,7 +99,7 @@ export const SkeletonChart: React.FC = () => (
 
 // Full page loading overlay
 export const PageLoading: React.FC<{ message?: string }> = ({ message = 'Loading...' }) => (
-    <div className="fixed inset-0 bg-day-bg-start/80 dark:bg-night-bg-start/80 backdrop-blur-sm flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-day-bg-start/80 dark:bg-night-bg-start/80 backdrop-blur-sm flex items-center justify-center z-50" role="status" aria-live="polite">
         <div className="text-center">
             <svg className="animate-spin h-10 w-10 text-day-accent dark:text-night-accent mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
