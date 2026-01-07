@@ -265,14 +265,43 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                     <div className="w-full h-64 rounded-lg bg-gray-200 dark:bg-gray-700 mb-6 flex items-center justify-center text-day-text-secondary">Image failed to load</div>
                 )}
 
-                <p className="text-day-text-secondary dark:text-night-text-secondary flex items-center gap-2">
+                <p className="text-day-text-secondary dark:text-night-text-secondary flex items-center gap-2 flex-wrap">
                     <span>{date.toLocaleString()}</span>
-                    {dream.mood && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-day-accent/10 dark:bg-night-accent/10 rounded-full text-sm text-day-accent dark:text-night-accent">
-                            {MOOD_ICONS[dream.mood]}
-                            <span>{MOOD_LABELS[dream.mood]}</span>
-                        </span>
-                    )}
+
+                    {/* Editable Sleep Quality */}
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-500/10 dark:bg-amber-400/10 rounded-full text-sm">
+                        <span className="text-amber-600 dark:text-amber-400 text-xs mr-1">Quality:</span>
+                        {[1, 2, 3, 4, 5].map(rating => (
+                            <button
+                                key={rating}
+                                onClick={() => updateDream({ id: dream.id, sleepQuality: rating })}
+                                className={`text-lg transition-colors ${dream.sleepQuality && rating <= dream.sleepQuality
+                                        ? 'text-amber-500'
+                                        : 'text-gray-300 dark:text-gray-600 hover:text-amber-300'
+                                    }`}
+                                title={`Set quality to ${rating}`}
+                            >
+                                ★
+                            </button>
+                        ))}
+                    </span>
+
+                    {/* Editable Mood */}
+                    <span className="relative inline-flex items-center">
+                        <select
+                            value={dream.mood || ''}
+                            onChange={(e) => updateDream({ id: dream.id, mood: e.target.value as DreamMood || undefined })}
+                            className="appearance-none bg-day-accent/10 dark:bg-night-accent/10 text-day-accent dark:text-night-accent text-sm rounded-full pl-3 pr-8 py-0.5 cursor-pointer hover:bg-day-accent/20 dark:hover:bg-night-accent/20 transition-colors border-0 focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent"
+                        >
+                            <option value="">Set mood...</option>
+                            {(['joyful', 'peaceful', 'neutral', 'confused', 'anxious', 'sad', 'fearful'] as DreamMood[]).map(m => (
+                                <option key={m} value={m}>{MOOD_ICONS[m]} {MOOD_LABELS[m]}</option>
+                            ))}
+                        </select>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 absolute right-2 pointer-events-none text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </span>
                 </p>
                 <div className="flex items-center gap-2 mt-2 mb-4">
                     <h2 className="font-serif text-3xl">{dream.title}</h2>

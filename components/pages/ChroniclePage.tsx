@@ -346,6 +346,18 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
                     </div>
                 )}
             </div>
+
+            {/* Floating Action Button - Always visible for manual dream logging */}
+            <button
+                onClick={() => window.dispatchEvent(new CustomEvent('openDreamScribe'))}
+                className="fixed bottom-24 right-6 w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center z-40"
+                title="Log a dream"
+                aria-label="Log a new dream"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+            </button>
         </div>
     );
 };
