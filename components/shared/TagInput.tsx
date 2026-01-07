@@ -54,6 +54,7 @@ export const TagInput: React.FC<TagInputProps> = ({
                         <span>#{tag}</span>
                         <button
                             onClick={() => removeTag(tag)}
+                            aria-label={`Remove tag ${tag}`}
                             className="hover:text-red-500 transition-colors"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
