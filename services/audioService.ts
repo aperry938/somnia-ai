@@ -158,10 +158,8 @@ export const playAlarmBySound = (soundId: string = 'somnia') => {
 
 /**
  * Gentle Rise alarm - very soft gradual wake-up
- */
-/**
- * Gentle Rise alarm - very soft gradual wake-up
  * Matches preview: Sine wave 220Hz with pulsing
+ * Uses upfront scheduling like preview for reliability
  */
 const playGentleAlarm = () => {
     stopSleepSound();
@@ -188,20 +186,15 @@ const playGentleAlarm = () => {
     // Start audible
     alarmGainNode.gain.setValueAtTime(0.1, now);
 
-    // Loop the pulsing effect continuously
-    let i = 0;
-    const pulseLoop = () => {
-        if (!alarmOscillator) return;
-        const cycleStart = context.currentTime;
-        alarmGainNode.gain.linearRampToValueAtTime(0.25, cycleStart + 1);
-        alarmGainNode.gain.linearRampToValueAtTime(0.1, cycleStart + 2);
+    // Schedule pulsing upfront like preview does (more reliable than setTimeout)
+    // Schedule 5 minutes of pulsing (150 cycles)
+    for (let i = 0; i < 150; i++) {
+        alarmGainNode.gain.linearRampToValueAtTime(0.25, now + i * 2 + 1);
+        alarmGainNode.gain.linearRampToValueAtTime(0.1, now + i * 2 + 2);
+    }
 
-        // Loop every 2 seconds
-        setTimeout(pulseLoop, 2000);
-    };
-
-    pulseLoop();
     alarmOscillator.start(now);
+    console.log('[playGentleAlarm] Started with upfront scheduling');
 };
 
 /**
@@ -310,7 +303,7 @@ let proceduralGainNode: GainNode | null = null;
 
 /**
  * PRISM Alarm - Ethereal glass chimes
- * Uses continuous oscillator + scheduled chimes for reliability
+ * Uses upfront scheduling like preview for reliability
  */
 const playPrismAlarm = () => {
     console.log('[playPrismAlarm] Starting Prism alarm');
@@ -320,6 +313,11 @@ const playPrismAlarm = () => {
     if (alarmOscillator) stopAlarmSound();
     cleanupProceduralAlarm();
 
+    // Resume context if suspended
+    if (context.state === 'suspended') {
+        context.resume();
+    }
+
     proceduralGainNode = context.createGain();
     proceduralGainNode.connect(context.destination);
 
@@ -327,35 +325,30 @@ const playPrismAlarm = () => {
     proceduralGainNode.gain.setValueAtTime(0.2, now);
     proceduralGainNode.gain.linearRampToValueAtTime(0.5, now + WAKE_DURATION);
 
-    // Create a CONTINUOUS base oscillator that always plays
+    // Create oscillator
     const baseOsc = context.createOscillator();
     const baseGain = context.createGain();
     baseOsc.type = 'sine';
-    baseOsc.frequency.value = PENTATONIC_SCALE[0]; // Start with first note
     baseGain.gain.setValueAtTime(0.15, now);
     baseOsc.connect(baseGain);
     baseGain.connect(proceduralGainNode);
-    baseOsc.start(now);
-    console.log('[playPrismAlarm] Base oscillator started at freq:', PENTATONIC_SCALE[0]);
 
-    let isPlaying = true;
-
-    // Schedule frequency changes for chime effect
-    function scheduleChimeChange() {
-        if (!isPlaying) return;
-        const newFreq = PENTATONIC_SCALE[Math.floor(Math.random() * PENTATONIC_SCALE.length)];
-        baseOsc.frequency.setValueAtTime(newFreq, context.currentTime);
-        baseGain.gain.setValueAtTime(0.25, context.currentTime);
-        baseGain.gain.exponentialRampToValueAtTime(0.1, context.currentTime + 1.5);
-        setTimeout(scheduleChimeChange, 2000 + Math.random() * 2000);
+    // Schedule chime changes upfront (like preview does) - 5 minutes worth
+    // Each chime is ~2.5 seconds apart on average
+    const prismNotes = PENTATONIC_SCALE;
+    for (let i = 0; i < 120; i++) {
+        const note = prismNotes[i % prismNotes.length];
+        const t = now + i * 2.5;
+        baseOsc.frequency.setValueAtTime(note, t);
+        baseGain.gain.setValueAtTime(0.25, t);
+        baseGain.gain.exponentialRampToValueAtTime(0.1, t + 1.5);
     }
 
-    // Start chime changes after 1 second
-    setTimeout(scheduleChimeChange, 1000);
+    baseOsc.start(now);
+    console.log('[playPrismAlarm] Started with upfront scheduling, 120 chimes');
 
     proceduralAlarmStop = () => {
         console.log('[playPrismAlarm] Stopping Prism alarm');
-        isPlaying = false;
         try { baseOsc.stop(); } catch { }
     };
 };
@@ -412,11 +405,7 @@ const playAetherAlarm = () => {
 
 /**
  * BAMBOO Alarm - Hollow wooden pulse that accelerates
- * Uses continuous oscillator with amplitude modulation for reliability
- */
-/**
- * BAMBOO Alarm - Hollow wooden pulse that accelerates
- * Matches preview: Sine 150Hz with pulse envelope, accelerating
+ * Uses upfront scheduling like preview for reliability
  */
 const playBambooAlarm = () => {
     console.log('[playBambooAlarm] Starting Bamboo alarm');
@@ -436,59 +425,43 @@ const playBambooAlarm = () => {
 
     const now = context.currentTime;
 
-    // EXACT MATCH TO PREVIEW: Sine at 150Hz
     // Create base oscillator
     const osc = context.createOscillator();
     osc.type = 'sine';
     osc.frequency.setValueAtTime(150, now);
 
-    // Use an internal gain node for the pulsing logic so we can modulate it without losing the base connection
+    // Use an internal gain node for the pulsing
     const pulseGain = context.createGain();
     pulseGain.gain.setValueAtTime(0, now);
 
     osc.connect(pulseGain);
     pulseGain.connect(proceduralGainNode);
-    osc.start(now);
 
-    console.log('[playBambooAlarm] Oscillator started');
-
-    let isPlaying = true;
-
-    // Recreate the accelerating pulse loop from preview
-    // Preview: 20 hits, baseBeat += interval, interval *= 0.92
-
-    // We need to loop this continuously
-    let nextNoteTime = now;
+    // Schedule pulses upfront like preview does - 5 minutes worth
+    // Accelerating pattern that resets periodically
+    let baseBeat = 0;
     let interval = 1.0;
+    let pulseCount = 0;
 
-    function scheduleNextPulse() {
-        if (!isPlaying) return;
+    while (baseBeat < 300) { // 5 minutes = 300 seconds
+        pulseGain.gain.setValueAtTime(0.3, now + baseBeat);
+        osc.frequency.setValueAtTime(300, now + baseBeat);
+        pulseGain.gain.exponentialRampToValueAtTime(0.01, now + baseBeat + 0.15);
+        osc.frequency.exponentialRampToValueAtTime(150, now + baseBeat + 0.15);
 
-        // Schedule pulses up to 2 seconds ahead
-        while (nextNoteTime < context.currentTime + 2.0) {
-            // Pulse envelope: Gain 0.3 -> exp ramp to 0.01 over 0.15s
-            // Also modulate frequency slightly: 300->150 (ping)
-            pulseGain.gain.setValueAtTime(0.3, nextNoteTime);
-            osc.frequency.setValueAtTime(300, nextNoteTime);
+        baseBeat += interval;
+        interval = Math.max(0.4, interval * 0.92);
 
-            pulseGain.gain.exponentialRampToValueAtTime(0.01, nextNoteTime + 0.15);
-            osc.frequency.exponentialRampToValueAtTime(150, nextNoteTime + 0.15);
-
-            nextNoteTime += interval;
-            interval = Math.max(0.4, interval * 0.92); // Accelerate
-
-            // Reset acceleration periodically to create a "wave" of rhythmic intensity
-            if (interval <= 0.4) interval = 1.0;
-        }
-
-        setTimeout(scheduleNextPulse, 1000);
+        // Reset acceleration every ~20 pulses to create waves
+        if (interval <= 0.4) interval = 1.0;
+        pulseCount++;
     }
 
-    scheduleNextPulse();
+    osc.start(now);
+    console.log('[playBambooAlarm] Started with upfront scheduling,', pulseCount, 'pulses');
 
     proceduralAlarmStop = () => {
         console.log('[playBambooAlarm] Stopping Bamboo alarm');
-        isPlaying = false;
         try { osc.stop(); } catch { }
     };
 };
@@ -534,7 +507,6 @@ const cleanupProceduralAlarm = () => {
  */
 export const stopAlarmSound = () => {
     console.log('[stopAlarmSound] Called at', new Date().toISOString());
-    console.trace('[stopAlarmSound] Call stack');
 
     // Stop regular oscillator-based alarms
     if (alarmGainNode && alarmOscillator && audioContext) {
