@@ -189,7 +189,20 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
 
     return (
         <>
-            <h1 className="font-serif page-title text-4xl text-center mb-8">Sleep Gateway</h1>
+            {/* Header with Sync Wearable Button */}
+            <div className="relative max-w-2xl mx-auto mb-8">
+                <h1 className="font-serif page-title text-4xl text-center">Sleep Gateway</h1>
+                <button
+                    onClick={() => setActiveModal('sync')}
+                    className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 hover:from-indigo-500/30 hover:to-purple-500/30 border border-indigo-400/30 rounded-full text-sm text-indigo-300 transition-all"
+                    title="Sync Wearable (Coming Soon)"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span className="hidden sm:inline">Sync</span>
+                </button>
+            </div>
 
             {/* No Alarm Set Banner */}
             {!hasActiveAlarm && !isSleeping && (
@@ -364,14 +377,6 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                         </div>
                     </div>
 
-                    {/* Sync Wearable Accent - Coming Soon */}
-                    <div className="flex items-center justify-center gap-2 py-3 text-sm text-indigo-400 dark:text-indigo-300 opacity-70">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span>Wearable sync coming soon — Apple Watch, Fitbit & more</span>
-                    </div>
-
                     {/* Sleep Quality Prediction */}
                     {prediction && (
                         <div className="bg-gradient-to-r from-indigo-900/40 to-purple-900/40 border border-indigo-500/30 p-4 rounded-xl mb-4 animate-fadeIn">
@@ -501,6 +506,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                     />
                 )
             }
+            {activeModal === 'sync' && <HardwareSyncModal onClose={closeModal} />}
             <TechniqueInfoModal
                 technique={selectedTechnique}
                 onClose={() => setSelectedTechnique(null)}
