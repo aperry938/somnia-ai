@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { SleepQualityRating } from '../shared/SleepQualityRating';
 import { DreamMood } from '../../types';
-import { playAlertnessBoost, stopAlertnessBoost } from '../../services/audioService';
+import { playAlertnessBoost, stopAlertnessBoost, setAlertnessVolume } from '../../services/audioService';
 import haptics from '../../services/hapticsService';
 import { MOOD_ICONS, MOOD_LABELS } from '../../constants/uiIcons';
 import { validateDreamText, containsScriptInjection } from '../../services/validationService';
@@ -24,6 +24,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
     const [mood, setMood] = useState<DreamMood | null>(null);
     const [boostActive, setBoostActive] = useState(false);
     const [boostTimer, setBoostTimer] = useState(0);
+    const [boostVolume, setBoostVolume] = useState(0.25);
     const savedDataRef = useRef<{ text: string; quality: number | null; mood?: DreamMood } | null>(null);
     const dreamSavedRef = useRef(false);
 
@@ -78,9 +79,17 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
             setBoostTimer(0);
         } else {
             // 12Hz beta waves for alertness
-            playAlertnessBoost();
+            playAlertnessBoost(boostVolume);
             setBoostActive(true);
             setBoostTimer(0);
+        }
+    };
+
+    const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newVolume = parseFloat(e.target.value);
+        setBoostVolume(newVolume);
+        if (boostActive) {
+            setAlertnessVolume(newVolume);
         }
     };
 
@@ -256,6 +265,24 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                         {formatTimer(boostTimer)}
                     </p>
                 )}
+
+                {/* Volume Slider */}
+                <div className="mt-4 px-2">
+                    <div className="flex justify-between text-xs text-white/50 mb-1">
+                        <span>Volume</span>
+                        <span>{Math.round(boostVolume * 100)}%</span>
+                    </div>
+                    <input
+                        type="range"
+                        min="0.05"
+                        max="1"
+                        step="0.05"
+                        value={boostVolume}
+                        onChange={handleVolumeChange}
+                        className="w-full h-2 bg-white/20 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-400"
+                        aria-label="Boost volume"
+                    />
+                </div>
             </div>
 
             {/* Start My Day button - goes to homepage */}
