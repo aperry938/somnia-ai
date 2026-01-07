@@ -290,7 +290,7 @@ const ALARM_SOUNDS = [
     { id: 'classic', name: 'Classic', description: 'Traditional alarm beeps' },
     { id: 'aether', name: 'Aether', description: 'Cinematic sunrise drone' },
     { id: 'somnia', name: 'Somnia', description: 'Very slow crescendo tone' },
-    { id: 'gentle', name: 'Gentle Rise', description: 'Soft pulsing wake-up' },
+    { id: 'gentle', name: 'Gentle', description: 'Soft pulsing wake-up' },
     { id: 'prism', name: 'Prism', description: 'Ethereal glass chimes' },
     { id: 'bamboo', name: 'Bamboo', description: 'Hollow wood pulse' },
 ];
