@@ -79,7 +79,7 @@ const AccordionItem: React.FC<{ title: string; content: string; isOpenDefault?: 
     return (
         <div className="border-b border-day-border dark:border-night-border">
             <button
-                className="w-full flex justify-between items-center py-4 text-left font-serif text-xl"
+                className="w-full flex justify-between items-center py-4 min-h-[56px] text-left font-serif text-xl focus:outline-none focus:ring-2 focus:ring-inset focus:ring-day-accent dark:focus:ring-night-accent"
                 onClick={() => setIsOpen(!isOpen)}
                 aria-expanded={isOpen}
                 aria-controls={contentId}
@@ -179,9 +179,9 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
         <>
             <div className="max-w-2xl mx-auto">
                 <div className="flex justify-between items-center mb-6">
-                    <button onClick={onBack} aria-label="Back to Chronicle" className="text-day-accent dark:text-night-accent">&larr; Back to Chronicle</button>
-                    <div className="flex gap-3">
-                        <button onClick={() => setIsEditing(!isEditing)} aria-label={isEditing ? 'Cancel editing' : 'Edit dream'} className="text-sm text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent">
+                    <button onClick={onBack} aria-label="Back to Chronicle" className="min-h-[44px] px-3 py-2 text-day-accent dark:text-night-accent flex items-center">&larr; Back to Chronicle</button>
+                    <div className="flex gap-1">
+                        <button onClick={() => setIsEditing(!isEditing)} aria-label={isEditing ? 'Cancel editing' : 'Edit dream'} className="min-h-[44px] min-w-[44px] px-3 py-2 text-sm text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent flex items-center">
                             {isEditing ? 'Cancel' : 'Edit'}
                         </button>
                         <button
@@ -202,7 +202,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                                 }
                             }}
                             aria-label="Share dream"
-                            className="text-sm text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent flex items-center gap-1"
+                            className="min-h-[44px] min-w-[44px] px-3 py-2 text-sm text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent flex items-center gap-1"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
@@ -218,7 +218,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                                 }
                             }}
                             aria-label="Delete dream"
-                            className="text-sm text-red-500 hover:text-red-700"
+                            className="min-h-[44px] min-w-[44px] px-3 py-2 text-sm text-red-500 hover:text-red-700 flex items-center"
                         >
                             Delete
                         </button>
@@ -241,7 +241,8 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                                 <button
                                     key={style}
                                     onClick={() => setSelectedArtStyle(style)}
-                                    className={`px-3 py-1.5 rounded-full text-sm transition-colors ${selectedArtStyle === style
+                                    aria-pressed={selectedArtStyle === style}
+                                    className={`px-4 py-2 min-h-[44px] rounded-full text-sm transition-colors flex items-center ${selectedArtStyle === style
                                         ? 'bg-day-accent dark:bg-night-accent text-white'
                                         : 'bg-white/50 dark:bg-black/20 hover:bg-white/70 dark:hover:bg-black/30'
                                         }`}
@@ -256,7 +257,8 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                                 <button
                                     key={p}
                                     onClick={() => setAnalysisPersonality(p)}
-                                    className={`px-3 py-1.5 rounded-full text-sm transition-colors ${analysisPersonality === p
+                                    aria-pressed={analysisPersonality === p}
+                                    className={`px-4 py-2 min-h-[44px] rounded-full text-sm transition-colors flex items-center ${analysisPersonality === p
                                         ? 'bg-indigo-500 dark:bg-indigo-600 text-white'
                                         : 'bg-white/50 dark:bg-black/20 hover:bg-white/70 dark:hover:bg-black/30'
                                         }`}
@@ -280,7 +282,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                             <button
                                 key={rating}
                                 onClick={() => updateDream({ id: dream.id, sleepQuality: rating })}
-                                className={`text-lg transition-colors ${dream.sleepQuality && rating <= dream.sleepQuality
+                                className={`text-xl p-1 min-w-[32px] min-h-[32px] transition-colors ${dream.sleepQuality && rating <= dream.sleepQuality
                                         ? 'text-amber-500'
                                         : 'text-gray-300 dark:text-gray-600 hover:text-amber-300'
                                     }`}
@@ -299,7 +301,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                             value={dream.mood || ''}
                             onChange={(e) => updateDream({ id: dream.id, mood: e.target.value as DreamMood || undefined })}
                             aria-label="Dream mood"
-                            className="appearance-none bg-day-accent/10 dark:bg-night-accent/10 text-day-accent dark:text-night-accent text-sm rounded-full pl-3 pr-8 py-0.5 cursor-pointer hover:bg-day-accent/20 dark:hover:bg-night-accent/20 transition-colors border-0 focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent"
+                            className="appearance-none bg-day-accent/10 dark:bg-night-accent/10 text-day-accent dark:text-night-accent text-base min-h-[44px] rounded-full pl-4 pr-10 py-2 cursor-pointer hover:bg-day-accent/20 dark:hover:bg-night-accent/20 transition-colors border-0 focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent"
                         >
                             <option value="">Set mood...</option>
                             {(['joyful', 'peaceful', 'neutral', 'confused', 'anxious', 'sad', 'fearful'] as DreamMood[]).map(m => (
@@ -327,7 +329,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                             }
                         }}
                         disabled={isRegeneratingTitle}
-                        className="text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent transition-colors disabled:opacity-50"
+                        className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent transition-colors disabled:opacity-50"
                         title="Regenerate title with AI"
                         aria-label="Regenerate title with AI"
                     >
@@ -352,7 +354,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                             {isSupported && (
                                 <button
                                     onClick={isListening ? stopListening : startListening}
-                                    className={`absolute top-3 right-3 p-2 rounded-full transition-colors ${isListening ? 'text-red-500 bg-red-100 dark:bg-red-900/30' : 'text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                    className={`absolute top-2 right-2 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full transition-colors ${isListening ? 'text-red-500 bg-red-100 dark:bg-red-900/30' : 'text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent hover:bg-black/5 dark:hover:bg-white/5'}`}
                                     title={isListening ? "Stop recording" : "Dictate dream"}
                                     aria-label={isListening ? "Stop recording" : "Dictate dream"}
                                     aria-pressed={isListening}
@@ -369,7 +371,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                                 </button>
                             )}
                         </div>
-                        <button onClick={handleSaveEdit} aria-label="Save changes" className="mt-2 px-4 py-2 bg-day-accent text-white rounded-full">Save Changes</button>
+                        <button onClick={handleSaveEdit} aria-label="Save changes" className="mt-2 px-6 py-3 min-h-[48px] bg-day-accent text-white rounded-full flex items-center justify-center">Save Changes</button>
                     </div>
                 ) : (
                     <>
@@ -458,7 +460,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                     {analysisState === 'error' && (
                         <div className="text-center">
                             <p className="text-red-500">Sorry, the analysis could not be completed.</p>
-                            <button onClick={handleRetry} aria-label="Retry dream analysis" className="mt-2 px-4 py-2 bg-day-accent text-white rounded-full">
+                            <button onClick={handleRetry} aria-label="Retry dream analysis" className="mt-2 px-6 py-3 min-h-[48px] bg-day-accent text-white rounded-full flex items-center justify-center">
                                 Retry Analysis
                             </button>
                         </div>
