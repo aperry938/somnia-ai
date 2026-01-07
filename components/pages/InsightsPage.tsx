@@ -123,7 +123,7 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                         onClick={() => setActiveTab('dreams')}
                         aria-pressed={activeTab === 'dreams'}
                         aria-label="My Dreams tab"
-                        className={`flex-1 py-2.5 px-4 rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
+                        className={`flex-1 py-3 px-4 min-h-[48px] rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
                             activeTab === 'dreams'
                                 ? 'bg-day-accent dark:bg-night-accent text-white shadow-lg'
                                 : 'text-day-text-secondary dark:text-night-text-secondary hover:bg-white/10 dark:hover:bg-black/10'
@@ -138,7 +138,7 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                         onClick={() => setActiveTab('analysis')}
                         aria-pressed={activeTab === 'analysis'}
                         aria-label="Analysis tab"
-                        className={`flex-1 py-2.5 px-4 rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
+                        className={`flex-1 py-3 px-4 min-h-[48px] rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
                             activeTab === 'analysis'
                                 ? 'bg-day-accent dark:bg-night-accent text-white shadow-lg'
                                 : 'text-day-text-secondary dark:text-night-text-secondary hover:bg-white/10 dark:hover:bg-black/10'
@@ -273,7 +273,7 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                                             <p className="text-sm text-day-text-secondary dark:text-night-text-secondary">{item.description}</p>
                                             <div className="flex flex-wrap gap-2 mt-2">
                                                 {item.exampleDreamIds.map(id => (
-                                                    <button onClick={() => onDreamSelect(id)} key={id} className="text-xs px-2 py-1 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-md">
+                                                    <button onClick={() => onDreamSelect(id)} key={id} className="text-xs px-3 py-2 min-h-[36px] bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-md flex items-center">
                                                         Dream #{id}
                                                     </button>
                                                 ))}
@@ -284,11 +284,11 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                             ) : dreamSynthError ? (
                                 <div className="text-center">
                                     <p className="text-red-500 py-4">{dreamSynthError}</p>
-                                    <button onClick={handleSynthesizeDreams} aria-label="Retry dream synthesis" className="px-4 py-1 bg-red-500 text-white text-sm rounded-full">Retry</button>
+                                    <button onClick={handleSynthesizeDreams} aria-label="Retry dream synthesis" className="px-6 py-3 min-h-[48px] bg-red-500 text-white text-sm rounded-full flex items-center justify-center mx-auto">Retry</button>
                                 </div>
                             ) : (
                                 <PremiumBadge feature="dream_synthesis" className="w-full">
-                                    <button onClick={handleSynthesizeDreams} disabled={isDreamSynthLoading || dreams.length < 3} className="w-full py-2 bg-day-accent dark:bg-night-accent text-white font-bold rounded-full disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <button onClick={handleSynthesizeDreams} disabled={isDreamSynthLoading || dreams.length < 3} className="w-full py-3 min-h-[48px] bg-day-accent dark:bg-night-accent text-white font-bold rounded-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
                                         {isDreamSynthLoading ? 'Analyzing...' : 'Synthesize Dream Themes'}
                                     </button>
                                 </PremiumBadge>
@@ -319,11 +319,11 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                             ) : habitError ? (
                                 <div className="text-center">
                                     <p className="text-red-500 py-4">{habitError}</p>
-                                    <button onClick={handleAnalyzeHabits} aria-label="Retry sleep habit analysis" className="px-4 py-1 bg-red-500 text-white text-sm rounded-full">Retry</button>
+                                    <button onClick={handleAnalyzeHabits} aria-label="Retry sleep habit analysis" className="px-6 py-3 min-h-[48px] bg-red-500 text-white text-sm rounded-full flex items-center justify-center mx-auto">Retry</button>
                                 </div>
                             ) : (
                                 <PremiumBadge feature="sleep_habits" className="w-full">
-                                    <button onClick={handleAnalyzeHabits} disabled={isHabitLoading || dreams.filter(d => d.sleepQuality).length < 3} className="w-full py-2 bg-day-accent dark:bg-night-accent text-white font-bold rounded-full disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <button onClick={handleAnalyzeHabits} disabled={isHabitLoading || dreams.filter(d => d.sleepQuality).length < 3} className="w-full py-3 min-h-[48px] bg-day-accent dark:bg-night-accent text-white font-bold rounded-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
                                         {isHabitLoading ? 'Analyzing...' : 'Analyze Sleep Habits'}
                                     </button>
                                 </PremiumBadge>
@@ -353,7 +353,7 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                         <p className="text-xs text-day-accent dark:text-night-accent mb-4">
                             Apple Watch, Fitbit, Garmin & more
                         </p>
-                        <button onClick={() => setIsSyncOpen(false)} className="w-full py-2 bg-day-accent dark:bg-night-accent text-white font-bold rounded-full">
+                        <button onClick={() => setIsSyncOpen(false)} className="w-full py-3 min-h-[48px] bg-day-accent dark:bg-night-accent text-white font-bold rounded-full flex items-center justify-center">
                             Got It
                         </button>
                     </div>
