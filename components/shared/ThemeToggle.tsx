@@ -8,7 +8,7 @@ export const ThemeToggle: React.FC = () => {
 
     const getThemeLabel = (theme: string) => {
         switch (theme) {
-            case 'auto': return 'Auto';
+            case 'auto': return 'Circadian';
             case 'day': return 'Day';
             case 'night': return 'Night';
             default: return '';
