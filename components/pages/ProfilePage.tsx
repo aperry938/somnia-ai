@@ -8,6 +8,8 @@ import { calculateUserStats } from '../../services/userStatsService';
 import { useClock } from '../../hooks/useClock';
 import { isPremium, getRemainingCredits, getCredits, createCustomerPortalSession, isDevMode } from '../../services/secureSubscriptionService';
 import { SecurePaywallModal } from '../modals/SecurePaywallModal';
+import { LevelGuideModal } from '../modals/LevelGuideModal';
+import { getLevelTitle } from '../../constants/gamification';
 
 const FREE_TIER_MAX_CREDITS = 3; // Same as in secureSubscriptionService
 const APP_VERSION = '1.0.0';
@@ -321,11 +323,10 @@ const ThemePreferenceCard: React.FC = () => {
                         onClick={() => setThemeOverride(opt.value)}
                         aria-pressed={themeOverride === opt.value}
                         aria-label={`${opt.label} theme`}
-                        className={`p-3 min-h-[64px] rounded-lg border-2 transition-all flex flex-col items-center justify-center ${
-                            themeOverride === opt.value
+                        className={`p-3 min-h-[64px] rounded-lg border-2 transition-all flex flex-col items-center justify-center ${themeOverride === opt.value
                                 ? 'border-day-accent dark:border-night-accent bg-day-accent/10 dark:bg-night-accent/10 text-day-accent dark:text-night-accent'
                                 : 'border-day-border dark:border-night-border hover:border-day-accent/50 dark:hover:border-night-accent/50 text-day-text-secondary dark:text-night-text-secondary'
-                        }`}
+                            }`}
                     >
                         <div className="mb-1" aria-hidden="true">{themeIcons[opt.value]}</div>
                         <p className="text-sm font-medium">{opt.label}</p>
@@ -375,11 +376,10 @@ const ArtStyleCard: React.FC = () => {
                         onClick={() => setArtStyle(style.value)}
                         aria-pressed={artStyle === style.value}
                         aria-label={`${style.label} art style`}
-                        className={`p-3 min-h-[60px] rounded-lg border-2 transition-all flex flex-col items-center justify-center ${
-                            artStyle === style.value
+                        className={`p-3 min-h-[60px] rounded-lg border-2 transition-all flex flex-col items-center justify-center ${artStyle === style.value
                                 ? 'border-day-accent dark:border-night-accent bg-day-accent/10 dark:bg-night-accent/10 text-day-accent dark:text-night-accent'
                                 : 'border-day-border dark:border-night-border hover:border-day-accent/50 dark:hover:border-night-accent/50 text-day-text-secondary dark:text-night-text-secondary'
-                        }`}
+                            }`}
                     >
                         <div className="mb-1" aria-hidden="true">{artStyleIcons[style.value]}</div>
                         <p className="text-sm font-medium truncate">{style.label}</p>
@@ -437,15 +437,13 @@ const NotificationsCard: React.FC = () => {
                             role="switch"
                             aria-checked={settings[item.key]}
                             aria-label={`Toggle ${item.label}`}
-                            className={`w-14 h-8 min-h-[44px] rounded-full transition-colors relative flex items-center ${
-                                settings[item.key]
+                            className={`w-14 h-8 min-h-[44px] rounded-full transition-colors relative flex items-center ${settings[item.key]
                                     ? 'bg-day-accent dark:bg-night-accent'
                                     : 'bg-gray-300 dark:bg-gray-600'
-                            }`}
+                                }`}
                         >
-                            <div className={`absolute w-6 h-6 rounded-full bg-white transition-transform shadow ${
-                                settings[item.key] ? 'translate-x-7' : 'translate-x-1'
-                            }`} />
+                            <div className={`absolute w-6 h-6 rounded-full bg-white transition-transform shadow ${settings[item.key] ? 'translate-x-7' : 'translate-x-1'
+                                }`} />
                         </button>
                     </div>
                 ))}
@@ -692,18 +690,11 @@ export const ProfilePage: React.FC<{ onBack?: () => void; onNavigateTo?: (page: 
     const { showToast } = useToast();
     const stats = useMemo(() => calculateUserStats(dreams), [dreams]);
     const [versionTapCount, setVersionTapCount] = useState(0);
+    const [showLevelModal, setShowLevelModal] = useState(false);
     const [adminUnlocked, setAdminUnlocked] = useState(() => {
         return localStorage.getItem('somnia_admin_unlocked') === 'true' || isDevMode();
     });
     const tapTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    const getLevelTitle = (level: number): string => {
-        const titles = [
-            'Dreamer', 'Novice', 'Apprentice', 'Journeyer', 'Explorer',
-            'Seeker', 'Mystic', 'Sage', 'Oneironaut', 'Dream Master',
-        ];
-        return titles[Math.min(level - 1, titles.length - 1)];
-    };
 
     const handleVersionTap = () => {
         // Clear previous timeout
@@ -739,9 +730,12 @@ export const ProfilePage: React.FC<{ onBack?: () => void; onNavigateTo?: (page: 
                     </svg>
                 </div>
                 <h1 className="font-serif text-3xl mb-1">Profile</h1>
-                <p className="text-day-text-secondary dark:text-night-text-secondary">
+                <button
+                    onClick={() => setShowLevelModal(true)}
+                    className="text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent transition-colors"
+                >
                     Level {stats.level} {getLevelTitle(stats.level)}
-                </p>
+                </button>
             </div>
 
             {/* Stats Card */}
@@ -817,6 +811,13 @@ export const ProfilePage: React.FC<{ onBack?: () => void; onNavigateTo?: (page: 
                     </button>
                 </div>
             </div>
+
+            <LevelGuideModal
+                isOpen={showLevelModal}
+                onClose={() => setShowLevelModal(false)}
+                currentLevel={stats.level}
+                totalDreams={stats.totalDreams}
+            />
         </div>
     );
 };
