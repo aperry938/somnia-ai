@@ -1,93 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { Dream } from '../../types';
-
-// Emotion insights
-import { FearDreams } from './FearDreams';
-import { SuccessDreams } from './SuccessDreams';
-import { RomanticDreams } from './RomanticDreams';
-import { PeacefulDreams } from './PeacefulDreams';
-import { ConflictDreams } from './ConflictDreams';
-import { AnxietyDreams } from './AnxietyDreams';
-import { HopeDreams } from './HopeDreams';
-import { SadnessDreams } from './SadnessDreams';
-import { JoyDreams } from './JoyDreams';
-import { AngerDreams } from './AngerDreams';
-import { ConfusionDreams } from './ConfusionDreams';
-import { MoodTracker } from './MoodTracker';
-
-// Theme insights
-import { AdventureDreams } from './AdventureDreams';
-import { MysteryDreams } from './MysteryDreams';
-import { NatureDreams } from './NatureDreams';
-import { TechnologyDreams } from './TechnologyDreams';
-import { WorkDreams } from './WorkDreams';
-import { SchoolDreams } from './SchoolDreams';
-import { PowerDreams } from './PowerDreams';
-import { TransformationDreams } from './TransformationDreams';
-import { SpiritualDreams } from './SpiritualDreams';
-import { CreativityDreams } from './CreativityDreams';
-import { MoneyDreams } from './MoneyDreams';
-import { HealthDreams } from './HealthDreams';
-import { ChildhoodDreams } from './ChildhoodDreams';
-import { DeathDreams } from './DeathDreams';
-import { TimeTravelDreams } from './TimeTravelDreams';
-
-// People insights
-import { FamilyDreams } from './FamilyDreams';
-import { FriendDreams } from './FriendDreams';
-import { StrangerDreams } from './StrangerDreams';
-import { CelebrityDreams } from './CelebrityDreams';
-import { SocialDreams } from './SocialDreams';
-
-// Content insights
-import { AnimalDreams } from './AnimalDreams';
-import { VehicleDreams } from './VehicleDreams';
-import { FoodDreams } from './FoodDreams';
-import { MusicDreams } from './MusicDreams';
-import { DreamColorAnalysis } from './DreamColorAnalysis';
-
-// Linguistic insights
-import { SentenceComplexity } from './SentenceComplexity';
-import { QuestionCount } from './QuestionCount';
-import { DialogueCount } from './DialogueCount';
-import { FirstPersonCount } from './FirstPersonCount';
-import { PastVsPresentTense } from './PastVsPresentTense';
-import { NegationCount } from './NegationCount';
-import { ExclamationIntensity } from './ExclamationIntensity';
-import { UniqueWords } from './UniqueWords';
-import { TitleAnalysis } from './TitleAnalysis';
-
-// Setting insights
-import { IndoorVsOutdoor } from './IndoorVsOutdoor';
-import { PeopleVsPlaces } from './PeopleVsPlaces';
-import { ControlVsChaos } from './ControlVsChaos';
-import { DayVsNightDreams } from './DayVsNightDreams';
-
-// Temporal insights
-import { MoonPhaseInsight } from './MoonPhaseInsight';
-import { SeasonalPattern } from './SeasonalPattern';
-import { DayOfWeekAnalysis } from './DayOfWeekAnalysis';
-import { WeekdayVsWeekend } from './WeekdayVsWeekend';
-import { JournalingGaps } from './JournalingGaps';
-import { DreamLengthTrend } from './DreamLengthTrend';
-
-// Stats insights
-import { AvgSleepQuality } from './AvgSleepQuality';
-import { AchievementsUnlocked } from './AchievementsUnlocked';
-import { AIDependency } from './AIDependency';
-import { DreamGrowth } from './DreamGrowth';
-import { RecentDreamSummary } from './RecentDreamSummary';
-import { TopTags } from './TopTags';
-import { SleepQualityVsDreams } from './SleepQualityVsDreams';
-import { LongestShortestDream } from './LongestShortestDream';
-import { FirstDreamLastDream } from './FirstDreamLastDream';
-import { PositiveNegativeRatio } from './PositiveNegativeRatio';
-import { DreamConsistency } from './DreamConsistency';
-import { AverageRecallTime } from './AverageRecallTime';
 
 interface InsightsGridProps {
     dreams: Dream[];
 }
+
+interface TabPanelProps {
+    dreams: Dream[];
+}
+
+// Loading fallback for lazy-loaded tab content
+const TabLoading: React.FC = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {[1, 2, 3, 4, 5, 6].map(i => (
+            <div
+                key={i}
+                className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-xl p-4 animate-pulse"
+            >
+                <div className="h-4 bg-day-border dark:bg-night-border rounded w-3/4 mb-3" />
+                <div className="h-20 bg-day-border dark:bg-night-border rounded" />
+            </div>
+        ))}
+    </div>
+);
+
+// Lazy-loaded tab content components
+const QuickStatsTab = lazy(() => import('./tabs/QuickStatsTab'));
+const EmotionsTab = lazy(() => import('./tabs/EmotionsTab'));
+const ThemesTab = lazy(() => import('./tabs/ThemesTab'));
+const PeopleTab = lazy(() => import('./tabs/PeopleTab'));
+const ContentTab = lazy(() => import('./tabs/ContentTab'));
+const LinguisticsTab = lazy(() => import('./tabs/LinguisticsTab'));
+const SettingsTab = lazy(() => import('./tabs/SettingsTab'));
+const TemporalTab = lazy(() => import('./tabs/TemporalTab'));
 
 const TABS = ['Quick Stats', 'Emotions', 'Themes', 'People', 'Content', 'Linguistics', 'Settings', 'Temporal'] as const;
 
@@ -101,6 +46,31 @@ export const InsightsGrid: React.FC<InsightsGridProps> = ({ dreams }) => {
             </div>
         );
     }
+
+    const renderTabContent = () => {
+        const props: TabPanelProps = { dreams };
+
+        switch (activeTab) {
+            case 'Quick Stats':
+                return <QuickStatsTab {...props} />;
+            case 'Emotions':
+                return <EmotionsTab {...props} />;
+            case 'Themes':
+                return <ThemesTab {...props} />;
+            case 'People':
+                return <PeopleTab {...props} />;
+            case 'Content':
+                return <ContentTab {...props} />;
+            case 'Linguistics':
+                return <LinguisticsTab {...props} />;
+            case 'Settings':
+                return <SettingsTab {...props} />;
+            case 'Temporal':
+                return <TemporalTab {...props} />;
+            default:
+                return null;
+        }
+    };
 
     return (
         <div className="space-y-4">
@@ -130,113 +100,9 @@ export const InsightsGrid: React.FC<InsightsGridProps> = ({ dreams }) => {
                 aria-label={`${activeTab} insights`}
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
             >
-                {activeTab === 'Quick Stats' && (
-                    <>
-                        <RecentDreamSummary dreams={dreams} />
-                        <AvgSleepQuality dreams={dreams} />
-                        <DreamGrowth dreams={dreams} />
-                        <AchievementsUnlocked dreams={dreams} />
-                        <TopTags dreams={dreams} />
-                        <DreamConsistency dreams={dreams} />
-                        <AIDependency dreams={dreams} />
-                        <LongestShortestDream dreams={dreams} />
-                        <FirstDreamLastDream dreams={dreams} />
-                        <SleepQualityVsDreams dreams={dreams} />
-                        <PositiveNegativeRatio dreams={dreams} />
-                        <AverageRecallTime dreams={dreams} />
-                    </>
-                )}
-
-                {activeTab === 'Emotions' && (
-                    <>
-                        <MoodTracker dreams={dreams} />
-                        <JoyDreams dreams={dreams} />
-                        <FearDreams dreams={dreams} />
-                        <AngerDreams dreams={dreams} />
-                        <SadnessDreams dreams={dreams} />
-                        <AnxietyDreams dreams={dreams} />
-                        <HopeDreams dreams={dreams} />
-                        <PeacefulDreams dreams={dreams} />
-                        <ConfusionDreams dreams={dreams} />
-                        <SuccessDreams dreams={dreams} />
-                        <ConflictDreams dreams={dreams} />
-                        <RomanticDreams dreams={dreams} />
-                    </>
-                )}
-
-                {activeTab === 'Themes' && (
-                    <>
-                        <AdventureDreams dreams={dreams} />
-                        <MysteryDreams dreams={dreams} />
-                        <NatureDreams dreams={dreams} />
-                        <TechnologyDreams dreams={dreams} />
-                        <WorkDreams dreams={dreams} />
-                        <SchoolDreams dreams={dreams} />
-                        <PowerDreams dreams={dreams} />
-                        <TransformationDreams dreams={dreams} />
-                        <SpiritualDreams dreams={dreams} />
-                        <CreativityDreams dreams={dreams} />
-                        <MoneyDreams dreams={dreams} />
-                        <HealthDreams dreams={dreams} />
-                        <ChildhoodDreams dreams={dreams} />
-                        <DeathDreams dreams={dreams} />
-                        <TimeTravelDreams dreams={dreams} />
-                    </>
-                )}
-
-                {activeTab === 'People' && (
-                    <>
-                        <FamilyDreams dreams={dreams} />
-                        <FriendDreams dreams={dreams} />
-                        <StrangerDreams dreams={dreams} />
-                        <CelebrityDreams dreams={dreams} />
-                        <SocialDreams dreams={dreams} />
-                    </>
-                )}
-
-                {activeTab === 'Content' && (
-                    <>
-                        <AnimalDreams dreams={dreams} />
-                        <VehicleDreams dreams={dreams} />
-                        <FoodDreams dreams={dreams} />
-                        <MusicDreams dreams={dreams} />
-                        <DreamColorAnalysis dreams={dreams} />
-                    </>
-                )}
-
-                {activeTab === 'Linguistics' && (
-                    <>
-                        <UniqueWords dreams={dreams} />
-                        <SentenceComplexity dreams={dreams} />
-                        <QuestionCount dreams={dreams} />
-                        <DialogueCount dreams={dreams} />
-                        <FirstPersonCount dreams={dreams} />
-                        <PastVsPresentTense dreams={dreams} />
-                        <NegationCount dreams={dreams} />
-                        <ExclamationIntensity dreams={dreams} />
-                        <TitleAnalysis dreams={dreams} />
-                    </>
-                )}
-
-                {activeTab === 'Settings' && (
-                    <>
-                        <IndoorVsOutdoor dreams={dreams} />
-                        <PeopleVsPlaces dreams={dreams} />
-                        <ControlVsChaos dreams={dreams} />
-                        <DayVsNightDreams dreams={dreams} />
-                    </>
-                )}
-
-                {activeTab === 'Temporal' && (
-                    <>
-                        <MoonPhaseInsight dreams={dreams} />
-                        <SeasonalPattern dreams={dreams} />
-                        <DayOfWeekAnalysis dreams={dreams} />
-                        <WeekdayVsWeekend dreams={dreams} />
-                        <JournalingGaps dreams={dreams} />
-                        <DreamLengthTrend dreams={dreams} />
-                    </>
-                )}
+                <Suspense fallback={<TabLoading />}>
+                    {renderTabContent()}
+                </Suspense>
             </div>
         </div>
     );
