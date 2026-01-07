@@ -456,8 +456,12 @@ const playBambooAlarm = () => {
     let pulseCount = 0;
 
     while (baseBeat < 1800) { // 30 minutes
-        pulseGain.gain.setValueAtTime(0.8, now + baseBeat);
+        // Soft attack: start at 0, ramp UP over 20ms to avoid click/pop
+        pulseGain.gain.setValueAtTime(0.01, now + baseBeat);
+        pulseGain.gain.linearRampToValueAtTime(0.8, now + baseBeat + 0.02); // 20ms attack
         osc.frequency.setValueAtTime(300, now + baseBeat);
+
+        // Decay: ramp down over the remaining 130ms
         pulseGain.gain.exponentialRampToValueAtTime(0.01, now + baseBeat + 0.15);
         osc.frequency.exponentialRampToValueAtTime(150, now + baseBeat + 0.15);
 
