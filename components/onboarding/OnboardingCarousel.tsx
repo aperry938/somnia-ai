@@ -34,7 +34,7 @@ const slides = [
     },
     {
         title: 'Ready to Begin?',
-        description: 'Set an alarm, sleep well, and record your dreams upon waking. Your journey into the subconscious starts now.',
+        description: 'Set your alarm, optimize your rest, and track your progress. Better sleep habits begin tonight.',
         icon: (
             <svg xmlns="http://www.w3.org/2000/svg" className="h-24 w-24 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
