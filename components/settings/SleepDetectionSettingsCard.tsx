@@ -113,7 +113,8 @@ export const SleepDetectionSettingsCard: React.FC = () => {
                         <select
                             value={settings.soundId}
                             onChange={(e) => updateSettings({ soundId: e.target.value })}
-                            className="w-full bg-white/50 dark:bg-black/30 border border-day-border dark:border-night-border rounded-lg px-3 py-2 text-sm"
+                            aria-label="Wake-up sound"
+                            className="w-full bg-white/50 dark:bg-black/30 border border-day-border dark:border-night-border rounded-lg px-3 py-3 min-h-[48px] text-base"
                         >
                             {ALARM_SOUNDS.map(sound => (
                                 <option key={sound.id} value={sound.id}>{sound.name}</option>

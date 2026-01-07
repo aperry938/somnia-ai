@@ -46,7 +46,8 @@ export const DevModeToggle: React.FC = () => {
             {/* Dev Mode Activation Button (always visible) */}
             <button
                 onClick={toggleDevMode}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-mono transition-all shadow-lg ${
+                aria-label={`Toggle dev mode, currently ${devMode ? 'on' : 'off'}`}
+                className={`flex items-center gap-2 px-3 py-2 min-h-[44px] rounded-lg text-xs font-mono transition-all shadow-lg ${
                     devMode
                         ? 'bg-amber-500 text-black'
                         : 'bg-gray-800/80 text-gray-400 hover:bg-gray-700/80'
@@ -73,12 +74,14 @@ export const DevModeToggle: React.FC = () => {
                         <span className="text-gray-300 text-sm">Premium Status</span>
                         <button
                             onClick={togglePremium}
-                            className={`relative w-12 h-6 rounded-full transition-colors ${
+                            aria-label={`Toggle premium status, currently ${premium ? 'on' : 'off'}`}
+                            aria-pressed={premium}
+                            className={`relative w-12 h-8 min-h-[32px] rounded-full transition-colors ${
                                 premium ? 'bg-green-500' : 'bg-gray-600'
                             }`}
                         >
-                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                                premium ? 'translate-x-7' : 'translate-x-1'
+                            <div className={`absolute top-1.5 w-5 h-5 bg-white rounded-full transition-transform ${
+                                premium ? 'translate-x-6' : 'translate-x-1'
                             }`} />
                         </button>
                     </div>
