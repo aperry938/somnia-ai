@@ -364,6 +364,14 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                         </div>
                     </div>
 
+                    {/* Sync Wearable Accent - Coming Soon */}
+                    <div className="flex items-center justify-center gap-2 py-3 text-sm text-indigo-400 dark:text-indigo-300 opacity-70">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>Wearable sync coming soon — Apple Watch, Fitbit & more</span>
+                    </div>
+
                     {/* Sleep Quality Prediction */}
                     {prediction && (
                         <div className="bg-gradient-to-r from-indigo-900/40 to-purple-900/40 border border-indigo-500/30 p-4 rounded-xl mb-4 animate-fadeIn">

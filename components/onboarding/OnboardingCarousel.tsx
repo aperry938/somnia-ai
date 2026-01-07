@@ -79,8 +79,8 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({ onComple
                 <div className="mb-8" aria-hidden="true">
                     {slide.icon}
                 </div>
-                <h1 className="font-serif text-3xl mb-4 text-day-text-primary dark:text-night-text-primary">{slide.title}</h1>
-                <p className="text-day-text-secondary dark:text-night-text-primary/80 text-lg leading-relaxed">
+                <h1 className="font-serif text-3xl mb-4 text-day-accent dark:text-night-accent">{slide.title}</h1>
+                <p className="text-day-text-secondary dark:text-night-text-primary/90 text-lg leading-relaxed">
                     {slide.description}
                 </p>
             </div>
