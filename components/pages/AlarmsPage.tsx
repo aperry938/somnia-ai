@@ -54,7 +54,7 @@ const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = Re
             aria-label={`Alarm at ${displayTime} ${period}${alarm.label ? `, ${alarm.label}` : ''}, ${formatRepeatText(alarm.days)}, ${alarm.isActive ? 'enabled' : 'disabled'}`}
             className={`group relative bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border shadow-lg rounded-2xl p-4 cursor-pointer transition-all duration-300 flex flex-col justify-between h-32 hover:shadow-xl hover:scale-[1.02] hover:border-day-accent dark:hover:border-night-accent active:scale-[0.98] ${alarm.isActive
                 ? 'ring-2 ring-day-accent/30 dark:ring-night-accent/30'
-                : 'opacity-60 hover:opacity-100'
+                : 'opacity-80 hover:opacity-100'
                 }`}
         >
             {/* Active indicator glow */}
