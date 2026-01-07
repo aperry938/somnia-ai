@@ -85,6 +85,20 @@
         }
     </script>
     <style>
+        /* Circadian Deep Night - even darker than regular night */
+        html[data-circadian-phase="night"].dark {
+            --night-bg-start: #050810;
+            --night-bg-end: #0a0f1a;
+            --night-card-bg: rgba(10, 15, 30, 0.8);
+        }
+        
+        /* Circadian Dusk/Dawn - uses warmer tones */
+        html[data-circadian-phase="dusk"].dark,
+        html[data-circadian-phase="dawn"].dark {
+            --night-bg-start: #0F172A;
+            --night-bg-end: #1E293B;
+        }
+        
         .custom-scrollbar::-webkit-scrollbar {
             width: 6px;
         }

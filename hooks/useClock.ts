@@ -7,28 +7,28 @@ type CircadianPhase = 'night' | 'dawn' | 'day' | 'dusk';
 
 /**
  * Determines circadian phase based on time of day:
- * - Night: 9pm - 5am (dark theme, deepest darkness)
- * - Dawn: 5am - 8am (dark→light transition, warm orange/pink tones)
+ * - Night: 9pm - 4am (deep dark, very dark theme)
+ * - Dawn: 4am - 8am (twilight gradient, transitioning to day)
  * - Day: 8am - 6pm (light theme, full brightness)
- * - Dusk: 6pm - 9pm (light→dark transition, warm golden/purple tones)
+ * - Dusk: 6pm - 9pm (twilight gradient, transitioning to night)
  */
 const getCircadianPhase = (hours: number, minutes: number): { phase: CircadianPhase; progress: number } => {
     const time = hours + minutes / 60;
 
-    // Night: 21:00 (9pm) to 5:00
-    if (time >= 21 || time < 5) {
+    // Night: 21:00 (9pm) to 4:00am (deep dark)
+    if (time >= 21 || time < 4) {
         return { phase: 'night', progress: 1 };
     }
-    // Dawn: 5:00 to 8:00 (3 hour transition)
-    if (time >= 5 && time < 8) {
-        const progress = (time - 5) / 3; // 0 at 5am, 1 at 8am
+    // Dawn: 4:00 to 8:00 (4 hour transition - twilight)
+    if (time >= 4 && time < 8) {
+        const progress = (time - 4) / 4; // 0 at 4am, 1 at 8am
         return { phase: 'dawn', progress };
     }
     // Day: 8:00 to 18:00 (6pm)
     if (time >= 8 && time < 18) {
         return { phase: 'day', progress: 1 };
     }
-    // Dusk: 18:00 to 21:00 (3 hour transition)
+    // Dusk: 18:00 to 21:00 (3 hour transition - twilight)
     const progress = (time - 18) / 3; // 0 at 6pm, 1 at 9pm
     return { phase: 'dusk', progress };
 };
