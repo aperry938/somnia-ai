@@ -193,8 +193,8 @@ const playGentleAlarm = () => {
     for (let i = 0; i < 30; i++) {
         const t = now + i * 2;
         const progress = i / 30; // 0 to 1
-        const minVol = 0.05 + progress * 0.25; // 0.05 -> 0.30
-        const maxVol = 0.15 + progress * 0.55; // 0.15 -> 0.70
+        const minVol = 0.05 + progress * 0.45; // 0.05 -> 0.50
+        const maxVol = 0.15 + progress * 0.85; // 0.15 -> 1.0
         alarmGainNode.gain.linearRampToValueAtTime(maxVol, t + 1);
         alarmGainNode.gain.linearRampToValueAtTime(minVol, t + 2);
     }
@@ -203,8 +203,8 @@ const playGentleAlarm = () => {
     // 900 more cycles (30 min = 1800s, minus 60s crescendo = 1740s / 2s = 870 cycles)
     for (let i = 0; i < 870; i++) {
         const t = now + 60 + i * 2;
-        alarmGainNode.gain.linearRampToValueAtTime(0.7, t + 1);
-        alarmGainNode.gain.linearRampToValueAtTime(0.3, t + 2);
+        alarmGainNode.gain.linearRampToValueAtTime(1.0, t + 1);
+        alarmGainNode.gain.linearRampToValueAtTime(0.5, t + 2);
     }
 
     alarmOscillator.start(now);
@@ -291,7 +291,7 @@ const playClassicAlarm = () => {
     for (let i = 0; i < 60; i++) {
         const t = now + i;
         const progress = i / 60; // 0 to 1
-        const volume = 0.05 + progress * 0.45; // 0.05 -> 0.50
+        const volume = 0.05 + progress * 0.85; // 0.05 -> 0.90
         alarmGainNode.gain.setValueAtTime(volume, t);
         alarmGainNode.gain.setValueAtTime(0, t + 0.5);
     }
@@ -300,7 +300,7 @@ const playClassicAlarm = () => {
     // 1740 more beeps (30 min = 1800s, minus 60s crescendo)
     for (let i = 0; i < 1740; i++) {
         const t = now + 60 + i;
-        alarmGainNode.gain.setValueAtTime(0.5, t);
+        alarmGainNode.gain.setValueAtTime(0.9, t);
         alarmGainNode.gain.setValueAtTime(0, t + 0.5);
     }
 
@@ -341,9 +341,9 @@ const playPrismAlarm = () => {
 
     const now = context.currentTime;
 
-    // Master volume crescendo over 60s, then sustain
+    // Master volume crescendo over 60s to full volume, then sustain
     proceduralGainNode.gain.setValueAtTime(0.1, now);
-    proceduralGainNode.gain.linearRampToValueAtTime(0.6, now + WAKE_DURATION);
+    proceduralGainNode.gain.linearRampToValueAtTime(1.0, now + WAKE_DURATION);
 
     const baseOsc = context.createOscillator();
     const baseGain = context.createGain();
@@ -359,8 +359,8 @@ const playPrismAlarm = () => {
         const t = now + i * 2.5;
         baseOsc.frequency.setValueAtTime(note, t);
         // Chime envelope: loud attack, decay to soft
-        baseGain.gain.setValueAtTime(0.4, t);
-        baseGain.gain.exponentialRampToValueAtTime(0.1, t + 1.5);
+        baseGain.gain.setValueAtTime(0.7, t);
+        baseGain.gain.exponentialRampToValueAtTime(0.15, t + 1.5);
     }
 
     baseOsc.start(now);
@@ -397,12 +397,12 @@ const playAetherAlarm = () => {
     osc.type = 'sawtooth';
     osc.frequency.setValueAtTime(110, now);
 
-    // CRESCENDO: Sweep frequency 110->220Hz and volume 0.05->0.5 over 60s
+    // CRESCENDO: Sweep frequency 110->220Hz and volume 0.05->0.9 over 60s
     osc.frequency.exponentialRampToValueAtTime(220, now + WAKE_DURATION);
     proceduralGainNode.gain.setValueAtTime(0.05, now);
-    proceduralGainNode.gain.linearRampToValueAtTime(0.5, now + WAKE_DURATION);
+    proceduralGainNode.gain.linearRampToValueAtTime(0.9, now + WAKE_DURATION);
 
-    // SUSTAIN: After crescendo, continue at 220Hz and 0.5 volume indefinitely
+    // SUSTAIN: After crescendo, continue at 220Hz and 0.9 volume indefinitely
     // The oscillator keeps playing - no need to schedule more
 
     osc.connect(proceduralGainNode);
@@ -436,9 +436,9 @@ const playBambooAlarm = () => {
 
     const now = context.currentTime;
 
-    // Master volume crescendo over 60s
+    // Master volume crescendo over 60s to full volume
     proceduralGainNode.gain.setValueAtTime(0.1, now);
-    proceduralGainNode.gain.linearRampToValueAtTime(0.6, now + WAKE_DURATION);
+    proceduralGainNode.gain.linearRampToValueAtTime(1.0, now + WAKE_DURATION);
 
     const osc = context.createOscillator();
     osc.type = 'sine';
@@ -456,7 +456,7 @@ const playBambooAlarm = () => {
     let pulseCount = 0;
 
     while (baseBeat < 1800) { // 30 minutes
-        pulseGain.gain.setValueAtTime(0.5, now + baseBeat);
+        pulseGain.gain.setValueAtTime(0.8, now + baseBeat);
         osc.frequency.setValueAtTime(300, now + baseBeat);
         pulseGain.gain.exponentialRampToValueAtTime(0.01, now + baseBeat + 0.15);
         osc.frequency.exponentialRampToValueAtTime(150, now + baseBeat + 0.15);
