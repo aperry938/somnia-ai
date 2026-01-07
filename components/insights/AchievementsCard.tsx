@@ -79,6 +79,7 @@ export const AchievementsCard: React.FC<AchievementsCardProps> = ({ dreams }) =>
                         <button
                             key={achievement.key}
                             onClick={() => setSelectedAchievement(achievement as AchievementWithStatus)}
+                            aria-label={`${achievement.name}${achievement.earned ? ', unlocked' : ', locked'}`}
                             className={`relative p-3 rounded-lg text-center transition-all cursor-pointer hover:scale-105 ${achievement.earned
                                     ? 'bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 border border-amber-300 dark:border-amber-700'
                                     : 'bg-gray-100 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 opacity-50 hover:opacity-75'
@@ -112,6 +113,9 @@ export const AchievementsCard: React.FC<AchievementsCardProps> = ({ dreams }) =>
                 <div
                     className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn"
                     onClick={() => setSelectedAchievement(null)}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="achievement-modal-title"
                 >
                     <div
                         className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 max-w-xs w-full shadow-2xl text-center"
@@ -130,7 +134,7 @@ export const AchievementsCard: React.FC<AchievementsCardProps> = ({ dreams }) =>
                                 )}
                             </div>
                         </div>
-                        <h3 className="font-serif text-xl mb-2">{selectedAchievement.name}</h3>
+                        <h3 id="achievement-modal-title" className="font-serif text-xl mb-2">{selectedAchievement.name}</h3>
                         <p className="text-day-text-secondary dark:text-night-text-secondary mb-4">
                             {selectedAchievement.description}
                         </p>
@@ -148,6 +152,7 @@ export const AchievementsCard: React.FC<AchievementsCardProps> = ({ dreams }) =>
                         )}
                         <button
                             onClick={() => setSelectedAchievement(null)}
+                            aria-label="Close achievement details"
                             className="w-full py-2 bg-day-accent dark:bg-night-accent text-white font-bold rounded-full"
                         >
                             Close

@@ -37,7 +37,7 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
     const renderQuality = () => {
         if (!entry.sleepQuality) return null;
         return (
-            <div className="flex items-center gap-0.5">
+            <div className="flex items-center gap-0.5" role="img" aria-label={`Sleep quality: ${entry.sleepQuality} out of 5 stars`}>
                 {[1, 2, 3, 4, 5].map(i => (
                     <svg
                         key={i}
@@ -46,6 +46,7 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
                         stroke="currentColor"
                         strokeWidth={1.5}
                         viewBox="0 0 24 24"
+                        aria-hidden="true"
                     >
                         <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                     </svg>
@@ -60,6 +61,11 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
             <div
                 className="p-4 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
                 onClick={() => setIsExpanded(!isExpanded)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsExpanded(!isExpanded); } }}
+                aria-expanded={isExpanded}
+                aria-label={`Sleep entry for ${displayDate}, ${dreamCount} ${dreamCount === 1 ? 'dream' : 'dreams'}${entry.sleepQuality ? `, ${entry.sleepQuality} star quality` : ''}`}
             >
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -134,6 +140,10 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
                                     key={dream.id}
                                     className="px-4 py-3 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer flex items-start gap-3"
                                     onClick={(e) => { e.stopPropagation(); onDreamClick(dream.id); }}
+                                    role="button"
+                                    tabIndex={0}
+                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onDreamClick(dream.id); } }}
+                                    aria-label={`View dream: ${dream.title || 'Untitled Dream'}`}
                                 >
                                     {dream.imageUrl ? (
                                         <img src={dream.imageUrl} alt="" className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
@@ -168,6 +178,7 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
                     <div className="p-3 border-t border-day-border dark:border-night-border flex items-center gap-2">
                         <button
                             onClick={(e) => { e.stopPropagation(); onAddDream(entry.id); }}
+                            aria-label={`Add dream to ${displayDate} entry`}
                             className="flex-1 py-2 flex items-center justify-center gap-2 text-sm text-day-accent dark:text-night-accent hover:bg-day-accent/10 dark:hover:bg-night-accent/10 rounded-lg transition-colors"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -192,12 +203,14 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
                             <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                                 <button
                                     onClick={() => { onDeleteEntry(entry.id); }}
+                                    aria-label="Confirm delete"
                                     className="px-3 py-1.5 text-xs bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
                                 >
                                     Delete
                                 </button>
                                 <button
                                     onClick={() => setShowDeleteConfirm(false)}
+                                    aria-label="Cancel delete"
                                     className="px-3 py-1.5 text-xs bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                                 >
                                     Cancel
