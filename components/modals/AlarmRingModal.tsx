@@ -376,7 +376,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                             {!showInput && !quickNote && isSupported && (
                                 <button
                                     onClick={() => setShowInput(true)}
-                                    className="text-white/40 text-xs underline mb-4 block mx-auto"
+                                    className="text-white/40 text-xs underline mb-4 block mx-auto py-2 min-h-[44px] px-4"
                                 >
                                     Or type instead
                                 </button>
@@ -385,7 +385,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                             {/* Record Dream Button */}
                             <button
                                 onClick={handleRecordDream}
-                                className="w-full py-3.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
+                                className="w-full py-3.5 min-h-[48px] bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center"
                             >
                                 {quickNote ? 'Save & Record Full Dream' : 'Record Full Dream'}
                             </button>
@@ -394,7 +394,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                         {/* Skip option */}
                         <button
                             onClick={handleSkipDream}
-                            className="text-white/40 text-sm hover:text-white/60 transition-colors"
+                            className="text-white/40 text-sm hover:text-white/60 transition-colors py-2 min-h-[44px] px-6"
                         >
                             Skip for now
                         </button>
