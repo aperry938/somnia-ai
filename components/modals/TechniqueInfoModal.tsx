@@ -1,5 +1,5 @@
 // components/modals/TechniqueInfoModal.tsx
-import React from 'react';
+import React, { useEffect } from 'react';
 import { LucidDreamTechnique } from '../../constants/lucidDreaming';
 
 interface TechniqueInfoModalProps {
@@ -47,6 +47,16 @@ const TECHNIQUE_DETAILS: Record<string, { tips: string[]; timing: string; durati
 };
 
 export const TechniqueInfoModal: React.FC<TechniqueInfoModalProps> = ({ technique, onClose }) => {
+    // Handle Escape key to close modal
+    useEffect(() => {
+        if (!technique) return;
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [technique, onClose]);
+
     if (!technique) return null;
 
     const details = TECHNIQUE_DETAILS[technique.id] || { tips: [], timing: 'Any time', duration: 'Varies' };

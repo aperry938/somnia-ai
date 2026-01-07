@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { SleepQualityRating } from '../shared/SleepQualityRating';
 import { DreamMood } from '../../types';
@@ -17,6 +17,15 @@ export const AddPastDreamModal: React.FC<AddPastDreamModalProps> = ({ onSave, on
     const [sleepQuality, setSleepQuality] = useState<number | null>(null);
     const [mood, setMood] = useState<DreamMood | null>(null);
     const [dreamDate, setDreamDate] = useState<string>(new Date().toISOString().split('T')[0]);
+
+    // Handle Escape key to close modal
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onClose]);
 
     const handleFinalTranscript = useCallback((transcript: string) => {
         setDreamText(prev => (prev ? prev.trim() + ' ' : '') + transcript);

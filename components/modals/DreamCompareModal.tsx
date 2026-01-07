@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dream } from '../../types';
 
 interface DreamCompareModalProps {
@@ -9,6 +9,15 @@ interface DreamCompareModalProps {
 export const DreamCompareModal: React.FC<DreamCompareModalProps> = ({ dreams, onClose }) => {
     const [leftDreamId, setLeftDreamId] = useState<number | null>(dreams[0]?.id || null);
     const [rightDreamId, setRightDreamId] = useState<number | null>(dreams[1]?.id || null);
+
+    // Handle Escape key to close modal
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onClose]);
 
     const leftDream = dreams.find(d => d.id === leftDreamId);
     const rightDream = dreams.find(d => d.id === rightDreamId);
