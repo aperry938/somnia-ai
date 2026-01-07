@@ -80,7 +80,7 @@ export const SuccessPage: React.FC<SuccessPageProps> = ({ onBack }) => {
 
                         <button
                             onClick={onBack}
-                            className="w-full py-3 bg-gradient-to-r from-amber-400 to-amber-600 text-white font-bold rounded-full hover:opacity-90 transition-opacity"
+                            className="w-full py-3 min-h-[48px] bg-gradient-to-r from-amber-400 to-amber-600 text-white font-bold rounded-full hover:opacity-90 transition-opacity flex items-center justify-center"
                         >
                             Start Exploring
                         </button>
@@ -102,13 +102,13 @@ export const SuccessPage: React.FC<SuccessPageProps> = ({ onBack }) => {
                         <div className="flex gap-3">
                             <button
                                 onClick={() => window.location.reload()}
-                                className="flex-1 py-3 border border-day-border dark:border-night-border rounded-full font-medium hover:bg-white/10 dark:hover:bg-black/10 transition-colors"
+                                className="flex-1 py-3 min-h-[48px] border border-day-border dark:border-night-border rounded-full font-medium hover:bg-white/10 dark:hover:bg-black/10 transition-colors flex items-center justify-center"
                             >
                                 Refresh
                             </button>
                             <button
                                 onClick={onBack}
-                                className="flex-1 py-3 bg-day-accent dark:bg-night-accent text-white font-medium rounded-full hover:opacity-90 transition-opacity"
+                                className="flex-1 py-3 min-h-[48px] bg-day-accent dark:bg-night-accent text-white font-medium rounded-full hover:opacity-90 transition-opacity flex items-center justify-center"
                             >
                                 Continue
                             </button>

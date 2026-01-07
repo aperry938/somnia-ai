@@ -95,7 +95,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSkip }) => {
                     {onSkip && (
                         <button
                             onClick={onSkip}
-                            className="w-full py-3 bg-day-accent dark:bg-night-accent text-white font-medium rounded-xl hover:opacity-90 transition-opacity"
+                            className="w-full py-3 min-h-[48px] bg-day-accent dark:bg-night-accent text-white font-medium rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center"
                         >
                             Continue Without Account
                         </button>
@@ -135,7 +135,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSkip }) => {
                                 onChange={(e) => setEmail(e.target.value)}
                                 placeholder="dreamer@somnia.ai"
                                 required
-                                className="w-full px-4 py-3 bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-xl focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent transition-all"
+                                className="w-full px-4 py-3 min-h-[48px] text-base bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-xl focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent transition-all"
                             />
                         </div>
 
@@ -150,7 +150,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSkip }) => {
                                     placeholder="Enter your password"
                                     required
                                     minLength={8}
-                                    className="w-full px-4 py-3 bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-xl focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent transition-all"
+                                    className="w-full px-4 py-3 min-h-[48px] text-base bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-xl focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent transition-all"
                                 />
                             </div>
                         )}
@@ -166,7 +166,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSkip }) => {
                                     placeholder="Confirm your password"
                                     required
                                     minLength={8}
-                                    className="w-full px-4 py-3 bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-xl focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent transition-all"
+                                    className="w-full px-4 py-3 min-h-[48px] text-base bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-xl focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent transition-all"
                                 />
                             </div>
                         )}
@@ -195,7 +195,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSkip }) => {
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-medium rounded-xl hover:from-indigo-600 hover:to-purple-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            className="w-full py-3 min-h-[48px] bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-medium rounded-xl hover:from-indigo-600 hover:to-purple-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
                             {isLoading ? (
                                 <>
@@ -218,11 +218,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSkip }) => {
                             <>
                                 <p className="text-day-text-secondary dark:text-night-text-secondary">
                                     Don't have an account?{' '}
-                                    <button onClick={() => { setMode('signup'); setError(''); setSuccess(''); }} className="text-day-accent dark:text-night-accent hover:underline">
+                                    <button onClick={() => { setMode('signup'); setError(''); setSuccess(''); }} className="text-day-accent dark:text-night-accent hover:underline py-1 min-h-[44px]">
                                         Sign up
                                     </button>
                                 </p>
-                                <button onClick={() => { setMode('reset'); setError(''); setSuccess(''); }} className="mt-2 text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent">
+                                <button onClick={() => { setMode('reset'); setError(''); setSuccess(''); }} className="mt-2 py-2 min-h-[44px] text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent">
                                     Forgot password?
                                 </button>
                             </>
@@ -230,7 +230,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSkip }) => {
                         {mode === 'signup' && (
                             <p className="text-day-text-secondary dark:text-night-text-secondary">
                                 Already have an account?{' '}
-                                <button onClick={() => { setMode('login'); setError(''); setSuccess(''); }} className="text-day-accent dark:text-night-accent hover:underline">
+                                <button onClick={() => { setMode('login'); setError(''); setSuccess(''); }} className="text-day-accent dark:text-night-accent hover:underline py-1 min-h-[44px]">
                                     Sign in
                                 </button>
                             </p>
@@ -238,7 +238,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSkip }) => {
                         {mode === 'reset' && (
                             <p className="text-day-text-secondary dark:text-night-text-secondary">
                                 Remember your password?{' '}
-                                <button onClick={() => { setMode('login'); setError(''); setSuccess(''); }} className="text-day-accent dark:text-night-accent hover:underline">
+                                <button onClick={() => { setMode('login'); setError(''); setSuccess(''); }} className="text-day-accent dark:text-night-accent hover:underline py-1 min-h-[44px]">
                                     Sign in
                                 </button>
                             </p>
@@ -251,7 +251,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSkip }) => {
                     <div className="mt-6 text-center">
                         <button
                             onClick={onSkip}
-                            className="text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent text-sm transition-colors"
+                            className="py-2 min-h-[44px] text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent text-sm transition-colors"
                         >
                             Continue without account
                         </button>
