@@ -1,9 +1,101 @@
 // components/modals/AlarmRingModal.tsx
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { playAlarmBySound, stopAlarmSound, playAlertnessBoost, stopAlertnessBoost } from '../../services/audioService';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { Alarm } from '../../types';
 import haptics from '../../services/hapticsService';
+
+// Pulsing visual component that crescendos over 60 seconds
+const PulsingWakeVisual: React.FC<{ isActive: boolean }> = ({ isActive }) => {
+    const [intensity, setIntensity] = useState(0);
+    const startTimeRef = useRef<number>(Date.now());
+
+    useEffect(() => {
+        if (!isActive) {
+            setIntensity(0);
+            return;
+        }
+
+        startTimeRef.current = Date.now();
+
+        const updateIntensity = () => {
+            const elapsed = (Date.now() - startTimeRef.current) / 1000; // seconds
+            // Crescendo over 60 seconds: 0 -> 1
+            const progress = Math.min(elapsed / 60, 1);
+            // Use easeInQuad for gradual then faster increase
+            const easedProgress = progress * progress;
+            setIntensity(easedProgress);
+        };
+
+        const interval = setInterval(updateIntensity, 100);
+        updateIntensity(); // Initial call
+
+        return () => clearInterval(interval);
+    }, [isActive]);
+
+    if (!isActive) return null;
+
+    // Calculate dynamic values based on intensity
+    const pulseSpeed = 2 - intensity * 1.2; // 2s -> 0.8s (faster as intensity increases)
+    const glowOpacity = 0.3 + intensity * 0.5; // 0.3 -> 0.8
+    const ringScale = 1 + intensity * 0.5; // 1 -> 1.5
+
+    return (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {/* Central pulsing glow */}
+            <div
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                style={{
+                    width: '150%',
+                    height: '150%',
+                    background: `radial-gradient(circle, rgba(255,150,50,${glowOpacity * 0.4}) 0%, rgba(255,100,100,${glowOpacity * 0.2}) 40%, transparent 70%)`,
+                    animation: `pulse ${pulseSpeed}s ease-in-out infinite`,
+                }}
+            />
+
+            {/* Expanding rings */}
+            {[0, 1, 2].map((i) => (
+                <div
+                    key={i}
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2"
+                    style={{
+                        width: `${60 + i * 25}%`,
+                        height: `${60 + i * 25}%`,
+                        borderColor: `rgba(255, ${180 - intensity * 80}, ${100 - intensity * 50}, ${0.2 + intensity * 0.3})`,
+                        transform: `translate(-50%, -50%) scale(${ringScale})`,
+                        animation: `ringPulse ${pulseSpeed + i * 0.3}s ease-in-out infinite`,
+                        animationDelay: `${i * 0.2}s`,
+                    }}
+                />
+            ))}
+
+            {/* Intensity indicator at bottom */}
+            <div className="absolute bottom-24 left-1/2 -translate-x-1/2 w-48">
+                <div className="h-1 bg-white/20 rounded-full overflow-hidden">
+                    <div
+                        className="h-full bg-gradient-to-r from-amber-400 to-red-500 rounded-full transition-all duration-300"
+                        style={{ width: `${intensity * 100}%` }}
+                    />
+                </div>
+                <p className="text-white/40 text-xs text-center mt-1">
+                    {intensity < 1 ? `${Math.round(intensity * 60)}s` : 'Full'}
+                </p>
+            </div>
+
+            {/* CSS Keyframes */}
+            <style>{`
+                @keyframes pulse {
+                    0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
+                    50% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+                }
+                @keyframes ringPulse {
+                    0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+                    50% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+                }
+            `}</style>
+        </div>
+    );
+};
 
 interface AlarmRingModalProps {
     alarm: Alarm;
@@ -166,7 +258,10 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
 
     return (
         <div className="fixed inset-0 bg-gradient-to-b from-indigo-900/95 to-purple-900/95 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
-            <div className="w-full max-w-sm animate-fadeIn text-center py-6">
+            {/* Pulsing visual wake element - only active during alarm step */}
+            <PulsingWakeVisual isActive={step === 'alarm'} />
+
+            <div className="w-full max-w-sm animate-fadeIn text-center py-6 relative z-10">
                 {/* Time Display - Always visible */}
                 <p className="text-6xl font-light text-white/90 mb-2">{timeStr}</p>
                 <h2 className="font-serif text-2xl text-white/80 mb-2">
