@@ -27,6 +27,7 @@ export const DreamCompareModal: React.FC<DreamCompareModalProps> = ({ dreams, on
             <select
                 value={dream?.id || ''}
                 onChange={(e) => onSelect(Number(e.target.value))}
+                aria-label={`Select ${side} dream for comparison`}
                 className="w-full mb-4 p-2 bg-white/50 dark:bg-black/30 border border-day-border dark:border-night-border rounded-lg text-sm"
             >
                 {dreams.map(d => (
@@ -48,9 +49,9 @@ export const DreamCompareModal: React.FC<DreamCompareModalProps> = ({ dreams, on
                     {dream.sleepQuality && (
                         <div className="flex items-center gap-1 text-sm">
                             <span>Quality:</span>
-                            <div className="flex">
+                            <div className="flex" role="img" aria-label={`${dream.sleepQuality} out of 5 stars`}>
                                 {[1, 2, 3, 4, 5].map(i => (
-                                    <svg key={i} xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 ${i <= dream.sleepQuality! ? 'text-yellow-500' : 'text-gray-300 dark:text-gray-600'}`} fill="currentColor" viewBox="0 0 24 24">
+                                    <svg key={i} xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 ${i <= dream.sleepQuality! ? 'text-yellow-500' : 'text-gray-300 dark:text-gray-600'}`} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                         <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
                                     </svg>
                                 ))}
@@ -90,14 +91,14 @@ export const DreamCompareModal: React.FC<DreamCompareModalProps> = ({ dreams, on
     const uniqueRight = [...rightTags].filter(t => !leftTags.has(t));
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="compare-modal-title">
             <div
                 className="w-full max-w-4xl max-h-[90vh] bg-day-bg-end dark:bg-night-bg-end rounded-2xl shadow-2xl overflow-hidden animate-fadeIn"
                 onClick={e => e.stopPropagation()}
             >
                 <div className="p-4 border-b border-day-border dark:border-night-border flex justify-between items-center">
-                    <h2 className="font-serif text-xl">Dream Comparison</h2>
-                    <button onClick={onClose} className="text-day-text-secondary dark:text-night-text-secondary hover:text-day-text-primary dark:hover:text-night-text-primary">
+                    <h2 id="compare-modal-title" className="font-serif text-xl">Dream Comparison</h2>
+                    <button onClick={onClose} aria-label="Close comparison" className="text-day-text-secondary dark:text-night-text-secondary hover:text-day-text-primary dark:hover:text-night-text-primary">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
