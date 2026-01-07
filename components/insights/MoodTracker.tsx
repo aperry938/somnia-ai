@@ -164,16 +164,20 @@ export const MoodTracker: React.FC<MoodTrackerProps> = ({ dreams }) => {
             {/* Recent Trend */}
             <div className="flex justify-center gap-1 pt-2 border-t border-day-border dark:border-night-border">
                 <span className="text-xs text-day-text-secondary dark:text-night-text-secondary mr-2">Recent:</span>
-                {stats.recent.map((dream, i) => (
-                    <span
-                        key={dream.id}
-                        className="w-5 h-5 hover:scale-125 transition-transform cursor-default text-day-accent dark:text-night-accent"
-                        style={{ opacity: 1 - (i * 0.1) }}
-                        title={`${new Date(dream.timestamp).toLocaleDateString()}: ${MOOD_CONFIG[dream.mood!].label}`}
-                    >
-                        <MoodIcon mood={dream.mood!} className="h-5 w-5" />
-                    </span>
-                ))}
+                {stats.recent.map((dream, i) => {
+                    const moodConfig = dream.mood && MOOD_CONFIG[dream.mood];
+                    if (!moodConfig || !dream.mood) return null;
+                    return (
+                        <span
+                            key={dream.id}
+                            className="w-5 h-5 hover:scale-125 transition-transform cursor-default text-day-accent dark:text-night-accent"
+                            style={{ opacity: 1 - (i * 0.1) }}
+                            title={`${new Date(dream.timestamp).toLocaleDateString()}: ${moodConfig.label}`}
+                        >
+                            <MoodIcon mood={dream.mood} className="h-5 w-5" />
+                        </span>
+                    );
+                })}
             </div>
 
             <p className="text-xs text-center text-day-text-secondary dark:text-night-text-secondary mt-2">
