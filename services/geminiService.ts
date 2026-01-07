@@ -1,6 +1,7 @@
 import { GoogleGenAI, GenerateContentResponse, Modality, Type } from "@google/genai";
 import { ChatMessage, Dream, DreamAnalysis, DreamSynthesis, SleepHabitAnalysis, SleepAids, Biometrics, AnalysisPersonality } from '../types';
 import { requirePremium, canUseAiAnalysis, useAiCredit, getRemainingCredits } from './secureSubscriptionService';
+import { checkRateLimit, RateLimitError } from './rateLimitService';
 import {
     SOMNIA_IDENTITY,
     COACH_PERSONAS,
@@ -68,6 +69,16 @@ const safetySettings = [
  * @throws Error if AI analysis fails
  */
 export const analyzeDream = async (dreamText: string, sleepAids?: SleepAids, biometrics?: Biometrics, personality: AnalysisPersonality = 'oneironaut'): Promise<DreamAnalysis> => {
+    // Check rate limit first
+    const rateCheck = checkRateLimit('ai_analysis');
+    if (!rateCheck.allowed) {
+        throw new RateLimitError(
+            `Too many analysis requests. Try again in ${Math.ceil(rateCheck.resetIn / 1000)} seconds.`,
+            rateCheck.resetIn,
+            'ai_analysis'
+        );
+    }
+
     // Check if user can use AI analysis (premium or has credits)
     if (!canUseAiAnalysis()) {
         throw new NoCreditsError();

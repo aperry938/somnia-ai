@@ -137,7 +137,7 @@ export type SyncActionType = 'ADD_DREAM' | 'UPDATE_DREAM' | 'DELETE_DREAM' | 'AD
 export interface SyncAction {
     id: string; // UUID
     type: SyncActionType;
-    payload: any;
+    payload: unknown;
     timestamp: number;
     status: 'PENDING' | 'SYNCED' | 'FAILED';
     retryCount: number;
