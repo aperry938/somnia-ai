@@ -226,11 +226,16 @@ export const importDreamsFromJSON = (
         reader.onload = (e) => {
             try {
                 const content = e.target?.result as string;
-                const imported = JSON.parse(content) as Dream[];
+                const parsed = JSON.parse(content);
 
-                // Validate basic structure
-                if (!Array.isArray(imported)) {
-                    throw new Error('Invalid format: expected array of dreams');
+                // Support both versioned format { version, dreams } and raw array
+                let imported: Dream[];
+                if (Array.isArray(parsed)) {
+                    imported = parsed;
+                } else if (parsed && Array.isArray(parsed.dreams)) {
+                    imported = parsed.dreams;
+                } else {
+                    throw new Error('Invalid format: expected array of dreams or { version, dreams }');
                 }
 
                 // Get max existing ID to avoid collisions

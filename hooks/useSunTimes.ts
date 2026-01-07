@@ -50,10 +50,15 @@ export const useSunTimes = () => {
         };
 
         const fetchSunTimes = async (lat: number, lng: number): Promise<SunTimes | null> => {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
             try {
                 const response = await fetch(
-                    `https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lng}&formatted=0`
+                    `https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lng}&formatted=0`,
+                    { signal: controller.signal }
                 );
+                clearTimeout(timeoutId);
                 const data = await response.json();
                 if (data.status === 'OK') {
                     return {
@@ -62,7 +67,12 @@ export const useSunTimes = () => {
                     };
                 }
             } catch (e) {
-                console.error('Failed to fetch sun times:', e);
+                clearTimeout(timeoutId);
+                if (e instanceof Error && e.name === 'AbortError') {
+                    console.warn('Sun times fetch timed out, using fallback');
+                } else {
+                    console.error('Failed to fetch sun times:', e);
+                }
             }
             return null;
         };

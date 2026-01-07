@@ -76,7 +76,7 @@ export interface SyntheticParams {
 }
 
 export interface RampParams {
-    base: number;
+    base: number; // Base carrier frequency (e.g., 110Hz)
 }
 
 export type Soundscape =

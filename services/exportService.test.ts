@@ -26,9 +26,11 @@ const mockLink = {
 const mockCreateObjectURL = vi.fn(() => 'blob:mock-url');
 const mockRevokeObjectURL = vi.fn();
 
-vi.stubGlobal('URL', {
-    createObjectURL: mockCreateObjectURL,
-    revokeObjectURL: mockRevokeObjectURL,
+// Preserve native URL constructor while mocking static methods
+const OriginalURL = globalThis.URL;
+vi.stubGlobal('URL', class extends OriginalURL {
+    static createObjectURL = mockCreateObjectURL;
+    static revokeObjectURL = mockRevokeObjectURL;
 });
 
 describe('exportService', () => {
