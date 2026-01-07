@@ -344,7 +344,7 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
                             Begin your journey into the subconscious. Set an alarm and record your first dream upon waking.
                         </p>
                         <button
-                            onClick={() => window.dispatchEvent(new CustomEvent('openDreamScribe'))}
+                            onClick={() => setIsAddDreamModalOpen(true)}
                             className="inline-flex items-center gap-2 px-6 py-3 bg-day-accent dark:bg-night-accent text-white rounded-full font-medium hover:opacity-90 transition-opacity"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
