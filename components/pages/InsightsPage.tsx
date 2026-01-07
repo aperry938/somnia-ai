@@ -11,7 +11,6 @@ import { DreamCalendar } from '../insights/DreamCalendar';
 import { DreamWordCloud } from '../insights/DreamWordCloud';
 import { DreamMoodTracker } from '../insights/DreamMoodTracker';
 import { SleepDurationChart } from '../insights/SleepDurationChart';
-import { DreamLengthInsights } from '../insights/DreamLengthInsights';
 import { DreamStreakCalendar } from '../insights/DreamStreakCalendar';
 import { RecurringThemes } from '../insights/RecurringThemes';
 import { InsightsGrid } from '../insights/InsightsGrid';
@@ -234,7 +233,6 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                 ) : (
                     <div className="space-y-6 animate-fadeIn">
                         <SleepDurationChart dreams={displayDreams} />
-                        <DreamLengthInsights dreams={displayDreams} />
 
                         {/* Dream Analysis Grid */}
                         <div>
