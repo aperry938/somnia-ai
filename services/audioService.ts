@@ -501,16 +501,28 @@ const cleanupProceduralAlarm = () => {
         proceduralAlarmStop();
         proceduralAlarmStop = null;
     }
+
+    // Capture the node to clean up and clear the global immediately
+    // to prevent the timeout from cleaning up a NEWLY created node
     if (proceduralGainNode && audioContext) {
+        const nodeToCleanup = proceduralGainNode;
+        proceduralGainNode = null;
+
         const now = audioContext.currentTime;
-        proceduralGainNode.gain.cancelScheduledValues(now);
-        proceduralGainNode.gain.linearRampToValueAtTime(0, now + 0.1);
-        setTimeout(() => {
-            if (proceduralGainNode) {
-                proceduralGainNode.disconnect();
-                proceduralGainNode = null;
-            }
-        }, 200);
+        try {
+            nodeToCleanup.gain.cancelScheduledValues(now);
+            nodeToCleanup.gain.linearRampToValueAtTime(0, now + 0.1);
+
+            setTimeout(() => {
+                try {
+                    nodeToCleanup.disconnect();
+                } catch (e) {
+                    // Ignore errors if already disconnected
+                }
+            }, 200);
+        } catch (e) {
+            console.warn('Error cleaning up procedural alarm:', e);
+        }
     }
 }
 
