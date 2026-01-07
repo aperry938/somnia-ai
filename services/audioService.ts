@@ -138,6 +138,18 @@ export const playAlarmBySound = (soundId: string = 'somnia') => {
             console.log('[playAlarmBySound] Playing Classic alarm');
             playClassicAlarm();
             break;
+        case 'prism':
+            console.log('[playAlarmBySound] Playing Prism alarm');
+            playPrismAlarm();
+            break;
+        case 'aether':
+            console.log('[playAlarmBySound] Playing Aether alarm');
+            playAetherAlarm();
+            break;
+        case 'bamboo':
+            console.log('[playAlarmBySound] Playing Bamboo alarm');
+            playBambooAlarm();
+            break;
         default:
             console.log('[playAlarmBySound] Unknown soundId, defaulting to Somnia:', soundId);
             playSomniaAlarm();
@@ -247,11 +259,225 @@ const playClassicAlarm = () => {
     alarmOscillator.start(now);
 };
 
+// === PROCEDURAL ALARM SYSTEM ("SOMNIA WAKE ENGINE") ===
+// These alarms use spectral ramping to wake users without cortisol spikes
+// 60-second linear fade-in preserves dream recall
+
+const WAKE_DURATION = 60; // Seconds to full volume
+// C Major Pentatonic Scale (Harmonious, no dissonance)
+const PENTATONIC_SCALE = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25];
+
+// Track procedural alarm state for cleanup
+let proceduralAlarmStop: (() => void) | null = null;
+let proceduralGainNode: GainNode | null = null;
+
+/**
+ * PRISM Alarm - Ethereal glass chimes using Karplus-Strong synthesis
+ * For: Light sleepers / High-recall users
+ * Physically models vibrating crystal/glass using feedback delay lines
+ */
+const playPrismAlarm = () => {
+    stopSleepSound();
+    const context = getAudioContext();
+    if (alarmOscillator) stopAlarmSound();
+    cleanupProceduralAlarm();
+
+    proceduralGainNode = context.createGain();
+    const compressor = context.createDynamicsCompressor();
+    proceduralGainNode.connect(compressor);
+    compressor.connect(context.destination);
+
+    // Master volume ramp: 0% to 100% over 60 seconds
+    const now = context.currentTime;
+    proceduralGainNode.gain.setValueAtTime(0, now);
+    proceduralGainNode.gain.linearRampToValueAtTime(0.6, now + WAKE_DURATION);
+
+    let isPlaying = true;
+
+    function triggerPluck() {
+        if (!isPlaying || !proceduralGainNode) return;
+
+        const t = context.currentTime;
+        const freq = PENTATONIC_SCALE[Math.floor(Math.random() * PENTATONIC_SCALE.length)];
+
+        // A. The Impulse (Burst of White Noise)
+        const bufferSize = Math.floor(context.sampleRate * 0.01);
+        const buffer = context.createBuffer(1, bufferSize, context.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() - 0.5) * 2;
+
+        const noise = context.createBufferSource();
+        noise.buffer = buffer;
+
+        // B. The String (Feedback Delay) - Karplus-Strong
+        const delayPeriod = 1 / freq;
+        const delay = context.createDelay();
+        delay.delayTime.value = delayPeriod;
+
+        const feedback = context.createGain();
+        feedback.gain.value = 0.985; // High decay = crystalline ring
+
+        const dampener = context.createBiquadFilter();
+        dampener.type = 'lowpass';
+        dampener.frequency.value = 3500;
+
+        // Routing: Noise -> Delay -> Dampener -> Feedback -> Delay (loop)
+        noise.connect(delay);
+        delay.connect(dampener);
+        dampener.connect(feedback);
+        feedback.connect(delay);
+        delay.connect(proceduralGainNode);
+
+        noise.start(t);
+
+        // Schedule next note (Random interval 2s - 4s)
+        setTimeout(triggerPluck, 2000 + Math.random() * 2000);
+    }
+
+    triggerPluck();
+    proceduralAlarmStop = () => { isPlaying = false; };
+};
+
+/**
+ * AETHER Alarm - Massive cinematic drone that sounds like a sunrise
+ * For: Deep sleepers who need power to wake up
+ * Detuned oscillators with 60s filter bloom (muffled -> bright)
+ */
+const playAetherAlarm = () => {
+    stopSleepSound();
+    const context = getAudioContext();
+    if (alarmOscillator) stopAlarmSound();
+    cleanupProceduralAlarm();
+
+    proceduralGainNode = context.createGain();
+    const compressor = context.createDynamicsCompressor();
+    proceduralGainNode.connect(compressor);
+    compressor.connect(context.destination);
+
+    const now = context.currentTime;
+
+    // OSCILLATORS (Detuned Sawtooths for Analog Warmth)
+    const osc1 = context.createOscillator();
+    const osc2 = context.createOscillator();
+    osc1.type = 'sawtooth';
+    osc2.type = 'sawtooth';
+    osc1.frequency.value = 110; // Low A2
+    osc2.frequency.value = 110.5; // Slightly detuned for shimmer
+
+    // FILTER (The "Sunrise" Effect - spectral bloom)
+    const filter = context.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.Q.value = 1;
+
+    // Ramp Filter Cutoff from 50Hz (Muffled/underwater) to 2000Hz (Bright/surface)
+    filter.frequency.setValueAtTime(50, now);
+    filter.frequency.exponentialRampToValueAtTime(2000, now + WAKE_DURATION);
+
+    // Master volume ramp
+    proceduralGainNode.gain.setValueAtTime(0.001, now);
+    proceduralGainNode.gain.linearRampToValueAtTime(0.4, now + WAKE_DURATION);
+
+    osc1.connect(filter);
+    osc2.connect(filter);
+    filter.connect(proceduralGainNode);
+
+    osc1.start(now);
+    osc2.start(now);
+
+    proceduralAlarmStop = () => {
+        osc1.stop();
+        osc2.stop();
+    };
+};
+
+/**
+ * BAMBOO Alarm - Hollow wooden pulse that accelerates like a heartbeat
+ * For: Users who find electronic sounds anxious and want "nature" wake-up
+ * Physical modeling: pings a bandpass filter with noise to simulate hollow wood
+ */
+const playBambooAlarm = () => {
+    stopSleepSound();
+    const context = getAudioContext();
+    if (alarmOscillator) stopAlarmSound();
+    cleanupProceduralAlarm();
+
+    proceduralGainNode = context.createGain();
+    const compressor = context.createDynamicsCompressor();
+    proceduralGainNode.connect(compressor);
+    compressor.connect(context.destination);
+
+    const now = context.currentTime;
+    proceduralGainNode.gain.setValueAtTime(0, now);
+    proceduralGainNode.gain.linearRampToValueAtTime(0.7, now + WAKE_DURATION);
+
+    let isPlaying = true;
+    let interval = 1000; // Start at 60 BPM
+
+    function triggerWood() {
+        if (!isPlaying || !proceduralGainNode) return;
+        const t = context.currentTime;
+
+        // A. Source: Burst of Noise (The "Hit")
+        const bufferSize = Math.floor(context.sampleRate * 0.005); // 5ms click
+        const buffer = context.createBuffer(1, bufferSize, context.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+        const noise = context.createBufferSource();
+        noise.buffer = buffer;
+
+        // B. Filter: High Q Bandpass (Simulates Hollow Log)
+        const filter = context.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 300; // Frequency of the wood
+        filter.Q.value = 15; // "Ring" factor
+
+        // C. Envelope
+        const env = context.createGain();
+        env.gain.setValueAtTime(1.0, t);
+        env.gain.exponentialRampToValueAtTime(0.01, t + 0.2); // Short woody decay
+
+        noise.connect(filter);
+        filter.connect(env);
+        env.connect(proceduralGainNode);
+        noise.start(t);
+
+        // Accelerate Rhythm (Simulate waking up)
+        interval = Math.max(400, interval * 0.98); // Speed up slightly each hit
+        setTimeout(triggerWood, interval);
+    }
+
+    triggerWood();
+    proceduralAlarmStop = () => { isPlaying = false; };
+};
+
+/**
+ * Cleanup procedural alarm resources
+ */
+const cleanupProceduralAlarm = () => {
+    if (proceduralAlarmStop) {
+        proceduralAlarmStop();
+        proceduralAlarmStop = null;
+    }
+    if (proceduralGainNode && audioContext) {
+        const now = audioContext.currentTime;
+        proceduralGainNode.gain.cancelScheduledValues(now);
+        proceduralGainNode.gain.linearRampToValueAtTime(0, now + 0.1);
+        setTimeout(() => {
+            if (proceduralGainNode) {
+                proceduralGainNode.disconnect();
+                proceduralGainNode = null;
+            }
+        }, 200);
+    }
+}
+
 /**
  * Stops the alarm sound immediately.
  * Fades out volume over 0.5s to prevent clicking artifacts.
  */
 export const stopAlarmSound = () => {
+    // Stop regular oscillator-based alarms
     if (alarmGainNode && alarmOscillator && audioContext) {
         const now = audioContext.currentTime;
         alarmGainNode.gain.cancelScheduledValues(now);
@@ -264,6 +490,9 @@ export const stopAlarmSound = () => {
     }
     alarmOscillator = null;
     alarmGainNode = null;
+
+    // Stop procedural alarms (Prism, Aether, Bamboo)
+    cleanupProceduralAlarm();
 };
 
 // Preview alarm state

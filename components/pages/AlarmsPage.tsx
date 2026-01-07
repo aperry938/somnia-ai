@@ -19,11 +19,11 @@ const formatRepeatText = (days: number[]): string => {
 const getSoundName = (soundId: string | undefined): string => {
     const soundMap: Record<string, string> = {
         'somnia': 'Somnia',
-        'progressive': 'Progressive',
         'gentle': 'Gentle Rise',
-        'chimes': 'Chimes',
-        'nature': 'Nature',
-        'classic': 'Classic'
+        'classic': 'Classic',
+        'prism': 'Prism',
+        'aether': 'Aether',
+        'bamboo': 'Bamboo'
     };
     return soundMap[soundId || 'somnia'] || 'Somnia';
 };
@@ -94,11 +94,10 @@ const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = Re
                             {formatRepeatText(alarm.days)}
                         </p>
                         {/* Type badge */}
-                        <span className={`text-xs px-1.5 py-0.5 rounded ${
-                            alarm.purpose === 'reminder'
+                        <span className={`text-xs px-1.5 py-0.5 rounded ${alarm.purpose === 'reminder'
                                 ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
                                 : 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
-                        }`}>
+                            }`}>
                             {alarm.purpose === 'reminder' ? 'Reminder' : 'Sleep'}
                         </span>
                     </div>
@@ -207,11 +206,10 @@ const DrumTimePicker: React.FC<{ initialTime: string; onChange: (time: string) =
                             <div
                                 key={h}
                                 onClick={() => { setHour(h); scrollToValue(hourRef, h - 1); }}
-                                className={`h-14 flex items-center justify-center text-3xl font-medium cursor-pointer transition-all scroll-snap-align-center ${
-                                    hour === h
+                                className={`h-14 flex items-center justify-center text-3xl font-medium cursor-pointer transition-all scroll-snap-align-center ${hour === h
                                         ? 'text-day-accent dark:text-night-accent scale-110'
                                         : 'text-gray-400 dark:text-gray-500'
-                                }`}
+                                    }`}
                                 style={{ scrollSnapAlign: 'center' }}
                             >
                                 {String(h).padStart(2, '0')}
@@ -236,11 +234,10 @@ const DrumTimePicker: React.FC<{ initialTime: string; onChange: (time: string) =
                             <div
                                 key={m}
                                 onClick={() => { setMinute(m); scrollToValue(minuteRef, m); }}
-                                className={`h-14 flex items-center justify-center text-3xl font-medium cursor-pointer transition-all scroll-snap-align-center ${
-                                    minute === m
+                                className={`h-14 flex items-center justify-center text-3xl font-medium cursor-pointer transition-all scroll-snap-align-center ${minute === m
                                         ? 'text-day-accent dark:text-night-accent scale-110'
                                         : 'text-gray-400 dark:text-gray-500'
-                                }`}
+                                    }`}
                                 style={{ scrollSnapAlign: 'center' }}
                             >
                                 {String(m).padStart(2, '0')}
@@ -263,11 +260,10 @@ const DrumTimePicker: React.FC<{ initialTime: string; onChange: (time: string) =
                             <div
                                 key={p}
                                 onClick={() => { setPeriod(p); scrollToValue(periodRef, p === 'AM' ? 0 : 1); }}
-                                className={`h-14 flex items-center justify-center text-2xl font-medium cursor-pointer transition-all scroll-snap-align-center ${
-                                    period === p
+                                className={`h-14 flex items-center justify-center text-2xl font-medium cursor-pointer transition-all scroll-snap-align-center ${period === p
                                         ? 'text-day-accent dark:text-night-accent scale-110'
                                         : 'text-gray-400 dark:text-gray-500'
-                                }`}
+                                    }`}
                                 style={{ scrollSnapAlign: 'center' }}
                             >
                                 {p}
@@ -291,12 +287,12 @@ const DrumTimePicker: React.FC<{ initialTime: string; onChange: (time: string) =
 
 // Alarm sound options
 const ALARM_SOUNDS = [
-    { id: 'somnia', name: 'Somnia', description: 'Very slow & growing - our signature alarm (Default)' },
-    { id: 'progressive', name: 'Progressive Dream', description: 'Gently builds volume & pitch' },
+    { id: 'somnia', name: 'Somnia', description: 'Very slow & growing - our signature (Default)' },
     { id: 'gentle', name: 'Gentle Rise', description: 'Soft, gradual wake-up' },
-    { id: 'chimes', name: 'Wind Chimes', description: 'Peaceful chime melody' },
-    { id: 'nature', name: 'Nature Dawn', description: 'Birds and morning sounds' },
-    { id: 'classic', name: 'Classic Alarm', description: 'Traditional alarm tone' },
+    { id: 'classic', name: 'Classic', description: 'Traditional alarm tone' },
+    { id: 'prism', name: 'Prism', description: 'Ethereal glass chimes - preserves recall' },
+    { id: 'aether', name: 'Aether', description: 'Cinematic sunrise drone' },
+    { id: 'bamboo', name: 'Bamboo', description: 'Hollow wood pulse - accelerating' },
 ];
 
 const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -772,11 +768,10 @@ const TonightsSleepCard: React.FC<{
                                     <button
                                         key={rating}
                                         onClick={() => handleRatingSelect(rating)}
-                                        className={`flex-1 py-2 px-1 rounded-lg flex flex-col items-center gap-1 transition-all ${
-                                            dayRating === rating
+                                        className={`flex-1 py-2 px-1 rounded-lg flex flex-col items-center gap-1 transition-all ${dayRating === rating
                                                 ? 'bg-indigo-500 dark:bg-indigo-600 text-white scale-105 shadow-md'
                                                 : 'bg-white/50 dark:bg-gray-800/50 text-day-text-secondary dark:text-night-text-secondary hover:bg-white dark:hover:bg-gray-800'
-                                        }`}
+                                            }`}
                                     >
                                         <span className="w-6 h-6">
                                             {rating === 1 ? (

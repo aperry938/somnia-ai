@@ -17,11 +17,11 @@ const DEFAULT_SETTINGS: SleepDetectionSettings = {
 
 const ALARM_SOUNDS = [
     { id: 'somnia', name: 'Somnia' },
-    { id: 'progressive', name: 'Progressive' },
     { id: 'gentle', name: 'Gentle Rise' },
-    { id: 'chimes', name: 'Chimes' },
-    { id: 'nature', name: 'Nature' },
     { id: 'classic', name: 'Classic' },
+    { id: 'prism', name: 'Prism' },
+    { id: 'aether', name: 'Aether' },
+    { id: 'bamboo', name: 'Bamboo' },
 ];
 
 export const SleepDetectionSettingsCard: React.FC = () => {
