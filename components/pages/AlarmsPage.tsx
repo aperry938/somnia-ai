@@ -324,7 +324,7 @@ const ALARM_SOUNDS = [
     { id: 'bamboo', name: 'Bamboo', description: 'Hollow wood pulse' },
 ];
 
-const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
 // Helper to get current time in HH:MM format
 const getCurrentTimeString = (): string => {
