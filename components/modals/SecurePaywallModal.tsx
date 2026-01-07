@@ -87,6 +87,9 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
         <div
             className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn"
             onClick={onClose}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="paywall-title"
         >
             <div
                 className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl"
@@ -110,7 +113,7 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                             </svg>
                         </div>
-                        <h2 className="font-serif text-2xl mb-2">Unlock Somnia Premium</h2>
+                        <h2 id="paywall-title" className="font-serif text-2xl mb-2">Unlock Somnia Premium</h2>
                         {featuredFeature && (
                             <p className="text-day-text-secondary dark:text-night-text-secondary">
                                 {featuredFeature.name} requires Premium
@@ -138,9 +141,11 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
                     </ul>
 
                     {/* Pricing Toggle */}
-                    <div className="flex justify-center gap-2 mb-4">
+                    <div className="flex justify-center gap-2 mb-4" role="group" aria-label="Subscription plan options">
                         <button
                             onClick={() => setSelectedPlan('monthly')}
+                            aria-label="Monthly plan"
+                            aria-pressed={selectedPlan === 'monthly'}
                             className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${selectedPlan === 'monthly'
                                 ? 'bg-day-accent dark:bg-night-accent text-white'
                                 : 'bg-day-border dark:bg-night-border'
@@ -150,6 +155,8 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
                         </button>
                         <button
                             onClick={() => setSelectedPlan('yearly')}
+                            aria-label={`Yearly plan, save ${PRICING.yearly.savings}%`}
+                            aria-pressed={selectedPlan === 'yearly'}
                             className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${selectedPlan === 'yearly'
                                 ? 'bg-day-accent dark:bg-night-accent text-white'
                                 : 'bg-day-border dark:bg-night-border'

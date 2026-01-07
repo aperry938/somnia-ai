@@ -19,9 +19,12 @@ export const ImageModal: React.FC<ImageModalProps> = ({ src, onClose }) => {
     }, [onClose]);
 
     return (
-        <div 
-            className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fadeIn" 
+        <div
+            className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fadeIn"
             onClick={onClose}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Full-screen dream image viewer"
         >
             <img 
                 src={src} 

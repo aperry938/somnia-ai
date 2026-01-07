@@ -127,14 +127,14 @@ export const AICoachModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
     // PRO-only gate - show upgrade prompt for non-premium users
     if (!userIsPremium) {
         return (
-            <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={onClose}>
+            <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="coach-pro-title">
                 <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-md animate-fadeIn text-center" onClick={(e) => e.stopPropagation()}>
-                    <div className="w-20 h-20 mx-auto bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center mb-4">
+                    <div className="w-20 h-20 mx-auto bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center mb-4" aria-hidden="true">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
                         </svg>
                     </div>
-                    <h2 className="font-serif text-2xl mb-2">AI Sleep Coach</h2>
+                    <h2 id="coach-pro-title" className="font-serif text-2xl mb-2">AI Sleep Coach</h2>
                     <span className="inline-block px-3 py-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-medium rounded-full mb-4">
                         PRO Feature
                     </span>
@@ -185,16 +185,17 @@ export const AICoachModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
     }
 
     return (
-        <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={onClose}>
+        <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="coach-title">
             <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-lg animate-fadeIn flex flex-col h-[80vh]" onClick={(e) => e.stopPropagation()}>
                 <div className="flex justify-between items-start mb-4 flex-shrink-0">
                     <div className="flex items-center gap-2">
-                        <h2 className="font-serif text-2xl">AI Sleep Coach</h2>
+                        <h2 id="coach-title" className="font-serif text-2xl">AI Sleep Coach</h2>
                         <span className="text-[10px] bg-gradient-to-r from-amber-500 to-orange-500 text-white px-1.5 py-0.5 rounded-full font-medium">PRO</span>
                     </div>
                     {history.length > 1 && (
                         <button
                             onClick={handleClearHistory}
+                            aria-label="Clear chat history"
                             className="text-xs text-day-text-secondary dark:text-night-text-secondary hover:text-red-500 transition-colors"
                         >
                             Clear
@@ -208,7 +209,7 @@ export const AICoachModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
                             {msg.isError ? (
                                 <div className="text-center my-2 p-3 rounded-lg bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300">
                                     <p>{msg.parts[0].text}</p>
-                                    <button onClick={handleRetry} className="mt-2 px-3 py-1 bg-red-500 text-white text-sm rounded-full">Retry</button>
+                                    <button onClick={handleRetry} aria-label="Retry sending message" className="mt-2 px-3 py-1 bg-red-500 text-white text-sm rounded-full">Retry</button>
                                 </div>
                             ) : (
                                 <div className={`my-2 p-3 rounded-lg text-sm md:text-base ${msg.role === 'user' ? 'bg-indigo-100 dark:bg-indigo-900/50 text-right ml-auto' : 'bg-white/50 dark:bg-slate-700/50 text-left mr-auto'} max-w-[85%]`}>
@@ -228,10 +229,12 @@ export const AICoachModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
                         onKeyDown={(e) => e.key === 'Enter' && handleSend(input)}
                         type="text"
                         placeholder="Ask for sleep advice..."
+                        aria-label="Chat message input"
                         className="flex-grow p-2 border rounded-full bg-white/50 dark:bg-black/20 focus:outline-none focus:ring-2 focus:ring-day-accent border-day-border dark:border-night-border"
                     />
                     <button
                         onClick={() => handleSend(input)}
+                        aria-label="Send message"
                         className="bg-day-accent dark:bg-night-accent text-white rounded-full px-4 disabled:opacity-50"
                         disabled={isLoading || !input.trim()}
                     >

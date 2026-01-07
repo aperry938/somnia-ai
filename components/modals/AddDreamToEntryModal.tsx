@@ -55,12 +55,12 @@ export const AddDreamToEntryModal: React.FC<AddDreamToEntryModalProps> = ({
     });
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={onClose}>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="add-dream-entry-title">
             <div
                 className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-lg animate-fadeIn max-h-[90vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
             >
-                <h2 className="font-serif text-2xl text-center mb-2">Add Dream</h2>
+                <h2 id="add-dream-entry-title" className="font-serif text-2xl text-center mb-2">Add Dream</h2>
                 <p className="text-center text-day-text-secondary dark:text-night-text-secondary text-sm mb-4">
                     For sleep on {displayDate}
                 </p>
@@ -72,6 +72,7 @@ export const AddDreamToEntryModal: React.FC<AddDreamToEntryModalProps> = ({
                         onChange={(e) => setDreamText(e.target.value)}
                         className="w-full h-32 p-4 pr-12 bg-white/50 dark:bg-black/30 border border-day-border dark:border-night-border rounded-lg focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent focus:outline-none transition-all custom-scrollbar"
                         placeholder="Describe your dream..."
+                        aria-label="Dream description"
                         disabled={isListening}
                     ></textarea>
                     {isSupported && (

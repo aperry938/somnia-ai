@@ -66,6 +66,9 @@ export const TechniqueInfoModal: React.FC<TechniqueInfoModalProps> = ({ techniqu
         <div
             className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
             onClick={onClose}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="technique-title"
         >
             <div
                 className="w-full max-w-md bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl shadow-2xl overflow-hidden animate-fadeIn"
@@ -75,7 +78,7 @@ export const TechniqueInfoModal: React.FC<TechniqueInfoModalProps> = ({ techniqu
                 <div className="p-5 bg-gradient-to-r from-indigo-600/20 to-purple-600/20 border-b border-day-border dark:border-night-border">
                     <div className="flex justify-between items-start">
                         <div>
-                            <h2 className="font-serif text-xl font-bold text-day-text-primary dark:text-night-text-primary">{technique.name}</h2>
+                            <h2 id="technique-title" className="font-serif text-xl font-bold text-day-text-primary dark:text-night-text-primary">{technique.name}</h2>
                             <p className="text-sm text-day-text-secondary dark:text-night-text-secondary mt-1">{technique.description}</p>
                         </div>
                         <span className={`text-xs px-3 py-1 rounded-full border ${difficultyClass}`}>

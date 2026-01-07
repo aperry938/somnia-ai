@@ -229,12 +229,12 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
     const isActuallyPlaying = isPlaying && !isReadyToPlay && !isPaused && playStartTime !== null;
 
     return (
-        <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={handleBackdropClick}>
+        <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={handleBackdropClick} role="dialog" aria-modal="true" aria-labelledby="soundscape-title">
             <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-sm animate-fadeIn text-center relative" onClick={(e) => e.stopPropagation()}>
                 <button
                     onClick={handleClose}
                     className="absolute top-4 right-4 text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent"
-                    aria-label="Close"
+                    aria-label="Close soundscape modal"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -243,14 +243,14 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
 
                 {/* Live Preview Indicator */}
                 {isPreviewing && !isInPlayingView && (
-                    <div className="absolute top-4 left-4 flex items-center gap-1.5">
-                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                    <div className="absolute top-4 left-4 flex items-center gap-1.5" aria-live="polite">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" aria-hidden="true" />
                         <span className="text-[10px] text-green-500 font-medium uppercase tracking-wider">Live Preview</span>
                     </div>
                 )}
 
-                <div className="flex justify-center items-center h-16 w-16 mx-auto text-day-accent dark:text-night-accent">{sound.icon}</div>
-                <h2 className="font-serif text-2xl mt-2">{sound.name}</h2>
+                <div className="flex justify-center items-center h-16 w-16 mx-auto text-day-accent dark:text-night-accent" aria-hidden="true">{sound.icon}</div>
+                <h2 id="soundscape-title" className="font-serif text-2xl mt-2">{sound.name}</h2>
                 <p className="text-day-text-secondary dark:text-night-text-secondary my-4 text-sm">{sound.description}</p>
 
                 {isInPlayingView ? (

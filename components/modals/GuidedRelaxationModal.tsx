@@ -206,9 +206,9 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
     }, []);
 
     return (
-        <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={endSession}>
+        <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={endSession} role="dialog" aria-modal="true" aria-labelledby="relaxation-title">
             <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-sm animate-fadeIn text-center" onClick={(e) => e.stopPropagation()}>
-                <h2 className="font-serif text-2xl mb-4">{relaxation.name}</h2>
+                <h2 id="relaxation-title" className="font-serif text-2xl mb-4">{relaxation.name}</h2>
 
                 {sessionState === 'ready' ? (
                     <div className="animate-fadeIn">

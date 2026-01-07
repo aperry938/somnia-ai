@@ -43,12 +43,12 @@ export const AddSleepEntryModal: React.FC<AddSleepEntryModalProps> = ({
     const dayLabels = ['Rough', 'Meh', 'Okay', 'Good', 'Great'];
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={onClose}>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="log-sleep-title">
             <div
                 className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-lg animate-fadeIn max-h-[90vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
             >
-                <h2 className="font-serif text-2xl text-center mb-4">Log Sleep</h2>
+                <h2 id="log-sleep-title" className="font-serif text-2xl text-center mb-4">Log Sleep</h2>
 
                 {/* Date Picker */}
                 <div className="mb-4">
@@ -60,6 +60,7 @@ export const AddSleepEntryModal: React.FC<AddSleepEntryModalProps> = ({
                         value={sleepDate}
                         onChange={(e) => setSleepDate(e.target.value)}
                         max={new Date().toISOString().split('T')[0]}
+                        aria-label="Sleep date"
                         className="w-full p-3 bg-white/50 dark:bg-black/30 border border-day-border dark:border-night-border rounded-lg focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent focus:outline-none"
                     />
                 </div>
@@ -108,6 +109,7 @@ export const AddSleepEntryModal: React.FC<AddSleepEntryModalProps> = ({
                         onChange={(e) => setNotes(sanitizeText(e.target.value).slice(0, INPUT_LIMITS.notes))}
                         maxLength={INPUT_LIMITS.notes}
                         placeholder="Late coffee, stressful day, exercised..."
+                        aria-label="Sleep notes"
                         className="w-full h-20 p-3 bg-white/50 dark:bg-black/30 border border-day-border dark:border-night-border rounded-lg focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent focus:outline-none resize-none"
                     />
                 </div>

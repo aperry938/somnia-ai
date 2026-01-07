@@ -253,7 +253,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     return (
-        <div className="fixed inset-0 bg-gradient-to-b from-indigo-900/95 to-purple-900/95 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
+        <div className="fixed inset-0 bg-gradient-to-b from-indigo-900/95 to-purple-900/95 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto" role="dialog" aria-modal="true" aria-label="Alarm ringing">
             {/* Pulsing visual wake element - only active during alarm step */}
             <PulsingWakeVisual isActive={step === 'alarm'} />
 
@@ -365,6 +365,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                                     value={quickNote}
                                     onChange={(e) => setQuickNote(e.target.value)}
                                     placeholder="Key words, images, feelings..."
+                                    aria-label="Quick dream notes"
                                     className="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 text-sm resize-none focus:outline-none focus:border-white/40 mb-4"
                                     rows={3}
                                     autoFocus={!isSupported}
