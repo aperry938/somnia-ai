@@ -11,7 +11,17 @@ interface SleepQualityChartProps {
     data: ChartData[];
 }
 
-const CustomTooltip: React.FC<any> = ({ active, payload, label }) => {
+interface TooltipPayloadItem {
+    value: number;
+}
+
+interface CustomTooltipProps {
+    active?: boolean;
+    payload?: TooltipPayloadItem[];
+    label?: string;
+}
+
+const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
         return (
             <div className="bg-day-card-bg/80 dark:bg-night-card-bg/80 backdrop-blur-sm p-2 border border-day-border dark:border-night-border rounded-md shadow-lg">
