@@ -278,7 +278,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                     rows={2}
                                     maxLength={INPUT_LIMITS.notes}
                                     aria-label="Evening reflection notes"
-                                    className="w-full p-2 bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-md custom-scrollbar"
+                                    className="w-full p-3 min-h-[48px] text-base bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-md custom-scrollbar"
                                     placeholder="e.g., A stressful meeting at work..."
                                 />
                             </div>
@@ -466,7 +466,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                     <div className="pt-4 pb-8">
                         <button
                             onClick={handleBeginSleep}
-                            className="w-full py-4 bg-day-accent dark:bg-night-accent text-white font-bold rounded-full text-lg shadow-lg hover:bg-indigo-700 dark:hover:bg-indigo-500 transition-all transform hover:scale-105"
+                            className="w-full py-4 min-h-[56px] bg-day-accent dark:bg-night-accent text-white font-bold rounded-full text-lg shadow-lg hover:bg-indigo-700 dark:hover:bg-indigo-500 transition-all transform hover:scale-105 flex items-center justify-center"
                         >
                             Initiate Sleep Gateway
                         </button>

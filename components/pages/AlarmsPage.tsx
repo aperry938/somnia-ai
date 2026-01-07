@@ -544,7 +544,7 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
                             value={label}
                             onChange={(e) => setLabel(e.target.value)}
                             placeholder="e.g., Take medication, Meeting..."
-                            className="w-full p-3 bg-gray-100 dark:bg-gray-800 border-none rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent"
+                            className="w-full p-3 min-h-[48px] text-base bg-gray-100 dark:bg-gray-800 border-none rounded-lg focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent"
                         />
                     </div>
                 )}
@@ -772,7 +772,8 @@ const TonightsSleepCard: React.FC<{
                     ) : (
                         <button
                             onClick={() => setIsExpanded(false)}
-                            className="text-day-text-secondary dark:text-night-text-secondary p-1"
+                            aria-label="Collapse tonight's sleep card"
+                            className="text-day-text-secondary dark:text-night-text-secondary p-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
@@ -826,7 +827,7 @@ const TonightsSleepCard: React.FC<{
                                     onChange={(e) => { setDayNotes(e.target.value); setSaved(false); }}
                                     onBlur={handleSaveNotes}
                                     placeholder="Stressful meeting, exercised, late coffee..."
-                                    className="flex-1 px-3 py-2 bg-white/70 dark:bg-gray-800/70 border border-indigo-200 dark:border-indigo-700/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                                    className="flex-1 px-3 py-2 min-h-[48px] text-base bg-white/70 dark:bg-gray-800/70 border border-indigo-200 dark:border-indigo-700/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                                 />
                                 {saved && (
                                     <div className="flex items-center text-green-500 text-xs">

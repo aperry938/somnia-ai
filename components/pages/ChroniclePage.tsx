@@ -288,7 +288,7 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
                                 <p className="text-day-text-secondary dark:text-night-text-secondary mb-2">No results found</p>
                                 <button
                                     onClick={() => setSearchQuery('')}
-                                    className="text-day-accent dark:text-night-accent hover:underline text-sm"
+                                    className="text-day-accent dark:text-night-accent hover:underline text-sm min-h-[44px] px-4 py-2"
                                 >
                                     Clear search
                                 </button>
@@ -307,7 +307,7 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
                         </p>
                         <button
                             onClick={() => setIsAddSleepModalOpen(true)}
-                            className="inline-flex items-center gap-2 px-6 py-3 bg-day-accent dark:bg-night-accent text-white rounded-full font-medium hover:opacity-90 transition-opacity"
+                            className="inline-flex items-center justify-center gap-2 px-6 py-3 min-h-[48px] bg-day-accent dark:bg-night-accent text-white rounded-full font-medium hover:opacity-90 transition-opacity"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
