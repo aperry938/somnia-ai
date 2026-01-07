@@ -70,7 +70,7 @@ export const AddDreamToEntryModal: React.FC<AddDreamToEntryModalProps> = ({
                     <textarea
                         value={displayText}
                         onChange={(e) => setDreamText(e.target.value)}
-                        className="w-full h-32 p-4 pr-12 bg-white/50 dark:bg-black/30 border border-day-border dark:border-night-border rounded-lg focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent focus:outline-none transition-all custom-scrollbar"
+                        className="w-full h-32 p-4 pr-12 text-base bg-white/50 dark:bg-black/30 border border-day-border dark:border-night-border rounded-lg focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent focus:outline-none transition-all custom-scrollbar"
                         placeholder="Describe your dream..."
                         aria-label="Dream description"
                         disabled={isListening}

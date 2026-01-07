@@ -123,7 +123,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                         <textarea
                             value={displayText}
                             onChange={(e) => setDreamText(e.target.value)}
-                            className="w-full h-40 p-4 pr-12 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-purple-400 focus:outline-none transition-all custom-scrollbar text-white placeholder-white/50"
+                            className="w-full h-40 p-4 pr-12 text-base bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-purple-400 focus:outline-none transition-all custom-scrollbar text-white placeholder-white/50"
                             placeholder="Speak or write your dream here..."
                             aria-label="Dream description"
                             disabled={isListening}
@@ -215,7 +215,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                     onClick={toggleBoost}
                     aria-label={boostActive ? "Stop wake up boost" : "Start wake up boost"}
                     aria-pressed={boostActive}
-                    className={`w-full py-4 rounded-xl font-semibold text-lg transition-all ${boostActive
+                    className={`w-full py-4 min-h-[56px] rounded-xl font-semibold text-lg transition-all flex items-center justify-center ${boostActive
                         ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/30'
                         : 'bg-white/20 text-white hover:bg-white/30'
                         }`}
@@ -235,7 +235,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
             <button
                 onClick={handleStartMyDay}
                 aria-label="Start my day and close"
-                className="w-full max-w-sm py-4 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold rounded-xl text-lg shadow-lg hover:shadow-xl transition-all"
+                className="w-full max-w-sm py-4 min-h-[56px] bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold rounded-xl text-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center"
             >
                 Start My Day
             </button>
