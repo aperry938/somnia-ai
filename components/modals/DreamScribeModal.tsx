@@ -116,19 +116,20 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
     // Step 1: Record dream - Purple alarm theme
     if (step === 'record') {
         return (
-            <div className="fixed inset-0 bg-gradient-to-b from-indigo-900/95 to-purple-900/95 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={onClose}>
+            <div className="fixed inset-0 bg-gradient-to-b from-indigo-900/95 to-purple-900/95 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="dream-scribe-title">
                 <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-6 w-full max-w-lg animate-fadeIn max-h-[90vh] overflow-y-auto text-white" onClick={(e) => e.stopPropagation()}>
-                    <h2 className="font-serif text-2xl text-center mb-4">The Dream Scribe</h2>
+                    <h2 id="dream-scribe-title" className="font-serif text-2xl text-center mb-4">The Dream Scribe</h2>
                     <div className="relative">
                         <textarea
                             value={displayText}
                             onChange={(e) => setDreamText(e.target.value)}
                             className="w-full h-40 p-4 pr-12 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-purple-400 focus:outline-none transition-all custom-scrollbar text-white placeholder-white/50"
                             placeholder="Speak or write your dream here..."
+                            aria-label="Dream description"
                             disabled={isListening}
                         ></textarea>
                         {isSupported && (
-                            <button onClick={isListening ? stopListening : startListening} className={`absolute top-3 right-3 transition-colors ${isListening ? 'text-red-400' : 'text-white/60 hover:text-white'}`}>
+                            <button onClick={isListening ? stopListening : startListening} aria-label={isListening ? "Stop recording" : "Start voice recording"} aria-pressed={isListening} className={`absolute top-3 right-3 transition-colors ${isListening ? 'text-red-400' : 'text-white/60 hover:text-white'}`}>
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
                             </button>
                         )}
@@ -156,11 +157,13 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                     {/* Mood Selector */}
                     <div className="my-4">
                         <p className="text-center text-white/70 mb-2">How did the dream feel?</p>
-                        <div className="flex flex-wrap justify-center gap-2">
+                        <div className="flex flex-wrap justify-center gap-2" role="group" aria-label="Dream mood options">
                             {MOOD_OPTIONS.map((value) => (
                                 <button
                                     key={value}
                                     onClick={() => { haptics.selection(); setMood(mood === value ? null : value); }}
+                                    aria-label={`${MOOD_LABELS[value]} mood`}
+                                    aria-pressed={mood === value}
                                     className={`px-3 py-1.5 rounded-full text-sm transition-all flex items-center gap-1.5 ${mood === value
                                         ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white scale-105'
                                         : 'bg-white/10 border border-white/20 text-white/80 hover:border-white/40'
@@ -175,9 +178,10 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                     </div>
 
                     <div className="flex justify-center gap-4 mt-4">
-                        <button onClick={onClose} className="py-2 px-6 bg-white/20 hover:bg-white/30 text-white rounded-full transition-all">Cancel</button>
+                        <button onClick={onClose} aria-label="Cancel and close" className="py-2 px-6 bg-white/20 hover:bg-white/30 text-white rounded-full transition-all">Cancel</button>
                         <button
                             onClick={handleSave}
+                            aria-label="Save dream and continue"
                             className="py-2 px-6 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold rounded-full disabled:opacity-50 transition-all"
                             disabled={!dreamText.trim() || isListening}
                         >
@@ -192,9 +196,9 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
     // Step 2 & 3 Combined: Wake Up Boost offer with "Start My Day"
     // Clear layout: Good Morning header, Wake Up Boost card, Start My Day button
     return (
-        <div className="fixed inset-0 bg-gradient-to-b from-indigo-900/95 to-purple-900/95 backdrop-blur-md flex flex-col items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-gradient-to-b from-indigo-900/95 to-purple-900/95 backdrop-blur-md flex flex-col items-center justify-center p-4 z-50" role="dialog" aria-modal="true" aria-labelledby="boost-title">
             {/* Good Morning Header */}
-            <h2 className="font-serif text-3xl text-white mb-6">Good Morning</h2>
+            <h2 id="boost-title" className="font-serif text-3xl text-white mb-6">Good Morning</h2>
 
             {/* Wake Up Boost Card */}
             <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-6 w-full max-w-sm animate-fadeIn text-white text-center mb-6">
@@ -209,6 +213,8 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                 {/* Start/Stop Wake Up Boost button */}
                 <button
                     onClick={toggleBoost}
+                    aria-label={boostActive ? "Stop wake up boost" : "Start wake up boost"}
+                    aria-pressed={boostActive}
                     className={`w-full py-4 rounded-xl font-semibold text-lg transition-all ${boostActive
                         ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/30'
                         : 'bg-white/20 text-white hover:bg-white/30'
@@ -216,7 +222,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                 >
                     {boostActive ? (
                         <span className="flex items-center justify-center gap-2">
-                            <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                            <span className="w-2 h-2 bg-white rounded-full animate-pulse" aria-hidden="true"></span>
                             Boost Active - Tap to Stop
                         </span>
                     ) : (
@@ -228,6 +234,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
             {/* Start My Day button - goes to homepage */}
             <button
                 onClick={handleStartMyDay}
+                aria-label="Start my day and close"
                 className="w-full max-w-sm py-4 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold rounded-xl text-lg shadow-lg hover:shadow-xl transition-all"
             >
                 Start My Day
