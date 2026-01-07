@@ -1,21 +1,14 @@
 
 // Basic Voice Command Service using Web Speech API
 
-// Web Speech API types (not always available in TypeScript)
-interface SpeechRecognitionEvent extends Event {
-    results: SpeechRecognitionResultList;
-}
-
-interface SpeechRecognitionErrorEvent extends Event {
-    error: string;
-}
-
-interface SpeechRecognitionInstance {
+// Minimal interface for the Web Speech API recognition object
+// Using this approach to avoid conflicts with browser-specific global types
+interface WebSpeechRecognition {
     continuous: boolean;
     interimResults: boolean;
     lang: string;
-    onresult: ((event: SpeechRecognitionEvent) => void) | null;
-    onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
+    onresult: ((event: { results: SpeechRecognitionResultList }) => void) | null;
+    onerror: ((event: { error: string }) => void) | null;
     onend: (() => void) | null;
     start: () => void;
     stop: () => void;
@@ -29,25 +22,26 @@ interface VoiceCommand {
 }
 
 class VoiceCommandService {
-    private recognition: SpeechRecognitionInstance | null = null;
+    private recognition: WebSpeechRecognition | null = null;
     private isListening: boolean = false;
     private listeners: VoiceCommand[] = [];
 
     constructor() {
         if ('webkitSpeechRecognition' in window) {
-            const SpeechRecognition = (window as Window & { webkitSpeechRecognition: new () => SpeechRecognitionInstance }).webkitSpeechRecognition;
-            this.recognition = new SpeechRecognition();
+            // Cast through unknown to safely access vendor-prefixed API
+            const SpeechRecognitionCtor = (window as unknown as { webkitSpeechRecognition: new () => WebSpeechRecognition }).webkitSpeechRecognition;
+            this.recognition = new SpeechRecognitionCtor();
             this.recognition.continuous = true;
             this.recognition.interimResults = false;
             this.recognition.lang = 'en-US';
 
-            this.recognition.onresult = (event: SpeechRecognitionEvent) => {
+            this.recognition.onresult = (event) => {
                 const lastResultIndex = event.results.length - 1;
                 const transcript = event.results[lastResultIndex][0].transcript.trim().toLowerCase();
                 this.processCommand(transcript);
             };
 
-            this.recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+            this.recognition.onerror = (event) => {
                 console.error("Speech recognition error", event.error);
             };
 
