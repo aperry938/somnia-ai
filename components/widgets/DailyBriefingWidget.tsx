@@ -14,6 +14,11 @@ export const DailyBriefingWidget: React.FC = () => {
             <div
                 className="bg-white/10 dark:bg-black/20 backdrop-blur-md border border-white/20 rounded-xl p-3 flex items-center justify-between shadow-sm cursor-pointer hover:bg-white/15 dark:hover:bg-black/25 transition-colors"
                 onClick={() => setShowInfo(!showInfo)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowInfo(!showInfo); } }}
+                aria-expanded={showInfo}
+                aria-label={`Level ${stats.level} Oneironaut, ${stats.currentStreak} day streak. Click for more info`}
             >
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center">
@@ -37,7 +42,7 @@ export const DailyBriefingWidget: React.FC = () => {
                 </div>
             </div>
             {/* Progress bar to next level */}
-            <div className="mt-1 h-1 w-full px-1">
+            <div className="mt-1 h-1 w-full px-1" role="progressbar" aria-valuenow={stats.nextLevelProgress} aria-valuemin={0} aria-valuemax={100} aria-label={`Progress to next level: ${stats.nextLevelProgress}%`}>
                 <div className="h-full bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden">
                     <div className="h-full bg-day-accent dark:bg-night-accent rounded-full transition-all duration-500" style={{ width: `${stats.nextLevelProgress}%` }}></div>
                 </div>
