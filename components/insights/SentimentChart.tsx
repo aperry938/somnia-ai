@@ -41,7 +41,7 @@ export const SentimentChart: React.FC<SentimentChartProps> = ({ dreams }) => {
             <h3 className="font-serif text-xl font-bold mb-1">Emotional Arc</h3>
             <p className="text-sm text-day-text-secondary dark:text-night-text-secondary mb-6">Sentiment trends over your last 14 dreams</p>
 
-            <div className="h-64 w-full">
+            <div className="h-64 w-full" role="img" aria-label={`Emotional sentiment chart showing trends over ${data.length} dreams`}>
                 <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={data}>
                         <defs>

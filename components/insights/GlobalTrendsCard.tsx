@@ -28,11 +28,13 @@ export const GlobalTrendsCard: React.FC = () => {
             </div>
 
             {/* Time Period Filter */}
-            <div className="flex gap-1 mb-5 bg-black/20 p-1 rounded-lg">
+            <div className="flex gap-1 mb-5 bg-black/20 p-1 rounded-lg" role="group" aria-label="Time period filter">
                 {(Object.keys(periodLabels) as TrendPeriod[]).map((p) => (
                     <button
                         key={p}
                         onClick={() => setPeriod(p)}
+                        aria-pressed={period === p}
+                        aria-label={`Show ${periodLabels[p]} trends`}
                         className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-all ${
                             period === p
                                 ? 'bg-indigo-500 text-white shadow-lg'
@@ -57,13 +59,14 @@ export const GlobalTrendsCard: React.FC = () => {
                                     {trend.percentage}% {trend.change === 'up' ? '↑' : trend.change === 'down' ? '↓' : '-'}
                                 </span>
                             </div>
-                            <div className="w-full bg-black/20 rounded-full h-2">
+                            <div className="w-full bg-black/20 rounded-full h-2" role="progressbar" aria-valuenow={trend.percentage} aria-valuemin={0} aria-valuemax={100} aria-label={`${trend.topic}: ${trend.percentage}%`}>
                                 <div
                                     className={`h-2 rounded-full transition-all duration-500 ${trend.sentiment === 'positive' ? 'bg-gradient-to-r from-green-400 to-emerald-500' :
                                             trend.sentiment === 'negative' ? 'bg-gradient-to-r from-red-400 to-rose-500' :
                                                 'bg-gradient-to-r from-blue-400 to-indigo-500'
                                         }`}
                                     style={{ width: `${trend.percentage}%` }}
+                                    aria-hidden="true"
                                 ></div>
                             </div>
                         </div>
