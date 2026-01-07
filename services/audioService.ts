@@ -1,4 +1,5 @@
 import { Soundscape } from '../types';
+import { logger } from './logger';
 
 let audioContext: AudioContext | null = null;
 
@@ -81,7 +82,7 @@ export const playSomniaAlarm = () => {
     // No additional scheduling needed - Web Audio holds the final values
 
     alarmOscillator.start(now);
-    console.log('[playSomniaAlarm] Started - 60s crescendo to full volume, then sustains');
+    logger.log('[playSomniaAlarm] Started - 60s crescendo to full volume, then sustains');
 };
 
 /**
@@ -120,46 +121,46 @@ export const playProgressiveAlarm = () => {
  * @param soundId - The alarm sound ID from alarm setup
  */
 export const playAlarmBySound = (soundId: string = 'somnia') => {
-    console.log('[playAlarmBySound] Requested soundId:', soundId);
+    logger.log('[playAlarmBySound] Requested soundId:', soundId);
     switch (soundId) {
         case 'somnia':
-            console.log('[playAlarmBySound] Playing Somnia alarm');
+            logger.log('[playAlarmBySound] Playing Somnia alarm');
             playSomniaAlarm();
             break;
         case 'progressive':
-            console.log('[playAlarmBySound] Playing Progressive alarm');
+            logger.log('[playAlarmBySound] Playing Progressive alarm');
             playProgressiveAlarm();
             break;
         case 'gentle':
-            console.log('[playAlarmBySound] Playing Gentle Rise alarm');
+            logger.log('[playAlarmBySound] Playing Gentle Rise alarm');
             playGentleAlarm();
             break;
         case 'chimes':
-            console.log('[playAlarmBySound] Playing Chimes alarm');
+            logger.log('[playAlarmBySound] Playing Chimes alarm');
             playChimesAlarm();
             break;
         case 'nature':
-            console.log('[playAlarmBySound] Playing Nature alarm');
+            logger.log('[playAlarmBySound] Playing Nature alarm');
             playNatureAlarm();
             break;
         case 'classic':
-            console.log('[playAlarmBySound] Playing Classic alarm');
+            logger.log('[playAlarmBySound] Playing Classic alarm');
             playClassicAlarm();
             break;
         case 'prism':
-            console.log('[playAlarmBySound] Playing Prism alarm');
+            logger.log('[playAlarmBySound] Playing Prism alarm');
             playPrismAlarm();
             break;
         case 'aether':
-            console.log('[playAlarmBySound] Playing Aether alarm');
+            logger.log('[playAlarmBySound] Playing Aether alarm');
             playAetherAlarm();
             break;
         case 'bamboo':
-            console.log('[playAlarmBySound] Playing Bamboo alarm');
+            logger.log('[playAlarmBySound] Playing Bamboo alarm');
             playBambooAlarm();
             break;
         default:
-            console.log('[playAlarmBySound] Unknown soundId, defaulting to Somnia:', soundId);
+            logger.log('[playAlarmBySound] Unknown soundId, defaulting to Somnia:', soundId);
             playSomniaAlarm();
     }
 };
@@ -208,7 +209,7 @@ const playGentleAlarm = () => {
     }
 
     alarmOscillator.start(now);
-    console.log('[playGentleAlarm] Started - 60s crescendo, then 30min sustain');
+    logger.log('[playGentleAlarm] Started - 60s crescendo, then 30min sustain');
 };
 
 /**
@@ -305,7 +306,7 @@ const playClassicAlarm = () => {
     }
 
     alarmOscillator.start(now);
-    console.log('[playClassicAlarm] Started - 60s crescendo, then 30min sustain');
+    logger.log('[playClassicAlarm] Started - 60s crescendo, then 30min sustain');
 };
 
 // === PROCEDURAL ALARM SYSTEM ("SOMNIA WAKE ENGINE") ===
@@ -326,7 +327,7 @@ let proceduralGainNode: GainNode | null = null;
  * Bulletproof: 30 minutes of chimes scheduled
  */
 const playPrismAlarm = () => {
-    console.log('[playPrismAlarm] Starting Prism alarm');
+    logger.log('[playPrismAlarm] Starting Prism alarm');
     stopSleepSound();
     const context = getAudioContext();
     if (alarmOscillator) stopAlarmSound();
@@ -364,10 +365,10 @@ const playPrismAlarm = () => {
     }
 
     baseOsc.start(now);
-    console.log('[playPrismAlarm] Started - 60s crescendo, 720 chimes over 30min');
+    logger.log('[playPrismAlarm] Started - 60s crescendo, 720 chimes over 30min');
 
     proceduralAlarmStop = () => {
-        console.log('[playPrismAlarm] Stopping');
+        logger.log('[playPrismAlarm] Stopping');
         try { baseOsc.stop(); } catch { }
     };
 };
@@ -378,7 +379,7 @@ const playPrismAlarm = () => {
  * Bulletproof: Continuous drone plays indefinitely
  */
 const playAetherAlarm = () => {
-    console.log('[playAetherAlarm] Starting Aether alarm');
+    logger.log('[playAetherAlarm] Starting Aether alarm');
     stopSleepSound();
     const context = getAudioContext();
     if (alarmOscillator) stopAlarmSound();
@@ -407,10 +408,10 @@ const playAetherAlarm = () => {
 
     osc.connect(proceduralGainNode);
     osc.start(now);
-    console.log('[playAetherAlarm] Started - 60s crescendo to 0.5 volume, then sustains');
+    logger.log('[playAetherAlarm] Started - 60s crescendo to 0.5 volume, then sustains');
 
     proceduralAlarmStop = () => {
-        console.log('[playAetherAlarm] Stopping');
+        logger.log('[playAetherAlarm] Stopping');
         try { osc.stop(); } catch { }
     };
 };
@@ -421,7 +422,7 @@ const playAetherAlarm = () => {
  * Bulletproof: 30 minutes of pulses scheduled
  */
 const playBambooAlarm = () => {
-    console.log('[playBambooAlarm] Starting Bamboo alarm');
+    logger.log('[playBambooAlarm] Starting Bamboo alarm');
     stopSleepSound();
     const context = getAudioContext();
     if (alarmOscillator) stopAlarmSound();
@@ -474,10 +475,10 @@ const playBambooAlarm = () => {
     }
 
     osc.start(now);
-    console.log('[playBambooAlarm] Started - 60s crescendo,', pulseCount, 'pulses over 30min');
+    logger.log('[playBambooAlarm] Started - 60s crescendo,', pulseCount, 'pulses over 30min');
 
     proceduralAlarmStop = () => {
-        console.log('[playBambooAlarm] Stopping');
+        logger.log('[playBambooAlarm] Stopping');
         try { osc.stop(); } catch { }
     };
 };
@@ -486,7 +487,7 @@ const playBambooAlarm = () => {
  * Cleanup procedural alarm resources
  */
 const cleanupProceduralAlarm = () => {
-    console.log('[cleanupProceduralAlarm] Called, proceduralAlarmStop exists:', !!proceduralAlarmStop);
+    logger.log('[cleanupProceduralAlarm] Called, proceduralAlarmStop exists:', !!proceduralAlarmStop);
 
     if (proceduralAlarmStop) {
         proceduralAlarmStop();
@@ -522,7 +523,7 @@ const cleanupProceduralAlarm = () => {
  * Fades out volume over 0.5s to prevent clicking artifacts.
  */
 export const stopAlarmSound = () => {
-    console.log('[stopAlarmSound] Called at', new Date().toISOString());
+    logger.log('[stopAlarmSound] Called at', new Date().toISOString());
 
     // Stop regular oscillator-based alarms
     if (alarmGainNode && alarmOscillator && audioContext) {

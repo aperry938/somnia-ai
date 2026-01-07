@@ -243,6 +243,9 @@ const validateDreamSchema = (obj: unknown, newId: number): Dream | null => {
     return validDream;
 };
 
+// SECURITY FIX: Maximum file size for imports (10MB)
+const MAX_IMPORT_FILE_SIZE = 10 * 1024 * 1024;
+
 /**
  * Imports dreams from a JSON backup file.
  * Automatically re-assigns IDs to prevent collisions with existing dreams.
@@ -257,6 +260,12 @@ export const importDreamsFromJSON = (
     existingDreams: Dream[]
 ): Promise<Dream[]> => {
     return new Promise((resolve, reject) => {
+        // SECURITY FIX: Check file size before processing
+        if (file.size > MAX_IMPORT_FILE_SIZE) {
+            reject(new Error(`File too large. Maximum size is ${MAX_IMPORT_FILE_SIZE / 1024 / 1024}MB`));
+            return;
+        }
+
         const reader = new FileReader();
 
         reader.onload = (e) => {
@@ -339,6 +348,12 @@ export const importDreamsEncrypted = async (
     existingDreams: Dream[]
 ): Promise<Dream[]> => {
     return new Promise((resolve, reject) => {
+        // SECURITY FIX: Check file size before processing
+        if (file.size > MAX_IMPORT_FILE_SIZE) {
+            reject(new Error(`File too large. Maximum size is ${MAX_IMPORT_FILE_SIZE / 1024 / 1024}MB`));
+            return;
+        }
+
         const reader = new FileReader();
         reader.onload = async (e) => {
             try {
@@ -355,18 +370,25 @@ export const importDreamsEncrypted = async (
                 if (!password) throw new Error("Password required");
 
                 const decryptedJson = await decryptDataWithPassword(json.payload, json.iv, json.salt, password);
-                const importedDreams = JSON.parse(decryptedJson) as Dream[];
+                const importedDreams = JSON.parse(decryptedJson) as unknown[];
 
                 // Get max existing ID to avoid collisions
                 const maxExistingId = Math.max(0, ...existingDreams.map((d: Dream) => d.id));
 
-                // Re-assign IDs to avoid collisions
-                const withNewIds = importedDreams.map((dream: Dream, index: number) => ({
-                    ...dream,
-                    id: maxExistingId + index + 1
-                }));
+                // SECURITY FIX: Validate each dream against schema
+                const validDreams: Dream[] = [];
+                importedDreams.forEach((dream, index) => {
+                    const validated = validateDreamSchema(dream, maxExistingId + index + 1);
+                    if (validated) {
+                        validDreams.push(validated);
+                    }
+                });
 
-                resolve(withNewIds);
+                if (validDreams.length === 0 && importedDreams.length > 0) {
+                    throw new Error('No valid dreams found in encrypted backup');
+                }
+
+                resolve(validDreams);
 
             } catch (err) {
                 console.error(err);

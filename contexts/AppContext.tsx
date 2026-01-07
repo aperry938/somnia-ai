@@ -4,6 +4,7 @@ import { Alarm, Dream, SleepAids, Biometrics, Theme, CoachPersonality, AnalysisP
 export type ArtStyle = 'surreal' | 'watercolor' | 'oil-painting' | 'anime' | 'photorealistic' | 'abstract' | 'fantasy' | 'minimalist';
 import { enqueueAction } from '../services/syncService';
 import { cacheDreamTitle } from '../services/geminiService';
+import { logger } from '../services/logger';
 
 /**
  * SECURITY FIX: Generate cryptographically secure random ID
@@ -78,7 +79,7 @@ const useLocalStorage = <T,>(key: string, initialValue: T): [T, React.Dispatch<R
             const item = window.localStorage.getItem(key);
             return item ? JSON.parse(item) : initialValue;
         } catch (error) {
-            console.error(error);
+            logger.error(error);
             return initialValue;
         }
     });
@@ -87,7 +88,7 @@ const useLocalStorage = <T,>(key: string, initialValue: T): [T, React.Dispatch<R
         try {
             window.localStorage.setItem(key, JSON.stringify(storedValue));
         } catch (error) {
-            console.error(error);
+            logger.error(error);
         }
     }, [key, storedValue]);
 
@@ -131,7 +132,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             return;
         }
 
-        console.log('[Migration] Converting', legacyDreams.length, 'legacy dreams to sleep entries');
+        logger.log('[Migration] Converting', legacyDreams.length, 'legacy dreams to sleep entries');
 
         // Group legacy dreams by date
         const dreamsByDate = new Map<string, typeof legacyDreams>();
@@ -178,7 +179,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
         // Apply migration
         if (newSleepEntries.length > 0) {
-            console.log('[Migration] Created', newSleepEntries.length, 'sleep entries');
+            logger.log('[Migration] Created', newSleepEntries.length, 'sleep entries');
             setSleepEntries(prev => [...prev, ...newSleepEntries]);
             setDreams(updatedDreams);
         }
@@ -209,7 +210,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             purpose,
             label
         };
-        console.log('[AppContext] Creating new alarm:', newAlarm);
+        logger.log('[AppContext] Creating new alarm:', newAlarm);
         setAlarms(prev => [...prev, newAlarm]);
         enqueueAction('ADD_ALARM', newAlarm);
         return newAlarm.id;
