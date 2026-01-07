@@ -61,7 +61,7 @@ export const AddSleepEntryModal: React.FC<AddSleepEntryModalProps> = ({
                         onChange={(e) => setSleepDate(e.target.value)}
                         max={new Date().toISOString().split('T')[0]}
                         aria-label="Sleep date"
-                        className="w-full p-3 bg-white/50 dark:bg-black/30 border border-day-border dark:border-night-border rounded-lg focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent focus:outline-none"
+                        className="w-full p-3 min-h-[48px] text-base bg-white/50 dark:bg-black/30 border border-day-border dark:border-night-border rounded-lg focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent focus:outline-none"
                     />
                 </div>
 
@@ -85,7 +85,7 @@ export const AddSleepEntryModal: React.FC<AddSleepEntryModalProps> = ({
                                 onClick={() => { haptics.selection(); setDayRating(dayRating === rating ? null : rating); }}
                                 aria-label={`Rate day ${rating} out of 5 - ${dayLabels[rating - 1]}`}
                                 aria-pressed={dayRating === rating}
-                                className={`flex-1 py-2 px-1 rounded-lg flex flex-col items-center gap-1 transition-all max-w-[60px] ${dayRating === rating
+                                className={`flex-1 py-2 px-1 min-h-[56px] rounded-lg flex flex-col items-center justify-center gap-1 transition-all max-w-[60px] ${dayRating === rating
                                         ? 'bg-day-accent dark:bg-night-accent text-white scale-105'
                                         : 'bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border'
                                     }`}
@@ -117,19 +117,19 @@ export const AddSleepEntryModal: React.FC<AddSleepEntryModalProps> = ({
                 <div className="flex flex-col gap-2">
                     <button
                         onClick={() => handleSave(true)}
-                        className="w-full py-3 bg-day-accent dark:bg-night-accent text-white font-bold rounded-full transition-all"
+                        className="w-full py-3 min-h-[48px] bg-day-accent dark:bg-night-accent text-white font-bold rounded-full transition-all flex items-center justify-center"
                     >
                         Save & Add Dream
                     </button>
                     <button
                         onClick={() => handleSave(false)}
-                        className="w-full py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-full transition-all"
+                        className="w-full py-3 min-h-[48px] bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-full transition-all flex items-center justify-center"
                     >
                         Save (No Dreams)
                     </button>
                     <button
                         onClick={onClose}
-                        className="w-full py-2 text-day-text-secondary dark:text-night-text-secondary hover:text-day-text dark:hover:text-night-text transition-colors text-sm"
+                        className="w-full py-3 min-h-[44px] text-day-text-secondary dark:text-night-text-secondary hover:text-day-text dark:hover:text-night-text transition-colors text-sm flex items-center justify-center"
                     >
                         Cancel
                     </button>
