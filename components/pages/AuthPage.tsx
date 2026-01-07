@@ -1,5 +1,5 @@
 /**
- * Authentication Page for Somnia.ai
+ * Authentication Page for Somnia
  *
  * Provides login, signup, and password reset functionality
  * with a premium, elegant design matching the app's aesthetic.
@@ -117,8 +117,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSkip }) => {
                     </div>
                     <h1 className="font-serif text-4xl mb-2">Somnia</h1>
                     <p className="text-day-text-secondary dark:text-night-text-secondary">
-                        {mode === 'login' && 'Welcome back, dreamer'}
-                        {mode === 'signup' && 'Begin your dream journey'}
+                        {mode === 'login' && 'Welcome back'}
+                        {mode === 'signup' && 'Start your wellness journey'}
                         {mode === 'reset' && 'Reset your password'}
                     </p>
                 </div>
@@ -133,7 +133,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSkip }) => {
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                placeholder="dreamer@somnia.ai"
+                                placeholder="you@example.com"
                                 required
                                 className="w-full px-4 py-3 min-h-[48px] text-base bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-xl focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent transition-all"
                             />
