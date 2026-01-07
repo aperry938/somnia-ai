@@ -3,30 +3,40 @@ import { useState, useEffect } from 'react';
 import { Theme } from '../types';
 import { useAppContext } from '../contexts/AppContext';
 
+type CircadianPhase = 'night' | 'dawn' | 'day' | 'dusk';
+
 /**
- * Calculates a circadian brightness factor (0-1) based on time of day.
- * 0 = darkest (deep night), 1 = brightest (midday)
- * Smooth sine-wave interpolation throughout the day.
+ * Determines circadian phase based on time of day:
+ * - Night: 9pm - 5am (dark theme, deepest darkness)
+ * - Dawn: 5am - 8am (dark→light transition, warm orange/pink tones)
+ * - Day: 8am - 6pm (light theme, full brightness)
+ * - Dusk: 6pm - 9pm (light→dark transition, warm golden/purple tones)
  */
-const getCircadianBrightness = (hours: number, minutes: number): number => {
-    const timeInHours = hours + minutes / 60;
+const getCircadianPhase = (hours: number, minutes: number): { phase: CircadianPhase; progress: number } => {
+    const time = hours + minutes / 60;
 
-    // Peak brightness at noon (12:00), darkest at midnight (0:00/24:00)
-    // Using cosine wave: cos(0) = 1 at midnight, cos(π) = -1 at noon
-    // Invert and normalize to 0-1 range
-    const radians = (timeInHours / 24) * 2 * Math.PI;
-    const brightness = (1 - Math.cos(radians - Math.PI)) / 2;
-
-    // Apply curve to make transitions more gradual during day, steeper at dusk/dawn
-    // This creates: very dark 11pm-5am, gradual brighten 6-10am, bright 10am-4pm, gradual dim 5-10pm
-    return Math.pow(brightness, 0.7);
+    // Night: 21:00 (9pm) to 5:00
+    if (time >= 21 || time < 5) {
+        return { phase: 'night', progress: 1 };
+    }
+    // Dawn: 5:00 to 8:00 (3 hour transition)
+    if (time >= 5 && time < 8) {
+        const progress = (time - 5) / 3; // 0 at 5am, 1 at 8am
+        return { phase: 'dawn', progress };
+    }
+    // Day: 8:00 to 18:00 (6pm)
+    if (time >= 8 && time < 18) {
+        return { phase: 'day', progress: 1 };
+    }
+    // Dusk: 18:00 to 21:00 (3 hour transition)
+    const progress = (time - 18) / 3; // 0 at 6pm, 1 at 9pm
+    return { phase: 'dusk', progress };
 };
 
 /**
  * Provides current time, date, and derived theme (day/night).
  * Updates every second.
- * Handles automatic theme toggling based on hour (6am-7pm = day).
- * In 'auto' mode, also applies gradual circadian brightness.
+ * In 'auto' (Circadian) mode, applies gradual phase-based transitions.
  */
 export const useClock = () => {
     const { themeOverride } = useAppContext();
@@ -41,16 +51,19 @@ export const useClock = () => {
 
     const hours = date.getHours();
     const minutes = date.getMinutes();
-    const autoTheme: Theme = (hours >= 6 && hours < 19) ? 'day' : 'night';
+
+    // Get circadian phase info
+    const { phase: circadianPhase, progress: phaseProgress } = getCircadianPhase(hours, minutes);
+
+    // Determine if we should use dark mode
+    const shouldBeDark = circadianPhase === 'night' || circadianPhase === 'dusk';
+    const autoTheme: Theme = shouldBeDark ? 'night' : 'day';
 
     // Use override if set, otherwise use auto theme based on time
     const theme: Theme = themeOverride === 'auto' ? autoTheme : themeOverride;
 
     const timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).replace(" AM", "").replace(" PM", "");
     const dateString = date.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
-
-    // Calculate circadian brightness for gradual transitions
-    const circadianBrightness = getCircadianBrightness(hours, minutes);
 
     useEffect(() => {
         const root = document.documentElement;
@@ -61,18 +74,48 @@ export const useClock = () => {
             root.classList.remove('dark');
         }
 
-        // Only apply circadian dimming in auto mode
+        // Only apply circadian styling in auto mode
         if (themeOverride === 'auto') {
-            // Apply brightness factor as CSS custom property
-            // This dims the background gradient during darker hours
-            root.style.setProperty('--circadian-brightness', circadianBrightness.toFixed(2));
-            root.style.setProperty('--circadian-overlay-opacity', ((1 - circadianBrightness) * 0.15).toFixed(2));
-        } else {
-            // Reset to defaults when using manual theme
-            root.style.setProperty('--circadian-brightness', '1');
-            root.style.setProperty('--circadian-overlay-opacity', '0');
-        }
-    }, [theme, themeOverride, circadianBrightness]);
+            // Set phase as data attribute for potential CSS targeting
+            root.dataset.circadianPhase = circadianPhase;
 
-    return { timeString, dateString, theme, date, circadianBrightness };
+            // Apply phase-specific overlay for color transitions
+            // Night: deep dark overlay
+            // Dawn: warm orange-pink overlay fading out
+            // Day: no overlay
+            // Dusk: warm golden-purple overlay fading in
+            let overlayOpacity = 0;
+            let overlayHue = 0; // 0 = warm orange, 270 = purple
+
+            switch (circadianPhase) {
+                case 'night':
+                    overlayOpacity = 0.12; // Slight darkening overlay
+                    overlayHue = 240; // Blue-ish
+                    break;
+                case 'dawn':
+                    overlayOpacity = 0.08 * (1 - phaseProgress); // Fades out as day approaches
+                    overlayHue = 30; // Warm orange
+                    break;
+                case 'day':
+                    overlayOpacity = 0;
+                    break;
+                case 'dusk':
+                    overlayOpacity = 0.06 * phaseProgress; // Fades in as night approaches
+                    overlayHue = 280; // Purple-ish
+                    break;
+            }
+
+            root.style.setProperty('--circadian-overlay-opacity', overlayOpacity.toFixed(3));
+            root.style.setProperty('--circadian-overlay-hue', overlayHue.toString());
+            root.style.setProperty('--circadian-phase-progress', phaseProgress.toFixed(2));
+        } else {
+            // Reset when using manual theme
+            delete root.dataset.circadianPhase;
+            root.style.setProperty('--circadian-overlay-opacity', '0');
+            root.style.setProperty('--circadian-overlay-hue', '0');
+            root.style.setProperty('--circadian-phase-progress', '1');
+        }
+    }, [theme, themeOverride, circadianPhase, phaseProgress]);
+
+    return { timeString, dateString, theme, date, circadianPhase, phaseProgress };
 };
