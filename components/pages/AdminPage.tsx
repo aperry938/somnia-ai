@@ -294,7 +294,7 @@ export const AdminPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                         <button
                             onClick={() => setShowErrorLogs(!showErrorLogs)}
                             aria-label={showErrorLogs ? 'Hide error logs' : 'Show error logs'}
-                            className="text-xs px-3 py-2 min-h-[36px] border border-day-border dark:border-night-border rounded hover:bg-white/10 dark:hover:bg-black/10"
+                            className="text-xs px-3 py-2 min-h-[44px] border border-day-border dark:border-night-border rounded hover:bg-white/10 dark:hover:bg-black/10"
                         >
                             {showErrorLogs ? 'Hide' : 'Show'}
                         </button>
@@ -302,7 +302,7 @@ export const AdminPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                             <button
                                 onClick={handleClearErrorLogs}
                                 aria-label="Clear error logs"
-                                className="text-xs px-3 py-2 min-h-[36px] border border-red-300 dark:border-red-800 text-red-500 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
+                                className="text-xs px-3 py-2 min-h-[44px] border border-red-300 dark:border-red-800 text-red-500 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
                             >
                                 Clear
                             </button>

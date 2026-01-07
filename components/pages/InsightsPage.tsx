@@ -344,7 +344,7 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                                             <p className="text-sm text-day-text-secondary dark:text-night-text-secondary">{item.description}</p>
                                             <div className="flex flex-wrap gap-2 mt-2">
                                                 {item.exampleDreamIds.map(id => (
-                                                    <button onClick={() => onDreamSelect(id)} key={id} className="text-xs px-3 py-2 min-h-[36px] bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-md flex items-center">
+                                                    <button onClick={() => onDreamSelect(id)} key={id} className="text-xs px-3 py-2 min-h-[44px] bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-md flex items-center">
                                                         Dream #{id}
                                                     </button>
                                                 ))}

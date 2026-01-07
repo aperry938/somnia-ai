@@ -114,18 +114,9 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
     }, [dream]);
 
     // Voice Journaling Integration
-    const { isListening, interimTranscript, startListening, stopListening, isSupported } = useSpeechRecognition((transcript) => {
+    const { isListening, startListening, stopListening, isSupported } = useSpeechRecognition((transcript) => {
         setEditedText(prev => (prev ? prev.trim() + ' ' : '') + transcript);
     });
-
-    // Real-time preview of speech
-    useEffect(() => {
-        if (isListening) {
-            // In edit mode we can't easily show interim in textarea without messing up cursor, 
-            // but we can append it if we really wanted. For now, we rely on final transcript callback.
-            // Or we could show a "Listening..." overlay.
-        }
-    }, [isListening, interimTranscript]);
 
 
     const performAnalysis = useCallback(async () => {

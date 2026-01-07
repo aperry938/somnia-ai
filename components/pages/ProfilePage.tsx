@@ -683,6 +683,15 @@ export const ProfilePage: React.FC<{ onBack?: () => void; onNavigateTo?: (page: 
     });
     const tapTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+    // Cleanup tap timeout on unmount to prevent memory leaks
+    React.useEffect(() => {
+        return () => {
+            if (tapTimeoutRef.current) {
+                clearTimeout(tapTimeoutRef.current);
+            }
+        };
+    }, []);
+
     const handleVersionTap = () => {
         // Clear previous timeout
         if (tapTimeoutRef.current) {
