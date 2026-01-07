@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { requestHealthAuthorization, syncBiometrics } from '../../services/healthService';
 import { useAppContext } from '../../contexts/AppContext';
 import { useHardwareService } from '../../services/hardwareService';
@@ -11,8 +11,17 @@ export const HardwareSyncModal: React.FC<HardwareSyncModalProps> = ({ onClose })
     const { setBiometrics, biometrics } = useAppContext();
     const { status, device, progress, scanForDevices, syncData, disconnect } = useHardwareService();
 
+    // Handle Escape key to close modal
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onClose]);
+
     // Auto-scan on open
-    React.useEffect(() => {
+    useEffect(() => {
         scanForDevices();
         return disconnect;
     }, [scanForDevices, disconnect]);

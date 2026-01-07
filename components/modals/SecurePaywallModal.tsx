@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     PRICING,
     PREMIUM_FEATURES,
@@ -25,6 +25,16 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
     const [error, setError] = useState<string | null>(null);
 
     const status = getCachedStatus();
+
+    // Handle Escape key to close modal
+    useEffect(() => {
+        if (!isOpen) return;
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && !isProcessing) onClose();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, isProcessing, onClose]);
 
     if (!isOpen) return null;
 
