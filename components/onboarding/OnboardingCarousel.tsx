@@ -76,11 +76,11 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({ onComple
 
             {/* Content */}
             <div className="flex-1 flex flex-col items-center justify-center text-center max-w-md animate-fadeIn" role="region" aria-live="polite" aria-label={`Onboarding slide ${currentSlide + 1} of ${slides.length}`}>
-                <div className="mb-8" aria-hidden="true">
+                <div className="mb-10" aria-hidden="true">
                     {slide.icon}
                 </div>
-                <h1 className="font-serif text-3xl mb-4 text-gray-500">{slide.title}</h1>
-                <p className="text-day-text-secondary dark:text-night-text-primary/90 text-lg leading-relaxed">
+                <h1 className="font-serif text-3xl mb-6 text-gray-500">{slide.title}</h1>
+                <p className="text-day-text-secondary dark:text-night-text-primary/90 text-lg leading-loose">
                     {slide.description}
                 </p>
             </div>
