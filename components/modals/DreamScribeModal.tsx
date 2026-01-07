@@ -5,6 +5,7 @@ import { DreamMood } from '../../types';
 import { playAlertnessBoost, stopAlertnessBoost } from '../../services/audioService';
 import haptics from '../../services/hapticsService';
 import { MOOD_ICONS, MOOD_LABELS } from '../../constants/uiIcons';
+import { validateDreamText, containsScriptInjection } from '../../services/validationService';
 
 const MOOD_OPTIONS: DreamMood[] = ['joyful', 'peaceful', 'neutral', 'confused', 'anxious', 'sad', 'fearful'];
 
@@ -43,11 +44,28 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
         };
     }, [onClose]);
 
+    const [validationError, setValidationError] = useState<string | null>(null);
+
     const handleSave = () => {
         if (!dreamText.trim() || isListening) return;
+
+        // Validate and sanitize dream text
+        const validation = validateDreamText(dreamText);
+        if (!validation.valid) {
+            setValidationError(validation.error || 'Invalid dream text');
+            return;
+        }
+
+        // Check for script injection attempts
+        if (containsScriptInjection(dreamText)) {
+            setValidationError('Invalid characters detected in dream text');
+            return;
+        }
+
+        setValidationError(null);
         haptics.dreamSaved();
-        // Store the data and show boost offer
-        savedDataRef.current = { text: dreamText, quality: sleepQuality, mood: mood || undefined };
+        // Store the sanitized data and show boost offer
+        savedDataRef.current = { text: validation.sanitized, quality: sleepQuality, mood: mood || undefined };
         setStep('boost');
     };
 
@@ -119,6 +137,13 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                         <div className="flex items-center justify-center gap-2 text-sm text-red-400 mt-2">
                             <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
                             <span>Recording...</span>
+                        </div>
+                    )}
+
+                    {/* Validation Error */}
+                    {validationError && (
+                        <div className="mt-2 p-2 bg-red-500/20 border border-red-400/30 rounded-lg text-red-300 text-sm text-center">
+                            {validationError}
                         </div>
                     )}
 

@@ -3,6 +3,7 @@ import { getDreamChatResponse } from '../../services/geminiService';
 import { ChatMessage, Dream } from '../../types';
 import { useAppContext } from '../../contexts/AppContext';
 import haptics from '../../services/hapticsService';
+import { sanitizeText, INPUT_LIMITS, containsScriptInjection } from '../../services/validationService';
 
 interface DreamChatModalProps {
     dream: Dream;
@@ -55,8 +56,13 @@ export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }
 
     const handleSend = async (messageText: string) => {
         if (!messageText.trim() || isLoading) return;
+
+        // Sanitize and validate message
+        const sanitized = sanitizeText(messageText).slice(0, INPUT_LIMITS.chatMessage);
+        if (!sanitized || containsScriptInjection(sanitized)) return;
+
         haptics.medium();
-        const userMessage: ChatMessage = { id: Date.now(), role: 'user', parts: [{ text: messageText }] };
+        const userMessage: ChatMessage = { id: Date.now(), role: 'user', parts: [{ text: sanitized }] };
         const newHistory = [...history, userMessage];
         setHistory(newHistory);
         setInput('');

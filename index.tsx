@@ -5,6 +5,10 @@ import { AppProvider } from './contexts/AppContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { ErrorBoundary } from './components/shared/ErrorBoundary';
 import { ToastProvider } from './components/shared/Toast';
+import { initGlobalErrorHandlers } from './services/errorService';
+
+// Initialize global error handlers early
+initGlobalErrorHandlers();
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

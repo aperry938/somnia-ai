@@ -1,5 +1,6 @@
 // components/shared/TagInput.tsx
 import React, { useState, KeyboardEvent } from 'react';
+import { validateTags, INPUT_LIMITS, sanitizeText } from '../../services/validationService';
 
 interface TagInputProps {
     tags: string[];
@@ -18,9 +19,14 @@ export const TagInput: React.FC<TagInputProps> = ({
     const [showSuggestions, setShowSuggestions] = useState(false);
 
     const addTag = (tag: string) => {
-        const normalizedTag = tag.trim().toLowerCase();
-        if (normalizedTag && !tags.includes(normalizedTag)) {
-            onChange([...tags, normalizedTag]);
+        // Sanitize and validate tag
+        const sanitized = sanitizeText(tag).toLowerCase();
+        const normalizedTag = sanitized.slice(0, INPUT_LIMITS.tags);
+
+        if (normalizedTag && !tags.includes(normalizedTag) && tags.length < INPUT_LIMITS.maxTags) {
+            // Validate the full tag list
+            const newTags = validateTags([...tags, normalizedTag]);
+            onChange(newTags);
         }
         setInputValue('');
         setShowSuggestions(false);

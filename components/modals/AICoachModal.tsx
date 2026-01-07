@@ -4,6 +4,7 @@ import { useAppContext } from '../../contexts/AppContext';
 import { ChatMessage } from '../../types';
 import { isPremium } from '../../services/secureSubscriptionService';
 import haptics from '../../services/hapticsService';
+import { sanitizeText, INPUT_LIMITS, containsScriptInjection } from '../../services/validationService';
 
 const COACH_HISTORY_KEY = 'somnia_coach_history';
 const MAX_SAVED_MESSAGES = 20; // Limit saved history to prevent storage bloat
@@ -79,8 +80,12 @@ export const AICoachModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
     const handleSend = async (messageText: string) => {
         if (!messageText.trim() || isLoading) return;
 
+        // Sanitize and validate message
+        const sanitized = sanitizeText(messageText).slice(0, INPUT_LIMITS.chatMessage);
+        if (!sanitized || containsScriptInjection(sanitized)) return;
+
         haptics.medium();
-        const userMessage: ChatMessage = { id: Date.now(), role: 'user', parts: [{ text: messageText }] };
+        const userMessage: ChatMessage = { id: Date.now(), role: 'user', parts: [{ text: sanitized }] };
         const newHistory = [...history, userMessage];
         setHistory(newHistory);
         setInput('');

@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { isPremium, isDevMode, setDevMode, isDevPremium, setDevPremium } from '../../services/secureSubscriptionService';
 import { getSyncQueue, getPendingCount } from '../../services/syncService';
 import { calculateUserStats } from '../../services/userStatsService';
+import { getErrorLogs, clearErrorLogs, exportErrorDebugInfo } from '../../services/errorService';
 
 // Analytics data types
 interface AnalyticsData {
@@ -60,6 +61,8 @@ export const AdminPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
     const [devPremium, setDevPremiumState] = useState(isDevPremium());
     const [sessionStart] = useState(() => Date.now());
     const [currentTime, setCurrentTime] = useState(Date.now());
+    const [errorLogs, setErrorLogs] = useState(() => getErrorLogs());
+    const [showErrorLogs, setShowErrorLogs] = useState(false);
 
     // Update session duration every second
     useEffect(() => {
@@ -143,6 +146,7 @@ export const AdminPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
     };
 
     const exportDebugLog = () => {
+        const debugInfo = exportErrorDebugInfo();
         const debugData = {
             timestamp: new Date().toISOString(),
             userAgent: navigator.userAgent,
@@ -153,6 +157,7 @@ export const AdminPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
             user: isAuthenticated ? { id: user?.id, email: user?.email } : null,
             isPremium: isPremium(),
             isDevMode: devMode,
+            errorLogs: JSON.parse(debugInfo),
             localStorage: Object.fromEntries(
                 Array.from({ length: localStorage.length }, (_, i) => {
                     const key = localStorage.key(i);
@@ -171,6 +176,11 @@ export const AdminPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         a.download = `somnia-debug-${Date.now()}.json`;
         a.click();
         URL.revokeObjectURL(url);
+    };
+
+    const handleClearErrorLogs = () => {
+        clearErrorLogs();
+        setErrorLogs([]);
     };
 
     return (
@@ -269,6 +279,60 @@ export const AdminPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                         Clear All App Data
                     </button>
                 </div>
+            </div>
+
+            {/* Error Logs */}
+            <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl mb-4">
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="font-serif text-xl">Error Logs</h2>
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-day-text-secondary dark:text-night-text-secondary">
+                            {errorLogs.length} logged
+                        </span>
+                        <button
+                            onClick={() => setShowErrorLogs(!showErrorLogs)}
+                            className="text-xs px-2 py-1 border border-day-border dark:border-night-border rounded hover:bg-white/10 dark:hover:bg-black/10"
+                        >
+                            {showErrorLogs ? 'Hide' : 'Show'}
+                        </button>
+                        {errorLogs.length > 0 && (
+                            <button
+                                onClick={handleClearErrorLogs}
+                                className="text-xs px-2 py-1 border border-red-300 dark:border-red-800 text-red-500 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
+                            >
+                                Clear
+                            </button>
+                        )}
+                    </div>
+                </div>
+                {showErrorLogs && (
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {errorLogs.length === 0 ? (
+                            <p className="text-sm text-day-text-secondary dark:text-night-text-secondary text-center py-4">
+                                No errors logged
+                            </p>
+                        ) : (
+                            errorLogs.slice().reverse().map((log) => (
+                                <div
+                                    key={log.id}
+                                    className="p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-xs"
+                                >
+                                    <div className="flex items-center justify-between mb-1">
+                                        <span className="font-mono text-red-600 dark:text-red-400 uppercase">
+                                            {log.category}
+                                        </span>
+                                        <span className="text-day-text-secondary dark:text-night-text-secondary">
+                                            {new Date(log.timestamp).toLocaleTimeString()}
+                                        </span>
+                                    </div>
+                                    <p className="text-red-700 dark:text-red-300 break-words">
+                                        {log.message}
+                                    </p>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Environment Info */}

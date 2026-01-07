@@ -81,15 +81,15 @@ const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = Re
                     <label htmlFor={id} className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 dark:bg-gray-700 cursor-pointer transition-colors"></label>
                 </div>
             </div>
-            <div className="flex items-center justify-between relative z-10">
-                <div className="flex flex-col gap-0.5">
+            <div className="flex items-end justify-between relative z-10 mt-auto">
+                <div className="flex flex-col gap-0.5 min-h-[3.5rem]">
                     {/* Label for reminders */}
                     {alarm.label && (
                         <p className={`text-sm font-medium ${alarm.isActive ? 'text-day-text dark:text-night-text' : 'text-gray-400'}`}>
                             {alarm.label}
                         </p>
                     )}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                         <p className={`text-sm ${alarm.isActive ? 'text-day-text-secondary dark:text-night-text-secondary' : 'text-gray-400'}`}>
                             {formatRepeatText(alarm.days)}
                         </p>
@@ -103,14 +103,14 @@ const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = Re
                     </div>
                     {/* Sound name display */}
                     <div className={`flex items-center gap-1 text-xs ${alarm.isActive ? 'text-day-accent/70 dark:text-night-accent/70' : 'text-gray-400'}`}>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                         </svg>
                         <span>{getSoundName(alarm.soundId)}</span>
                     </div>
                 </div>
                 {/* Edit hint on hover */}
-                <div className="text-xs text-day-text-secondary dark:text-night-text-secondary opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="text-xs text-day-text-secondary dark:text-night-text-secondary opacity-0 group-hover:opacity-100 transition-opacity self-end">
                     Tap to edit
                 </div>
             </div>
@@ -906,7 +906,26 @@ export const AlarmsPage: React.FC<{ timeString: string, dateString: string, onNa
             </button>
             {isModalOpen && <AlarmModal alarmToEdit={alarmToEdit} onClose={closeModal} onConfigureSleepGateway={handleConfigureSleepGateway} />}
             {/* Styles for toggle switch */}
-            <style>{`.toggle-checkbox:checked + .toggle-label { background-color: #6366F1; } .dark .toggle-checkbox:checked + .toggle-label { background-color: #818CF8; } .toggle-checkbox:checked { transform: translateX(1.25rem); border-color: #6366F1; } .dark .toggle-checkbox:checked { border-color: #818CF8; } .toggle-checkbox { transition: transform 0.2s ease-in-out; }`}</style>
+            <style>{`
+                .toggle-checkbox {
+                    left: 2px;
+                    top: 0;
+                    transition: transform 0.2s ease-in-out;
+                }
+                .toggle-checkbox:checked {
+                    transform: translateX(1.25rem);
+                    border-color: #6366F1;
+                }
+                .dark .toggle-checkbox:checked {
+                    border-color: #818CF8;
+                }
+                .toggle-checkbox:checked + .toggle-label {
+                    background-color: #6366F1;
+                }
+                .dark .toggle-checkbox:checked + .toggle-label {
+                    background-color: #818CF8;
+                }
+            `}</style>
         </>
     );
 };

@@ -2,6 +2,7 @@ import { GoogleGenAI, GenerateContentResponse, Modality, Type } from "@google/ge
 import { ChatMessage, Dream, DreamAnalysis, DreamSynthesis, SleepHabitAnalysis, SleepAids, Biometrics, AnalysisPersonality } from '../types';
 import { requirePremium, canUseAiAnalysis, useAiCredit, getRemainingCredits } from './secureSubscriptionService';
 import { checkRateLimit, RateLimitError } from './rateLimitService';
+import { logError } from './errorService';
 import {
     SOMNIA_IDENTITY,
     COACH_PERSONAS,
@@ -144,7 +145,7 @@ export const analyzeDream = async (dreamText: string, sleepAids?: SleepAids, bio
 
         return result;
     } catch (error) {
-        console.error("Error analyzing dream:", error);
+        logError(error instanceof Error ? error : new Error(String(error)), 'ai', { operation: 'analyzeDream' });
         throw new Error("Failed to analyze dream.");
     }
 };
@@ -223,7 +224,7 @@ export const generateDreamImage = async (dreamText: string, style: DreamArtStyle
         }
         throw new Error("No image data found in response.");
     } catch (error) {
-        console.error("Error generating dream image:", error);
+        logError(error instanceof Error ? error : new Error(String(error)), 'ai', { operation: 'generateDreamImage' });
         throw new Error("Failed to generate dream image.");
     }
 };
@@ -326,7 +327,7 @@ export const getCoachResponse = async (history: ChatMessage[], personality: 'mys
         });
         return response.text;
     } catch (error) {
-        console.error("Error getting coach response:", error);
+        logError(error instanceof Error ? error : new Error(String(error)), 'ai', { operation: 'getCoachResponse' });
         throw new Error("Failed to get AI response.");
     }
 };
@@ -357,7 +358,7 @@ export const getDreamChatResponse = async (dream: Dream, history: ChatMessage[])
         });
         return response.text;
     } catch (error) {
-        console.error("Error getting dream chat response:", error);
+        logError(error instanceof Error ? error : new Error(String(error)), 'ai', { operation: 'getDreamChatResponse' });
         throw new Error("Failed to get AI response.");
     }
 };
@@ -405,7 +406,7 @@ export const synthesizeDreamThemes = async (dreams: Dream[]): Promise<DreamSynth
         const rawJson = response.text.trim();
         return JSON.parse(rawJson) as DreamSynthesis;
     } catch (error) {
-        console.error("Error synthesizing dream themes:", error);
+        logError(error instanceof Error ? error : new Error(String(error)), 'ai', { operation: 'synthesizeDreamThemes' });
         throw new Error("Failed to synthesize dream themes.");
     }
 };
@@ -452,7 +453,7 @@ export const analyzeSleepHabits = async (dreams: Dream[]): Promise<SleepHabitAna
         const rawJson = response.text.trim();
         return JSON.parse(rawJson) as SleepHabitAnalysis;
     } catch (error) {
-        console.error("Error analyzing sleep habits:", error);
+        logError(error instanceof Error ? error : new Error(String(error)), 'ai', { operation: 'analyzeSleepHabits' });
         throw new Error("Failed to analyze sleep habits.");
     }
 };

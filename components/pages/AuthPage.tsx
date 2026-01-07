@@ -7,6 +7,7 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { validateEmail, validatePassword } from '../../services/validationService';
 
 type AuthMode = 'login' | 'signup' | 'reset';
 
@@ -31,14 +32,24 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSkip }) => {
         setIsLoading(true);
 
         try {
+            // Validate email format
+            const emailValidation = validateEmail(email);
+            if (!emailValidation.valid) {
+                setError(emailValidation.error || 'Invalid email');
+                setIsLoading(false);
+                return;
+            }
+
             if (mode === 'signup') {
                 if (password !== confirmPassword) {
                     setError('Passwords do not match');
                     setIsLoading(false);
                     return;
                 }
-                if (password.length < 8) {
-                    setError('Password must be at least 8 characters');
+                // Validate password strength
+                const passwordValidation = validatePassword(password);
+                if (!passwordValidation.valid) {
+                    setError(passwordValidation.error || 'Invalid password');
                     setIsLoading(false);
                     return;
                 }
