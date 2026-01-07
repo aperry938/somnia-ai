@@ -43,12 +43,12 @@ const ToggleRow: React.FC<{ label: string; value: boolean; onChange: (val: boole
             onClick={() => onChange(!value)}
             aria-pressed={value}
             aria-labelledby={`toggle-label-${label.replace(/\s+/g, '-').toLowerCase()}`}
-            className={`w-12 h-6 rounded-full transition-colors relative ${
+            className={`w-12 h-8 min-h-[32px] rounded-full transition-colors relative ${
                 value ? 'bg-green-500' : 'bg-gray-400 dark:bg-gray-600'
             }`}
         >
-            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                value ? 'translate-x-7' : 'translate-x-1'
+            <div className={`absolute top-1.5 w-5 h-5 bg-white rounded-full transition-transform ${
+                value ? 'translate-x-6' : 'translate-x-1'
             }`} />
         </button>
     </div>
@@ -262,7 +262,8 @@ export const AdminPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                 <div className="space-y-3">
                     <button
                         onClick={exportDebugLog}
-                        className="w-full py-2.5 border border-day-border dark:border-night-border rounded-lg text-day-text-secondary dark:text-night-text-secondary font-medium flex items-center justify-center gap-2 hover:bg-white/10 dark:hover:bg-black/10 transition-colors"
+                        aria-label="Export debug log"
+                        className="w-full py-3 min-h-[48px] border border-day-border dark:border-night-border rounded-lg text-day-text-secondary dark:text-night-text-secondary font-medium flex items-center justify-center gap-2 hover:bg-white/10 dark:hover:bg-black/10 transition-colors"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -271,7 +272,8 @@ export const AdminPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                     </button>
                     <button
                         onClick={clearAllData}
-                        className="w-full py-2.5 border border-red-300 dark:border-red-800 rounded-lg text-red-500 dark:text-red-400 font-medium flex items-center justify-center gap-2 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                        aria-label="Clear all app data"
+                        className="w-full py-3 min-h-[48px] border border-red-300 dark:border-red-800 rounded-lg text-red-500 dark:text-red-400 font-medium flex items-center justify-center gap-2 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -291,14 +293,16 @@ export const AdminPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                         </span>
                         <button
                             onClick={() => setShowErrorLogs(!showErrorLogs)}
-                            className="text-xs px-2 py-1 border border-day-border dark:border-night-border rounded hover:bg-white/10 dark:hover:bg-black/10"
+                            aria-label={showErrorLogs ? 'Hide error logs' : 'Show error logs'}
+                            className="text-xs px-3 py-2 min-h-[36px] border border-day-border dark:border-night-border rounded hover:bg-white/10 dark:hover:bg-black/10"
                         >
                             {showErrorLogs ? 'Hide' : 'Show'}
                         </button>
                         {errorLogs.length > 0 && (
                             <button
                                 onClick={handleClearErrorLogs}
-                                className="text-xs px-2 py-1 border border-red-300 dark:border-red-800 text-red-500 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
+                                aria-label="Clear error logs"
+                                className="text-xs px-3 py-2 min-h-[36px] border border-red-300 dark:border-red-800 text-red-500 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
                             >
                                 Clear
                             </button>
