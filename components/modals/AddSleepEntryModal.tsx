@@ -110,7 +110,7 @@ export const AddSleepEntryModal: React.FC<AddSleepEntryModalProps> = ({
                         maxLength={INPUT_LIMITS.notes}
                         placeholder="Late coffee, stressful day, exercised..."
                         aria-label="Sleep notes"
-                        className="w-full h-20 p-3 bg-white/50 dark:bg-black/30 border border-day-border dark:border-night-border rounded-lg focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent focus:outline-none resize-none"
+                        className="w-full h-20 p-3 text-base bg-white/50 dark:bg-black/30 border border-day-border dark:border-night-border rounded-lg focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent focus:outline-none resize-none"
                     />
                 </div>
 
