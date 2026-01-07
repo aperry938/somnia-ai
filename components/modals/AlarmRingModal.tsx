@@ -454,7 +454,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                                 <input
                                     type="range"
                                     min="0.05"
-                                    max="0.5"
+                                    max="1"
                                     step="0.05"
                                     value={boostVolume}
                                     onChange={handleVolumeChange}
