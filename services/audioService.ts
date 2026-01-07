@@ -634,7 +634,9 @@ export const playAlarmPreview = (soundId: string) => {
             let baseBeat = 0;
             let interval = 1.0;
             for (let i = 0; i < 20 && baseBeat < 20; i++) {
-                previewGainNode.gain.setValueAtTime(0.3, ctx.currentTime + baseBeat);
+                // Soft attack: 20ms fade-in to avoid click/pop (matches alarm)
+                previewGainNode.gain.setValueAtTime(0.01, ctx.currentTime + baseBeat);
+                previewGainNode.gain.linearRampToValueAtTime(0.3, ctx.currentTime + baseBeat + 0.02);
                 previewOscillator.frequency.setValueAtTime(300, ctx.currentTime + baseBeat);
                 previewGainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + baseBeat + 0.15);
                 previewOscillator.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + baseBeat + 0.15);
