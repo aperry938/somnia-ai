@@ -595,7 +595,15 @@ const AccountManagementCard: React.FC = () => {
 
             <div className="space-y-3">
                 <button
-                    onClick={handleSignOut}
+                    onClick={() => {
+                        if (isAuthenticated) {
+                            handleSignOut();
+                        } else {
+                            // Clear skip flag and reload to show auth page
+                            localStorage.removeItem('somnia_skipped_auth');
+                            window.location.reload();
+                        }
+                    }}
                     disabled={isSigningOut}
                     className="w-full py-3 min-h-[48px] border border-day-border dark:border-night-border rounded-lg text-day-text-secondary dark:text-night-text-secondary font-medium flex items-center justify-center gap-2 hover:bg-white/10 dark:hover:bg-black/10 transition-colors disabled:opacity-50"
                 >
