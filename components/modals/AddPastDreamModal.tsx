@@ -63,6 +63,7 @@ export const AddPastDreamModal: React.FC<AddPastDreamModalProps> = ({ onSave, on
                         value={dreamDate}
                         onChange={(e) => setDreamDate(e.target.value)}
                         max={new Date().toISOString().split('T')[0]}
+                        aria-label="Dream date"
                         className="w-full p-3 bg-white/50 dark:bg-black/30 border border-day-border dark:border-night-border rounded-lg focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent focus:outline-none"
                     />
                 </div>
@@ -80,6 +81,8 @@ export const AddPastDreamModal: React.FC<AddPastDreamModalProps> = ({ onSave, on
                         <button
                             onClick={isListening ? stopListening : startListening}
                             className={`absolute top-3 right-3 p-2 rounded-full transition-colors ${isListening ? 'text-red-500 bg-red-100 dark:bg-red-900/30' : 'text-day-text-secondary hover:text-day-accent hover:bg-black/5 dark:hover:bg-white/5'}`}
+                            aria-label={isListening ? "Stop recording" : "Dictate dream"}
+                            aria-pressed={isListening}
                             title={isListening ? "Stop recording" : "Dictate dream"}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -104,11 +107,13 @@ export const AddPastDreamModal: React.FC<AddPastDreamModalProps> = ({ onSave, on
                 {/* Mood Selector */}
                 <div className="mb-6">
                     <p className="text-center text-day-text-secondary dark:text-night-text-secondary mb-2">How did the dream feel?</p>
-                    <div className="flex flex-wrap justify-center gap-2">
+                    <div className="flex flex-wrap justify-center gap-2" role="group" aria-label="Dream mood options">
                         {MOOD_OPTIONS.map((value) => (
                             <button
                                 key={value}
                                 onClick={() => { haptics.selection(); setMood(mood === value ? null : value); }}
+                                aria-label={`${MOOD_LABELS[value]} mood`}
+                                aria-pressed={mood === value}
                                 className={`px-3 py-1.5 rounded-full text-sm transition-all flex items-center gap-1.5 ${mood === value
                                     ? 'bg-day-accent dark:bg-night-accent text-white scale-105'
                                     : 'bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border hover:border-day-accent dark:hover:border-night-accent'

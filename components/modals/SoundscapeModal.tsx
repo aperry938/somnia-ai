@@ -297,6 +297,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                                 step="0.05"
                                 value={volume}
                                 onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+                                aria-label={`Volume: ${Math.round(volume * 100)}%`}
                                 className="w-full accent-day-accent dark:accent-night-accent cursor-pointer"
                             />
                         </div>
@@ -305,6 +306,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                         {isReadyToPlay ? (
                             <button
                                 onClick={handleStartSound}
+                                aria-label="Start sound"
                                 className="w-full py-4 bg-day-accent dark:bg-night-accent hover:brightness-110 text-white font-medium rounded-xl flex items-center justify-center gap-2 transition-all"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -316,6 +318,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                         ) : isPaused ? (
                             <button
                                 onClick={handleResume}
+                                aria-label="Resume sound"
                                 className="w-full py-4 bg-day-accent dark:bg-night-accent hover:brightness-110 text-white font-medium rounded-xl flex items-center justify-center gap-2 transition-all"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -327,6 +330,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                         ) : (
                             <button
                                 onClick={handlePause}
+                                aria-label="Pause sound"
                                 className="w-full py-4 bg-day-accent/20 dark:bg-night-accent/20 hover:bg-day-accent/30 dark:hover:bg-night-accent/30 text-day-accent dark:text-night-accent font-medium rounded-xl flex items-center justify-center gap-2 transition-colors border border-day-accent/30 dark:border-night-accent/30"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -339,10 +343,10 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                 ) : (
                     <>
                         {/* Quick Duration Buttons */}
-                        <div className="grid grid-cols-3 gap-2 mt-2">
-                            <button onClick={() => handleDurationClick(15)} className="duration-btn py-2 border border-day-border dark:border-night-border rounded-lg text-sm hover:bg-day-accent/10 dark:hover:bg-night-accent/10 transition-colors">15m</button>
-                            <button onClick={() => handleDurationClick(30)} className="duration-btn py-2 border border-day-border dark:border-night-border rounded-lg text-sm hover:bg-day-accent/10 dark:hover:bg-night-accent/10 transition-colors">30m</button>
-                            <button onClick={() => handleDurationClick(60)} className="duration-btn py-2 border border-day-border dark:border-night-border rounded-lg text-sm hover:bg-day-accent/10 dark:hover:bg-night-accent/10 transition-colors">60m</button>
+                        <div className="grid grid-cols-3 gap-2 mt-2" role="group" aria-label="Quick duration options">
+                            <button onClick={() => handleDurationClick(15)} aria-label="15 minute duration" className="duration-btn py-2 border border-day-border dark:border-night-border rounded-lg text-sm hover:bg-day-accent/10 dark:hover:bg-night-accent/10 transition-colors">15m</button>
+                            <button onClick={() => handleDurationClick(30)} aria-label="30 minute duration" className="duration-btn py-2 border border-day-border dark:border-night-border rounded-lg text-sm hover:bg-day-accent/10 dark:hover:bg-night-accent/10 transition-colors">30m</button>
+                            <button onClick={() => handleDurationClick(60)} aria-label="60 minute duration" className="duration-btn py-2 border border-day-border dark:border-night-border rounded-lg text-sm hover:bg-day-accent/10 dark:hover:bg-night-accent/10 transition-colors">60m</button>
                         </div>
 
 
@@ -361,6 +365,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                                 step="0.05"
                                 value={volume}
                                 onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+                                aria-label={`Master volume: ${Math.round(volume * 100)}%`}
                                 className="w-full accent-day-accent dark:accent-night-accent cursor-pointer"
                             />
                         </div>
@@ -368,6 +373,8 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                         {/* Preview Toggle Button */}
                         <button
                             onClick={togglePreview}
+                            aria-label={isPreviewing ? 'Stop preview' : 'Preview sound'}
+                            aria-pressed={isPreviewing}
                             className={`mt-3 w-full py-2 rounded-lg text-sm font-medium transition-all ${isPreviewing
                                 ? 'bg-green-500/20 text-green-600 dark:text-green-400 border border-green-500/30'
                                 : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-transparent'
@@ -396,12 +403,13 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                                 type="number"
                                 value={duration}
                                 onChange={(e) => setDuration(parseInt(e.target.value) || 30)}
+                                aria-label="Custom duration in minutes"
                                 className="w-full p-3 bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-lg text-center"
                                 placeholder="Custom mins"
                                 min="1"
                                 max="480"
                             />
-                            <button onClick={handlePlay} className="bg-day-accent dark:bg-night-accent text-white rounded-lg p-3 px-6 font-bold whitespace-nowrap">
+                            <button onClick={handlePlay} aria-label={`Play for ${duration} minutes`} className="bg-day-accent dark:bg-night-accent text-white rounded-lg p-3 px-6 font-bold whitespace-nowrap">
                                 Play
                             </button>
                         </div>

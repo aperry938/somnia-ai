@@ -295,12 +295,14 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                         <div className="flex gap-3">
                             <button
                                 onClick={handleSnooze}
+                                aria-label="Snooze alarm for 5 minutes"
                                 className="flex-1 py-5 bg-white/15 backdrop-blur border border-white/20 text-white font-semibold rounded-2xl text-lg hover:bg-white/25 transition-all active:scale-95"
                             >
                                 Snooze 5m
                             </button>
                             <button
                                 onClick={handleAwake}
+                                aria-label={isSleepAlarm ? "Dismiss alarm and wake up" : "Dismiss reminder"}
                                 className="flex-1 py-5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold rounded-2xl text-lg shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all active:scale-95"
                             >
                                 {isSleepAlarm ? "I'm Awake" : 'Dismiss'}
@@ -340,6 +342,8 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                                 <div className="mb-4">
                                     <button
                                         onClick={toggleVoice}
+                                        aria-label={isListening ? "Stop recording" : "Start recording your dream"}
+                                        aria-pressed={isListening}
                                         className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto transition-all ${isListening
                                             ? 'bg-red-500 animate-pulse scale-110 shadow-lg shadow-red-500/30'
                                             : 'bg-white/20 hover:bg-white/30 hover:scale-105'
@@ -412,6 +416,8 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
 
                             <button
                                 onClick={toggleAlertnessBoost}
+                                aria-label={alertnessOn ? "Stop alertness boost" : "Start alertness boost"}
+                                aria-pressed={alertnessOn}
                                 className={`w-full py-4 rounded-xl font-semibold text-lg transition-all ${alertnessOn
                                     ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/30'
                                     : 'bg-white/20 text-white hover:bg-white/30'
