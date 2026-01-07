@@ -9,7 +9,8 @@ export const PrivacyPage: React.FC<PrivacyPageProps> = ({ onBack }) => {
         <div className="max-w-2xl mx-auto">
             <button
                 onClick={onBack}
-                className="text-day-accent dark:text-night-accent mb-6 flex items-center gap-2 hover:opacity-80 transition-opacity"
+                aria-label="Go back"
+                className="text-day-accent dark:text-night-accent mb-6 min-h-[44px] flex items-center gap-2 hover:opacity-80 transition-opacity"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
