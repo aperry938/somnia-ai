@@ -22,13 +22,13 @@ export const TermsPage: React.FC<TermsPageProps> = ({ onBack }) => {
 
             <div className="prose dark:prose-invert max-w-none space-y-6 text-day-text-secondary dark:text-night-text-secondary">
                 <p className="text-lg">
-                    <strong>Last updated:</strong> December 29, 2024
+                    <strong>Last updated:</strong> January 7, 2026
                 </p>
 
                 <section>
                     <h2 className="font-serif text-2xl text-day-text-primary dark:text-night-text-primary mb-3">Acceptance of Terms</h2>
                     <p>
-                        By accessing and using Somnia.ai, you agree to be bound by these Terms of Service.
+                        By accessing and using Somnia, you agree to be bound by these Terms of Service.
                         If you do not agree to these terms, please do not use the application.
                     </p>
                 </section>
@@ -36,7 +36,7 @@ export const TermsPage: React.FC<TermsPageProps> = ({ onBack }) => {
                 <section>
                     <h2 className="font-serif text-2xl text-day-text-primary dark:text-night-text-primary mb-3">Description of Service</h2>
                     <p>
-                        Somnia.ai is a dream journaling and sleep wellness application. It provides tools for
+                        Somnia is a dream journaling and sleep wellness application. It provides tools for
                         recording dreams, AI-powered dream analysis, sleep soundscapes, and personal insights.
                         The service is provided "as is" without warranties of any kind.
                     </p>
@@ -70,7 +70,7 @@ export const TermsPage: React.FC<TermsPageProps> = ({ onBack }) => {
                 <section>
                     <h2 className="font-serif text-2xl text-day-text-primary dark:text-night-text-primary mb-3">Limitation of Liability</h2>
                     <p>
-                        Somnia.ai and its creators shall not be liable for any damages arising from:
+                        Somnia and its creators shall not be liable for any damages arising from:
                     </p>
                     <ul className="list-disc pl-6 mt-3 space-y-2">
                         <li>Loss of data due to browser clearing or device issues</li>
@@ -83,7 +83,7 @@ export const TermsPage: React.FC<TermsPageProps> = ({ onBack }) => {
                 <section>
                     <h2 className="font-serif text-2xl text-day-text-primary dark:text-night-text-primary mb-3">Intellectual Property</h2>
                     <p>
-                        The Somnia.ai application, including its code, design, and branding, is the intellectual
+                        The Somnia application, including its code, design, and branding, is the intellectual
                         property of its creator. Dreams and personal content you create remain your property.
                     </p>
                 </section>

@@ -22,13 +22,13 @@ export const PrivacyPage: React.FC<PrivacyPageProps> = ({ onBack }) => {
 
             <div className="prose dark:prose-invert max-w-none space-y-6 text-day-text-secondary dark:text-night-text-secondary">
                 <p className="text-lg">
-                    <strong>Last updated:</strong> December 29, 2024
+                    <strong>Last updated:</strong> January 7, 2026
                 </p>
 
                 <section>
                     <h2 className="font-serif text-2xl text-day-text-primary dark:text-night-text-primary mb-3">Our Commitment to Privacy</h2>
                     <p>
-                        Somnia.ai is designed with privacy as a core principle. Your dreams are deeply personal,
+                        Somnia is designed with privacy as a core principle. Your dreams are deeply personal,
                         and we believe they should remain that way. This policy explains how we handle your data.
                     </p>
                 </section>
@@ -36,7 +36,7 @@ export const PrivacyPage: React.FC<PrivacyPageProps> = ({ onBack }) => {
                 <section>
                     <h2 className="font-serif text-2xl text-day-text-primary dark:text-night-text-primary mb-3">Data Storage</h2>
                     <p>
-                        <strong>All your data stays on your device.</strong> Somnia.ai uses your browser's LocalStorage
+                        <strong>All your data stays on your device.</strong> Somnia uses your browser's LocalStorage
                         to save your dreams, alarms, preferences, and biometric data. We do not operate servers that
                         store your personal information. This means:
                     </p>
@@ -67,7 +67,7 @@ export const PrivacyPage: React.FC<PrivacyPageProps> = ({ onBack }) => {
                     <h2 className="font-serif text-2xl text-day-text-primary dark:text-night-text-primary mb-3">Analytics & Tracking</h2>
                     <p>
                         <strong>We do not use analytics.</strong> There are no cookies, no tracking pixels, no behavioral
-                        monitoring. Your usage of Somnia.ai is completely private.
+                        monitoring. Your usage of Somnia is completely private.
                     </p>
                 </section>
 
