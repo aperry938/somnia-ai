@@ -48,6 +48,10 @@ const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = Re
     return (
         <div
             onClick={() => onEdit(alarm)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit(alarm); } }}
+            aria-label={`Alarm at ${displayTime} ${period}${alarm.label ? `, ${alarm.label}` : ''}, ${formatRepeatText(alarm.days)}, ${alarm.isActive ? 'enabled' : 'disabled'}`}
             className={`group relative bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border shadow-lg rounded-2xl p-4 cursor-pointer transition-all duration-300 flex flex-col justify-between h-32 hover:shadow-xl hover:scale-[1.02] hover:border-day-accent dark:hover:border-night-accent active:scale-[0.98] ${alarm.isActive
                 ? 'ring-2 ring-day-accent/30 dark:ring-night-accent/30'
                 : 'opacity-60 hover:opacity-100'
@@ -70,6 +74,11 @@ const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = Re
                 <div
                     className="relative inline-block w-11 align-middle select-none"
                     onClick={handleToggle}
+                    role="switch"
+                    aria-checked={alarm.isActive}
+                    aria-label={`${alarm.isActive ? 'Disable' : 'Enable'} alarm`}
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleToggle(e as unknown as React.MouseEvent); } }}
                 >
                     <input
                         type="checkbox"
@@ -77,8 +86,10 @@ const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = Re
                         className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
                         checked={alarm.isActive}
                         readOnly
+                        aria-hidden="true"
+                        tabIndex={-1}
                     />
-                    <label htmlFor={id} className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 dark:bg-gray-700 cursor-pointer transition-colors"></label>
+                    <label htmlFor={id} className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 dark:bg-gray-700 cursor-pointer transition-colors" aria-hidden="true"></label>
                 </div>
             </div>
             <div className="flex items-end justify-between relative z-10 mt-auto">
@@ -483,35 +494,37 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
     }
 
     return (
-        <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={() => { stopAlarmPreview(); onClose(); }}>
+        <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={() => { stopAlarmPreview(); onClose(); }} role="dialog" aria-modal="true" aria-labelledby="alarm-modal-title">
             <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-sm animate-fadeIn max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                <h2 className="font-serif text-2xl text-center mb-6">{alarmToEdit ? "Edit Alarm" : "Set Alarm"}</h2>
+                <h2 id="alarm-modal-title" className="font-serif text-2xl text-center mb-6">{alarmToEdit ? "Edit Alarm" : "Set Alarm"}</h2>
                 <DrumTimePicker initialTime={time} onChange={setTime} />
 
                 {/* Alarm Purpose Selector */}
                 <div className="mt-6 mb-4">
                     <label className="text-sm font-medium block mb-2">Alarm Type</label>
-                    <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+                    <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1" role="group" aria-label="Alarm type options">
                         <button
                             onClick={() => setPurpose('sleep')}
+                            aria-pressed={purpose === 'sleep'}
                             className={`flex-1 flex items-center justify-center gap-2 text-sm py-2 rounded-md transition-all ${purpose === 'sleep'
                                 ? 'bg-white dark:bg-gray-700 shadow-sm font-medium text-day-accent dark:text-night-accent'
                                 : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                                 }`}
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                             </svg>
                             Sleep
                         </button>
                         <button
                             onClick={() => setPurpose('reminder')}
+                            aria-pressed={purpose === 'reminder'}
                             className={`flex-1 flex items-center justify-center gap-2 text-sm py-2 rounded-md transition-all ${purpose === 'reminder'
                                 ? 'bg-white dark:bg-gray-700 shadow-sm font-medium text-day-accent dark:text-night-accent'
                                 : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                                 }`}
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                             </svg>
                             Reminder
@@ -539,11 +552,12 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
                 {/* Repetition Frequency */}
                 <div className="mt-6 mb-4">
                     <label className="text-sm font-medium block mb-2">Repeat</label>
-                    <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1 mb-3">
+                    <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1 mb-3" role="group" aria-label="Repeat frequency options">
                         {(['once', 'daily', 'weekly'] as const).map((freq) => (
                             <button
                                 key={freq}
                                 onClick={() => setFrequency(freq)}
+                                aria-pressed={frequency === freq}
                                 className={`flex-1 text-sm py-1.5 rounded-md capitalize transition-all ${frequency === freq
                                     ? 'bg-white dark:bg-gray-700 shadow-sm font-medium text-day-accent dark:text-night-accent'
                                     : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
@@ -556,11 +570,13 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
 
                     {/* Weekly Day Selector */}
                     {frequency === 'weekly' && (
-                        <div className="flex justify-between gap-1 mt-2">
+                        <div className="flex justify-between gap-1 mt-2" role="group" aria-label="Select days of week">
                             {DAYS.map((day, index) => (
                                 <button
                                     key={index}
                                     onClick={() => toggleDay(index)}
+                                    aria-label={['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][index]}
+                                    aria-pressed={selectedDays.includes(index)}
                                     className={`w-8 h-8 rounded-full text-xs font-medium transition-all ${selectedDays.includes(index)
                                         ? 'bg-day-accent text-white dark:bg-night-accent'
                                         : 'bg-gray-100 dark:bg-gray-800 text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
@@ -620,10 +636,10 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
                 </div>
 
                 <div className="flex justify-center gap-4 mt-6">
-                    <button onClick={onClose} className="py-2 px-6 bg-gray-200 dark:bg-gray-700 rounded-full">Cancel</button>
-                    <button onClick={handleSave} className="py-2 px-6 bg-day-accent dark:bg-night-accent text-white font-bold rounded-full">Save</button>
+                    <button onClick={onClose} aria-label="Cancel" className="py-2 px-6 bg-gray-200 dark:bg-gray-700 rounded-full">Cancel</button>
+                    <button onClick={handleSave} aria-label="Save alarm" className="py-2 px-6 bg-day-accent dark:bg-night-accent text-white font-bold rounded-full">Save</button>
                 </div>
-                {alarmToEdit && <button onClick={handleDelete} className="w-full mt-4 py-2 text-red-500">Delete Alarm</button>}
+                {alarmToEdit && <button onClick={handleDelete} aria-label="Delete alarm" className="w-full mt-4 py-2 text-red-500">Delete Alarm</button>}
             </div>
         </div>
     );
