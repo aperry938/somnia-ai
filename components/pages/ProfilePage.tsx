@@ -393,14 +393,19 @@ const ArtStyleCard: React.FC = () => {
 // Notifications Card
 const NotificationsCard: React.FC = () => {
     const [settings, setSettings] = useState(() => {
-        const saved = localStorage.getItem('somnia_notification_settings');
-        return saved ? JSON.parse(saved) : {
+        const defaultSettings = {
             dreamReminder: true,
             sleepReminder: true,
             weeklyDigest: true,
             achievements: true,
             realityChecks: false
         };
+        try {
+            const saved = localStorage.getItem('somnia_notification_settings');
+            return saved ? JSON.parse(saved) : defaultSettings;
+        } catch {
+            return defaultSettings;
+        }
     });
 
     const updateSetting = (key: string, value: boolean) => {

@@ -171,20 +171,20 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSkip }) => {
                             </div>
                         )}
 
-                        {/* Error Message */}
+                        {/* Error Message - ACCESSIBILITY: role="alert" for screen readers */}
                         {error && (
-                            <div className="flex items-center gap-2 p-3 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-300 text-sm">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <div role="alert" aria-live="assertive" className="flex items-center gap-2 p-3 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-300 text-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 flex-shrink-0" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                                 {error}
                             </div>
                         )}
 
-                        {/* Success Message */}
+                        {/* Success Message - ACCESSIBILITY: role="status" for screen readers */}
                         {success && (
-                            <div className="flex items-center gap-2 p-3 bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg text-green-600 dark:text-green-300 text-sm">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <div role="status" aria-live="polite" className="flex items-center gap-2 p-3 bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg text-green-600 dark:text-green-300 text-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 flex-shrink-0" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                 </svg>
                                 {success}
