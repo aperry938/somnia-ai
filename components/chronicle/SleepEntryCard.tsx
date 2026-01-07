@@ -180,6 +180,7 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
                         {!showDeleteConfirm ? (
                             <button
                                 onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(true); }}
+                                aria-label="Delete sleep entry"
                                 className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                                 title="Delete sleep entry"
                             >
