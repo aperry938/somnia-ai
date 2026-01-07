@@ -113,7 +113,7 @@ export const InsightsGrid: React.FC<InsightsGridProps> = ({ dreams }) => {
                         aria-selected={activeTab === tab}
                         aria-controls={`panel-${tab.replace(/\s+/g, '-').toLowerCase()}`}
                         onClick={() => setActiveTab(tab)}
-                        className={`px-4 py-2 rounded-full text-sm whitespace-nowrap transition-all ${activeTab === tab
+                        className={`px-4 py-2 min-h-[44px] rounded-full text-sm whitespace-nowrap transition-all flex items-center justify-center ${activeTab === tab
                             ? 'bg-day-accent dark:bg-night-accent text-white'
                             : 'bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border'
                             }`}
