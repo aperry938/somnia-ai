@@ -70,13 +70,14 @@ export const SleepDurationChart: React.FC<SleepDurationChartProps> = ({ dreams }
             </div>
 
             {/* 24-hour histogram */}
-            <div className="flex items-end gap-[2px] h-16 mb-2">
+            <div className="flex items-end gap-[2px] h-16 mb-2" role="img" aria-label={`24-hour histogram of dream entries. Peak entry time is ${data.peakHour > 12 ? `${data.peakHour - 12}PM` : data.peakHour === 0 ? '12AM' : `${data.peakHour}AM`}`}>
                 {data.hourCounts.map((count, hour) => (
                     <div
                         key={hour}
                         className="flex-1 bg-day-accent/30 dark:bg-night-accent/30 rounded-t transition-all hover:bg-day-accent dark:hover:bg-night-accent"
                         style={{ height: maxCount > 0 ? `${(count / maxCount) * 100}%` : '0%' }}
                         title={`${hour}:00 - ${count} entries`}
+                        aria-hidden="true"
                     />
                 ))}
             </div>

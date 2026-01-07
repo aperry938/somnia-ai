@@ -95,10 +95,11 @@ export const DreamMoodTracker: React.FC<MoodTrackerProps> = ({ dreams }) => {
                                 <span>{mood}</span>
                                 <span className="text-day-text-secondary dark:text-night-text-secondary">{percentage}%</span>
                             </div>
-                            <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                            <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden" role="progressbar" aria-valuenow={percentage} aria-valuemin={0} aria-valuemax={100} aria-label={`${mood} mood: ${percentage}%`}>
                                 <div
                                     className={`h-full bg-gradient-to-r ${MOOD_COLORS[mood] || 'from-gray-400 to-gray-500'} transition-all duration-500`}
                                     style={{ width: `${percentage}%` }}
+                                    aria-hidden="true"
                                 />
                             </div>
                         </div>

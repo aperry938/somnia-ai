@@ -116,6 +116,7 @@ export const DreamCalendar: React.FC<DreamCalendarProps> = ({ dreams, onDayClick
                                         onClick={() => onDayClick?.(day, dayDreams)}
                                         className={`w-3 h-3 rounded-[2px] ${getIntensity(count)} ${isToday ? 'ring-1 ring-day-accent dark:ring-night-accent' : ''} transition-colors hover:opacity-80`}
                                         title={`${day.toLocaleDateString()}: ${count} dream${count !== 1 ? 's' : ''}`}
+                                        aria-label={`${day.toLocaleDateString()}: ${count} dream${count !== 1 ? 's' : ''}${isToday ? ', today' : ''}`}
                                     />
                                 );
                             })}
@@ -125,9 +126,9 @@ export const DreamCalendar: React.FC<DreamCalendarProps> = ({ dreams, onDayClick
             </div>
 
             {/* Legend */}
-            <div className="flex items-center gap-2 mt-3 text-xs text-day-text-secondary dark:text-night-text-secondary">
+            <div className="flex items-center gap-2 mt-3 text-xs text-day-text-secondary dark:text-night-text-secondary" role="img" aria-label="Legend: color intensity indicates number of dreams logged per day">
                 <span>Less</span>
-                <div className="flex gap-[2px]">
+                <div className="flex gap-[2px]" aria-hidden="true">
                     <div className={`w-3 h-3 rounded-[2px] ${getIntensity(0)}`} />
                     <div className={`w-3 h-3 rounded-[2px] ${getIntensity(1)}`} />
                     <div className={`w-3 h-3 rounded-[2px] ${getIntensity(2)}`} />

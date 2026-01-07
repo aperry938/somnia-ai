@@ -85,10 +85,11 @@ export const LucidDreamProgress: React.FC<LucidProgressProps> = ({ dreams }) => 
                     <span>Progress to {stats.nextMilestone} lucid dreams</span>
                     <span>{stats.progress}%</span>
                 </div>
-                <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden" role="progressbar" aria-valuenow={stats.progress} aria-valuemin={0} aria-valuemax={100} aria-label={`Progress to ${stats.nextMilestone} lucid dreams: ${stats.progress}%`}>
                     <div
                         className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500"
                         style={{ width: `${stats.progress}%` }}
+                        aria-hidden="true"
                     />
                 </div>
             </div>
