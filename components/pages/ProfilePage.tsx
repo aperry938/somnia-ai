@@ -39,7 +39,7 @@ const ProfileInfoCard: React.FC = () => {
             <div className="flex justify-between items-center mb-4">
                 <h2 className="font-serif text-xl">Profile Info</h2>
                 {!isEditing && (
-                    <button onClick={() => setIsEditing(true)} aria-label="Edit profile information" className="text-sm text-day-accent dark:text-night-accent">
+                    <button onClick={() => setIsEditing(true)} aria-label="Edit profile information" className="text-sm min-h-[44px] px-3 py-2 text-day-accent dark:text-night-accent flex items-center">
                         Edit
                     </button>
                 )}
@@ -130,13 +130,13 @@ const ProfileInfoCard: React.FC = () => {
                     <div className="flex gap-2 pt-2">
                         <button
                             onClick={() => { setLocalBiometrics(biometrics); setIsEditing(false); }}
-                            className="flex-1 py-2 border border-day-border dark:border-night-border rounded-lg text-day-text-secondary dark:text-night-text-secondary"
+                            className="flex-1 py-3 min-h-[48px] border border-day-border dark:border-night-border rounded-lg text-day-text-secondary dark:text-night-text-secondary flex items-center justify-center"
                         >
                             Cancel
                         </button>
                         <button
                             onClick={handleSave}
-                            className="flex-1 py-2 bg-day-accent dark:bg-night-accent text-white font-bold rounded-lg"
+                            className="flex-1 py-3 min-h-[48px] bg-day-accent dark:bg-night-accent text-white font-bold rounded-lg flex items-center justify-center"
                         >
                             Save
                         </button>
@@ -432,13 +432,13 @@ const NotificationsCard: React.FC = () => {
                             role="switch"
                             aria-checked={settings[item.key]}
                             aria-label={`Toggle ${item.label}`}
-                            className={`w-12 h-6 rounded-full transition-colors relative ${
+                            className={`w-14 h-8 min-h-[44px] rounded-full transition-colors relative flex items-center ${
                                 settings[item.key]
                                     ? 'bg-day-accent dark:bg-night-accent'
                                     : 'bg-gray-300 dark:bg-gray-600'
                             }`}
                         >
-                            <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                            <div className={`absolute w-6 h-6 rounded-full bg-white transition-transform shadow ${
                                 settings[item.key] ? 'translate-x-7' : 'translate-x-1'
                             }`} />
                         </button>
@@ -478,7 +478,7 @@ const DataManagementCard: React.FC = () => {
                 <button
                     onClick={() => exportDreamJournalToPDF(dreams)}
                     disabled={dreams.length === 0}
-                    className="flex-1 py-2.5 bg-day-accent dark:bg-night-accent text-white font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="flex-1 py-3 min-h-[48px] bg-day-accent dark:bg-night-accent text-white font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
@@ -488,7 +488,7 @@ const DataManagementCard: React.FC = () => {
                 <button
                     onClick={() => exportDreamsAsJSON(dreams)}
                     disabled={dreams.length === 0}
-                    className="flex-1 py-2.5 border-2 border-day-accent dark:border-night-accent text-day-accent dark:text-night-accent font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="flex-1 py-3 min-h-[48px] border-2 border-day-accent dark:border-night-accent text-day-accent dark:text-night-accent font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -506,7 +506,7 @@ const DataManagementCard: React.FC = () => {
                 />
                 <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-full py-2 border border-dashed border-day-border dark:border-night-border text-day-text-secondary dark:text-night-text-secondary text-sm rounded-lg hover:border-day-accent dark:hover:border-night-accent transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-3 min-h-[48px] border border-dashed border-day-border dark:border-night-border text-day-text-secondary dark:text-night-text-secondary text-sm rounded-lg hover:border-day-accent dark:hover:border-night-accent transition-colors flex items-center justify-center gap-2"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -594,7 +594,7 @@ const AccountManagementCard: React.FC = () => {
                 <button
                     onClick={handleSignOut}
                     disabled={isSigningOut}
-                    className="w-full py-2.5 border border-day-border dark:border-night-border rounded-lg text-day-text-secondary dark:text-night-text-secondary font-medium flex items-center justify-center gap-2 hover:bg-white/10 dark:hover:bg-black/10 transition-colors disabled:opacity-50"
+                    className="w-full py-3 min-h-[48px] border border-day-border dark:border-night-border rounded-lg text-day-text-secondary dark:text-night-text-secondary font-medium flex items-center justify-center gap-2 hover:bg-white/10 dark:hover:bg-black/10 transition-colors disabled:opacity-50"
                 >
                     {isSigningOut ? (
                         <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
@@ -609,7 +609,7 @@ const AccountManagementCard: React.FC = () => {
                 {!showDeleteConfirm ? (
                     <button
                         onClick={() => setShowDeleteConfirm(true)}
-                        className="w-full py-2.5 border border-red-300 dark:border-red-800 rounded-lg text-red-500 dark:text-red-400 font-medium flex items-center justify-center gap-2 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                        className="w-full py-3 min-h-[48px] border border-red-300 dark:border-red-800 rounded-lg text-red-500 dark:text-red-400 font-medium flex items-center justify-center gap-2 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -634,14 +634,14 @@ const AccountManagementCard: React.FC = () => {
                         <div className="flex gap-2">
                             <button
                                 onClick={() => { setShowDeleteConfirm(false); setDeleteInput(''); }}
-                                className="flex-1 py-2 border border-day-border dark:border-night-border rounded-lg text-sm"
+                                className="flex-1 py-3 min-h-[48px] border border-day-border dark:border-night-border rounded-lg text-sm flex items-center justify-center"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleDeleteAccount}
                                 disabled={deleteInput !== 'DELETE'}
-                                className="flex-1 py-2 bg-red-500 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex-1 py-3 min-h-[48px] bg-red-500 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                             >
                                 Delete Forever
                             </button>
@@ -661,7 +661,7 @@ const LegalCard: React.FC<{ onNavigateTo?: (page: 'privacy' | 'terms') => void }
             <div className="flex gap-3">
                 <button
                     onClick={() => onNavigateTo?.('privacy')}
-                    className="flex-1 py-2.5 border border-day-border dark:border-night-border rounded-lg text-day-text-secondary dark:text-night-text-secondary font-medium flex items-center justify-center gap-2 hover:bg-white/10 dark:hover:bg-black/10 transition-colors"
+                    className="flex-1 py-3 min-h-[48px] border border-day-border dark:border-night-border rounded-lg text-day-text-secondary dark:text-night-text-secondary font-medium flex items-center justify-center gap-2 hover:bg-white/10 dark:hover:bg-black/10 transition-colors"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -670,7 +670,7 @@ const LegalCard: React.FC<{ onNavigateTo?: (page: 'privacy' | 'terms') => void }
                 </button>
                 <button
                     onClick={() => onNavigateTo?.('terms')}
-                    className="flex-1 py-2.5 border border-day-border dark:border-night-border rounded-lg text-day-text-secondary dark:text-night-text-secondary font-medium flex items-center justify-center gap-2 hover:bg-white/10 dark:hover:bg-black/10 transition-colors"
+                    className="flex-1 py-3 min-h-[48px] border border-day-border dark:border-night-border rounded-lg text-day-text-secondary dark:text-night-text-secondary font-medium flex items-center justify-center gap-2 hover:bg-white/10 dark:hover:bg-black/10 transition-colors"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -792,7 +792,7 @@ export const ProfilePage: React.FC<{ onBack?: () => void; onNavigateTo?: (page: 
                         </div>
                         <button
                             onClick={() => onNavigateTo?.('admin')}
-                            className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+                            className="w-full py-3 min-h-[48px] bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -806,7 +806,7 @@ export const ProfilePage: React.FC<{ onBack?: () => void; onNavigateTo?: (page: 
                 <div className="text-center pt-4">
                     <button
                         onClick={handleVersionTap}
-                        className="text-xs text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent transition-colors"
+                        className="text-xs min-h-[44px] px-4 py-2 text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent transition-colors"
                     >
                         Somnia.ai v{APP_VERSION}
                     </button>
