@@ -38,7 +38,7 @@ export const KeyboardShortcutsHelp: React.FC<{ isOpen: boolean; onClose: () => v
                 <button
                     onClick={onClose}
                     aria-label="Close keyboard shortcuts help"
-                    className="mt-6 w-full py-2 bg-day-accent dark:bg-night-accent text-white rounded-full font-medium"
+                    className="mt-6 w-full py-3 min-h-[48px] bg-day-accent dark:bg-night-accent text-white rounded-full font-medium flex items-center justify-center"
                 >
                     Got it
                 </button>

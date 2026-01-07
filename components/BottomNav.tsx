@@ -35,7 +35,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, setCurrentPag
                     onClick={() => handleNavClick(item.page)}
                     aria-label={`${item.label}${item.badge ? `, ${item.badge} new items` : ''}`}
                     aria-current={currentPage === item.page ? 'page' : undefined}
-                    className={`flex flex-col items-center flex-1 py-1 rounded-lg transition-colors duration-300 relative ${
+                    className={`flex flex-col items-center justify-center flex-1 py-2 min-h-[52px] rounded-lg transition-colors duration-300 relative ${
                         currentPage === item.page
                             ? 'text-day-accent dark:text-night-accent'
                             : 'text-day-text-secondary dark:text-night-text-secondary'

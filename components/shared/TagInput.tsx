@@ -61,7 +61,7 @@ export const TagInput: React.FC<TagInputProps> = ({
                         <button
                             onClick={() => removeTag(tag)}
                             aria-label={`Remove tag ${tag}`}
-                            className="hover:text-red-500 transition-colors"
+                            className="p-1 min-h-[24px] min-w-[24px] flex items-center justify-center hover:text-red-500 transition-colors rounded-full"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
                                 <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -94,7 +94,7 @@ export const TagInput: React.FC<TagInputProps> = ({
                             onClick={() => addTag(suggestion)}
                             role="option"
                             aria-label={`Add tag ${suggestion}`}
-                            className="w-full text-left px-3 py-2 text-sm hover:bg-day-accent/10 dark:hover:bg-night-accent/10 transition-colors"
+                            className="w-full text-left px-3 py-3 min-h-[44px] text-sm hover:bg-day-accent/10 dark:hover:bg-night-accent/10 transition-colors"
                         >
                             #{suggestion}
                         </button>

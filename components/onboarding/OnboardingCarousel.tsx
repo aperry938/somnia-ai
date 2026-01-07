@@ -68,7 +68,7 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({ onComple
                 <button
                     onClick={handleSkip}
                     aria-label="Skip onboarding"
-                    className="absolute top-6 right-6 text-day-text-secondary dark:text-night-text-secondary text-sm hover:text-day-accent dark:hover:text-night-accent transition-colors"
+                    className="absolute top-6 right-6 px-4 py-2 min-h-[44px] text-day-text-secondary dark:text-night-text-secondary text-sm hover:text-day-accent dark:hover:text-night-accent transition-colors flex items-center justify-center"
                 >
                     Skip
                 </button>
@@ -93,19 +93,21 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({ onComple
                         <button
                             key={index}
                             onClick={() => setCurrentSlide(index)}
-                            className={`w-2 h-2 rounded-full transition-all ${index === currentSlide
+                            className="min-h-[44px] min-w-[44px] flex items-center justify-center"
+                            aria-label={`Go to slide ${index + 1}`}
+                        >
+                            <span className={`block w-2 h-2 rounded-full transition-all ${index === currentSlide
                                     ? 'w-8 bg-day-accent dark:bg-night-accent'
                                     : 'bg-day-border dark:bg-night-border'
-                                }`}
-                            aria-label={`Go to slide ${index + 1}`}
-                        />
+                                }`} aria-hidden="true" />
+                        </button>
                     ))}
                 </div>
 
                 {/* Button */}
                 <button
                     onClick={handleNext}
-                    className="w-full py-4 bg-day-accent dark:bg-night-accent text-white rounded-full font-medium text-lg hover:opacity-90 transition-opacity"
+                    className="w-full py-4 min-h-[48px] bg-day-accent dark:bg-night-accent text-white rounded-full font-medium text-lg hover:opacity-90 transition-opacity flex items-center justify-center"
                 >
                     {slide.isFinal ? 'Get Started' : 'Continue'}
                 </button>
