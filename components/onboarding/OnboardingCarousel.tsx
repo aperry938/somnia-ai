@@ -79,8 +79,8 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({ onComple
                 <div className="mb-8" aria-hidden="true">
                     {slide.icon}
                 </div>
-                <h1 className="font-serif text-3xl mb-4">{slide.title}</h1>
-                <p className="text-day-text-secondary dark:text-night-text-secondary text-lg leading-relaxed">
+                <h1 className="font-serif text-3xl mb-4 text-day-text-primary dark:text-night-text-primary">{slide.title}</h1>
+                <p className="text-day-text-secondary dark:text-night-text-primary/80 text-lg leading-relaxed">
                     {slide.description}
                 </p>
             </div>
@@ -97,8 +97,8 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({ onComple
                             aria-label={`Go to slide ${index + 1}`}
                         >
                             <span className={`block w-2 h-2 rounded-full transition-all ${index === currentSlide
-                                    ? 'w-8 bg-day-accent dark:bg-night-accent'
-                                    : 'bg-day-border dark:bg-night-border'
+                                ? 'w-8 bg-day-accent dark:bg-night-accent'
+                                : 'bg-day-border dark:bg-night-border'
                                 }`} aria-hidden="true" />
                         </button>
                     ))}

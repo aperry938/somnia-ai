@@ -19,6 +19,7 @@ import { InsightsGrid } from '../insights/InsightsGrid';
 import { PremiumBadge } from '../shared/PremiumBadge';
 import { canUseAiAnalysis, useAiCredit, isPremium } from '../../services/secureSubscriptionService';
 import { DreamCompareModal } from '../modals/DreamCompareModal';
+import { DEMO_DREAMS } from '../../constants/demoDreams';
 
 type InsightTab = 'dreams' | 'analysis';
 
@@ -33,6 +34,11 @@ const AnalysisCard: React.FC<{ title: string; description: string; buttonText: s
 
 export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = ({ onDreamSelect }) => {
     const { dreams } = useAppContext();
+
+    // Use demo data when user has < 3 dreams
+    const isUsingDemo = dreams.length < 3;
+    const displayDreams = isUsingDemo ? DEMO_DREAMS : dreams;
+
     const [activeTab, setActiveTab] = useState<InsightTab>('dreams');
     const [dreamSynthesis, setDreamSynthesis] = useState<DreamSynthesis | null>(null);
     const [isDreamSynthLoading, setIsDreamSynthLoading] = useState(false);
@@ -123,11 +129,10 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                         onClick={() => setActiveTab('dreams')}
                         aria-pressed={activeTab === 'dreams'}
                         aria-label="My Dreams tab"
-                        className={`flex-1 py-3 px-4 min-h-[48px] rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
-                            activeTab === 'dreams'
-                                ? 'bg-day-accent dark:bg-night-accent text-white shadow-lg'
-                                : 'text-day-text-secondary dark:text-night-text-secondary hover:bg-white/10 dark:hover:bg-black/10'
-                        }`}
+                        className={`flex-1 py-3 px-4 min-h-[48px] rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2 ${activeTab === 'dreams'
+                            ? 'bg-day-accent dark:bg-night-accent text-white shadow-lg'
+                            : 'text-day-text-secondary dark:text-night-text-secondary hover:bg-white/10 dark:hover:bg-black/10'
+                            }`}
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
@@ -138,11 +143,10 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                         onClick={() => setActiveTab('analysis')}
                         aria-pressed={activeTab === 'analysis'}
                         aria-label="Analysis tab"
-                        className={`flex-1 py-3 px-4 min-h-[48px] rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
-                            activeTab === 'analysis'
-                                ? 'bg-day-accent dark:bg-night-accent text-white shadow-lg'
-                                : 'text-day-text-secondary dark:text-night-text-secondary hover:bg-white/10 dark:hover:bg-black/10'
-                        }`}
+                        className={`flex-1 py-3 px-4 min-h-[48px] rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2 ${activeTab === 'analysis'
+                            ? 'bg-day-accent dark:bg-night-accent text-white shadow-lg'
+                            : 'text-day-text-secondary dark:text-night-text-secondary hover:bg-white/10 dark:hover:bg-black/10'
+                            }`}
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -166,12 +170,24 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
             >
                 {activeTab === 'dreams' ? (
                     <div className="space-y-6 animate-fadeIn">
-                        <WeeklyDigest dreams={dreams} />
-                        <DreamCalendar dreams={dreams} />
-                        <DreamWordCloud dreams={dreams} />
-                        <DreamMoodTracker dreams={dreams} />
-                        <DreamStreakCalendar dreams={dreams} />
-                        <RecurringThemes dreams={dreams} />
+                        {/* Sample Data Banner */}
+                        {isUsingDemo && (
+                            <div className="flex items-center gap-3 px-4 py-3 bg-day-accent/10 dark:bg-night-accent/10 border border-day-accent/20 dark:border-night-accent/20 rounded-xl">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-day-accent dark:text-night-accent flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <p className="text-sm text-day-accent dark:text-night-accent">
+                                    <span className="font-medium">Sample data</span>
+                                    <span className="opacity-80"> — Log your dreams to see your personal insights</span>
+                                </p>
+                            </div>
+                        )}
+                        <WeeklyDigest dreams={displayDreams} />
+                        <DreamCalendar dreams={displayDreams} />
+                        <DreamWordCloud dreams={displayDreams} />
+                        <DreamMoodTracker dreams={displayDreams} />
+                        <DreamStreakCalendar dreams={displayDreams} />
+                        <RecurringThemes dreams={displayDreams} />
 
                         {/* Recurring Patterns */}
                         {patterns.length > 0 && (
@@ -237,14 +253,14 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                             </svg>
                         </button>
 
-                        <LucidDreamProgress dreams={dreams} />
-                        <SleepDurationChart dreams={dreams} />
-                        <DreamLengthInsights dreams={dreams} />
+                        <LucidDreamProgress dreams={displayDreams} />
+                        <SleepDurationChart dreams={displayDreams} />
+                        <DreamLengthInsights dreams={displayDreams} />
 
                         {/* Dream Analysis Grid */}
                         <div>
                             <h2 className="font-serif text-2xl text-center mb-4">Dream Analysis</h2>
-                            <InsightsGrid dreams={dreams} />
+                            <InsightsGrid dreams={displayDreams} />
                         </div>
 
                         <GlobalTrendsCard />

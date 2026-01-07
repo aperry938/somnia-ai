@@ -1,5 +1,6 @@
 import React, { useState, Suspense, lazy } from 'react';
 import { Dream } from '../../types';
+import { DEMO_DREAMS } from '../../constants/demoDreams';
 
 interface InsightsGridProps {
     dreams: Dream[];
@@ -39,16 +40,12 @@ const TABS = ['Quick Stats', 'Emotions', 'Themes', 'People', 'Content', 'Linguis
 export const InsightsGrid: React.FC<InsightsGridProps> = ({ dreams }) => {
     const [activeTab, setActiveTab] = useState<typeof TABS[number]>('Quick Stats');
 
-    if (dreams.length < 3) {
-        return (
-            <div className="text-center py-8 text-day-text-secondary dark:text-night-text-secondary">
-                Log at least 3 dreams to unlock insights
-            </div>
-        );
-    }
+    // Use demo data when user has < 3 dreams
+    const isUsingDemo = dreams.length < 3;
+    const displayDreams = isUsingDemo ? DEMO_DREAMS : dreams;
 
     const renderTabContent = () => {
-        const props: TabPanelProps = { dreams };
+        const props: TabPanelProps = { dreams: displayDreams };
 
         switch (activeTab) {
             case 'Quick Stats':
@@ -74,6 +71,19 @@ export const InsightsGrid: React.FC<InsightsGridProps> = ({ dreams }) => {
 
     return (
         <div className="space-y-4">
+            {/* Sample Data Banner */}
+            {isUsingDemo && (
+                <div className="flex items-center gap-3 px-4 py-3 bg-day-accent/10 dark:bg-night-accent/10 border border-day-accent/20 dark:border-night-accent/20 rounded-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-day-accent dark:text-night-accent flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-sm text-day-accent dark:text-night-accent">
+                        <span className="font-medium">Sample data</span>
+                        <span className="opacity-80"> — Log your dreams to see your personal insights</span>
+                    </p>
+                </div>
+            )}
+
             {/* Tab Navigation */}
             <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-hide" role="tablist" aria-label="Insights categories">
                 {TABS.map(tab => (
