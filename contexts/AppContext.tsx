@@ -404,10 +404,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const dreamId = generateSecureId();
         const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
-        // If we have an active alarm session, create a proper SleepEntry
-        // Only sessions with an alarm get saved to Chronicle
+        // If we have an active sleep session, create a proper SleepEntry
+        // This captures all tracked sleep sessions (with or without alarm)
         let sleepEntryId: number | undefined = undefined;
-        if (activeSleepSession?.alarmId) {
+        if (activeSleepSession) {
             const entryId = generateSecureId();
             const newEntry: SleepEntry = {
                 id: entryId,
