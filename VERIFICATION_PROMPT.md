@@ -1,130 +1,147 @@
-# Somnia AI - Sleep Tracking Bug Fix Verification
+# Somnia AI - Sleep Data Capture Bug Fixes Verification
 
 ## Assignment for Verification AI
 
-Another AI made several changes to fix bugs in the sleep tracking feature. Your task is to verify these changes are correctly implemented and functioning.
+Another AI made several changes to fix bugs in the sleep tracking and dream logging functionality. Your task is to verify these changes are correctly implemented and functioning.
 
 ---
 
-## Changes Made (Commits: ab13098, 796ca1a)
+## Summary of All Changes Made
 
 ### Bug 1: NaN Duration Display for Sounds/Breathing
-**Problem:** The Chronicle card showed "Delta Waves (NaNm)" instead of actual duration.
+**Problem:** Chronicle card showed "Delta Waves (NaNm)" instead of actual duration.
 
-**Root Cause:** The `SleepEntryCard.tsx` was accessing `sound.durationSeconds` and `exercise.durationSeconds`, but the `SleepActivity` type defines the field as `duration`.
+**Root Cause:** `SleepEntryCard.tsx` was accessing `sound.durationSeconds` but `SleepActivity` type defines it as `duration`.
 
-**Fix Location:** `components/chronicle/SleepEntryCard.tsx` (lines ~236, ~260)
-
-**Verify:**
-1. Check that `SleepEntryCard.tsx` uses `sound.duration` and `exercise.duration` instead of `durationSeconds`
-2. Confirm the formatting logic handles seconds correctly (shows minutes if >= 60s)
+**Fix:** Updated display logic in `SleepEntryCard.tsx` to use `sound.duration` and `exercise.duration`.
 
 ---
 
 ### Bug 2: Breathing Exercises Not Being Captured
-**Problem:** Breathing exercises showed on the "Sweet Dreams" confirmation screen but weren't appearing in Chronicle entries.
+**Problem:** Breathing exercises showed on confirmation screen but weren't appearing in Chronicle.
 
-**Root Cause:** `GuidedRelaxationModal.tsx` was only calling `setActiveSleepAid()` to track the name, but never called `logBreathingActivity()` to record the actual duration when the session ended.
+**Root Cause:** `GuidedRelaxationModal.tsx` only called `setActiveSleepAid()` but never `logBreathingActivity()` when session ended.
 
-**Fix Location:** `components/modals/GuidedRelaxationModal.tsx`
-- Added `logBreathingActivity` to destructured context vars (line ~66)
-- Added call in `endSession()` function to log duration before closing
-
-**Verify:**
-1. `GuidedRelaxationModal.tsx` imports and uses `logBreathingActivity` from AppContext
-2. `endSession()` calculates elapsed time and calls `logBreathingActivity(relaxation.name, elapsedSeconds)`
-3. The call happens BEFORE the session is reset (before `setSessionStartTime(null)`)
+**Fix:** Added `logBreathingActivity(relaxation.name, elapsedSeconds)` call in the `endSession()` function.
 
 ---
 
 ### Bug 3: Dreams Not Appearing in Chronicle
-**Problem:** When a user started a sleep session WITHOUT linking to an alarm, the dream was captured but no SleepEntry was created (so nothing showed in Chronicle).
+**Problem:** Dreams logged via Dream Scribe weren't linked to Chronicle entries.
 
-**Root Cause:** In `AppContext.tsx`, the `addDream()` function had this condition:
-```typescript
-if (activeSleepSession?.alarmId) {
-```
-This meant SleepEntry creation only happened if there was an alarm. Users tracking sleep without an alarm got no Chronicle entry.
+**Root Cause:** `addDream()` only created entries when `activeSleepSession?.alarmId` existed. Sessions without alarms weren't saved.
 
-**Fix Location:** `contexts/AppContext.tsx` (line ~410)
+**Fix:** Changed condition to `activeSleepSession` (without `.alarmId`) to create entries for all tracked sessions.
 
-**Verify:**
-1. The condition changed from `activeSleepSession?.alarmId` to just `activeSleepSession`
-2. Comment updated to reflect the change: "This captures all tracked sleep sessions (with or without alarm)"
+---
+
+### Bug 4: Wake Data Missing (Snooze Count, Time-to-Wake)
+**Problem:** After dismissing alarm (even after snoozing), the Chronicle entry didn't show snooze count or time-to-wake.
+
+**Root Cause:** `handleAwake()` in `App.tsx` was creating a SleepEntry directly AND clearing the session. When user then logged a dream via Dream Scribe, the session was already cleared, so no wake data was available.
+
+**Fix:**
+1. Added new `saveWakeData(wakeData: WakeData)` function to `AppContext.tsx`
+2. Refactored `handleAwake()` to save wake metrics to the session (not create entry yet)
+3. `addDream()` already reads `wakeData` from session and includes it in the entry
 
 ---
 
 ## Key Files to Review
 
-1. **`components/chronicle/SleepEntryCard.tsx`** - Check duration field names
-2. **`components/modals/GuidedRelaxationModal.tsx`** - Check logBreathingActivity call
-3. **`contexts/AppContext.tsx`** - Check addDream condition change
-4. **`types.ts`** - Reference: `SleepActivity.duration` is the correct field (line ~23)
+1. **`components/chronicle/SleepEntryCard.tsx`** - Duration field names fixed
+2. **`components/modals/GuidedRelaxationModal.tsx`** - logBreathingActivity call added
+3. **`contexts/AppContext.tsx`** - saveWakeData function added, addDream condition fixed
+4. **`App.tsx`** - handleAwake refactored to use saveWakeData
 
 ---
 
-## Type Reference
+## Architecture After Fix
 
-```typescript
-// From types.ts
-export interface SleepActivity {
-    type: 'breathing' | 'sound' | 'relaxation';
-    name: string;
-    duration: number; // seconds <-- This is the correct field name
-}
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        SLEEP SESSION FLOW                       │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  1. User starts sleep session (with or without alarm)          │
+│     └── startSleepSession() creates activeSleepSession         │
+│                                                                 │
+│  2. User uses sounds/breathing during session                  │
+│     └── logSoundActivity() / logBreathingActivity() updates    │
+│         session.sleepGatewayData                                │
+│                                                                 │
+│  3. Alarm rings (if set)                                        │
+│     └── User snoozes/wakes                                      │
+│     └── snoozeCount tracked in useAlarmManager                  │
+│                                                                 │
+│  4. User clicks "I'm Awake"                                     │
+│     └── handleAwake() calls getWakeMetrics()                    │
+│     └── saveWakeData(wakeMetrics) stores on session.wakeData   │
+│     └── Session is NOT cleared yet                              │
+│                                                                 │
+│  5. User logs dream via Dream Scribe                            │
+│     └── addDream() reads:                                       │
+│         - sleepGatewayData (sounds, breathing, checklist)       │
+│         - wakeData (snoozeCount, timeToSilence)                 │
+│         - alarmTime, alarmSoundId                               │
+│     └── Creates SleepEntry with all data                        │
+│     └── THEN clears session                                     │
+│                                                                 │
+│  6. Chronicle displays SleepEntryCard                           │
+│     └── Shows all data: sounds, breathing, dreams, wake data   │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Functional Testing Steps
+## Verification Checklist
 
-1. **Test Breathing Capture:**
-   - Start a sleep session (with or without alarm)
-   - Open a breathing exercise (e.g., Box Breathing)
-   - Start a 2-minute session, wait 30 seconds
-   - End session early
-   - Click "Initiate Sleep Gateway" 
-   - Log a dream
-   - Go to Chronicle
-   - Verify: The entry should show the breathing exercise with duration
+### Code Review
+- [ ] `SleepEntryCard.tsx` uses `sound.duration` and `exercise.duration` (not `durationSeconds`)
+- [ ] `GuidedRelaxationModal.tsx` calls `logBreathingActivity()` in `endSession()`
+- [ ] `AppContext.tsx` has new `saveWakeData()` function that updates `session.wakeData`
+- [ ] `AppContext.tsx` `addDream()` creates entry when `activeSleepSession` exists (not just `alarmId`)
+- [ ] `App.tsx` `handleAwake()` calls `saveWakeData()` instead of `addSleepEntry()`
+- [ ] No TypeScript errors in affected files
+- [ ] Build completes successfully
 
-2. **Test Sound Capture:**
-   - Start a sleep session
-   - Play a soundscape (e.g., Delta Waves) for 30+ seconds
-   - Close the soundscape
-   - Complete the flow and log a dream
-   - Verify: Chronicle should show the sound with correct duration (not NaN)
+### Functional Testing
 
-3. **Test Dream Logging Without Alarm:**
-   - Start a sleep session WITHOUT selecting an alarm (just click "Start Sleep Tracking")
-   - Go through the flow and log a dream
-   - Verify: The dream appears in Chronicle with all sleep data
+**Test 1: Breathing Exercise Capture**
+1. Start sleep session → use breathing exercise 30s → end early
+2. Log dream via Dream Scribe
+3. **Verify:** Chronicle shows breathing exercise with correct duration (not NaN)
 
----
+**Test 2: Sound Capture with Duration**
+1. Start sleep session → play soundscape for 30+ seconds
+2. Log dream
+3. **Verify:** Chronicle shows sound with correct duration
 
-## Expected Data Flow
+**Test 3: Wake Data (Snooze + Time-to-Wake)**
+1. Start session WITH alarm set
+2. Wait for alarm → click Snooze → wait 30s
+3. Click "I'm awake now" during snooze
+4. Log dream via Dream Scribe
+5. **Verify:** Chronicle shows:
+   - Snooze count: 1
+   - Time to wake: ~30s (or whatever was elapsed)
 
-```
-User plays sound/breathwork → logSoundActivity/logBreathingActivity called
-                           → Data stored in activeSleepSession.sleepGatewayData
-                           
-User logs dream → addDream() checks if activeSleepSession exists (not alarmId anymore)
-               → Creates SleepEntry with sleepAids from sleepGatewayData
-               → SleepEntry includes soundsPlayed[], breathingExercises[]
-               
-Chronicle displays → SleepEntryCard reads entry.sleepAids.soundsPlayed
-                  → Shows each item's name and duration (not durationSeconds)
-```
+**Test 4: Dream Linking**
+1. Start sleep session (with or without alarm)
+2. Log dream via Dream Scribe
+3. **Verify:** Dream appears in Chronicle entry under DREAMS section
 
 ---
 
 ## Report Back
 
-Please confirm:
-- [ ] Duration fields are correctly named in SleepEntryCard
-- [ ] logBreathingActivity is called in GuidedRelaxationModal's endSession
-- [ ] addDream creates entries for all activeSleepSession (not just those with alarmId)
-- [ ] No TypeScript errors in the affected files
-- [ ] Build completes successfully
+Please confirm each item:
+- [ ] Duration fields correctly named in SleepEntryCard
+- [ ] logBreathingActivity called in GuidedRelaxationModal
+- [ ] saveWakeData function exists and is called from handleAwake
+- [ ] addDream creates entries for all sessions (not just with alarmId)
+- [ ] handleAwake saves wakeData to session instead of creating entry
+- [ ] Build succeeds with no errors
 
 If any issues are found, describe exactly what's wrong and suggest fixes.
