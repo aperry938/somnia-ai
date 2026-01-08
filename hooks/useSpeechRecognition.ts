@@ -33,9 +33,22 @@ interface SpeechRecognitionStatic {
     new(): SpeechRecognition;
 }
 
+interface SpeechGrammarList {
+    readonly length: number;
+    item(index: number): SpeechGrammar;
+    addFromString(string: string, weight?: number): void;
+    addFromURI(src: string, weight?: number): void;
+    [index: number]: SpeechGrammar;
+}
+
+interface SpeechGrammar {
+    src: string;
+    weight: number;
+}
+
 interface SpeechRecognition extends EventTarget {
     continuous: boolean;
-    grammars: any;
+    grammars: SpeechGrammarList;
     interimResults: boolean;
     lang: string;
     maxAlternatives: number;
