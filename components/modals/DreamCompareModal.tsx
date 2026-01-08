@@ -28,6 +28,9 @@ export const DreamCompareModal: React.FC<DreamCompareModalProps> = ({ dreams, on
                 value={dream?.id || ''}
                 onChange={(e) => onSelect(Number(e.target.value))}
                 aria-label={`Select ${side} dream for comparison`}
+                onPointerDown={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
                 className="w-full mb-4 p-3 min-h-[48px] text-base bg-white/50 dark:bg-black/30 border border-day-border dark:border-night-border rounded-lg focus:outline-none focus:ring-2 focus:ring-day-accent"
             >
                 {dreams.map(d => (
