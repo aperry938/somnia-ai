@@ -58,7 +58,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
     // Wake Window Hook
     const { isSupported: motionSupported, movementLog } = useWakeWindow(isSleeping);
 
-    const { setActiveSleepAid, activeSleepAids, setPendingSleepData, dreams, volume, activeSleepSession, updateSleepSessionData, startSleepSession, alarms } = useAppContext();
+    const { setActiveSleepAid, activeSleepAids, setPendingSleepData, dreams, volume, activeSleepSession, updateSleepSessionData, startSleepSession, alarms, addSleepEntry, clearSleepSession } = useAppContext();
 
     // Initialize session data from existing session if present (runs once on mount)
     useEffect(() => {
@@ -351,6 +351,17 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                             <button
                                 onClick={() => {
                                     haptics.success();
+                                    // Save the sleep session directly to Chronicle
+                                    if (activeSleepSession) {
+                                        const today = new Date().toISOString().split('T')[0];
+                                        addSleepEntry(
+                                            today,
+                                            activeSleepSession.sleepGatewayData?.dayRating ?? null,
+                                            activeSleepSession.sleepGatewayData?.dayNotes,
+                                            activeSleepSession.sleepGatewayData
+                                        );
+                                        clearSleepSession();
+                                    }
                                     setIsSleeping(false);
                                     // Navigate back to alarms/main page
                                     if (onNavigateToAlarms) onNavigateToAlarms();
@@ -360,11 +371,11 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                 </svg>
-                                Done - Sweet Dreams!
+                                Done - Save to Chronicle
                             </button>
                         </div>
-                        <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-4 opacity-70">
-                            Your session will be attached to your next dream log
+                        <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-4 opacity-70 text-center">
+                            Your sleep session and activities will be saved to Chronicle
                         </p>
                     </div>
                 ) : (

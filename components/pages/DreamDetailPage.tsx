@@ -15,8 +15,8 @@ import { MOOD_ICONS, MOOD_LABELS } from '../../constants/uiIcons';
 
 // Evening Reflection Display Component
 const EveningReflectionDisplay: React.FC<{ aids: SleepAids }> = ({ aids }) => {
-    const { dayRating, dayNotes } = aids;
-    const hasData = dayRating || dayNotes;
+    const { dayRating, dayNotes, totalPrepTime } = aids;
+    const hasData = dayRating || dayNotes || totalPrepTime;
 
     if (!hasData) {
         return null;
@@ -28,17 +28,24 @@ const EveningReflectionDisplay: React.FC<{ aids: SleepAids }> = ({ aids }) => {
             <div className="text-sm text-day-text-secondary dark:text-night-text-secondary space-y-2">
                 {dayRating && <p><strong>Day Rating:</strong> {dayRating} / 5</p>}
                 {dayNotes && <p><strong>Notes:</strong> "{dayNotes}"</p>}
+                {totalPrepTime && totalPrepTime > 0 && (
+                    <p><strong>Total Prep Time:</strong> {Math.round(totalPrepTime / 60)} min</p>
+                )}
             </div>
         </div>
     );
 };
 
-// Sleep Aids Display Component
+// Sleep Activities Display Component (soundscapes, breathing, checklist)
 const SleepAidsDisplay: React.FC<{ aids: SleepAids }> = ({ aids }) => {
-    const { sound, relaxation, checklist } = aids;
-    const hasAids = sound || relaxation || (checklist && checklist.length > 0);
+    const { sound, soundDuration, soundsPlayed, breathingExercises, checklist } = aids;
 
-    if (!hasAids) {
+    // Check for any activity
+    const hasActivities = sound || (soundsPlayed && soundsPlayed.length > 0) ||
+        (breathingExercises && breathingExercises.length > 0) ||
+        (checklist && checklist.length > 0);
+
+    if (!hasActivities) {
         return null;
     }
 
@@ -53,15 +60,75 @@ const SleepAidsDisplay: React.FC<{ aids: SleepAids }> = ({ aids }) => {
 
     return (
         <div className="bg-day-card-bg/50 dark:bg-night-card-bg/50 border border-day-border dark:border-night-border rounded-lg p-4 mb-6">
-            <h3 className="font-serif text-lg mb-2">Sleep Gateway Settings</h3>
-            <div className="text-sm text-day-text-secondary dark:text-night-text-secondary space-y-1">
-                {sound && <p><strong>Soundscape:</strong> {sound}</p>}
-                {relaxation && <p><strong>Relaxation:</strong> {relaxation}</p>}
+            <h3 className="font-serif text-lg mb-3">Sleep Activities</h3>
+            <div className="text-sm text-day-text-secondary dark:text-night-text-secondary space-y-3">
+
+                {/* Breathing Exercises */}
+                {breathingExercises && breathingExercises.length > 0 && (
+                    <div>
+                        <strong className="flex items-center gap-2 text-purple-600 dark:text-purple-400 mb-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                            </svg>
+                            Breathing Exercises
+                        </strong>
+                        <div className="flex flex-wrap gap-2 ml-6">
+                            {breathingExercises.map((ex, i) => (
+                                <span key={i} className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-xs">
+                                    {ex.name} ({Math.round(ex.duration / 60)}m)
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Soundscapes */}
+                {soundsPlayed && soundsPlayed.length > 0 && (
+                    <div>
+                        <strong className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 mb-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                            </svg>
+                            Soundscapes
+                        </strong>
+                        <div className="flex flex-wrap gap-2 ml-6">
+                            {soundsPlayed.map((s, i) => (
+                                <span key={i} className="px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-full text-xs">
+                                    {s.name} ({Math.round(s.duration / 60)}m)
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Legacy single sound field */}
+                {sound && !soundsPlayed?.length && (
+                    <div>
+                        <strong className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 mb-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                            </svg>
+                            Soundscape
+                        </strong>
+                        <p className="ml-6">{sound} {soundDuration ? `(${soundDuration}m)` : ''}</p>
+                    </div>
+                )}
+
+                {/* Checklist */}
                 {checklist && checklist.length > 0 && (
                     <div>
-                        <strong>Checklist:</strong>
-                        <ul className="list-disc list-inside ml-2">
-                            {checklist.map(key => <li key={key}>{checklistTextMap[key] || key}</li>)}
+                        <strong className="flex items-center gap-2 text-green-600 dark:text-green-400 mb-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Sleep Checklist
+                        </strong>
+                        <ul className="ml-6 space-y-1">
+                            {checklist.map(key => (
+                                <li key={key} className="flex items-center gap-1">
+                                    <span className="text-green-500">✓</span> {checklistTextMap[key] || key}
+                                </li>
+                            ))}
                         </ul>
                     </div>
                 )}

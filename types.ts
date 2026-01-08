@@ -159,6 +159,14 @@ export interface SyncAction {
 export type CoachPersonality = 'mystical' | 'scientific';
 export type AnalysisPersonality = 'oneironaut' | 'jungian' | 'scientific';
 
+// Wake data - metrics from when the alarm rings
+export interface WakeData {
+    snoozeCount: number;           // How many times user snoozed
+    timeToSilence: number;         // Seconds until alarm was silenced
+    alertnessBoostUsed: boolean;   // Whether user used alertness boost sound
+    alarmType: 'manual' | 'smart'; // How the alarm was triggered
+}
+
 // Sleep Session - links alarm to sleep gateway data to dream (for active session tracking)
 export interface SleepSession {
     id: number; // Session ID (timestamp)
@@ -166,6 +174,7 @@ export interface SleepSession {
     alarmTime: string | null; // Alarm time for display
     startedAt: string; // When session was created
     sleepGatewayData: SleepAids; // Pre-sleep data from Sleep Gateway
+    wakeData?: WakeData; // Wake metrics when alarm was dismissed
     isActive: boolean; // Whether this session is still active (not yet logged)
 }
 
@@ -175,6 +184,8 @@ export interface SleepEntry {
     date: string;                   // Date of sleep (YYYY-MM-DD format)
     sleepQuality: number | null;    // 1-5 rating
     sleepAids?: SleepAids;          // Pre-sleep data (sound, relaxation, checklist, day rating)
+    wakeData?: WakeData;            // Wake metrics (snooze, silence time, boost)
+    manuallyLogged?: boolean;       // Whether activities were logged retroactively
     notes?: string;                 // Optional notes about the sleep
     dreamIds: number[];             // IDs of dreams logged for this session
     createdAt: string;              // ISO timestamp when entry was created
