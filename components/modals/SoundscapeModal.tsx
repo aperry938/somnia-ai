@@ -157,10 +157,11 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
         const remainingMinutes = (timeRemaining || playDuration) / 60;
         await playSleepSound(soundToPlay, remainingMinutes, volume);
 
+        soundStartTimeRef.current = Date.now(); // Track for activity logging
         setIsReadyToPlay(false);
         setIsPaused(false);
-        setPlayStartTime(Date.now());
-        soundStartTimeRef.current = Date.now(); // Track for activity logging
+        // Set playStartTime last to trigger the timer effect with updated values
+        setTimeout(() => setPlayStartTime(Date.now()), 0);
     };
 
     // Pause the sound and timer
