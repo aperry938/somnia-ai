@@ -7,6 +7,7 @@
 
 import { Capacitor } from '@capacitor/core';
 import { LocalNotifications, ScheduleOptions, LocalNotificationSchema } from '@capacitor/local-notifications';
+import { logger } from './logger';
 
 // Check if running in native environment
 export const isNative = Capacitor.isNativePlatform();
@@ -16,7 +17,7 @@ export const isNative = Capacitor.isNativePlatform();
  */
 export async function requestPermissions(): Promise<boolean> {
     if (!isNative) {
-        console.log('[NativeAlarm] Not running in native environment');
+        logger.log('[NativeAlarm] Not running in native environment');
         return false;
     }
 
@@ -24,7 +25,7 @@ export async function requestPermissions(): Promise<boolean> {
         const result = await LocalNotifications.requestPermissions();
         return result.display === 'granted';
     } catch (error) {
-        console.error('[NativeAlarm] Permission request failed:', error);
+        logger.error('[NativeAlarm] Permission request failed:', error);
         return false;
     }
 }
@@ -39,7 +40,7 @@ export async function checkPermissions(): Promise<boolean> {
         const result = await LocalNotifications.checkPermissions();
         return result.display === 'granted';
     } catch (error) {
-        console.error('[NativeAlarm] Permission check failed:', error);
+        logger.error('[NativeAlarm] Permission check failed:', error);
         return false;
     }
 }
@@ -55,7 +56,7 @@ export async function scheduleAlarm(
     sound?: string
 ): Promise<boolean> {
     if (!isNative) {
-        console.log('[NativeAlarm] Skipping native schedule - not in native environment');
+        logger.log('[NativeAlarm] Skipping native schedule - not in native environment');
         return false;
     }
 
@@ -78,10 +79,10 @@ export async function scheduleAlarm(
             notifications: [notification],
         });
 
-        console.log(`[NativeAlarm] Scheduled alarm ${id} for ${scheduleAt.toISOString()}`);
+        logger.log(`[NativeAlarm] Scheduled alarm ${id} for ${scheduleAt.toISOString()}`);
         return true;
     } catch (error) {
-        console.error('[NativeAlarm] Failed to schedule alarm:', error);
+        logger.error('[NativeAlarm] Failed to schedule alarm:', error);
         return false;
     }
 }
@@ -94,10 +95,10 @@ export async function cancelAlarm(id: number): Promise<boolean> {
 
     try {
         await LocalNotifications.cancel({ notifications: [{ id }] });
-        console.log(`[NativeAlarm] Cancelled alarm ${id}`);
+        logger.log(`[NativeAlarm] Cancelled alarm ${id}`);
         return true;
     } catch (error) {
-        console.error('[NativeAlarm] Failed to cancel alarm:', error);
+        logger.error('[NativeAlarm] Failed to cancel alarm:', error);
         return false;
     }
 }
@@ -113,10 +114,10 @@ export async function cancelAllAlarms(): Promise<boolean> {
         if (pending.notifications.length > 0) {
             await LocalNotifications.cancel({ notifications: pending.notifications });
         }
-        console.log('[NativeAlarm] Cancelled all alarms');
+        logger.log('[NativeAlarm] Cancelled all alarms');
         return true;
     } catch (error) {
-        console.error('[NativeAlarm] Failed to cancel all alarms:', error);
+        logger.error('[NativeAlarm] Failed to cancel all alarms:', error);
         return false;
     }
 }
@@ -131,7 +132,7 @@ export async function getPendingAlarms(): Promise<number[]> {
         const pending = await LocalNotifications.getPending();
         return pending.notifications.map(n => n.id);
     } catch (error) {
-        console.error('[NativeAlarm] Failed to get pending alarms:', error);
+        logger.error('[NativeAlarm] Failed to get pending alarms:', error);
         return [];
     }
 }
@@ -173,10 +174,10 @@ export async function scheduleRecurringAlarm(
         }));
 
         await LocalNotifications.schedule({ notifications });
-        console.log(`[NativeAlarm] Scheduled recurring alarm ${id} for days: ${daysOfWeek.join(', ')}`);
+        logger.log(`[NativeAlarm] Scheduled recurring alarm ${id} for days: ${daysOfWeek.join(', ')}`);
         return true;
     } catch (error) {
-        console.error('[NativeAlarm] Failed to schedule recurring alarm:', error);
+        logger.error('[NativeAlarm] Failed to schedule recurring alarm:', error);
         return false;
     }
 }
@@ -192,7 +193,7 @@ export function initializeAlarmListeners(
 
     // Listen for notification received
     LocalNotifications.addListener('localNotificationReceived', (notification) => {
-        console.log('[NativeAlarm] Notification received:', notification);
+        logger.log('[NativeAlarm] Notification received:', notification);
         if (notification.extra?.type === 'alarm' || notification.extra?.type === 'recurring_alarm') {
             const alarmId = notification.extra.alarmId || notification.extra.parentAlarmId;
             onAlarmReceived?.(alarmId);
@@ -201,7 +202,7 @@ export function initializeAlarmListeners(
 
     // Listen for notification action (user tapped)
     LocalNotifications.addListener('localNotificationActionPerformed', (action) => {
-        console.log('[NativeAlarm] Action performed:', action);
+        logger.log('[NativeAlarm] Action performed:', action);
         const alarmId = action.notification.extra?.alarmId || action.notification.extra?.parentAlarmId;
         onAlarmAction?.(alarmId, action.actionId);
     });
@@ -232,8 +233,8 @@ export async function registerAlarmActions(): Promise<void> {
                 },
             ],
         });
-        console.log('[NativeAlarm] Registered alarm action types');
+        logger.log('[NativeAlarm] Registered alarm action types');
     } catch (error) {
-        console.error('[NativeAlarm] Failed to register action types:', error);
+        logger.error('[NativeAlarm] Failed to register action types:', error);
     }
 }
