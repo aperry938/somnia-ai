@@ -55,9 +55,10 @@ export const AddDreamToEntryModal: React.FC<AddDreamToEntryModalProps> = ({
     });
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" role="dialog" aria-modal="true" aria-labelledby="add-dream-entry-title">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="add-dream-entry-title">
             <div
                 className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-lg animate-fadeIn max-h-[90vh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
             >
                 <h2 id="add-dream-entry-title" className="font-serif text-2xl text-center mb-2">Add Dream</h2>
                 <p className="text-center text-day-text-secondary dark:text-night-text-secondary text-sm mb-4">

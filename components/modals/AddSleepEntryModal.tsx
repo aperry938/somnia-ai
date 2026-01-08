@@ -43,9 +43,10 @@ export const AddSleepEntryModal: React.FC<AddSleepEntryModalProps> = ({
     const dayLabels = ['Rough', 'Meh', 'Okay', 'Good', 'Great'];
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" role="dialog" aria-modal="true" aria-labelledby="log-sleep-title">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="log-sleep-title">
             <div
                 className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-lg animate-fadeIn max-h-[90vh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
             >
                 <h2 id="log-sleep-title" className="font-serif text-2xl text-center mb-4">Log Sleep</h2>
 

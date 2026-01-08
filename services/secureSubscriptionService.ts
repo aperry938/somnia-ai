@@ -20,11 +20,7 @@ export type PremiumFeature =
     | 'unlimited_alarms'
     | 'voice_assistant'
     | 'custom_alarm_sounds'
-    | 'breathing'
-    | 'ml_sentiment'
-    | 'semantic_themes'
-    | 'narrative_patterns'
-    | 'sleep_prediction';
+    | 'breathing';
 
 // Subscription tier levels for feature gating
 export type SubscriptionTier = 'free' | 'premium';
@@ -43,10 +39,6 @@ export const FEATURE_TIERS: Record<PremiumFeature, SubscriptionTier> = {
     voice_assistant: 'premium',
     custom_alarm_sounds: 'free',  // Available to all
     breathing: 'premium',
-    ml_sentiment: 'premium',
-    semantic_themes: 'premium',
-    narrative_patterns: 'premium',
-    sleep_prediction: 'premium',
 };
 
 export interface SubscriptionStatus {
@@ -310,18 +302,10 @@ export function getCredits(): CreditState {
 
 /**
  * Check if user can use an AI analysis
- * REQUIRES AUTHENTICATION - anonymous users cannot use AI features
- * Premium users: always true (limited by daily cap in rateLimitService)
- * Free users: true if monthly credits remaining
+ * Premium users: always true
+ * Free users: true if credits remaining
  */
 export function canUseAiAnalysis(): boolean {
-    // SECURITY: Require authentication to prevent credit abuse
-    // Anonymous users could clear localStorage to get infinite credits
-    const userId = localStorage.getItem('somnia_auth_user');
-    if (!userId) {
-        return false; // Must be logged in
-    }
-
     if (isPremium()) return true;
     return getCredits().remaining > 0;
 }
@@ -521,26 +505,6 @@ export const PREMIUM_FEATURES: Record<PremiumFeature, { name: string; descriptio
     breathing: {
         name: 'Breathing Exercises',
         description: 'Guided breathwork for relaxation and better sleep',
-        tier: 'premium',
-    },
-    ml_sentiment: {
-        name: 'ML Sentiment Analysis',
-        description: 'Advanced AI-powered emotional analysis of your dreams',
-        tier: 'premium',
-    },
-    semantic_themes: {
-        name: 'Semantic Themes',
-        description: 'Discover deep patterns with Jungian archetype analysis',
-        tier: 'premium',
-    },
-    narrative_patterns: {
-        name: 'Narrative Patterns',
-        description: 'Track recurring characters, locations, and story arcs',
-        tier: 'premium',
-    },
-    sleep_prediction: {
-        name: 'Sleep Prediction',
-        description: "AI-powered prediction of tonight's sleep quality",
         tier: 'premium',
     },
 };

@@ -17,7 +17,6 @@ import { AlarmsPage } from './components/pages/AlarmsPage';
 import { BottomNav } from './components/BottomNav';
 import { AlarmRingModal } from './components/modals/AlarmRingModal';
 import { DreamScribeModal } from './components/modals/DreamScribeModal';
-import { ManualSleepLogModal } from './components/modals/ManualSleepLogModal';
 import { PageLoading } from './components/shared/LoadingStates';
 import { KeyboardShortcutsHelp, useKeyboardHelp } from './components/shared/KeyboardHelp';
 import { OfflineIndicator } from './components/OfflineIndicator';
@@ -44,9 +43,8 @@ const AdminPage = lazy(() => import('./components/pages/AdminPage').then(m => ({
 
 
 const App: React.FC = () => {
-    const { addDream, isScribeOpen, setIsScribeOpen, activeSleepSession, updateSleepSessionData, startSleepSession } = useAppContext();
+    const { addDream, isScribeOpen, setIsScribeOpen } = useAppContext();
     const { isAuthenticated, isLoading: authLoading, isConfigured: authConfigured } = useAuth();
-    const [showManualSleepLog, setShowManualSleepLog] = useState(false);
 
     // Check for Stripe success redirect
     const initialPage = (): Page => {
@@ -126,40 +124,9 @@ const App: React.FC = () => {
 
     // Listen for openDreamScribe event from Chronicle empty state
     useEffect(() => {
-        const handleOpenScribe = () => {
-            // If no active sleep session, show manual sleep log modal first
-            if (!activeSleepSession) {
-                setShowManualSleepLog(true);
-            } else {
-                setIsScribeOpen(true);
-            }
-        };
+        const handleOpenScribe = () => setIsScribeOpen(true);
         window.addEventListener('openDreamScribe', handleOpenScribe);
         return () => window.removeEventListener('openDreamScribe', handleOpenScribe);
-    }, [setIsScribeOpen, activeSleepSession]);
-
-    // Also intercept when isScribeOpen changes to true without active session
-    useEffect(() => {
-        if (isScribeOpen && !activeSleepSession && !showManualSleepLog) {
-            // User tried to open scribe without session - offer manual logging first
-            setIsScribeOpen(false);
-            setShowManualSleepLog(true);
-        }
-    }, [isScribeOpen, activeSleepSession, showManualSleepLog, setIsScribeOpen]);
-
-    // Handle manual sleep log completion
-    const handleManualSleepComplete = useCallback((sleepAids: import('./types').SleepAids) => {
-        // Start a session with the manual data
-        startSleepSession();
-        updateSleepSessionData({ ...sleepAids });
-        setShowManualSleepLog(false);
-        setIsScribeOpen(true);
-    }, [startSleepSession, updateSleepSessionData, setIsScribeOpen]);
-
-    // Handle skipping manual sleep log
-    const handleManualSleepSkip = useCallback(() => {
-        setShowManualSleepLog(false);
-        setIsScribeOpen(true);
     }, [setIsScribeOpen]);
 
     const navigateToDreamDetail = useCallback((dreamId: number) => {
@@ -360,7 +327,6 @@ const App: React.FC = () => {
                 </main>
                 <BottomNav currentPage={currentPage} setCurrentPage={setCurrentPage} />
                 {ringingAlarm && <AlarmRingModal alarm={ringingAlarm} onSnooze={snooze} onAwake={handleAwake} onRecordDream={handleRecordDream} />}
-                {showManualSleepLog && <ManualSleepLogModal onComplete={handleManualSleepComplete} onSkip={handleManualSleepSkip} />}
                 {isScribeOpen && <DreamScribeModal onSave={handleScribeSave} onClose={() => { setIsScribeOpen(false); setWakeQuickNote(''); }} initialText={wakeQuickNote} />}
                 <KeyboardShortcutsHelp isOpen={isHelpOpen} onClose={closeHelp} />
                 <RealityCheckManager />

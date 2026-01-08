@@ -67,7 +67,7 @@ RETURNS TABLE (
     id BIGINT,
     dream_text TEXT,
     title TEXT,
-    dream_timestamp TIMESTAMPTZ,
+    timestamp TIMESTAMPTZ,
     similarity FLOAT
 )
 LANGUAGE plpgsql
@@ -78,7 +78,7 @@ BEGIN
         d.id,
         d.dream_text,
         d.title,
-        d.timestamp AS dream_timestamp,
+        d.timestamp,
         1 - (d.embedding <=> query_embedding) AS similarity
     FROM public.dreams d
     WHERE
@@ -98,7 +98,7 @@ CREATE OR REPLACE FUNCTION get_dream_telemetry(
 RETURNS TABLE (
     id BIGINT,
     title TEXT,
-    dream_timestamp TIMESTAMPTZ,
+    timestamp TIMESTAMPTZ,
     valence FLOAT,
     arousal FLOAT,
     lucidity INTEGER,
@@ -111,7 +111,7 @@ BEGIN
     SELECT
         d.id,
         d.title,
-        d.timestamp AS dream_timestamp,
+        d.timestamp,
         d.sentiment_valence,
         d.sentiment_arousal,
         d.lucidity_score,
@@ -134,7 +134,7 @@ CREATE OR REPLACE FUNCTION get_dreams_by_quadrant(
 RETURNS TABLE (
     id BIGINT,
     title TEXT,
-    dream_timestamp TIMESTAMPTZ,
+    timestamp TIMESTAMPTZ,
     valence FLOAT,
     arousal FLOAT
 )
@@ -145,7 +145,7 @@ BEGIN
     SELECT
         d.id,
         d.title,
-        d.timestamp AS dream_timestamp,
+        d.timestamp,
         d.sentiment_valence,
         d.sentiment_arousal
     FROM public.dreams d

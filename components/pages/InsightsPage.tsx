@@ -3,7 +3,7 @@ import { useAppContext } from '../../contexts/AppContext';
 import { analyzeSleepHabits, synthesizeDreamThemes } from '../../services/geminiService';
 import { DreamSynthesis, SleepHabitAnalysis } from '../../types';
 import { SleepQualityChart } from '../charts/SleepQualityChart';
-import { TelemetryScatterPlot } from '../insights/TelemetryScatterPlot';
+import { detectRecurringPatterns, formatPatternName } from '../../constants/dreamPatterns';
 import { WeeklyDigest } from '../insights/WeeklyDigest';
 import { GlobalTrendsCard } from '../insights/GlobalTrendsCard';
 import { SentimentChart } from '../insights/SentimentChart';
@@ -17,10 +17,6 @@ import { PremiumBadge } from '../shared/PremiumBadge';
 import { canUseAiAnalysis, useAiCredit, isPremium } from '../../services/secureSubscriptionService';
 import { DreamCompareModal } from '../modals/DreamCompareModal';
 import { DEMO_DREAMS } from '../../constants/demoDreams';
-// ML Analytics Components
-import { SemanticThemesCard } from '../insights/SemanticThemesCard';
-import { NarrativePatternsCard } from '../insights/NarrativePatternsCard';
-import { SleepPredictorCard } from '../insights/SleepPredictorCard';
 
 type InsightTab = 'dreams' | 'analysis';
 
@@ -118,6 +114,8 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
             }))
             .reverse();
     }, [dreams]);
+
+    const patterns = useMemo(() => detectRecurringPatterns(dreams), [dreams]);
 
     const handleSynthesizeDreams = async () => {
         if (!userIsPremium) return; // Premium only
@@ -247,30 +245,14 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                                     </div>
                                 </PremiumBadge>
                             ) : (
-                                <div className="bg-day-accent/10 dark:bg-night-accent/10 border border-day-accent/20 dark:border-night-accent/20 rounded-xl p-4">
-                                    <div className="flex items-start gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-day-accent/20 dark:bg-night-accent/20 flex items-center justify-center flex-shrink-0">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                                            </svg>
-                                        </div>
-                                        <div className="flex-grow">
-                                            <p className="font-medium text-day-accent dark:text-night-accent">
-                                                {dreams.length === 0 ? "Start Your Dream Journey" : `${3 - dreams.length} more dream${3 - dreams.length > 1 ? 's' : ''} to unlock insights`}
-                                            </p>
-                                            <p className="text-sm text-day-text-secondary dark:text-night-text-secondary mt-1">
-                                                {dreams.length === 0
-                                                    ? "Log your first dream to begin building your personal analytics"
-                                                    : "Viewing sample data while you build your dream journal"}
-                                            </p>
-                                            <button
-                                                onClick={() => window.dispatchEvent(new CustomEvent('openDreamScribe'))}
-                                                className="mt-3 px-4 py-2 bg-day-accent dark:bg-night-accent text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
-                                            >
-                                                Log a Dream
-                                            </button>
-                                        </div>
-                                    </div>
+                                <div className="flex items-center gap-3 px-4 py-3 bg-day-accent/10 dark:bg-night-accent/10 border border-day-accent/20 dark:border-night-accent/20 rounded-xl">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-day-accent dark:text-night-accent flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <p className="text-sm text-day-accent dark:text-night-accent">
+                                        <span className="font-medium">Sample data</span>
+                                        <span className="opacity-80"> — Log at least 3 dreams to see your personal insights</span>
+                                    </p>
                                 </div>
                             )
                         )}
@@ -281,8 +263,35 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                         <DreamStreakCalendar dreams={displayDreams} />
                         <RecurringThemes dreams={displayDreams} />
 
-                        {/* Emotional Landscape (Russell's Circumplex) */}
-                        <TelemetryScatterPlot dreams={displayDreams} onDreamSelect={onDreamSelect} />
+                        {/* Recurring Patterns */}
+                        {patterns.length > 0 && (
+                            <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">
+                                <h2 className="font-serif text-2xl mb-2">Recurring Patterns</h2>
+                                <p className="text-day-text-secondary dark:text-night-text-secondary text-sm mb-4">
+                                    Themes across multiple dreams
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                    {patterns.slice(0, 8).map(p => (
+                                        <div
+                                            key={p.pattern}
+                                            className="px-3 py-1.5 bg-day-accent/10 dark:bg-night-accent/10 rounded-full text-sm flex items-center gap-1.5"
+                                        >
+                                            <span className="font-medium text-day-accent dark:text-night-accent">
+                                                {formatPatternName(p.pattern)}
+                                            </span>
+                                            <span className="text-xs text-day-text-secondary dark:text-night-text-secondary">
+                                                ×{p.occurrences}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                                {patterns.length > 8 && (
+                                    <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-2">
+                                        +{patterns.length - 8} more patterns
+                                    </p>
+                                )}
+                            </div>
+                        )}
 
                         {/* Compare Dreams */}
                         {dreams.length >= 2 && (
@@ -405,33 +414,6 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                             {dreams.filter(d => d.sleepQuality).length < 3 && !habitAnalysis && <p className="text-xs text-center mt-2 text-day-text-secondary dark:text-night-text-secondary">Requires at least 3 nights with sleep quality ratings.</p>}
                             {userIsPremium && dreams.filter(d => d.sleepQuality).length >= 3 && !habitAnalysis && canUseHabitAnalysis() && <p className="text-xs text-center mt-1 text-indigo-500 dark:text-indigo-400">Once per week</p>}
                         </AnalysisCard>
-
-                        {/* ML Analytics Section */}
-                        <div className="space-y-1">
-                            <h2 className="font-serif text-2xl text-center">ML-Powered Analytics</h2>
-                            <p className="text-sm text-center text-day-text-secondary dark:text-night-text-secondary mb-4">
-                                Advanced AI analysis of your dream patterns
-                            </p>
-                        </div>
-
-                        {/* Sleep Predictor */}
-                        <SleepPredictorCard
-                            sleepAids={dreams[0]?.sleepAids}
-                            biometrics={undefined}
-                            recentDreams={displayDreams}
-                        />
-
-                        {/* Semantic Themes */}
-                        <SemanticThemesCard
-                            dreams={displayDreams}
-                            onDreamSelect={onDreamSelect}
-                        />
-
-                        {/* Narrative Patterns */}
-                        <NarrativePatternsCard
-                            dreams={displayDreams}
-                            onDreamSelect={onDreamSelect}
-                        />
 
                         {/* Dream Analysis Grid */}
                         <div>

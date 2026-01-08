@@ -16,7 +16,7 @@ describe('rateLimitService', () => {
             const { RATE_LIMITS } = await import('./rateLimitService');
 
             expect(RATE_LIMITS).toHaveProperty('ai_analysis');
-            expect(RATE_LIMITS).toHaveProperty('ai_coach');
+            expect(RATE_LIMITS).toHaveProperty('ai_imagery');
             expect(RATE_LIMITS).toHaveProperty('ai_coach');
             expect(RATE_LIMITS).toHaveProperty('ai_chat');
             expect(RATE_LIMITS).toHaveProperty('auth_login');
@@ -120,7 +120,7 @@ describe('rateLimitService', () => {
             const { checkRateLimit, getRemainingRequests, RATE_LIMITS } = await import('./rateLimitService');
 
             const identifier = 'remaining-test';
-            const category = 'ai_coach';
+            const category = 'ai_imagery';
 
             // Make 3 requests
             checkRateLimit(category, identifier);

@@ -380,40 +380,25 @@ const NotificationsCard: React.FC = () => {
     return (
         <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">
             <h2 className="font-serif text-xl mb-4">Notifications</h2>
-            <div className="space-y-4">
+            <div className="space-y-3">
                 {toggleItems.map(item => (
-                    <div key={item.key} className="flex items-center justify-between py-1">
-                        <div className="flex-1 mr-4">
-                            <p className="font-medium">{item.label}</p>
+                    <div key={item.key} className="flex items-center justify-between">
+                        <div>
+                            <p className="font-medium text-sm">{item.label}</p>
                             <p className="text-sm text-day-text-secondary dark:text-night-text-secondary">{item.desc}</p>
                         </div>
-                        {/* Premium toggle switch */}
                         <button
                             onClick={() => updateSetting(item.key, !settings[item.key])}
                             role="switch"
                             aria-checked={settings[item.key]}
                             aria-label={`Toggle ${item.label}`}
-                            className={`relative w-16 h-9 rounded-full transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-day-accent dark:focus:ring-night-accent ${settings[item.key]
-                                    ? 'bg-gradient-to-r from-day-accent to-purple-500 dark:from-night-accent dark:to-purple-600 shadow-lg shadow-day-accent/30 dark:shadow-night-accent/30'
-                                    : 'bg-gray-200 dark:bg-gray-700'
+                            className={`w-14 h-8 min-h-[44px] rounded-full transition-colors relative flex items-center ${settings[item.key]
+                                ? 'bg-day-accent dark:bg-night-accent'
+                                : 'bg-gray-300 dark:bg-gray-600'
                                 }`}
                         >
-                            {/* Track glow effect when on */}
-                            {settings[item.key] && (
-                                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-day-accent/20 to-purple-500/20 dark:from-night-accent/20 dark:to-purple-600/20 animate-pulse" />
-                            )}
-                            {/* Thumb */}
-                            <div className={`absolute top-1 w-7 h-7 rounded-full bg-white shadow-md transition-all duration-300 ease-out flex items-center justify-center ${settings[item.key]
-                                    ? 'left-8 shadow-lg'
-                                    : 'left-1'
-                                }`}>
-                                {/* Check icon when on */}
-                                {settings[item.key] && (
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                                    </svg>
-                                )}
-                            </div>
+                            <div className={`absolute w-6 h-6 rounded-full bg-white transition-transform shadow ${settings[item.key] ? 'translate-x-7' : 'translate-x-1'
+                                }`} />
                         </button>
                     </div>
                 ))}
@@ -527,16 +512,8 @@ const AccountManagementCard: React.FC = () => {
         setIsSigningOut(true);
         try {
             await signOut();
-            // Clear ALL user-specific data on logout
+            // Clear local auth skip flag so user sees auth page again
             localStorage.removeItem('somnia_skipped_auth');
-            localStorage.removeItem('somnia_biometrics');
-            localStorage.removeItem('somnia_ai_credits');
-            localStorage.removeItem('somnia_credits_reset_date');
-            localStorage.removeItem('somnia_daily_limits');
-            localStorage.removeItem('somnia_auth_user');
-            localStorage.removeItem('somnia_subscription_token');
-            localStorage.removeItem('somnia_subscription_status');
-            localStorage.removeItem('somnia_user_email');
             showToast('Signed out successfully');
             // Reload to reset app state
             window.location.reload();
