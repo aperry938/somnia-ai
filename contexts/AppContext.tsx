@@ -397,8 +397,33 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const addDream = (dreamText: string, sleepQuality: number | null, mood?: DreamMood): number => {
         // Use sleep session data if available, otherwise fall back to pendingSleepData
         const sleepData = activeSleepSession?.sleepGatewayData ?? pendingSleepData ?? {};
+        const wakeData = activeSleepSession?.wakeData;
+        const hasSessionData = activeSleepSession || pendingSleepData;
+
+        const dreamId = generateSecureId();
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
+        // If we have sleep session data, create a proper SleepEntry
+        let sleepEntryId: number | undefined = undefined;
+        if (hasSessionData) {
+            const entryId = generateSecureId();
+            const newEntry: SleepEntry = {
+                id: entryId,
+                date: today,
+                sleepQuality,
+                notes: sleepData.dayNotes,
+                sleepAids: sleepData,
+                wakeData: wakeData,
+                manuallyLogged: !!pendingSleepData && !activeSleepSession,
+                dreamIds: [dreamId],
+                createdAt: new Date().toISOString(),
+            };
+            setSleepEntries(prev => [newEntry, ...prev]);
+            sleepEntryId = entryId;
+        }
+
         const newDream: Dream = {
-            id: generateSecureId(),
+            id: dreamId,
             timestamp: new Date().toISOString(),
             dreamText,
             sleepQuality,
@@ -407,6 +432,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             aiAnalysis: null,
             chatHistory: [],
             sleepAids: sleepData,
+            sleepEntryId, // Link to the SleepEntry if created
             mood,
         };
         setDreams(prev => [newDream, ...prev]);
