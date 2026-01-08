@@ -51,12 +51,38 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
     }, []);
 
     // Timer countdown when playing (not when paused or ready)
+    // Use refs to avoid stale closure issues in interval callback
+    const playDurationRef = useRef(playDuration);
+    const playStartTimeRef = useRef(playStartTime);
+    const onStopRef = useRef(onStop);
+
+    // Keep refs in sync with state/props
+    useEffect(() => {
+        playDurationRef.current = playDuration;
+    }, [playDuration]);
+
+    useEffect(() => {
+        playStartTimeRef.current = playStartTime;
+    }, [playStartTime]);
+
+    useEffect(() => {
+        onStopRef.current = onStop;
+    }, [onStop]);
+
     useEffect(() => {
         if (playStartTime === null || playDuration === 0 || isPaused || isReadyToPlay) return;
 
         const interval = setInterval(() => {
-            const elapsed = Math.floor((Date.now() - playStartTime) / 1000);
-            const remaining = Math.max(0, playDuration - elapsed);
+            const startTime = playStartTimeRef.current;
+            const duration = playDurationRef.current;
+
+            if (startTime === null || duration === 0) {
+                clearInterval(interval);
+                return;
+            }
+
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const remaining = Math.max(0, duration - elapsed);
             setTimeRemaining(remaining);
 
             // Auto-stop when timer reaches 0
@@ -65,13 +91,13 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                 setPlayStartTime(null);
                 setIsReadyToPlay(false);
                 setIsPaused(false);
-                onStop();
+                onStopRef.current();
                 clearInterval(interval);
             }
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [playStartTime, playDuration, isPaused, isReadyToPlay, onStop]);
+    }, [playStartTime, playDuration, isPaused, isReadyToPlay]);
 
     // Format seconds to MM:SS or HH:MM:SS
     const formatTime = (seconds: number): string => {
