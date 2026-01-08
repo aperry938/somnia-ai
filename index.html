@@ -181,6 +181,15 @@
         html.sleep .dark\:bg-night-card-bg { background-color: rgba(45, 24, 16, 0.65) !important; }
         html.sleep .dark\:border-night-border { border-color: rgba(255, 107, 53, 0.2) !important; }
 
+        /* Sleep mode toggle switch overrides (hardcoded colors in AlarmsPage) */
+        .sleep .toggle-checkbox:checked { border-color: #FF6B35 !important; }
+        .sleep .toggle-checkbox:checked + .toggle-label { background-color: #FF6B35 !important; }
+
+        /* Sleep mode: Override any remaining blue/indigo elements */
+        .sleep .shadow-indigo-500\/30 { --tw-shadow-color: rgba(255, 107, 53, 0.3) !important; }
+        .sleep .hover\:bg-indigo-600:hover { background-color: #E55A2B !important; }
+        .sleep .dark\:hover\:bg-indigo-500:hover { background-color: #FF6B35 !important; }
+
         /* Skip link for screen readers */
         .skip-link {
             position: absolute;
