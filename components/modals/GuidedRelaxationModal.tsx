@@ -63,7 +63,7 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
     const [sessionDuration, setSessionDuration] = useState(5); // minutes
     const [totalTimeRemaining, setTotalTimeRemaining] = useState(0); // seconds
     const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
-    const { setActiveSleepAid } = useAppContext();
+    const { setActiveSleepAid, logBreathingActivity } = useAppContext();
 
     const DURATION_PRESETS = [2, 5, 10]; // minutes
 
@@ -175,6 +175,13 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
 
     const endSession = () => {
         haptics.light();
+        // Log the actual duration spent in this breathing exercise
+        if (sessionStartTime) {
+            const elapsedSeconds = Math.floor((Date.now() - sessionStartTime) / 1000);
+            if (elapsedSeconds > 0) {
+                logBreathingActivity(relaxation.name, elapsedSeconds);
+            }
+        }
         setSessionState('ready');
         setStepIndex(0);
         setCountdown(0);
@@ -225,8 +232,8 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
                                         aria-label={`${mins} minute session`}
                                         aria-pressed={sessionDuration === mins}
                                         className={`py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all flex items-center justify-center ${sessionDuration === mins
-                                                ? 'bg-day-accent dark:bg-night-accent text-white'
-                                                : 'bg-white/50 dark:bg-black/30 border border-day-border dark:border-night-border hover:border-day-accent dark:hover:border-night-accent'
+                                            ? 'bg-day-accent dark:bg-night-accent text-white'
+                                            : 'bg-white/50 dark:bg-black/30 border border-day-border dark:border-night-border hover:border-day-accent dark:hover:border-night-accent'
                                             }`}
                                     >
                                         {mins} min

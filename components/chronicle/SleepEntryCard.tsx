@@ -233,7 +233,7 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
                                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                                                 </svg>
-                                                {sound.name} ({Math.floor(sound.durationSeconds / 60)}m)
+                                                {sound.name} ({sound.duration && sound.duration >= 60 ? Math.floor(sound.duration / 60) + 'm' : (sound.duration || 0) + 's'})
                                             </span>
                                         ))}
                                     </div>
@@ -257,7 +257,7 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
                                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                                                 </svg>
-                                                {exercise.name} ({Math.floor(exercise.durationSeconds / 60)}m)
+                                                {exercise.name} ({exercise.duration && exercise.duration >= 60 ? Math.floor(exercise.duration / 60) + 'm' : (exercise.duration || 0) + 's'})
                                             </span>
                                         ))}
                                     </div>
