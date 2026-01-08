@@ -20,7 +20,11 @@ export type PremiumFeature =
     | 'unlimited_alarms'
     | 'voice_assistant'
     | 'custom_alarm_sounds'
-    | 'breathing';
+    | 'breathing'
+    | 'ml_sentiment'
+    | 'semantic_themes'
+    | 'narrative_patterns'
+    | 'sleep_prediction';
 
 // Subscription tier levels for feature gating
 export type SubscriptionTier = 'free' | 'premium';
@@ -39,6 +43,10 @@ export const FEATURE_TIERS: Record<PremiumFeature, SubscriptionTier> = {
     voice_assistant: 'premium',
     custom_alarm_sounds: 'free',  // Available to all
     breathing: 'premium',
+    ml_sentiment: 'premium',
+    semantic_themes: 'premium',
+    narrative_patterns: 'premium',
+    sleep_prediction: 'premium',
 };
 
 export interface SubscriptionStatus {
@@ -505,6 +513,26 @@ export const PREMIUM_FEATURES: Record<PremiumFeature, { name: string; descriptio
     breathing: {
         name: 'Breathing Exercises',
         description: 'Guided breathwork for relaxation and better sleep',
+        tier: 'premium',
+    },
+    ml_sentiment: {
+        name: 'ML Sentiment Analysis',
+        description: 'Advanced AI-powered emotional analysis of your dreams',
+        tier: 'premium',
+    },
+    semantic_themes: {
+        name: 'Semantic Themes',
+        description: 'Discover deep patterns with Jungian archetype analysis',
+        tier: 'premium',
+    },
+    narrative_patterns: {
+        name: 'Narrative Patterns',
+        description: 'Track recurring characters, locations, and story arcs',
+        tier: 'premium',
+    },
+    sleep_prediction: {
+        name: 'Sleep Prediction',
+        description: "AI-powered prediction of tonight's sleep quality",
         tier: 'premium',
     },
 };
