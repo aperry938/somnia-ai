@@ -11,7 +11,7 @@ import { logger } from './logger';
 export type PremiumFeature =
     | 'ai_analysis'
     | 'ai_imagery'
-    | 'ai_coach'
+    | 'ai_chat'
     | 'dream_synthesis'
     | 'sleep_habits'
     | 'binaural_beats'
@@ -29,7 +29,7 @@ export type SubscriptionTier = 'free' | 'premium';
 export const FEATURE_TIERS: Record<PremiumFeature, SubscriptionTier> = {
     ai_analysis: 'premium',
     ai_imagery: 'premium',
-    ai_coach: 'premium',
+    ai_chat: 'premium',
     dream_synthesis: 'premium',
     sleep_habits: 'premium',
     binaural_beats: 'premium',
@@ -457,9 +457,9 @@ export const PREMIUM_FEATURES: Record<PremiumFeature, { name: string; descriptio
         description: 'Generate AI image prompts in multiple artistic styles',
         tier: 'premium',
     },
-    ai_coach: {
+    ai_chat: {
         name: 'Dream Chat',
-        description: 'Have meaningful conversations with AI about your dreams',
+        description: 'Have meaningful AI conversations about your dreams',
         tier: 'premium',
     },
     dream_synthesis: {
