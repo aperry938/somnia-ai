@@ -61,6 +61,38 @@ export interface DreamAnalysis {
     analysis: { title: string; content: string }[];
     integration: { title: string; content: string };
     imagePrompt?: string; // Detailed prompt for external AI image generators
+    telemetry?: DreamTelemetry; // ML-extracted metadata (NEW)
+}
+
+/**
+ * DreamTelemetry: ML-extracted metadata for vector analytics
+ * Replaces keyword-based analytics with AI-powered extraction
+ */
+export interface DreamTelemetry {
+    valence: number;      // -1.0 (Negative/Unpleasant) to 1.0 (Positive/Pleasant)
+    arousal: number;      // 0.0 (Calm) to 1.0 (Intense/Excited)
+    lucidity: number;     // 0-100 probability this was a lucid dream
+    tags: string[];       // AI-extracted semantic tags (e.g., "Archetype: Shadow", "Symbol: Water", "Theme: Transformation")
+}
+
+/**
+ * DreamEmbedding: Vector representation for semantic search
+ */
+export interface DreamEmbedding {
+    dreamId: number;
+    embedding: number[];  // 768-dimensional vector from text-embedding-004
+    generatedAt: string;
+}
+
+/**
+ * SimilarDream: Result from semantic search
+ */
+export interface SimilarDream {
+    id: number;
+    dreamText: string;
+    title: string;
+    timestamp: string;
+    similarity: number;   // 0-1 cosine similarity score
 }
 
 export interface ChatMessage {
@@ -84,7 +116,7 @@ export interface FileParams {
 }
 
 export interface SyntheticParams {
-    type: 'rain' | 'ocean' | 'fireplace';
+    type: 'ocean' | 'fireplace';
 }
 
 export interface RampParams {

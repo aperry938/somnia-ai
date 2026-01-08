@@ -1,7 +1,18 @@
-
+/**
+ * Local Sleep Prediction Service
+ *
+ * Provides quick, local sleep quality predictions based on historical correlations.
+ * Does NOT call AI APIs - uses simple heuristics for instant results.
+ *
+ * For ML-powered predictions with Gemini AI, use mlAnalyticsService.predictSleepQuality()
+ */
 import { Dream, SleepAids } from '../types';
 
-export interface SleepPrediction {
+/**
+ * Local sleep prediction result (no API, instant)
+ * Different from types.ts SleepPrediction which is for ML-based predictions
+ */
+export interface LocalSleepPrediction {
     predictedQuality: number; // 1-5 scale
     confidence: 'low' | 'medium' | 'high';
     factors: string[];
@@ -11,11 +22,15 @@ export interface SleepPrediction {
 /**
  * Predicts sleep quality based on historical data correlations.
  * Analyzes previous entries to find patterns between day context/sleep aids and sleep quality.
+ *
+ * @param currentContext - Current sleep preparation context
+ * @param history - Historical dream data with sleep quality ratings
+ * @returns Local prediction or null if insufficient data
  */
-export const predictSleepQuality = (
+export const predictLocalSleepQuality = (
     currentContext: SleepAids,
     history: Dream[]
-): SleepPrediction | null => {
+): LocalSleepPrediction | null => {
     if (history.length < 3) return null; // Need some data
 
     const relevantHistory = history.filter(d => d.sleepQuality !== null && d.sleepAids);

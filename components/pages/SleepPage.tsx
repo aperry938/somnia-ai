@@ -9,7 +9,7 @@ import { RealityCheckInfoModal } from '../modals/RealityCheckInfoModal';
 import { useAppContext } from '../../contexts/AppContext';
 import { stopSleepSound } from '../../services/audioService';
 import { REALITY_CHECKS, LUCID_TECHNIQUES, LucidDreamTechnique } from '../../constants/lucidDreaming';
-import { predictSleepQuality, SleepPrediction } from '../../services/sleepPredictionService';
+import { predictLocalSleepQuality, LocalSleepPrediction } from '../../services/sleepPredictionService';
 import { useWakeWindow } from '../../hooks/useWakeWindow';
 import { WakeWindowViz } from '../WakeWindowViz';
 import { PremiumBadge } from '../shared/PremiumBadge';
@@ -50,7 +50,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
     const [isSleeping, setIsSleeping] = useState(false);
     const [dayRating, setDayRating] = useState<number | null>(null);
     const [dayNotes, setDayNotes] = useState('');
-    const [prediction, setPrediction] = useState<SleepPrediction | null>(null);
+    const [prediction, setPrediction] = useState<LocalSleepPrediction | null>(null);
     const [selectedTechnique, setSelectedTechnique] = useState<LucidDreamTechnique | null>(null);
     const [showRealityCheckModal, setShowRealityCheckModal] = useState(false);
     const [lucidExpanded, setLucidExpanded] = useState(false);
@@ -87,7 +87,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
             dayRating,
             dayNotes
         };
-        const result = predictSleepQuality(currentContext, dreams);
+        const result = predictLocalSleepQuality(currentContext, dreams);
         setPrediction(result);
     }, [dayRating, dayNotes, activeSleepAids, dreams]);
 

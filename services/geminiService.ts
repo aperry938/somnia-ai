@@ -1,5 +1,5 @@
 import { GoogleGenAI, GenerateContentResponse, Modality, Type } from "@google/genai";
-import { ChatMessage, Dream, DreamAnalysis, DreamSynthesis, SleepHabitAnalysis, SleepAids, Biometrics, AnalysisPersonality } from '../types';
+import { ChatMessage, Dream, DreamAnalysis, DreamSynthesis, SleepHabitAnalysis, SleepAids, Biometrics, AnalysisPersonality, DreamTelemetry, SimilarDream } from '../types';
 import { requirePremium, canUseAiAnalysis, useAiCredit, getRemainingCredits } from './secureSubscriptionService';
 import { checkRateLimit, RateLimitError } from './rateLimitService';
 import { logError } from './errorService';
@@ -32,6 +32,10 @@ const dreamTitleCache = new Map<string, string>();
 
 // In-flight request deduplication - prevents duplicate API calls during re-renders
 const pendingTitleRequests = new Map<string, Promise<string>>();
+
+// Cache for embeddings to avoid redundant API calls
+const embeddingCache = new Map<string, number[]>();
+const getEmbeddingCacheKey = (text: string): string => text.slice(0, 500).trim().toLowerCase();
 
 // Generate a cache key from dream text (use first 200 chars as key)
 const getTitleCacheKey = (dreamText: string): string => {
@@ -136,9 +140,33 @@ export const analyzeDream = async (dreamText: string, sleepAids?: SleepAids, bio
                         imagePrompt: {
                             type: Type.STRING,
                             description: "A detailed, vivid image generation prompt (80-150 words) that captures the dream's key visual elements, mood, colors, and atmosphere. Write it in the style of Midjourney/DALL-E prompts with artistic direction (e.g., 'surreal dreamscape', 'ethereal lighting', 'muted earth tones'). Include specific objects, settings, and emotional qualities from the dream."
+                        },
+                        telemetry: {
+                            type: Type.OBJECT,
+                            description: "ML-extracted metadata for vector analytics",
+                            properties: {
+                                valence: {
+                                    type: Type.NUMBER,
+                                    description: "Emotional valence from -1.0 (negative/unpleasant) to 1.0 (positive/pleasant). Consider the overall emotional tone."
+                                },
+                                arousal: {
+                                    type: Type.NUMBER,
+                                    description: "Emotional arousal from 0.0 (calm/peaceful) to 1.0 (intense/excited). High for action, fear, excitement; low for peaceful, melancholic."
+                                },
+                                lucidity: {
+                                    type: Type.NUMBER,
+                                    description: "Probability (0-100) that this was a lucid dream. Look for: awareness of dreaming, intentional control, impossibility recognition."
+                                },
+                                tags: {
+                                    type: Type.ARRAY,
+                                    items: { type: Type.STRING },
+                                    description: "3-7 semantic tags. Format: 'Category: Value'. Categories: Archetype (Shadow, Hero, Anima, etc.), Symbol (Water, Fire, etc.), Theme (Transformation, Loss, etc.), Emotion (Fear, Joy, etc.), Setting (Home, Nature, etc.)"
+                                }
+                            },
+                            required: ['valence', 'arousal', 'lucidity', 'tags']
                         }
                     },
-                    required: ['title', 'analysis', 'integration']
+                    required: ['title', 'analysis', 'integration', 'telemetry']
                 },
             },
         });
@@ -560,4 +588,257 @@ export const analyzeSleepHabits = async (dreams: Dream[]): Promise<SleepHabitAna
         logError(error instanceof Error ? error : new Error(String(error)), 'ai', { operation: 'analyzeSleepHabits' });
         throw error instanceof Error ? error : new Error("Failed to analyze sleep habits.");
     }
+};
+
+
+// ============================================================
+// VECTOR EMBEDDING FUNCTIONS
+// ============================================================
+
+/**
+ * Generate a 768-dimensional embedding for dream text using Gemini's text-embedding-004
+ * This enables semantic search and "Dream Déjà Vu" feature
+ *
+ * @param text - The dream text to embed
+ * @returns Promise<number[]> - 768-dimensional vector
+ */
+export const generateDreamEmbedding = async (text: string): Promise<number[]> => {
+    const cacheKey = getEmbeddingCacheKey(text);
+
+    // Check cache first
+    const cached = embeddingCache.get(cacheKey);
+    if (cached) {
+        return cached;
+    }
+
+    try {
+        const ai = getAi();
+        const response = await ai.models.embedContent({
+            model: 'text-embedding-004',
+            contents: [{ parts: [{ text }] }]
+        });
+
+        const embedding = response.embeddings?.[0]?.values;
+        if (!embedding || embedding.length !== 768) {
+            throw new Error('Invalid embedding response from API');
+        }
+
+        // Cache the result
+        embeddingCache.set(cacheKey, embedding);
+
+        // Limit cache size to prevent memory issues
+        if (embeddingCache.size > 100) {
+            const firstKey = embeddingCache.keys().next().value;
+            if (firstKey) embeddingCache.delete(firstKey);
+        }
+
+        return embedding;
+    } catch (error) {
+        logError(error instanceof Error ? error : new Error(String(error)), 'ai', { operation: 'generateDreamEmbedding' });
+        throw error instanceof Error ? error : new Error("Failed to generate dream embedding.");
+    }
+};
+
+/**
+ * Find semantically similar dreams using cosine similarity
+ * This is the client-side implementation for localStorage-based dreams
+ * For Supabase, use the match_dreams RPC function instead
+ *
+ * @param targetEmbedding - The embedding to find similar dreams for
+ * @param dreams - Array of dreams with embeddings to search
+ * @param threshold - Minimum similarity score (0-1)
+ * @param maxResults - Maximum number of results to return
+ * @returns Array of similar dreams with similarity scores
+ */
+export const findSimilarDreams = (
+    targetEmbedding: number[],
+    dreams: Array<{ id: number; dreamText: string; title: string; timestamp: string; embedding?: number[] }>,
+    threshold: number = 0.75,
+    maxResults: number = 5
+): SimilarDream[] => {
+    const dreamsWithEmbeddings = dreams.filter(d => d.embedding && d.embedding.length === 768);
+
+    const similarities = dreamsWithEmbeddings.map(dream => {
+        const similarity = cosineSimilarity(targetEmbedding, dream.embedding!);
+        return {
+            id: dream.id,
+            dreamText: dream.dreamText,
+            title: dream.title,
+            timestamp: dream.timestamp,
+            similarity
+        };
+    });
+
+    return similarities
+        .filter(s => s.similarity >= threshold)
+        .sort((a, b) => b.similarity - a.similarity)
+        .slice(0, maxResults);
+};
+
+/**
+ * Compute cosine similarity between two vectors
+ */
+const cosineSimilarity = (a: number[], b: number[]): number => {
+    if (a.length !== b.length) return 0;
+
+    let dotProduct = 0;
+    let normA = 0;
+    let normB = 0;
+
+    for (let i = 0; i < a.length; i++) {
+        dotProduct += a[i] * b[i];
+        normA += a[i] * a[i];
+        normB += b[i] * b[i];
+    }
+
+    const denominator = Math.sqrt(normA) * Math.sqrt(normB);
+    return denominator === 0 ? 0 : dotProduct / denominator;
+};
+
+
+// ============================================================
+// DREAM RECALL: RAG-ENHANCED ANALYSIS
+// ============================================================
+
+/**
+ * Analyze a dream with RAG (Retrieval-Augmented Generation)
+ * Finds similar past dreams and injects them as context for richer analysis
+ * This is the "Dream Déjà Vu" feature
+ *
+ * @param dreamText - The new dream to analyze
+ * @param pastDreams - Array of past dreams with embeddings
+ * @param sleepAids - Optional sleep context
+ * @param biometrics - Optional user biometrics
+ * @param personality - Analysis personality style
+ * @returns Enhanced DreamAnalysis with past dream connections
+ */
+export const analyzeDreamWithMemory = async (
+    dreamText: string,
+    pastDreams: Array<{ id: number; dreamText: string; title: string; timestamp: string; embedding?: number[] }>,
+    sleepAids?: SleepAids,
+    biometrics?: Biometrics,
+    personality: AnalysisPersonality = 'oneironaut'
+): Promise<{ analysis: DreamAnalysis; embedding: number[]; similarDreams: SimilarDream[] }> => {
+    // 1. Generate embedding for the new dream
+    const embedding = await generateDreamEmbedding(dreamText);
+
+    // 2. Find similar past dreams (RAG retrieval)
+    const similarDreams = findSimilarDreams(embedding, pastDreams, 0.70, 3);
+
+    // 3. Build context string from similar dreams
+    let contextString = '';
+    if (similarDreams.length > 0) {
+        contextString = `\n\n[DREAM MEMORY CONTEXT]\nThe dreamer has experienced similar dreams in the past:\n${
+            similarDreams.map((d, i) =>
+                `${i + 1}. "${d.title}" (${new Date(d.timestamp).toLocaleDateString()}, ${Math.round(d.similarity * 100)}% similar): ${d.dreamText.slice(0, 200)}...`
+            ).join('\n')
+        }\n\nConnect the current dream to these patterns. Note any evolution in recurring themes or symbols.`;
+    }
+
+    // 4. Check rate limit and credits
+    const rateCheck = checkRateLimit('ai_analysis');
+    if (!rateCheck.allowed) {
+        throw new RateLimitError(
+            `Too many analysis requests. Try again in ${Math.ceil(rateCheck.resetIn / 1000)} seconds.`,
+            rateCheck.resetIn,
+            'ai_analysis'
+        );
+    }
+
+    if (!canUseAiAnalysis()) {
+        throw new NoCreditsError();
+    }
+
+    // 5. Run analysis with enhanced context
+    try {
+        const ai = getAi();
+        const basePrompt = createAnalysisPrompt(dreamText, personality, sleepAids, biometrics);
+        const enhancedPrompt = basePrompt + contextString;
+
+        const response: GenerateContentResponse = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: [{ parts: [{ text: enhancedPrompt }] }],
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        title: {
+                            type: Type.STRING,
+                            description: "A short, evocative, and poetic title for the dream."
+                        },
+                        analysis: {
+                            type: Type.ARRAY,
+                            description: "2-3 thematic insights. If similar past dreams were provided, include connections to them.",
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    title: { type: Type.STRING },
+                                    content: { type: Type.STRING }
+                                },
+                                required: ['title', 'content']
+                            }
+                        },
+                        integration: {
+                            type: Type.OBJECT,
+                            properties: {
+                                title: { type: Type.STRING },
+                                content: { type: Type.STRING }
+                            },
+                            required: ['title', 'content']
+                        },
+                        imagePrompt: { type: Type.STRING },
+                        telemetry: {
+                            type: Type.OBJECT,
+                            properties: {
+                                valence: { type: Type.NUMBER },
+                                arousal: { type: Type.NUMBER },
+                                lucidity: { type: Type.NUMBER },
+                                tags: { type: Type.ARRAY, items: { type: Type.STRING } }
+                            },
+                            required: ['valence', 'arousal', 'lucidity', 'tags']
+                        },
+                        dreamConnections: {
+                            type: Type.ARRAY,
+                            description: "If similar past dreams were provided, explain the connections",
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    pastDreamTitle: { type: Type.STRING },
+                                    connection: { type: Type.STRING }
+                                }
+                            }
+                        }
+                    },
+                    required: ['title', 'analysis', 'integration', 'telemetry']
+                }
+            }
+        });
+
+        const rawJson = response.text?.trim() ?? '';
+        if (!rawJson) throw new Error('AI returned empty response.');
+
+        const result = JSON.parse(rawJson) as DreamAnalysis & { dreamConnections?: Array<{ pastDreamTitle: string; connection: string }> };
+
+        // Consume credit after success
+        useAiCredit();
+
+        return {
+            analysis: result,
+            embedding,
+            similarDreams
+        };
+    } catch (error) {
+        logError(error instanceof Error ? error : new Error(String(error)), 'ai', { operation: 'analyzeDreamWithMemory' });
+        throw error instanceof Error ? error : new Error("Failed to analyze dream with memory.");
+    }
+};
+
+/**
+ * Pre-cache embedding for an existing dream
+ * Call this when loading dreams from storage to build the embedding cache
+ */
+export const cacheDreamEmbedding = (dreamText: string, embedding: number[]): void => {
+    const cacheKey = getEmbeddingCacheKey(dreamText);
+    embeddingCache.set(cacheKey, embedding);
 };

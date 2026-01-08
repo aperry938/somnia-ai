@@ -1,6 +1,120 @@
 import { Soundscape } from '../types';
 import { logger } from './logger';
 
+// ============================================================
+// TYPES
+// ============================================================
+
+/** Extended window type for webkit prefix support */
+interface WebkitWindow extends Window {
+    webkitAudioContext: typeof AudioContext;
+}
+
+/** Alarm configuration for the unified alarm system */
+interface AlarmConfig {
+    type: OscillatorType;
+    startFreq: number;
+    endFreq: number;
+    startGain: number;
+    endGain: number;
+    rampDuration: number;
+    pattern?: 'continuous' | 'pulse' | 'beep' | 'chime' | 'accelerate';
+    pulseInterval?: number;
+}
+
+/** Binaural node with attached oscillators for cleanup */
+interface BinauralMergerNode extends ChannelMergerNode {
+    oscillators: OscillatorNode[];
+    gains: GainNode[];
+    rampDurationSeconds?: number;
+}
+
+/** Noise source with attached synthesis nodes */
+interface SynthesisSourceNode extends AudioBufferSourceNode {
+    lfo?: OscillatorNode;
+    crackle?: AudioBufferSourceNode;
+}
+
+// ============================================================
+// CONSTANTS
+// ============================================================
+
+/** Duration for crescendo phase in seconds */
+const WAKE_DURATION = 60;
+
+/** Duration for sustained alarm in seconds (30 minutes) */
+const SUSTAIN_DURATION = 1800;
+
+/** Noise buffer duration in seconds */
+const NOISE_BUFFER_DURATION = 5;
+
+/** C Major Pentatonic Scale frequencies (Hz) */
+const PENTATONIC_SCALE = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25];
+
+/** Alarm sound configurations */
+const ALARM_CONFIGS: Record<string, AlarmConfig> = {
+    somnia: {
+        type: 'sine',
+        startFreq: 180,
+        endFreq: 500,
+        startGain: 0.015,
+        endGain: 1.0,
+        rampDuration: 60,
+        pattern: 'continuous'
+    },
+    progressive: {
+        type: 'sine',
+        startFreq: 300,
+        endFreq: 800,
+        startGain: 0.001,
+        endGain: 0.5,
+        rampDuration: 30,
+        pattern: 'continuous'
+    },
+    gentle: {
+        type: 'sine',
+        startFreq: 220,
+        endFreq: 220,
+        startGain: 0.05,
+        endGain: 1.0,
+        rampDuration: 60,
+        pattern: 'pulse',
+        pulseInterval: 2
+    },
+    chimes: {
+        type: 'triangle',
+        startFreq: 523,
+        endFreq: 784,
+        startGain: 0.0001,
+        endGain: 0.25,
+        rampDuration: 30,
+        pattern: 'continuous'
+    },
+    nature: {
+        type: 'sine',
+        startFreq: 800,
+        endFreq: 1200,
+        startGain: 0.0001,
+        endGain: 0.3,
+        rampDuration: 30,
+        pattern: 'continuous'
+    },
+    classic: {
+        type: 'square',
+        startFreq: 880,
+        endFreq: 880,
+        startGain: 0.05,
+        endGain: 0.9,
+        rampDuration: 60,
+        pattern: 'beep',
+        pulseInterval: 1
+    }
+};
+
+// ============================================================
+// MODULE STATE
+// ============================================================
+
 let audioContext: AudioContext | null = null;
 
 // Alarm Sound Nodes
@@ -13,15 +127,18 @@ let sleepGainNode: GainNode | null = null;
 let sleepTimeout: number | null = null;
 let sleepCompressor: DynamicsCompressorNode | null = null;
 
-// Granular synthesis interval for rain droplets
-let granularInterval: ReturnType<typeof setTimeout> | null = null;
-// Spark interval for fireplace
+// Synthesis intervals
 let sparkInterval: ReturnType<typeof setTimeout> | null = null;
+
 // Additional LFOs for enhanced synthesis
 let additionalLFOs: OscillatorNode[] = [];
 
-// Cache for decoded audio files to prevent re-fetching
-const audioBufferCache: { [src: string]: AudioBuffer } = {};
+// Cache for decoded audio files
+const audioBufferCache: Record<string, AudioBuffer> = {};
+
+// ============================================================
+// AUDIO CONTEXT MANAGEMENT
+// ============================================================
 
 /**
  * Initializes the global AudioContext.
@@ -29,9 +146,9 @@ const audioBufferCache: { [src: string]: AudioBuffer } = {};
  */
 export const initAudioContext = () => {
     if (!audioContext) {
-        audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const AudioContextClass = window.AudioContext || (window as unknown as WebkitWindow).webkitAudioContext;
+        audioContext = new AudioContextClass();
     }
-    // It's safe to call resume multiple times.
     if (audioContext.state === 'suspended') {
         audioContext.resume();
     }
@@ -39,80 +156,141 @@ export const initAudioContext = () => {
 
 const getAudioContext = (): AudioContext => {
     if (!audioContext) {
-        // Fallback for safety, though init should be called first.
         initAudioContext();
     }
     return audioContext!;
 };
 
-// --- ALARM FUNCTIONS ---
+/**
+ * Ensures audio context is ready for playback
+ */
+const ensureContextReady = (context: AudioContext): void => {
+    if (context.state === 'suspended') {
+        context.resume();
+    }
+};
+
+// ============================================================
+// ALARM HELPERS
+// ============================================================
 
 /**
- * Plays the Somnia alarm - our signature very slow growing alarm.
- * Starts almost inaudible and very slowly builds over 60 seconds.
- * Automatically stops any playing sleep sounds.
+ * Prepares the audio context and nodes for alarm playback
  */
-export const playSomniaAlarm = () => {
+const prepareAlarmNodes = (): { context: AudioContext; now: number } => {
     stopSleepSound();
     const context = getAudioContext();
     if (alarmOscillator) {
         stopAlarmSound();
     }
-
-    if (context.state === 'suspended') {
-        context.resume();
-    }
+    ensureContextReady(context);
 
     alarmOscillator = context.createOscillator();
     alarmGainNode = context.createGain();
-
     alarmOscillator.connect(alarmGainNode);
     alarmGainNode.connect(context.destination);
 
-    const now = context.currentTime;
-    alarmOscillator.type = 'sine';
-    alarmOscillator.frequency.setValueAtTime(180, now);
-    alarmGainNode.gain.setValueAtTime(0.015, now);
+    return { context, now: context.currentTime };
+};
 
-    // CRESCENDO: 60s gentle wake-up from quiet to full volume
-    alarmGainNode.gain.exponentialRampToValueAtTime(1.0, now + 60);
-    alarmOscillator.frequency.exponentialRampToValueAtTime(500, now + 60);
+/**
+ * Creates a simple continuous alarm with exponential ramp
+ */
+const createContinuousAlarm = (config: AlarmConfig): void => {
+    const { context, now } = prepareAlarmNodes();
 
-    // SUSTAIN: After 60s, oscillator continues at 500Hz and 1.0 volume indefinitely
-    // No additional scheduling needed - Web Audio holds the final values
+    alarmOscillator!.type = config.type;
+    alarmOscillator!.frequency.setValueAtTime(config.startFreq, now);
+    alarmGainNode!.gain.setValueAtTime(config.startGain, now);
 
-    alarmOscillator.start(now);
+    alarmGainNode!.gain.exponentialRampToValueAtTime(config.endGain, now + config.rampDuration);
+    alarmOscillator!.frequency.exponentialRampToValueAtTime(config.endFreq, now + config.rampDuration);
+
+    alarmOscillator!.start(now);
+};
+
+/**
+ * Creates a pulsing alarm with crescendo then sustained pulses
+ */
+const createPulsingAlarm = (config: AlarmConfig): void => {
+    const { now } = prepareAlarmNodes();
+    const interval = config.pulseInterval || 2;
+    const crescendoPulses = Math.floor(config.rampDuration / interval);
+    const sustainPulses = Math.floor((SUSTAIN_DURATION - config.rampDuration) / interval);
+
+    alarmOscillator!.type = config.type;
+    alarmOscillator!.frequency.setValueAtTime(config.startFreq, now);
+
+    // Crescendo phase - pulses get progressively louder
+    for (let i = 0; i < crescendoPulses; i++) {
+        const t = now + i * interval;
+        const progress = i / crescendoPulses;
+        const minVol = config.startGain + progress * (config.endGain * 0.5 - config.startGain);
+        const maxVol = config.startGain * 3 + progress * (config.endGain - config.startGain * 3);
+        alarmGainNode!.gain.linearRampToValueAtTime(maxVol, t + interval * 0.5);
+        alarmGainNode!.gain.linearRampToValueAtTime(minVol, t + interval);
+    }
+
+    // Sustain phase - full volume pulses
+    for (let i = 0; i < sustainPulses; i++) {
+        const t = now + config.rampDuration + i * interval;
+        alarmGainNode!.gain.linearRampToValueAtTime(config.endGain, t + interval * 0.5);
+        alarmGainNode!.gain.linearRampToValueAtTime(config.endGain * 0.5, t + interval);
+    }
+
+    alarmOscillator!.start(now);
+};
+
+/**
+ * Creates a beeping alarm with crescendo then sustained beeps
+ */
+const createBeepingAlarm = (config: AlarmConfig): void => {
+    const { now } = prepareAlarmNodes();
+    const interval = config.pulseInterval || 1;
+    const crescendoBeeps = config.rampDuration;
+    const sustainBeeps = SUSTAIN_DURATION - config.rampDuration;
+
+    alarmOscillator!.type = config.type;
+    alarmOscillator!.frequency.setValueAtTime(config.startFreq, now);
+
+    // Crescendo phase
+    for (let i = 0; i < crescendoBeeps; i++) {
+        const t = now + i * interval;
+        const progress = i / crescendoBeeps;
+        const volume = config.startGain + progress * (config.endGain - config.startGain);
+        alarmGainNode!.gain.setValueAtTime(volume, t);
+        alarmGainNode!.gain.setValueAtTime(0, t + 0.5);
+    }
+
+    // Sustain phase
+    for (let i = 0; i < sustainBeeps; i++) {
+        const t = now + config.rampDuration + i * interval;
+        alarmGainNode!.gain.setValueAtTime(config.endGain, t);
+        alarmGainNode!.gain.setValueAtTime(0, t + 0.5);
+    }
+
+    alarmOscillator!.start(now);
+};
+
+// ============================================================
+// ALARM FUNCTIONS
+// ============================================================
+
+/**
+ * Plays the Somnia alarm - our signature very slow growing alarm.
+ * Starts almost inaudible and very slowly builds over 60 seconds.
+ */
+export const playSomniaAlarm = () => {
+    createContinuousAlarm(ALARM_CONFIGS.somnia);
     logger.log('[playSomniaAlarm] Started - 60s crescendo to full volume, then sustains');
 };
 
 /**
  * Plays the progressive smart alarm.
  * Starts with low volume and frequency, ramping up over 30 seconds.
- * Automatically stops any playing sleep sounds.
  */
 export const playProgressiveAlarm = () => {
-    stopSleepSound(); // Ensure sleep sounds are stopped
-    const context = getAudioContext();
-    if (alarmOscillator) {
-        stopAlarmSound();
-    }
-
-    alarmOscillator = context.createOscillator();
-    alarmGainNode = context.createGain();
-
-    alarmOscillator.connect(alarmGainNode);
-    alarmGainNode.connect(context.destination);
-
-    const now = context.currentTime;
-    alarmOscillator.type = 'sine';
-    alarmOscillator.frequency.setValueAtTime(300, now);
-    alarmGainNode.gain.setValueAtTime(0.001, now);
-
-    // Ramp up volume and frequency over 30 seconds
-    alarmGainNode.gain.exponentialRampToValueAtTime(0.5, now + 30);
-    alarmOscillator.frequency.exponentialRampToValueAtTime(800, now + 30);
-
-    alarmOscillator.start(now);
+    createContinuousAlarm(ALARM_CONFIGS.progressive);
 };
 
 /**
@@ -167,48 +345,9 @@ export const playAlarmBySound = (soundId: string = 'somnia') => {
 
 /**
  * Gentle Rise alarm - soft gradual wake-up with crescendo
- * Sine wave 220Hz with pulsing, crescendos over 60s then continues loud
- * Bulletproof: 30 minutes of patterns scheduled
  */
 const playGentleAlarm = () => {
-    stopSleepSound();
-    const context = getAudioContext();
-    if (alarmOscillator) stopAlarmSound();
-
-    if (context.state === 'suspended') {
-        context.resume();
-    }
-
-    alarmOscillator = context.createOscillator();
-    alarmGainNode = context.createGain();
-
-    alarmOscillator.connect(alarmGainNode);
-    alarmGainNode.connect(context.destination);
-
-    const now = context.currentTime;
-    alarmOscillator.type = 'sine';
-    alarmOscillator.frequency.setValueAtTime(220, now);
-
-    // CRESCENDO PHASE (0-60s): Start quiet, pulse louder each cycle
-    // Each pulse is 2 seconds, so 30 pulses in crescendo phase
-    for (let i = 0; i < 30; i++) {
-        const t = now + i * 2;
-        const progress = i / 30; // 0 to 1
-        const minVol = 0.05 + progress * 0.45; // 0.05 -> 0.50
-        const maxVol = 0.15 + progress * 0.85; // 0.15 -> 1.0
-        alarmGainNode.gain.linearRampToValueAtTime(maxVol, t + 1);
-        alarmGainNode.gain.linearRampToValueAtTime(minVol, t + 2);
-    }
-
-    // SUSTAIN PHASE (60s+): Continue at full volume for 30 minutes
-    // 900 more cycles (30 min = 1800s, minus 60s crescendo = 1740s / 2s = 870 cycles)
-    for (let i = 0; i < 870; i++) {
-        const t = now + 60 + i * 2;
-        alarmGainNode.gain.linearRampToValueAtTime(1.0, t + 1);
-        alarmGainNode.gain.linearRampToValueAtTime(0.5, t + 2);
-    }
-
-    alarmOscillator.start(now);
+    createPulsingAlarm(ALARM_CONFIGS.gentle);
     logger.log('[playGentleAlarm] Started - 60s crescendo, then 30min sustain');
 };
 
@@ -216,106 +355,28 @@ const playGentleAlarm = () => {
  * Wind Chimes alarm - peaceful chime melody
  */
 const playChimesAlarm = () => {
-    stopSleepSound();
-    const context = getAudioContext();
-    if (alarmOscillator) stopAlarmSound();
-
-    alarmOscillator = context.createOscillator();
-    alarmGainNode = context.createGain();
-
-    alarmOscillator.connect(alarmGainNode);
-    alarmGainNode.connect(context.destination);
-
-    const now = context.currentTime;
-    alarmOscillator.type = 'triangle'; // Softer timbre like chimes
-    alarmOscillator.frequency.setValueAtTime(523, now); // C5 - chime-like
-    alarmGainNode.gain.setValueAtTime(0.0001, now);
-
-    // Ramp with gentle oscillation feel
-    alarmGainNode.gain.exponentialRampToValueAtTime(0.25, now + 30);
-    alarmOscillator.frequency.exponentialRampToValueAtTime(784, now + 30); // G5
-
-    alarmOscillator.start(now);
+    createContinuousAlarm(ALARM_CONFIGS.chimes);
 };
 
 /**
- * Nature Dawn alarm - birds and morning sounds (using filtered noise)
+ * Nature Dawn alarm - birds and morning sounds
  */
 const playNatureAlarm = () => {
-    stopSleepSound();
-    const context = getAudioContext();
-    if (alarmOscillator) stopAlarmSound();
-
-    // Use high-passed noise for bird-like chirping
-    alarmOscillator = context.createOscillator();
-    alarmGainNode = context.createGain();
-
-    alarmOscillator.connect(alarmGainNode);
-    alarmGainNode.connect(context.destination);
-
-    const now = context.currentTime;
-    alarmOscillator.type = 'sine';
-    alarmOscillator.frequency.setValueAtTime(800, now); // Higher, bird-like
-    alarmGainNode.gain.setValueAtTime(0.0001, now);
-
-    alarmGainNode.gain.exponentialRampToValueAtTime(0.3, now + 30);
-    alarmOscillator.frequency.exponentialRampToValueAtTime(1200, now + 30);
-
-    alarmOscillator.start(now);
+    createContinuousAlarm(ALARM_CONFIGS.nature);
 };
 
 /**
  * Classic Alarm - traditional alarm tone with crescendo
- * Square wave at 880Hz with beeping, crescendos over 60s then continues loud
- * Bulletproof: 30 minutes of beeping scheduled
  */
 const playClassicAlarm = () => {
-    stopSleepSound();
-    const context = getAudioContext();
-    if (alarmOscillator) stopAlarmSound();
-
-    if (context.state === 'suspended') {
-        context.resume();
-    }
-
-    alarmOscillator = context.createOscillator();
-    alarmGainNode = context.createGain();
-
-    alarmOscillator.connect(alarmGainNode);
-    alarmGainNode.connect(context.destination);
-
-    const now = context.currentTime;
-    alarmOscillator.type = 'square';
-    alarmOscillator.frequency.setValueAtTime(880, now);
-
-    // CRESCENDO PHASE (0-60s): Start quiet, beep louder each second
-    for (let i = 0; i < 60; i++) {
-        const t = now + i;
-        const progress = i / 60; // 0 to 1
-        const volume = 0.05 + progress * 0.85; // 0.05 -> 0.90
-        alarmGainNode.gain.setValueAtTime(volume, t);
-        alarmGainNode.gain.setValueAtTime(0, t + 0.5);
-    }
-
-    // SUSTAIN PHASE (60s+): Continue at full volume for 30 minutes
-    // 1740 more beeps (30 min = 1800s, minus 60s crescendo)
-    for (let i = 0; i < 1740; i++) {
-        const t = now + 60 + i;
-        alarmGainNode.gain.setValueAtTime(0.9, t);
-        alarmGainNode.gain.setValueAtTime(0, t + 0.5);
-    }
-
-    alarmOscillator.start(now);
+    createBeepingAlarm(ALARM_CONFIGS.classic);
     logger.log('[playClassicAlarm] Started - 60s crescendo, then 30min sustain');
 };
 
-// === PROCEDURAL ALARM SYSTEM ("SOMNIA WAKE ENGINE") ===
-// These alarms use spectral ramping to wake users without cortisol spikes
-// 60-second linear fade-in preserves dream recall
-
-const WAKE_DURATION = 60; // Seconds to full volume
-// C Major Pentatonic Scale (Harmonious, no dissonance)
-const PENTATONIC_SCALE = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25];
+// ============================================================
+// PROCEDURAL ALARM SYSTEM ("SOMNIA WAKE ENGINE")
+// Uses spectral ramping to wake users without cortisol spikes
+// ============================================================
 
 // Track procedural alarm state for cleanup
 let proceduralAlarmStop: (() => void) | null = null;
@@ -762,11 +823,9 @@ export const stopAlarmPreview = () => {
  * Using "Dual-Mono Decorrelation" for stereo width:
  * - Each channel gets unique buffer with different random seed
  * - Creates "3D Space" surrounding the head vs flat skull sound
- * 
+ *
  * Buffer duration: 5 seconds to prevent repetition fatigue
  */
-
-const NOISE_BUFFER_DURATION = 5; // seconds
 
 /**
  * Gaussian White Noise - "Soft Air"
@@ -1036,10 +1095,11 @@ const createBinauralNode = (context: AudioContext, baseFreq: number, diff: numbe
     oscRight.start();
 
     // Attach oscillators and gains to the merger node for cleanup and live updates
-    (merger as any).oscillators = [oscLeft, oscRight];
-    (merger as any).gains = [gainLeft, gainRight];
+    const binauralMerger = merger as BinauralMergerNode;
+    binauralMerger.oscillators = [oscLeft, oscRight];
+    binauralMerger.gains = [gainLeft, gainRight];
 
-    return merger;
+    return binauralMerger;
 };
 
 /**
@@ -1136,11 +1196,12 @@ const createSleepRampNode = (
     oscRight.start(now);
 
     // Attach oscillators for cleanup
-    (merger as any).oscillators = [oscLeft, oscRight];
-    (merger as any).gains = [gainLeft, gainRight];
-    (merger as any).rampDurationSeconds = rampSeconds;
+    const binauralMerger = merger as BinauralMergerNode;
+    binauralMerger.oscillators = [oscLeft, oscRight];
+    binauralMerger.gains = [gainLeft, gainRight];
+    binauralMerger.rampDurationSeconds = rampSeconds;
 
-    return merger;
+    return binauralMerger;
 };
 
 const getAudioBuffer = async (context: AudioContext, src: string): Promise<AudioBuffer> => {
@@ -1223,87 +1284,7 @@ export const playSleepSound = async (sound: Soundscape, durationMinutes: number,
         // Advanced DSP synthesis for nature sounds (Somnia Audio Engine)
         const type = sound.params.type;
 
-        if (type === 'rain') {
-            // === GLASS RAIN RECIPE ===
-            // Layer A: Atmospheric pink noise background
-            const atmosphereNoise = createNoiseNode(context, 'pink');
-            const atmosphereFilter = context.createBiquadFilter();
-            atmosphereFilter.type = 'bandpass';
-            atmosphereFilter.frequency.setValueAtTime(400, context.currentTime);
-            atmosphereFilter.Q.setValueAtTime(0.5, context.currentTime);
-            const atmosphereGain = context.createGain();
-            atmosphereGain.gain.setValueAtTime(0.15, context.currentTime); // Low background
-
-            atmosphereNoise.connect(atmosphereFilter);
-            atmosphereFilter.connect(atmosphereGain);
-            atmosphereGain.connect(sleepGainNode);
-            atmosphereNoise.start();
-
-            // Layer B: Granular Droplets
-            // Create 3 bandpass filters for different droplet tones
-            const dropletFilters = [
-                { freq: 400, name: 'body' },    // Body
-                { freq: 1100, name: 'glass' },  // Glass
-                { freq: 2200, name: 'air' }     // Air
-            ].map(({ freq }) => {
-                const filter = context.createBiquadFilter();
-                filter.type = 'bandpass';
-                filter.frequency.setValueAtTime(freq, context.currentTime);
-                filter.Q.setValueAtTime(2, context.currentTime);
-                filter.connect(sleepGainNode);
-                return filter;
-            });
-
-            // Granular droplet generator
-            const createDroplet = () => {
-                if (!sleepGainNode || !audioContext) return;
-
-                // Random interval for next droplet (40-150ms)
-                const nextInterval = 40 + Math.random() * 110;
-
-                // Create short noise burst (droplet)
-                const dropletBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.06, audioContext.sampleRate);
-                const data = dropletBuffer.getChannelData(0);
-                for (let i = 0; i < data.length; i++) {
-                    data[i] = (Math.random() * 2 - 1);
-                }
-
-                const droplet = audioContext.createBufferSource();
-                droplet.buffer = dropletBuffer;
-
-                // Envelope: Attack 0.005s, Decay 0.05s
-                const envelope = audioContext.createGain();
-                const now = audioContext.currentTime;
-                envelope.gain.setValueAtTime(0, now);
-                envelope.gain.linearRampToValueAtTime(0.3 + Math.random() * 0.2, now + 0.005);
-                envelope.gain.exponentialRampToValueAtTime(0.001, now + 0.055);
-
-                // Random filter selection
-                const filterIndex = Math.floor(Math.random() * 3);
-                const selectedFilter = dropletFilters[filterIndex];
-
-                // Slight random panning (-0.3 to 0.3)
-                const panner = audioContext.createStereoPanner();
-                panner.pan.setValueAtTime((Math.random() - 0.5) * 0.6, now);
-
-                droplet.connect(envelope);
-                envelope.connect(panner);
-                panner.connect(selectedFilter);
-
-                droplet.start(now);
-                droplet.stop(now + 0.06);
-
-                // Schedule next droplet
-                granularInterval = setTimeout(createDroplet, nextInterval);
-            };
-
-            // Start droplet generation
-            granularInterval = setTimeout(createDroplet, 100);
-
-            sleepSourceNode = atmosphereNoise;
-            (atmosphereNoise as any).dropletFilters = dropletFilters;
-
-        } else if (type === 'ocean') {
+        if (type === 'ocean') {
             // === NEBULA OCEAN RECIPE ===
             // Pink noise base with dual LFO modulation
             const noise = createNoiseNode(context, 'pink');
@@ -1342,7 +1323,7 @@ export const playSleepSound = async (sound: Soundscape, durationMinutes: number,
             noise.start();
 
             // Track LFOs for cleanup
-            (noise as any).lfo = lfoA;
+            (noise as SynthesisSourceNode).lfo = lfoA;
             additionalLFOs = [lfoA, lfoB];
             sleepSourceNode = noise;
 
@@ -1425,10 +1406,6 @@ export const stopSleepSound = (fadeDuration: number = 2) => {
         clearTimeout(sleepTimeout);
         sleepTimeout = null;
     }
-    if (granularInterval) {
-        clearTimeout(granularInterval);
-        granularInterval = null;
-    }
     if (sparkInterval) {
         clearTimeout(sparkInterval);
         sparkInterval = null;
@@ -1480,38 +1457,43 @@ export const stopSleepSound = (fadeDuration: number = 2) => {
         const stopTime = context.currentTime + fadeDuration;
         const currentNode = sleepSourceNode; // Capture for closure
 
+        // Stop buffer/oscillator source nodes
         if (currentNode instanceof AudioBufferSourceNode || currentNode instanceof OscillatorNode) {
-            try { (currentNode as any).stop(stopTime); } catch (e) { /* ignore */ }
+            try { currentNode.stop(stopTime); } catch { /* ignore */ }
         }
 
-        // For binaural beats
-        if ((currentNode as any).oscillators) {
-            (currentNode as any).oscillators.forEach((osc: OscillatorNode) => {
-                try { osc.stop(stopTime); } catch (e) { /* ignore */ }
+        // Stop binaural beat oscillators
+        const binauralNode = currentNode as Partial<BinauralMergerNode>;
+        if (binauralNode.oscillators) {
+            binauralNode.oscillators.forEach((osc: OscillatorNode) => {
+                try { osc.stop(stopTime); } catch { /* ignore */ }
             });
         }
 
-        // Cleanup synthetic extras (LFO, Crackle, dropletFilters)
-        if ((currentNode as any).lfo) {
-            try { (currentNode as any).lfo.stop(stopTime); } catch (e) { }
+        // Stop synthesis extras (LFO, Crackle)
+        const synthNode = currentNode as Partial<SynthesisSourceNode>;
+        if (synthNode.lfo) {
+            try { synthNode.lfo.stop(stopTime); } catch { /* ignore */ }
         }
-        if ((currentNode as any).crackle) {
-            try { (currentNode as any).crackle.stop(stopTime); } catch (e) { }
+        if (synthNode.crackle) {
+            try { synthNode.crackle.stop(stopTime); } catch { /* ignore */ }
         }
 
+        // Disconnect after fade completes
         setTimeout(() => {
             if (currentNode) {
-                // Disconnect main
                 currentNode.disconnect();
 
-                // Disconnect extras
-                if ((currentNode as any).lfo) (currentNode as any).lfo.disconnect();
-                if ((currentNode as any).crackle) (currentNode as any).crackle.disconnect();
-                if ((currentNode as any).dropletFilters) {
-                    (currentNode as any).dropletFilters.forEach((f: BiquadFilterNode) => {
-                        try { f.disconnect(); } catch (e) { /* ignore */ }
+                // Disconnect binaural oscillators
+                if (binauralNode.oscillators) {
+                    binauralNode.oscillators.forEach(osc => {
+                        try { osc.disconnect(); } catch { /* ignore */ }
                     });
                 }
+
+                // Disconnect synthesis extras
+                if (synthNode.lfo) synthNode.lfo.disconnect();
+                if (synthNode.crackle) synthNode.crackle.disconnect();
             }
         }, (fadeDuration * 1000) + 100);
 
@@ -1541,8 +1523,9 @@ export const setLiveVolume = (volume: number) => {
  * @param diff - Beat frequency difference in Hz
  */
 export const setLiveBeatFrequency = (baseFreq: number, diff: number) => {
-    if (sleepSourceNode && audioContext && (sleepSourceNode as any).oscillators) {
-        const oscillators = (sleepSourceNode as any).oscillators as OscillatorNode[];
+    const binauralNode = sleepSourceNode as Partial<BinauralMergerNode> | null;
+    if (binauralNode && audioContext && binauralNode.oscillators) {
+        const oscillators = binauralNode.oscillators;
         if (oscillators.length === 2) {
             const now = audioContext.currentTime;
             // Smooth transition to new frequencies

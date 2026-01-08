@@ -9,16 +9,18 @@ import { DreamConsistency } from '../DreamConsistency';
 import { LongestShortestDream } from '../LongestShortestDream';
 import { FirstDreamLastDream } from '../FirstDreamLastDream';
 import { SleepQualityVsDreams } from '../SleepQualityVsDreams';
-import { PositiveNegativeRatio } from '../PositiveNegativeRatio';
+import { TelemetryScatterPlot } from '../TelemetryScatterPlot';
 
 interface QuickStatsTabProps {
     dreams: Dream[];
+    onDreamSelect?: (id: number) => void;
 }
 
-const QuickStatsTab: React.FC<QuickStatsTabProps> = ({ dreams }) => (
+const QuickStatsTab: React.FC<QuickStatsTabProps> = ({ dreams, onDreamSelect }) => (
     <>
         <RecentDreamSummary dreams={dreams} />
         <AvgSleepQuality dreams={dreams} />
+        <TelemetryScatterPlot dreams={dreams} onDreamSelect={onDreamSelect} />
         <DreamGrowth dreams={dreams} />
         <AchievementsUnlocked dreams={dreams} />
         <TopTags dreams={dreams} />
@@ -26,7 +28,6 @@ const QuickStatsTab: React.FC<QuickStatsTabProps> = ({ dreams }) => (
         <LongestShortestDream dreams={dreams} />
         <FirstDreamLastDream dreams={dreams} />
         <SleepQualityVsDreams dreams={dreams} />
-        <PositiveNegativeRatio dreams={dreams} />
     </>
 );
 

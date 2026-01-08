@@ -1,6 +1,6 @@
 
 import { describe, it, expect } from 'vitest';
-import { predictSleepQuality } from './sleepPredictionService';
+import { predictLocalSleepQuality } from './sleepPredictionService';
 import { Dream, SleepAids } from '../types';
 
 describe('sleepPredictionService', () => {
@@ -13,13 +13,13 @@ describe('sleepPredictionService', () => {
     ];
 
     it('returns null if history is insufficient', () => {
-        const result = predictSleepQuality({}, []);
+        const result = predictLocalSleepQuality({}, []);
         expect(result).toBeNull();
     });
 
     it('predicts poor sleep based on low day rating correlation', () => {
         const context: SleepAids = { dayRating: 2 };
-        const result = predictSleepQuality(context, mockDreams);
+        const result = predictLocalSleepQuality(context, mockDreams);
 
         expect(result).not.toBeNull();
         expect(result?.predictedQuality).toBe(2); // Avg of IDs 1 and 4 (2+2)/2 = 2
@@ -29,7 +29,7 @@ describe('sleepPredictionService', () => {
 
     it('predicts good sleep based on soundscape correlation', () => {
         const context: SleepAids = { sound: 'Rain' };
-        const result = predictSleepQuality(context, mockDreams);
+        const result = predictLocalSleepQuality(context, mockDreams);
 
         expect(result).not.toBeNull();
         expect(result?.predictedQuality).toBe(5); // Avg of IDs 2 and 3 (4+5)/2 = 4.5 -> round to 5
@@ -42,7 +42,7 @@ describe('sleepPredictionService', () => {
         // Let's use a rating that doesn't exist.
         const contextNoMatch: SleepAids = { dayRating: 1 };
 
-        const result = predictSleepQuality(contextNoMatch, mockDreams);
+        const result = predictLocalSleepQuality(contextNoMatch, mockDreams);
 
         expect(result).not.toBeNull();
         expect(result?.confidence).toBe('low');
@@ -60,7 +60,7 @@ describe('sleepPredictionService', () => {
         // Sound Rain -> Dreams 2, 3 (Avg 4.5)
         // Combined likely high
 
-        const result = predictSleepQuality(context, mockDreams);
+        const result = predictLocalSleepQuality(context, mockDreams);
         expect(result).not.toBeNull();
         // expect(result?.confidence).toBe('medium'); // factorCount > 1
     });
