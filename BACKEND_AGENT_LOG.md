@@ -501,3 +501,59 @@ After 6 comprehensive audit cycles:
 ---
 
 > Backend audit COMPLETE. 6 cycles executed. All 40+ files verified. Ready for deployment.
+
+---
+
+## Cycle 7 - 2026-01-08
+
+### PHASE 2: Service Layer Review ✅
+**Focus Area:** Rate limiting, logging, voice commands
+
+**Files Reviewed:**
+- `services/rateLimitService.ts` - API rate limiting
+- `services/logger.ts` - Production-safe logging
+- `services/voiceCommandService.ts` - Web Speech API integration
+
+**rateLimitService.ts Findings:**
+- ✅ Configurable rate windows per category
+- ✅ Per-user and per-category limits
+- ✅ Memory cleanup every 5 minutes (cleanupExpiredEntries)
+- ✅ Higher-order function wrapper (withRateLimit)
+- ✅ Custom RateLimitError class with metadata
+- ✅ Low capacity warning at 2 remaining
+
+**logger.ts Findings:**
+- ✅ SECURITY: Only logs in development (import.meta.env.DEV)
+- ✅ SECURITY: Production errors sanitized (no stack traces)
+- ✅ All console methods wrapped (log, warn, error, debug, info, group, table)
+
+**voiceCommandService.ts Findings:**
+- ✅ Proper WebSpeechRecognition interface
+- ✅ Auto-restart on end if still listening
+- ✅ Command registration/unregistration
+- ✅ Graceful handling when API unavailable
+
+---
+
+### Validation Scripts ✅
+- TypeScript check: ✅ (node types config only)
+- `any` types: Only 1 in test file (acceptable)
+- Empty catch blocks: None found
+- Unhandled promises: None found
+
+---
+
+### Summary
+
+| Check | Status | Issues Found |
+|-------|--------|--------------|
+| rateLimitService | ✅ Complete | 0 |
+| logger | ✅ Complete | 0 |
+| voiceCommandService | ✅ Complete | 0 |
+| Validation Scripts | ✅ Passed | 0 |
+
+**No issues found in Cycle 7.**
+
+---
+
+> Backend cycle 7 complete. Data integrity verified. Proceeding to next validation cycle.
