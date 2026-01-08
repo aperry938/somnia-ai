@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { playAlarmBySound, stopAlarmSound, playAlertnessBoost, stopAlertnessBoost, setAlertnessVolume } from '../../services/audioService';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
-import { Alarm } from '../../types';
+import { Alarm, WakeData } from '../../types';
 import { isDevMode } from '../../services/secureSubscriptionService';
 import haptics from '../../services/hapticsService';
 
@@ -100,9 +100,9 @@ const PulsingWakeVisual: React.FC<{ isActive: boolean }> = ({ isActive }) => {
 
 interface AlarmRingModalProps {
     alarm: Alarm;
-    onRecordDream: (quickNote?: string) => void;
+    onRecordDream: (quickNote?: string, wakeData?: WakeData) => void;
     onSnooze: () => void;
-    onAwake: () => void;
+    onAwake: (wakeData?: WakeData) => void;
 }
 
 const DREAM_PROMPTS = [
@@ -129,6 +129,12 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
     const [boostVolume, setBoostVolume] = useState(0.25);
     const [boostTimer, setBoostTimer] = useState(0);
     const [snoozeRemaining, setSnoozeRemaining] = useState(SNOOZE_DURATION);
+
+    // Wake tracking state
+    const alarmStartTimeRef = useRef<number>(Date.now());
+    const [snoozeCount, setSnoozeCount] = useState(0);
+    const [didBoost, setDidBoost] = useState(false);
+    const [boostDuration, setBoostDuration] = useState(0);
 
     // Callback for when speech is finalized
     const handleFinalTranscript = useCallback((text: string) => {
@@ -167,6 +173,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
         stopAlarmSound();
         if (isListening) stopListening();
         setSnoozeRemaining(SNOOZE_DURATION);
+        setSnoozeCount(prev => prev + 1); // Track snooze count
         setStep('snooze');
     }, [isListening, stopListening]);
 
@@ -202,17 +209,36 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
         if (isSleepAlarm) {
             setStep('dream');
         } else {
-            // For reminder alarms, just dismiss
-            onAwake();
+            // For reminder alarms, just dismiss with basic wake data
+            const wakeData: WakeData = {
+                alarmId: alarm.id,
+                alarmType: alarm.soundId || 'somnia',
+                timeToSilence: Math.round((Date.now() - alarmStartTimeRef.current) / 1000),
+                snoozeCount,
+                dismissedAt: new Date().toISOString(),
+            };
+            onAwake(wakeData);
         }
-    }, [isSleepAlarm, onAwake]);
+    }, [isSleepAlarm, onAwake, alarm.id, alarm.soundId, snoozeCount]);
 
-    // Handle recording dream - advance to boost step
+    // Build WakeData object
+    const buildWakeData = useCallback((): WakeData => ({
+        alarmId: alarm.id,
+        alarmType: alarm.soundId || 'somnia',
+        timeToSilence: Math.round((Date.now() - alarmStartTimeRef.current) / 1000),
+        snoozeCount,
+        didBoost,
+        boostDuration: didBoost ? boostDuration : undefined,
+        dismissedAt: new Date().toISOString(),
+    }), [alarm.id, alarm.soundId, snoozeCount, didBoost, boostDuration]);
+
+    // Handle recording dream - pass WakeData
     const handleRecordDream = useCallback(() => {
         haptics.dreamSaved();
         if (isListening) stopListening();
-        onRecordDream(quickNote.trim() || undefined);
-    }, [isListening, stopListening, quickNote, onRecordDream]);
+        const wakeData = buildWakeData();
+        onRecordDream(quickNote.trim() || undefined, wakeData);
+    }, [isListening, stopListening, quickNote, onRecordDream, buildWakeData]);
 
     // Handle skipping dream - advance to boost step
     const handleSkipDream = useCallback(() => {
@@ -238,13 +264,15 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
         if (alertnessOn) {
             stopAlertnessBoost();
             setAlertnessOn(false);
+            setBoostDuration(boostTimer); // Save final boost duration
             setBoostTimer(0);
         } else {
             playAlertnessBoost(boostVolume);
             setAlertnessOn(true);
+            setDidBoost(true); // Mark that boost was used
             setBoostTimer(0);
         }
-    }, [alertnessOn, boostVolume]);
+    }, [alertnessOn, boostVolume, boostTimer]);
 
     // Timer for boost
     useEffect(() => {
@@ -274,12 +302,23 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
         }
     }, [alertnessOn]);
 
-    // Final dismiss - close everything
+    // Final dismiss - close everything and pass WakeData
     const handleFinish = useCallback(() => {
         haptics.success();
         stopAlertnessBoost();
-        onAwake();
-    }, [onAwake]);
+        // Update boost duration if boost is still running
+        const finalBoostDuration = alertnessOn ? boostTimer : boostDuration;
+        const wakeData: WakeData = {
+            alarmId: alarm.id,
+            alarmType: alarm.soundId || 'somnia',
+            timeToSilence: Math.round((Date.now() - alarmStartTimeRef.current) / 1000),
+            snoozeCount,
+            didBoost,
+            boostDuration: didBoost ? finalBoostDuration : undefined,
+            dismissedAt: new Date().toISOString(),
+        };
+        onAwake(wakeData);
+    }, [onAwake, alarm.id, alarm.soundId, snoozeCount, didBoost, boostDuration, alertnessOn, boostTimer]);
 
     const now = new Date();
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });

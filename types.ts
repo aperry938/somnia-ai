@@ -36,6 +36,26 @@ export interface SleepAids {
     soundsPlayed?: SleepActivity[]; // Sounds/soundscapes played
     totalPrepTime?: number; // Total prep time in seconds
     sessionStartedAt?: string; // When the session started
+    manualActivities?: ManualSleepActivity[]; // Manually logged pre-sleep activities (retroactive)
+}
+
+// Manually logged sleep activity (for retroactive logging)
+export interface ManualSleepActivity {
+    type: 'soundscape' | 'breathing' | 'meditation' | 'reading' | 'other';
+    name: string;
+    durationMinutes: number;
+}
+
+// Wake/Alarm tracking data
+export interface WakeData {
+    alarmId?: number;              // Which alarm woke them
+    alarmType?: string;            // Alarm sound ID (e.g., 'somnia', 'bells')
+    alarmRangDuration?: number;    // How long alarm rang before dismissed (seconds)
+    timeToSilence?: number;        // Seconds from first ring to silence
+    snoozeCount?: number;          // Number of times snoozed
+    didBoost?: boolean;            // Whether they used alertness boost
+    boostDuration?: number;        // How long boost played (seconds)
+    dismissedAt?: string;          // ISO timestamp when alarm was dismissed
 }
 
 export interface Dream {
@@ -210,6 +230,8 @@ export interface SleepEntry {
     notes?: string;                 // Optional notes about the sleep
     dreamIds: number[];             // IDs of dreams logged for this session
     createdAt: string;              // ISO timestamp when entry was created
+    wakeData?: WakeData;            // Alarm/wake tracking data
+    manuallyLogged?: boolean;       // True if pre-sleep activities were added retroactively
 }
 
 // ============================================================
