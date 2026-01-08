@@ -3,7 +3,6 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
 import { Dream, DreamMood, SleepEntry, SleepAids } from '../../types';
 import { exportDreamsAsJSON, exportDreamJournalToPDF, exportDreamsEncrypted, importDreamsEncrypted, isEncryptedBackup } from '../../services/exportService';
-import { MOOD_ICONS, MOOD_LABELS } from '../../constants/uiIcons';
 import { validateSearchQuery } from '../../services/validationService';
 import { AchievementsCard } from '../insights/AchievementsCard';
 import { SleepEntryCard } from '../chronicle/SleepEntryCard';
@@ -11,54 +10,6 @@ import { AddSleepEntryModal } from '../modals/AddSleepEntryModal';
 import { AddDreamToEntryModal } from '../modals/AddDreamToEntryModal';
 import { PasswordInputModal } from '../modals/PasswordInputModal';
 import { useToast } from '../shared/Toast';
-
-// Legacy DreamItem for backwards compatibility (dreams without sleepEntryId)
-const LegacyDreamItem: React.FC<{ dream: Dream; onSelect: (id: number) => void; onTagClick: (tag: string) => void }> = React.memo(({ dream, onSelect, onTagClick }) => {
-    return (
-        <div
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(dream.id); } }}
-            className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-4 rounded-lg cursor-pointer hover:shadow-xl transition-shadow flex gap-4 focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent"
-            onClick={() => onSelect(dream.id)}
-        >
-            {dream.imageUrl ? (
-                <img src={dream.imageUrl} alt={dream.title} className="w-20 h-20 object-cover rounded-md flex-shrink-0" />
-            ) : (
-                <div className="w-20 h-20 rounded-md bg-gray-200 dark:bg-gray-700 flex-shrink-0 animate-pulse"></div>
-            )}
-            <div className="overflow-hidden flex-1">
-                <p className="font-serif text-lg font-bold truncate">{dream.title || 'Untitled Dream'}</p>
-                <p className="text-sm text-day-text-secondary dark:text-night-text-secondary mb-1">
-                    {new Date(dream.timestamp).toLocaleDateString([], { month: 'long', day: 'numeric' })}
-                    {dream.mood && <span className="ml-2 text-day-accent dark:text-night-accent" title={MOOD_LABELS[dream.mood]}>{MOOD_ICONS[dream.mood]}</span>}
-                </p>
-                <p className="text-sm line-clamp-2 mb-2">{dream.dreamText}</p>
-                {dream.tags && dream.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                        {dream.tags.slice(0, 3).map(tag => (
-                            <button
-                                key={tag}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onTagClick(tag);
-                                }}
-                                className="text-xs px-3 py-2 min-h-[44px] bg-day-accent/10 dark:bg-night-accent/10 text-day-accent dark:text-night-accent rounded-full hover:bg-day-accent/20 dark:hover:bg-night-accent/20 transition-colors flex items-center"
-                            >
-                                #{tag}
-                            </button>
-                        ))}
-                        {dream.tags.length > 3 && (
-                            <span className="text-xs text-day-text-secondary dark:text-night-text-secondary">
-                                +{dream.tags.length - 3}
-                            </span>
-                        )}
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-});
 
 
 export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = ({ onDreamSelect }) => {
@@ -91,10 +42,7 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
         return () => clearTimeout(timer);
     }, [searchQuery]);
 
-    // Get legacy dreams (those not linked to a sleep entry)
-    const legacyDreams = useMemo(() => {
-        return dreams.filter(d => !d.sleepEntryId);
-    }, [dreams]);
+
 
     // Sort sleep entries by date (newest first)
     const sortedSleepEntries = useMemo(() => {
@@ -122,17 +70,7 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
         });
     }, [sortedSleepEntries, debouncedSearch, dreams]);
 
-    // Filter legacy dreams based on search
-    const filteredLegacyDreams = useMemo(() => {
-        if (!debouncedSearch.trim()) return legacyDreams;
 
-        const search = debouncedSearch.toLowerCase();
-        return legacyDreams.filter(d =>
-            d.dreamText.toLowerCase().includes(search) ||
-            d.title?.toLowerCase().includes(search) ||
-            d.tags?.some(t => t.toLowerCase().includes(search))
-        );
-    }, [legacyDreams, debouncedSearch]);
 
     const handleAddSleepEntry = useCallback((date: string, quality: number | null, notes?: string, sleepAids?: SleepAids) => {
         return addSleepEntry(date, quality, notes, sleepAids);
@@ -150,7 +88,7 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
 
     const currentEntryForModal = addDreamToEntryId ? getSleepEntryById(addDreamToEntryId) : null;
 
-    const hasContent = sleepEntries.length > 0 || legacyDreams.length > 0;
+    const hasContent = sleepEntries.length > 0;
 
     // SECURITY FIX: Handle secure export with password modal
     const handleSecureExport = useCallback(() => {
@@ -322,31 +260,8 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
                             />
                         ))}
 
-                        {/* Legacy Dreams (not linked to sleep entries) */}
-                        {filteredLegacyDreams.length > 0 && (
-                            <>
-                                {sleepEntries.length > 0 && (
-                                    <div className="flex items-center gap-3 py-2">
-                                        <div className="flex-1 h-px bg-day-border dark:bg-night-border"></div>
-                                        <span className="text-xs text-day-text-secondary dark:text-night-text-secondary uppercase tracking-wider">
-                                            Legacy Dreams
-                                        </span>
-                                        <div className="flex-1 h-px bg-day-border dark:bg-night-border"></div>
-                                    </div>
-                                )}
-                                {filteredLegacyDreams.map(dream => (
-                                    <LegacyDreamItem
-                                        key={dream.id}
-                                        dream={dream}
-                                        onSelect={onDreamSelect}
-                                        onTagClick={() => { }}
-                                    />
-                                ))}
-                            </>
-                        )}
-
                         {/* No results message */}
-                        {filteredEntries.length === 0 && filteredLegacyDreams.length === 0 && debouncedSearch && (
+                        {filteredEntries.length === 0 && debouncedSearch && (
                             <div className="text-center py-8">
                                 <p className="text-day-text-secondary dark:text-night-text-secondary mb-2">No results found</p>
                                 <button
