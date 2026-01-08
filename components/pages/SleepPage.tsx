@@ -241,25 +241,42 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                 )
             }
 
-            {/* Active Session Info Banner */}
+            {/* Active Session Info Banner - Prominent display when linked to alarm */}
             {
                 activeSleepSession && !isSleeping && (
-                    <div className="max-w-2xl mx-auto mb-6 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border border-indigo-200 dark:border-indigo-700 rounded-xl p-4 animate-fadeIn">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-800/50 flex items-center justify-center flex-shrink-0">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                                </svg>
+                    <div className="max-w-2xl mx-auto mb-6">
+                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 border-2 border-green-300 dark:border-green-700 rounded-xl p-5 animate-fadeIn shadow-lg">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-800/60 flex items-center justify-center flex-shrink-0">
+                                    {activeSleepSession.alarmTime ? (
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    ) : (
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                                        </svg>
+                                    )}
+                                </div>
+                                <div className="flex-grow">
+                                    <h3 className="font-serif text-lg font-medium text-green-800 dark:text-green-200 flex items-center gap-2">
+                                        <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                                        Sleep Session Active
+                                    </h3>
+                                    {activeSleepSession.alarmTime ? (
+                                        <p className="text-green-700 dark:text-green-300 font-medium">
+                                            Linked to {formatAlarmTime(activeSleepSession.alarmTime)} alarm
+                                            {activeSleepSession.alarmSoundId && (
+                                                <span className="text-green-600 dark:text-green-400 font-normal"> • {activeSleepSession.alarmSoundId}</span>
+                                            )}
+                                        </p>
+                                    ) : (
+                                        <p className="text-sm text-green-600 dark:text-green-300/80">
+                                            Tracking without alarm — data will save with your next dream log
+                                        </p>
+                                    )}
+                                </div>
                             </div>
-                            <div className="flex-grow">
-                                <h3 className="font-medium text-indigo-800 dark:text-indigo-200">Sleep Session Active</h3>
-                                <p className="text-sm text-indigo-700 dark:text-indigo-300/80">
-                                    {activeSleepSession.alarmTime
-                                        ? `Linked to alarm at ${formatAlarmTime(activeSleepSession.alarmTime)}`
-                                        : 'Your sleep data will be saved with your next dream log'}
-                                </p>
-                            </div>
-                            <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse flex-shrink-0" />
                         </div>
                     </div>
                 )
