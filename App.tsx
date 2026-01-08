@@ -12,6 +12,7 @@ import { useAlarmNotification } from './hooks/useAlarmNotification';
 import { calculateUserStats } from './services/userStatsService';
 import { useToast } from './components/shared/Toast';
 import { checkAndMigrateData } from './services/migrationService';
+import { logger } from './services/logger';
 
 import { AlarmsPage } from './components/pages/AlarmsPage';
 import { BottomNav } from './components/BottomNav';
@@ -98,10 +99,10 @@ const App: React.FC = () => {
                 await requestPermissions();
                 await registerAlarmActions();
                 initializeAlarmListeners(
-                    (alarmId) => console.log('[Native] Alarm received:', alarmId),
-                    (alarmId, actionId) => console.log('[Native] Action:', alarmId, actionId)
+                    (alarmId) => logger.log('[Native] Alarm received:', alarmId),
+                    (alarmId, actionId) => logger.log('[Native] Action:', alarmId, actionId)
                 );
-                console.log('[Native] Alarm service initialized');
+                logger.log('[Native] Alarm service initialized');
             }
         };
         initNativeAlarms();
