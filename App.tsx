@@ -43,7 +43,7 @@ const AdminPage = lazy(() => import('./components/pages/AdminPage').then(m => ({
 
 
 const App: React.FC = () => {
-    const { addDream, isScribeOpen, setIsScribeOpen, activeSleepSession, addSleepEntry, clearSleepSession, startSleepSession } = useAppContext();
+    const { addDream, isScribeOpen, setIsScribeOpen, activeSleepSession, addSleepEntry, clearSleepSession, startSleepSession, saveWakeData } = useAppContext();
     const { isAuthenticated, isLoading: authLoading, isConfigured: authConfigured } = useAuth();
 
     // Check for Stripe success redirect
@@ -163,24 +163,15 @@ const App: React.FC = () => {
 
         stopRinging();
 
-        // Save the sleep session to Chronicle (only if there's an alarm)
-        if (activeSleepSession?.alarmId) {
-            const today = new Date().toISOString().split('T')[0];
-            addSleepEntry(
-                today,
-                activeSleepSession.sleepGatewayData?.dayRating ?? null,
-                activeSleepSession.sleepGatewayData?.dayNotes,
-                activeSleepSession.sleepGatewayData,
-                activeSleepSession.alarmTime ?? undefined,
-                activeSleepSession.alarmSoundId,
-                wakeMetrics
-            );
-            showToast('Sleep session saved to Chronicle');
+        // Save wake data to the session so it can be included when dream is logged
+        // The SleepEntry will be created by addDream (which includes the wake data)
+        if (wakeMetrics && activeSleepSession) {
+            saveWakeData(wakeMetrics);
         }
 
-        clearSleepSession();
         resetWakeMetrics();
-    }, [stopRinging, activeSleepSession, addSleepEntry, clearSleepSession, showToast, getWakeMetrics, resetWakeMetrics]);
+        // Note: We do NOT create entry or clear session here - that happens in addDream flow
+    }, [stopRinging, activeSleepSession, saveWakeData, getWakeMetrics, resetWakeMetrics]);
 
 
     const handleScribeSave = useCallback((dreamText: string, sleepQuality: number | null, mood?: DreamMood) => {

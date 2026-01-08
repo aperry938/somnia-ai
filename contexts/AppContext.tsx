@@ -32,6 +32,7 @@ interface AppContextType {
     updateSleepSessionData: (data: Partial<SleepAids>) => void;
     logSoundActivity: (name: string, durationSeconds: number) => void;
     logBreathingActivity: (name: string, durationSeconds: number) => void;
+    saveWakeData: (wakeData: WakeData) => void;
     clearSleepSession: () => void;
     getNextActiveAlarm: () => Alarm | null;
     addAlarm: (time: string, smartWake: boolean, days?: number[], soundId?: string, purpose?: AlarmPurpose, label?: string) => number;
@@ -350,6 +351,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         });
     }, [setActiveSleepSession]);
 
+    // Save wake data to the active session (called when alarm is dismissed)
+    const saveWakeData = useCallback((wakeData: WakeData) => {
+        setActiveSleepSession(prev => {
+            if (!prev) return prev;
+            return {
+                ...prev,
+                wakeData,
+            };
+        });
+    }, [setActiveSleepSession]);
+
     // Clear the active sleep session (after dream is logged)
     const clearSleepSession = useCallback(() => {
         setActiveSleepSession(null);
@@ -571,6 +583,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         updateSleepSessionData,
         logSoundActivity,
         logBreathingActivity,
+        saveWakeData,
         clearSleepSession,
         getNextActiveAlarm,
         addAlarm,
