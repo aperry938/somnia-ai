@@ -24,7 +24,7 @@ import {
 import { logError } from './errorService';
 import { logger } from './logger';
 import { canUseAiAnalysis, useAiCredit, isPremium } from './secureSubscriptionService';
-import { checkRateLimit, RateLimitError } from './rateLimitService';
+import { checkRateLimit, RateLimitError, checkDailyLimit, consumeDailyLimit, getUserIdForRateLimit } from './rateLimitService';
 
 // ============================================================
 // CONFIGURATION
@@ -77,10 +77,14 @@ export class NoCreditsError extends Error {
 
 /**
  * Enforce premium access and rate limiting before API calls
+ * Now includes per-user rate limiting and daily caps
  */
 const enforceAccess = (operation: string): void => {
-    // Check rate limit first
-    const rateCheck = checkRateLimit(ML_RATE_LIMIT_KEY);
+    const userId = getUserIdForRateLimit();
+    const premium = isPremium();
+
+    // Check per-minute rate limit (per user)
+    const rateCheck = checkRateLimit(ML_RATE_LIMIT_KEY, userId);
     if (!rateCheck.allowed) {
         throw new RateLimitError(
             `Too many ML analytics requests. Try again in ${Math.ceil(rateCheck.resetIn / 1000)} seconds.`,
@@ -89,10 +93,23 @@ const enforceAccess = (operation: string): void => {
         );
     }
 
+    // Check daily limit (per user, free vs premium)
+    const dailyCheck = checkDailyLimit('ml_analytics', userId, premium);
+    if (!dailyCheck.allowed) {
+        throw new RateLimitError(
+            `Daily limit reached (${dailyCheck.limit} requests). ${premium ? 'Try again tomorrow.' : 'Upgrade to Premium for more.'}`,
+            86400 * 1000, // 24 hours
+            'ml_analytics_daily'
+        );
+    }
+
     // Check premium/credit access
     if (!canUseAiAnalysis()) {
         throw new NoCreditsError();
     }
+
+    // Consume daily limit after all checks pass
+    consumeDailyLimit('ml_analytics', userId);
 };
 
 /**

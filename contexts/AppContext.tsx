@@ -6,6 +6,7 @@ import { enqueueAction } from '../services/syncService';
 import { cacheDreamTitle } from '../services/geminiService';
 import { logger } from '../services/logger';
 import * as NativeAlarm from '../services/nativeAlarmService';
+import { syncDream, deleteSyncedDream, generateAndStoreEmbedding } from '../services/dreamSyncService';
 
 /**
  * SECURITY FIX: Generate cryptographically secure random ID
@@ -414,6 +415,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setActiveSleepSession(null);
         setPendingSleepData(null);
         enqueueAction('ADD_DREAM', newDream);
+
+        // Sync to cloud for authenticated users (fire and forget)
+        syncDream(newDream).then(synced => {
+            if (synced) {
+                // Generate embedding for semantic search (async, low priority)
+                generateAndStoreEmbedding(newDream.id, dreamText).catch(() => { });
+            }
+        }).catch(() => { });
+
         return newDream.id;
     };
 
@@ -445,10 +455,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const deleteDream = (id: number) => {
         setDreams(prev => prev.filter(d => d.id !== id));
         enqueueAction('DELETE_DREAM', { id });
+        // Delete from cloud (fire and forget)
+        deleteSyncedDream(id).catch(() => { });
     };
 
     const updateDream = useCallback((updatedDreamPart: Partial<Dream> & { id: number }) => {
-        setDreams(prev => prev.map(d => d.id === updatedDreamPart.id ? { ...d, ...updatedDreamPart } : d));
+        setDreams(prev => {
+            const updated = prev.map(d => d.id === updatedDreamPart.id ? { ...d, ...updatedDreamPart } : d);
+            // Sync updated dream to cloud (fire and forget)
+            const fullDream = updated.find(d => d.id === updatedDreamPart.id);
+            if (fullDream) {
+                syncDream(fullDream).catch(() => { });
+            }
+            return updated;
+        });
         enqueueAction('UPDATE_DREAM', updatedDreamPart);
     }, [setDreams]);
 

@@ -38,6 +38,138 @@ export const RATE_LIMITS: Record<string, RateLimitConfig> = {
     api_default: { maxRequests: 100, windowMs: 60 * 1000 }, // 100 per minute
 };
 
+// ============================================
+// DAILY LIMITS - Per-user caps to prevent abuse
+// ============================================
+
+interface DailyLimitConfig {
+    freeLimit: number;
+    premiumLimit: number;
+}
+
+export const DAILY_LIMITS: Record<string, DailyLimitConfig> = {
+    ai_analysis: { freeLimit: 3, premiumLimit: 100 },
+    ai_imagery: { freeLimit: 2, premiumLimit: 50 },
+    ai_coach: { freeLimit: 10, premiumLimit: 200 },
+    ai_chat: { freeLimit: 20, premiumLimit: 500 },
+    ml_analytics: { freeLimit: 10, premiumLimit: 200 },
+};
+
+// Storage for daily limit tracking (persisted to localStorage)
+const DAILY_LIMIT_STORAGE_KEY = 'somnia_daily_limits';
+
+interface DailyLimitEntry {
+    count: number;
+    date: string; // YYYY-MM-DD
+}
+
+type DailyLimitStore = Record<string, DailyLimitEntry>;
+
+/**
+ * Get user ID for rate limiting purposes
+ * Falls back to 'anonymous' for unauthenticated users
+ */
+export const getUserIdForRateLimit = (): string => {
+    try {
+        const authData = localStorage.getItem('somnia_auth_user');
+        if (authData) {
+            const parsed = JSON.parse(authData);
+            return parsed?.id || 'anonymous';
+        }
+    } catch {
+        // Ignore parse errors
+    }
+    return 'anonymous';
+};
+
+/**
+ * Get today's date as YYYY-MM-DD
+ */
+const getTodayDate = (): string => new Date().toISOString().split('T')[0];
+
+/**
+ * Load daily limit store from localStorage
+ */
+const loadDailyLimitStore = (): DailyLimitStore => {
+    try {
+        const stored = localStorage.getItem(DAILY_LIMIT_STORAGE_KEY);
+        return stored ? JSON.parse(stored) : {};
+    } catch {
+        return {};
+    }
+};
+
+/**
+ * Save daily limit store to localStorage
+ */
+const saveDailyLimitStore = (store: DailyLimitStore): void => {
+    try {
+        localStorage.setItem(DAILY_LIMIT_STORAGE_KEY, JSON.stringify(store));
+    } catch {
+        logger.error('[RateLimit] Failed to save daily limits');
+    }
+};
+
+/**
+ * Check if user has exceeded their daily limit for a category
+ * @param category The limit category
+ * @param userId The user ID
+ * @param isPremium Whether the user has premium access
+ * @returns Object with allowed status and remaining count
+ */
+export const checkDailyLimit = (
+    category: keyof typeof DAILY_LIMITS,
+    userId: string = 'anonymous',
+    isPremium: boolean = false
+): { allowed: boolean; remaining: number; limit: number } => {
+    const config = DAILY_LIMITS[category];
+    if (!config) {
+        return { allowed: true, remaining: 999, limit: 999 }; // No limit for unconfigured categories
+    }
+
+    const limit = isPremium ? config.premiumLimit : config.freeLimit;
+    const key = `${category}:${userId}`;
+    const today = getTodayDate();
+    const store = loadDailyLimitStore();
+
+    let entry = store[key];
+
+    // Reset if new day
+    if (!entry || entry.date !== today) {
+        entry = { count: 0, date: today };
+        store[key] = entry;
+        saveDailyLimitStore(store);
+    }
+
+    const remaining = Math.max(0, limit - entry.count);
+    return {
+        allowed: entry.count < limit,
+        remaining,
+        limit,
+    };
+};
+
+/**
+ * Consume one daily limit and save
+ */
+export const consumeDailyLimit = (
+    category: keyof typeof DAILY_LIMITS,
+    userId: string = 'anonymous'
+): void => {
+    const today = getTodayDate();
+    const store = loadDailyLimitStore();
+    const key = `${category}:${userId}`;
+
+    let entry = store[key];
+    if (!entry || entry.date !== today) {
+        entry = { count: 0, date: today };
+    }
+
+    entry.count++;
+    store[key] = entry;
+    saveDailyLimitStore(store);
+};
+
 /**
  * Check if a request should be allowed based on rate limiting
  * @param category The rate limit category
