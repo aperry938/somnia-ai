@@ -23,6 +23,9 @@ export interface SleepActivity {
     duration: number; // seconds
 }
 
+// Lucid dreaming induction techniques
+export type LucidTechnique = 'WILD' | 'MILD' | 'WBTB' | 'SSILD' | 'reality_check' | 'none';
+
 export interface SleepAids {
     sound?: string;
     soundDuration?: number; // Duration in minutes the soundscape was used
@@ -36,6 +39,10 @@ export interface SleepAids {
     soundsPlayed?: SleepActivity[]; // Sounds/soundscapes played
     totalPrepTime?: number; // Total prep time in seconds
     sessionStartedAt?: string; // When the session started
+    // Lucid Dreaming Tracking
+    lucidTechnique?: LucidTechnique; // Technique used before sleep
+    realityChecksPerformed?: number; // Number of reality checks done during the day
+    wakeBackToBedDuration?: number; // WBTB: minutes stayed awake
 }
 
 export interface Dream {
@@ -111,7 +118,7 @@ export interface Achievement {
     icon: ReactElement;
 }
 
-export type Theme = 'day' | 'night';
+export type Theme = 'day' | 'night' | 'sleep';
 
 export interface DreamSynthesis {
     overallSummary: string;

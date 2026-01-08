@@ -51,6 +51,14 @@
                         'night-accent': '#818CF8',
                         'night-card-bg': 'rgba(30, 41, 59, 0.65)',
                         'night-border': 'rgba(255, 255, 255, 0.1)',
+                        // Sleep Mode: Zero blue light, warm amber tones for melatonin preservation
+                        'sleep-bg-start': '#1A0A00',
+                        'sleep-bg-end': '#2D1810',
+                        'sleep-text-primary': '#FFD4B8',
+                        'sleep-text-secondary': '#C4A68A',
+                        'sleep-accent': '#FF6B35',
+                        'sleep-card-bg': 'rgba(45, 24, 16, 0.65)',
+                        'sleep-border': 'rgba(255, 107, 53, 0.2)',
                     },
                     keyframes: {
                         fadeIn: {
@@ -125,6 +133,53 @@
         .dark :focus-visible {
             outline-color: #818CF8;
         }
+
+        /* Sleep Mode: Zero blue light for melatonin preservation */
+        .sleep :focus-visible {
+            outline-color: #FF6B35;
+        }
+
+        .sleep .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 107, 53, 0.3);
+        }
+
+        /* Sleep Mode Color Overrides - replaces all blue with warm amber */
+        .sleep {
+            --tw-gradient-from: #1A0A00 !important;
+            --tw-gradient-to: #2D1810 !important;
+        }
+
+        /* Override night colors with sleep colors when .sleep is active */
+        .sleep .bg-night-accent { background-color: #FF6B35 !important; }
+        .sleep .text-night-accent { color: #FF6B35 !important; }
+        .sleep .border-night-accent { border-color: #FF6B35 !important; }
+        .sleep .text-night-text-primary { color: #FFD4B8 !important; }
+        .sleep .text-night-text-secondary { color: #C4A68A !important; }
+        .sleep .bg-night-card-bg { background-color: rgba(45, 24, 16, 0.65) !important; }
+        .sleep .border-night-border { border-color: rgba(255, 107, 53, 0.2) !important; }
+        .sleep .from-night-bg-start { --tw-gradient-from: #1A0A00 !important; }
+        .sleep .to-night-bg-end { --tw-gradient-to: #2D1810 !important; }
+
+        /* Override indigo accents (common across app) */
+        .sleep .bg-indigo-500, .sleep .bg-indigo-500\/20 { background-color: #FF6B35 !important; }
+        .sleep .bg-indigo-600 { background-color: #E55A2B !important; }
+        .sleep .text-indigo-500 { color: #FF6B35 !important; }
+        .sleep .text-indigo-400 { color: #FF8C5A !important; }
+        .sleep .border-indigo-500 { border-color: #FF6B35 !important; }
+        .sleep .ring-indigo-500 { --tw-ring-color: #FF6B35 !important; }
+        .sleep .accent-night-accent { accent-color: #FF6B35 !important; }
+
+        /* Sleep mode gradient backgrounds */
+        html.sleep.dark .from-night-bg-start { --tw-gradient-from: #1A0A00 !important; }
+        html.sleep.dark .to-night-bg-end { --tw-gradient-to: #2D1810 !important; }
+        html.sleep .dark\:from-night-bg-start { --tw-gradient-from: #1A0A00 !important; }
+        html.sleep .dark\:to-night-bg-end { --tw-gradient-to: #2D1810 !important; }
+        html.sleep .dark\:bg-night-accent { background-color: #FF6B35 !important; }
+        html.sleep .dark\:text-night-accent { color: #FF6B35 !important; }
+        html.sleep .dark\:text-night-text-primary { color: #FFD4B8 !important; }
+        html.sleep .dark\:text-night-text-secondary { color: #C4A68A !important; }
+        html.sleep .dark\:bg-night-card-bg { background-color: rgba(45, 24, 16, 0.65) !important; }
+        html.sleep .dark\:border-night-border { border-color: rgba(255, 107, 53, 0.2) !important; }
 
         /* Skip link for screen readers */
         .skip-link {

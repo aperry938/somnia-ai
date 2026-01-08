@@ -1,4 +1,4 @@
-import { GoogleGenAI, GenerateContentResponse, Modality, Type } from "@google/genai";
+import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
 import { ChatMessage, Dream, DreamAnalysis, DreamSynthesis, SleepHabitAnalysis, SleepAids, Biometrics, AnalysisPersonality, DreamTelemetry, SimilarDream } from '../types';
 import { requirePremium, canUseAiAnalysis, useAiCredit, getRemainingCredits } from './secureSubscriptionService';
 import { checkRateLimit, RateLimitError } from './rateLimitService';
@@ -6,9 +6,7 @@ import { logError } from './errorService';
 import { logger } from './logger';
 import {
     SOMNIA_IDENTITY,
-    COACH_PERSONAS,
     createAnalysisPrompt,
-    createCoachPrompt,
     createDreamChatPrompt,
     createSynthesisPrompt,
     createHabitAnalysisPrompt,
@@ -286,46 +284,6 @@ export const DREAM_ART_STYLES: Record<DreamArtStyle, { name: string; prompt: str
     }
 };
 
-function createImagePrompt(dreamText: string, style: DreamArtStyle = 'surreal'): string {
-    const styleData = DREAM_ART_STYLES[style];
-    return `A dream of: "${dreamText}". ${styleData.prompt}, emotionally resonant, sophisticated, cinematic, trending on artstation.`;
-}
-
-
-/**
- * Generates an image visualization of a dream using Gemini Pro Vision.
- * 
- * @param dreamText - The text description of the dream
- * @param style - The artistic style to use (default: 'surrealist')
- * @returns Promise<string> - The base64 encoded image data
- */
-export const generateDreamImage = async (dreamText: string, style: DreamArtStyle = 'surreal'): Promise<string> => {
-    try {
-        const ai = getAi();
-        const prompt = createImagePrompt(dreamText, style);
-        const response: GenerateContentResponse = await ai.models.generateContent({
-            model: 'gemini-2.5-flash-image',
-            contents: { parts: [{ text: prompt }] },
-            config: {
-                responseModalities: [Modality.IMAGE],
-            },
-        });
-
-        const candidate = response.candidates?.[0];
-        if (!candidate?.content?.parts) {
-            throw new Error("No image data found in response.");
-        }
-        for (const part of candidate.content.parts) {
-            if (part.inlineData) {
-                return part.inlineData.data ?? ''; // This is the base64 string
-            }
-        }
-        throw new Error("No image data found in response.");
-    } catch (error) {
-        logError(error instanceof Error ? error : new Error(String(error)), 'ai', { operation: 'generateDreamImage' });
-        throw new Error("Failed to generate dream image.");
-    }
-};
 
 /**
  * Generate a creative title for a dream entry
@@ -395,39 +353,6 @@ Return ONLY the title, nothing else. No quotes, no explanation.`;
 export const cacheDreamTitle = (dreamText: string, title: string): void => {
     const cacheKey = getTitleCacheKey(dreamText);
     dreamTitleCache.set(cacheKey, title);
-};
-
-const createCoachSystemPrompt = (personality: 'mystical' | 'scientific', userContext?: string) => {
-    const prompt = createCoachPrompt(personality, userContext, new Date());
-    return {
-        role: 'model' as const,
-        parts: [{ text: prompt }]
-    };
-};
-
-/**
- * functionality for the AI Sleep Coach.
- * Generates a response based on chat history.
- * 
- * @param history - Array of previous chat messages
- * @param history - Array of previous chat messages
- * @param personality - The personality mode ('mystical' | 'scientific')
- * @returns Promise<string> - The AI coach's response
- */
-export const getCoachResponse = async (history: ChatMessage[], personality: 'mystical' | 'scientific' = 'mystical'): Promise<string> => {
-    const cleanHistory = history.map(({ id, isError, ...rest }) => rest);
-    const chatHistory = [createCoachSystemPrompt(personality), ...cleanHistory];
-    try {
-        const ai = getAi();
-        const response: GenerateContentResponse = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: chatHistory,
-        });
-        return response.text ?? '';
-    } catch (error) {
-        logError(error instanceof Error ? error : new Error(String(error)), 'ai', { operation: 'getCoachResponse' });
-        throw new Error("Failed to get AI response.");
-    }
 };
 
 const createDreamChatSystemPrompt = (dream: Dream, personality: AnalysisPersonality = 'oneironaut') => ({

@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useAppContext } from '../contexts/AppContext';
 import { useSunTimes } from './useSunTimes';
+import { Theme } from '../types';
 
 export const useTheme = () => {
     const { themeOverride } = useAppContext();
     const { isNight } = useSunTimes();
-    const [theme, setTheme] = useState<'day' | 'night'>('day');
+    const [theme, setTheme] = useState<Theme>('day');
 
     useEffect(() => {
         const checkTheme = () => {

@@ -33,11 +33,16 @@ export const useClock = () => {
     useEffect(() => {
         const root = document.documentElement;
 
-        // Apply dark class for night theme
+        // Apply theme classes
+        // - 'dark' class enables Tailwind dark mode styles
+        // - 'sleep' class enables zero-blue-light amber theme (also needs 'dark' base)
         if (theme === 'night') {
             root.classList.add('dark');
+            root.classList.remove('sleep');
+        } else if (theme === 'sleep') {
+            root.classList.add('dark', 'sleep');
         } else {
-            root.classList.remove('dark');
+            root.classList.remove('dark', 'sleep');
         }
     }, [theme]);
 

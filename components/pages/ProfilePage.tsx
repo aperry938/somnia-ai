@@ -309,21 +309,25 @@ const ThemePreferenceCard: React.FC = () => {
         auto: <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>,
         day: <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>,
         night: <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>,
+        sleep: <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12h1m16 0h1M5.6 5.6l.7.7m12.4 12.4l.7.7M5.6 18.4l.7-.7m12.4-12.4l.7-.7M9 16a5 5 0 010-8m0 8a5 5 0 000-8m3 8v1a2 2 0 01-2 2H8a2 2 0 01-2-2v-1" /></svg>,
     };
 
     const options = [
         { value: 'auto', label: 'Auto' },
         { value: 'day', label: 'Light' },
         { value: 'night', label: 'Dark' },
+        { value: 'sleep', label: 'Sleep' },
     ] as const;
+
+    const themeLabel = theme === 'sleep' ? 'Sleep (No Blue)' : theme === 'night' ? 'Dark' : 'Light';
 
     return (
         <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">
             <h2 className="font-serif text-xl mb-2">Theme</h2>
             <p className="text-day-text-secondary dark:text-night-text-secondary text-sm mb-4">
-                Currently: {theme === 'night' ? 'Dark' : 'Light'} mode
+                Currently: {themeLabel} mode
             </p>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-4 gap-2">
                 {options.map(opt => (
                     <button
                         key={opt.value}

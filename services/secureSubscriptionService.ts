@@ -431,13 +431,13 @@ export async function createCustomerPortalSession(
 // Pricing constants (for UI display only - actual prices in Stripe)
 export const PRICING = {
     monthly: {
-        price: 4.99,
+        price: 9.99,
         currency: 'USD',
         interval: 'month',
         priceId: import.meta.env.VITE_STRIPE_MONTHLY_PRICE_ID || '',
     },
     yearly: {
-        price: 39.99,
+        price: 79.99,
         currency: 'USD',
         interval: 'year',
         savings: 33,
