@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { SleepEntry, Dream } from '../../types';
 import { MOOD_ICONS, MOOD_LABELS } from '../../constants/uiIcons';
 
@@ -47,8 +47,11 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
     const [isExpanded, setIsExpanded] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-    // Get dreams for this entry
-    const entryDreams = dreams.filter(d => entry.dreamIds.includes(d.id));
+    // Get dreams for this entry (memoized to avoid filtering on every render)
+    const entryDreams = useMemo(() =>
+        dreams.filter(d => entry.dreamIds.includes(d.id)),
+        [dreams, entry.dreamIds]
+    );
     const dreamCount = entryDreams.length;
 
     // Format date nicely

@@ -83,3 +83,46 @@
 **Next:** Cycle 4 - Cross-agent sync + continue improvements
 
 ---
+
+## Cycle 4 - 2026-01-08T23:15:00Z
+**Phase:** 5 (Cross-Agent Sync) + 2 (UI/UX)
+
+**Action:**
+- Synced with backend agent branch
+- Merged backend agent changes (TypeScript SpeechGrammarList fix)
+- Audited animation consistency
+
+**Findings:**
+- Backend agent fixed `any` types in useSpeechRecognition.ts
+- Animations consistent: `animate-fadeIn`, `animate-pulse`, `animate-spin`
+- fadeIn keyframe properly defined in Tailwind config (0.5s ease-in-out)
+
+**Files Changed (via merge):**
+- `hooks/useSpeechRecognition.ts` - SpeechGrammarList types
+- `BACKEND_AGENT_LOG.md` - backend audit log
+
+**Result:** Success - merged backend changes, 275 tests pass
+
+**Next:** Cycle 5 - Performance (memoization audit)
+
+---
+
+## Cycle 5 - 2026-01-08T23:17:00Z
+**Phase:** 3 (Performance - Memoization)
+
+**Action:**
+- Audited components for missing memoization
+- Found `SleepEntryCard.tsx` filtering dreams array on every render
+
+**Fix Applied:**
+- Wrapped `entryDreams` filter in `useMemo` with proper dependencies
+- Prevents unnecessary filtering when parent re-renders
+
+**Files Changed:**
+- `components/chronicle/SleepEntryCard.tsx` - added useMemo for dream filtering
+
+**Result:** Success - 275 tests pass
+
+**Next:** Cycle 6 - Code Quality (prop drilling, error boundaries)
+
+---
