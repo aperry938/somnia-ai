@@ -512,8 +512,16 @@ const AccountManagementCard: React.FC = () => {
         setIsSigningOut(true);
         try {
             await signOut();
-            // Clear local auth skip flag so user sees auth page again
+            // Clear ALL user-specific data on logout
             localStorage.removeItem('somnia_skipped_auth');
+            localStorage.removeItem('somnia_biometrics');
+            localStorage.removeItem('somnia_ai_credits');
+            localStorage.removeItem('somnia_credits_reset_date');
+            localStorage.removeItem('somnia_daily_limits');
+            localStorage.removeItem('somnia_auth_user');
+            localStorage.removeItem('somnia_subscription_token');
+            localStorage.removeItem('somnia_subscription_status');
+            localStorage.removeItem('somnia_user_email');
             showToast('Signed out successfully');
             // Reload to reset app state
             window.location.reload();
