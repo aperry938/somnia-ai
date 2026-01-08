@@ -54,11 +54,12 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
     const [selectedTechnique, setSelectedTechnique] = useState<LucidDreamTechnique | null>(null);
     const [showRealityCheckModal, setShowRealityCheckModal] = useState(false);
     const [lucidExpanded, setLucidExpanded] = useState(false);
+    const [sessionExpanded, setSessionExpanded] = useState(false);
 
     // Wake Window Hook
     const { isSupported: motionSupported, movementLog } = useWakeWindow(isSleeping);
 
-    const { setActiveSleepAid, activeSleepAids, setPendingSleepData, dreams, volume, activeSleepSession, updateSleepSessionData, startSleepSession, alarms } = useAppContext();
+    const { setActiveSleepAid, activeSleepAids, setPendingSleepData, dreams, volume, activeSleepSession, updateSleepSessionData, startSleepSession, alarms, clearSleepSession } = useAppContext();
 
     // Initialize session data from existing session if present (runs once on mount)
     useEffect(() => {
@@ -239,11 +240,16 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                 )
             }
 
-            {/* Active Session Info Banner */}
+            {/* Active Session Info Banner - Expandable */}
             {
                 activeSleepSession && !isSleeping && (
-                    <div className="max-w-2xl mx-auto mb-6 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border border-indigo-200 dark:border-indigo-700 rounded-xl p-4 animate-fadeIn">
-                        <div className="flex items-center gap-3">
+                    <div className="max-w-2xl mx-auto mb-6 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border border-indigo-200 dark:border-indigo-700 rounded-xl overflow-hidden animate-fadeIn">
+                        {/* Clickable Header */}
+                        <button
+                            onClick={() => { haptics.light(); setSessionExpanded(!sessionExpanded); }}
+                            className="w-full p-4 flex items-center gap-3 text-left"
+                            aria-expanded={sessionExpanded}
+                        >
                             <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-800/50 flex items-center justify-center flex-shrink-0">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
@@ -254,11 +260,63 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                 <p className="text-sm text-indigo-700 dark:text-indigo-300/80">
                                     {activeSleepSession.alarmTime
                                         ? `Linked to alarm at ${formatAlarmTime(activeSleepSession.alarmTime)}`
-                                        : 'Your sleep data will be saved with your next dream log'}
+                                        : 'Tap to view or cancel session'}
                                 </p>
                             </div>
-                            <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse flex-shrink-0" />
-                        </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                                <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
+                                <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 text-indigo-500 transition-transform ${sessionExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </button>
+
+                        {/* Expanded Content */}
+                        {sessionExpanded && (
+                            <div className="px-4 pb-4 space-y-3 animate-fadeIn border-t border-indigo-200/50 dark:border-indigo-700/50">
+                                {/* Session Details */}
+                                <div className="pt-3 space-y-2 text-sm">
+                                    {activeSleepSession.sleepGatewayData.breathingExercises && activeSleepSession.sleepGatewayData.breathingExercises.length > 0 && (
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-indigo-600 dark:text-indigo-400">🌬️</span>
+                                            <span>{activeSleepSession.sleepGatewayData.breathingExercises.map(b => b.name).join(', ')}</span>
+                                        </div>
+                                    )}
+                                    {activeSleepSession.sleepGatewayData.soundsPlayed && activeSleepSession.sleepGatewayData.soundsPlayed.length > 0 && (
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-indigo-600 dark:text-indigo-400">🔊</span>
+                                            <span>{activeSleepSession.sleepGatewayData.soundsPlayed.map(s => s.name).join(', ')}</span>
+                                        </div>
+                                    )}
+                                    {activeSleepSession.sleepGatewayData.dayRating && (
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-indigo-600 dark:text-indigo-400">⭐</span>
+                                            <span>Day rating: {activeSleepSession.sleepGatewayData.dayRating}/5</span>
+                                        </div>
+                                    )}
+                                    {(!activeSleepSession.sleepGatewayData.breathingExercises?.length && !activeSleepSession.sleepGatewayData.soundsPlayed?.length && !activeSleepSession.sleepGatewayData.dayRating) && (
+                                        <p className="text-indigo-600/70 dark:text-indigo-400/70 italic">No activities logged yet</p>
+                                    )}
+                                </div>
+
+                                {/* Cancel Button */}
+                                <button
+                                    onClick={() => {
+                                        if (confirm('Cancel this sleep session? Your pre-sleep data will not be saved.')) {
+                                            haptics.medium();
+                                            clearSleepSession();
+                                            setSessionExpanded(false);
+                                        }
+                                    }}
+                                    className="w-full py-2 min-h-[44px] text-red-600 dark:text-red-400 border border-red-300 dark:border-red-700/50 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                    Cancel Session
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )
             }
@@ -350,22 +408,16 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                         <div className="flex flex-col gap-3 mt-6">
                             <button
                                 onClick={() => {
-                                    // Session is already saved via activeSleepSession in context
-                                    // Just show confirmation and keep tracking
-                                    haptics.medium();
+                                    haptics.success();
+                                    setIsSleeping(false);
+                                    // Navigate back to main view - session stays active
                                 }}
                                 className="py-4 px-8 min-h-[48px] bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium rounded-xl flex items-center justify-center gap-2 mx-auto"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                 </svg>
-                                Session Saved - Sweet Dreams!
-                            </button>
-                            <button
-                                onClick={() => setIsSleeping(false)}
-                                className="text-sm text-day-text-secondary dark:text-night-text-secondary hover:underline"
-                            >
-                                ← Edit sleep settings
+                                Done - Sweet Dreams!
                             </button>
                         </div>
                         <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-4 opacity-70">
