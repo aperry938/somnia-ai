@@ -11,6 +11,32 @@ interface SleepEntryCardProps {
     onDeleteEntry: (id: number) => void;
 }
 
+// Map alarm sound IDs to display names
+const ALARM_SOUND_NAMES: Record<string, string> = {
+    'classic': 'Classic',
+    'aether': 'Aether',
+    'somnia': 'Somnia',
+    'gentle': 'Gentle',
+    'prism': 'Prism',
+    'bamboo': 'Bamboo',
+    'progressive': 'Progressive',
+};
+
+const getAlarmSoundName = (soundId?: string): string => {
+    if (!soundId) return 'Default';
+    return ALARM_SOUND_NAMES[soundId] || soundId;
+};
+
+// Format time from HH:MM to display format
+const formatAlarmTime = (time?: string): string => {
+    if (!time) return '';
+    const [hourStr, minuteStr] = time.split(':');
+    const hour = parseInt(hourStr, 10);
+    const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+    const period = hour >= 12 ? 'PM' : 'AM';
+    return `${displayHour}:${minuteStr} ${period}`;
+};
+
 export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
     entry,
     dreams,
@@ -77,11 +103,34 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
                         </div>
 
                         <div>
-                            <p className="font-medium">{displayDate}</p>
+                            <div className="flex items-center gap-2">
+                                <p className="font-medium">{displayDate}</p>
+                                {/* Alarm Time Badge */}
+                                {entry.alarmTime && (
+                                    <span className="text-xs px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-full flex items-center gap-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        {formatAlarmTime(entry.alarmTime)}
+                                    </span>
+                                )}
+                            </div>
                             <div className="flex items-center gap-2 text-sm text-day-text-secondary dark:text-night-text-secondary">
                                 {renderQuality()}
                                 <span>•</span>
                                 <span>{dreamCount} {dreamCount === 1 ? 'dream' : 'dreams'}</span>
+                                {/* Alarm Sound Badge */}
+                                {entry.alarmSoundId && (
+                                    <>
+                                        <span>•</span>
+                                        <span className="flex items-center gap-1">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                                            </svg>
+                                            {getAlarmSoundName(entry.alarmSoundId)}
+                                        </span>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>

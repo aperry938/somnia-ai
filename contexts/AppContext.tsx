@@ -67,7 +67,7 @@ interface AppContextType {
     setArtStyle: (style: ArtStyle) => void;
     // Sleep Entries (Chronicle primary entity)
     sleepEntries: SleepEntry[];
-    addSleepEntry: (date: string, sleepQuality: number | null, notes?: string, sleepAids?: SleepAids) => number;
+    addSleepEntry: (date: string, sleepQuality: number | null, notes?: string, sleepAids?: SleepAids, alarmTime?: string, alarmSoundId?: string) => number;
     updateSleepEntry: (entry: Partial<SleepEntry> & { id: number }) => void;
     deleteSleepEntry: (id: number) => void;
     getSleepEntryById: (id: number) => SleepEntry | undefined;
@@ -297,6 +297,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             id: generateSecureId(),
             alarmId: alarm?.id ?? null,
             alarmTime: alarm?.time ?? null,
+            alarmSoundId: alarm?.soundId,
             startedAt: new Date().toISOString(),
             sleepGatewayData: {},
             isActive: true
@@ -491,13 +492,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
 
     // ========== Sleep Entry CRUD ==========
-    const addSleepEntry = (date: string, sleepQuality: number | null, notes?: string, sleepAids?: SleepAids): number => {
+    const addSleepEntry = (date: string, sleepQuality: number | null, notes?: string, sleepAids?: SleepAids, alarmTime?: string, alarmSoundId?: string): number => {
         const newEntry: SleepEntry = {
             id: generateSecureId(),
             date,
             sleepQuality,
             notes,
             sleepAids,
+            alarmTime,
+            alarmSoundId,
             dreamIds: [],
             createdAt: new Date().toISOString(),
         };

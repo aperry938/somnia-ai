@@ -360,7 +360,9 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                             today,
                                             activeSleepSession.sleepGatewayData?.dayRating ?? null,
                                             activeSleepSession.sleepGatewayData?.dayNotes,
-                                            activeSleepSession.sleepGatewayData
+                                            activeSleepSession.sleepGatewayData,
+                                            activeSleepSession.alarmTime ?? undefined,
+                                            activeSleepSession.alarmSoundId
                                         );
                                         clearSleepSession();
                                         showToast('Sleep session saved to Chronicle');

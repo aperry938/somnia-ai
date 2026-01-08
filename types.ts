@@ -179,6 +179,7 @@ export interface SleepSession {
     id: number; // Session ID (timestamp)
     alarmId: number | null; // Linked alarm ID
     alarmTime: string | null; // Alarm time for display
+    alarmSoundId?: string; // Sound used for the alarm (e.g., 'somnia', 'gentle')
     startedAt: string; // When session was created
     sleepGatewayData: SleepAids; // Pre-sleep data from Sleep Gateway
     wakeData?: WakeData; // Wake metrics when alarm was dismissed
@@ -192,6 +193,8 @@ export interface SleepEntry {
     sleepQuality: number | null;    // 1-5 rating
     sleepAids?: SleepAids;          // Pre-sleep data (sound, relaxation, checklist, day rating)
     wakeData?: WakeData;            // Wake metrics (snooze, silence time, boost)
+    alarmTime?: string;             // Alarm time that was set (HH:MM format)
+    alarmSoundId?: string;          // Alarm sound used
     manuallyLogged?: boolean;       // Whether activities were logged retroactively
     notes?: string;                 // Optional notes about the sleep
     dreamIds: number[];             // IDs of dreams logged for this session
