@@ -179,3 +179,86 @@ export interface SleepEntry {
     dreamIds: number[];             // IDs of dreams logged for this session
     createdAt: string;              // ISO timestamp when entry was created
 }
+
+// ============================================================
+// ML ANALYTICS TYPES
+// ============================================================
+
+/**
+ * Nuanced sentiment analysis from ML model
+ */
+export interface MLSentiment {
+    primary: 'positive' | 'negative' | 'neutral' | 'mixed';
+    confidence: number; // 0-1
+    emotions: MLEmotion[];
+    nuance: string; // e.g., "bittersweet nostalgia", "anxious anticipation"
+    valence: number; // -1 to 1 (negative to positive)
+    arousal: number; // 0-1 (calm to intense)
+}
+
+export interface MLEmotion {
+    emotion: string; // e.g., "joy", "fear", "wonder", "melancholy"
+    intensity: number; // 0-1
+    triggers?: string[]; // What in the dream triggered this
+}
+
+/**
+ * Semantically extracted theme (not keyword-based)
+ */
+export interface SemanticTheme {
+    name: string; // e.g., "Transformation & Rebirth"
+    symbols: string[]; // Key symbols: ["butterfly", "cocoon", "metamorphosis"]
+    interpretation: string; // Psychological meaning
+    dreamIds: number[];
+    strength: number; // 0-1 how prominent across dreams
+    archetype?: string; // Jungian archetype if applicable
+}
+
+/**
+ * Detected narrative patterns across dreams
+ */
+export interface NarrativePattern {
+    type: 'recurring_character' | 'location_theme' | 'emotional_arc' | 'symbol_chain' | 'unresolved_conflict';
+    name: string; // e.g., "The Unknown Guide"
+    description: string;
+    frequency: number; // How many times detected
+    firstSeen: string; // ISO date
+    lastSeen: string; // ISO date
+    dreamIds: number[];
+    evolution?: string; // How the pattern has changed over time
+}
+
+/**
+ * Sleep quality prediction based on context
+ */
+export interface SleepPrediction {
+    predictedQuality: number; // 1-5
+    confidence: number; // 0-1
+    factors: PredictionFactor[];
+    recommendations: string[];
+    rationale: string; // Why this prediction
+}
+
+export interface PredictionFactor {
+    factor: string; // e.g., "Evening screen time"
+    impact: 'positive' | 'negative' | 'neutral';
+    weight: number; // 0-1 how much it affects prediction
+    source: 'sleepAids' | 'dayRating' | 'historical' | 'temporal';
+}
+
+/**
+ * Complete ML analysis result for a set of dreams
+ */
+export interface MLAnalysisResult {
+    generatedAt: string;
+    dreamCount: number;
+    sentiment: {
+        overall: MLSentiment;
+        trend: 'improving' | 'declining' | 'stable';
+        distribution: { sentiment: string; percentage: number }[];
+    };
+    themes: SemanticTheme[];
+    patterns: NarrativePattern[];
+    insights: string[]; // Key takeaways
+    nextSteps: string[]; // Actionable recommendations
+}

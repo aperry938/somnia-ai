@@ -17,6 +17,10 @@ import { PremiumBadge } from '../shared/PremiumBadge';
 import { canUseAiAnalysis, useAiCredit, isPremium } from '../../services/secureSubscriptionService';
 import { DreamCompareModal } from '../modals/DreamCompareModal';
 import { DEMO_DREAMS } from '../../constants/demoDreams';
+// ML Analytics Components
+import { SemanticThemesCard } from '../insights/SemanticThemesCard';
+import { NarrativePatternsCard } from '../insights/NarrativePatternsCard';
+import { SleepPredictorCard } from '../insights/SleepPredictorCard';
 
 type InsightTab = 'dreams' | 'analysis';
 
@@ -414,6 +418,33 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                             {dreams.filter(d => d.sleepQuality).length < 3 && !habitAnalysis && <p className="text-xs text-center mt-2 text-day-text-secondary dark:text-night-text-secondary">Requires at least 3 nights with sleep quality ratings.</p>}
                             {userIsPremium && dreams.filter(d => d.sleepQuality).length >= 3 && !habitAnalysis && canUseHabitAnalysis() && <p className="text-xs text-center mt-1 text-indigo-500 dark:text-indigo-400">Once per week</p>}
                         </AnalysisCard>
+
+                        {/* ML Analytics Section */}
+                        <div className="space-y-1">
+                            <h2 className="font-serif text-2xl text-center">ML-Powered Analytics</h2>
+                            <p className="text-sm text-center text-day-text-secondary dark:text-night-text-secondary mb-4">
+                                Advanced AI analysis of your dream patterns
+                            </p>
+                        </div>
+
+                        {/* Sleep Predictor */}
+                        <SleepPredictorCard
+                            sleepAids={dreams[0]?.sleepAids}
+                            biometrics={undefined}
+                            recentDreams={displayDreams}
+                        />
+
+                        {/* Semantic Themes */}
+                        <SemanticThemesCard
+                            dreams={displayDreams}
+                            onDreamSelect={onDreamSelect}
+                        />
+
+                        {/* Narrative Patterns */}
+                        <NarrativePatternsCard
+                            dreams={displayDreams}
+                            onDreamSelect={onDreamSelect}
+                        />
 
                         {/* Dream Analysis Grid */}
                         <div>
