@@ -43,7 +43,7 @@ const AdminPage = lazy(() => import('./components/pages/AdminPage').then(m => ({
 
 
 const App: React.FC = () => {
-    const { addDream, isScribeOpen, setIsScribeOpen } = useAppContext();
+    const { addDream, isScribeOpen, setIsScribeOpen, activeSleepSession, addSleepEntry, clearSleepSession } = useAppContext();
     const { isAuthenticated, isLoading: authLoading, isConfigured: authConfigured } = useAuth();
 
     // Check for Stripe success redirect
@@ -149,8 +149,18 @@ const App: React.FC = () => {
 
     const handleAwake = useCallback(() => {
         stopRinging();
-        // No TTS greeting - just dismiss the alarm
-    }, [stopRinging]);
+        // Save the sleep session to Chronicle even without logging a dream
+        if (activeSleepSession) {
+            const today = new Date().toISOString().split('T')[0];
+            addSleepEntry(
+                today,
+                activeSleepSession.sleepGatewayData?.dayRating ?? null,
+                activeSleepSession.sleepGatewayData?.dayNotes,
+                activeSleepSession.sleepGatewayData
+            );
+            clearSleepSession();
+        }
+    }, [stopRinging, activeSleepSession, addSleepEntry, clearSleepSession]);
 
     const { showToast } = useToast();
     const { dreams } = useAppContext();
