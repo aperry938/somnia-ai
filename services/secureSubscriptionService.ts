@@ -310,10 +310,18 @@ export function getCredits(): CreditState {
 
 /**
  * Check if user can use an AI analysis
- * Premium users: always true
- * Free users: true if credits remaining
+ * REQUIRES AUTHENTICATION - anonymous users cannot use AI features
+ * Premium users: always true (limited by daily cap in rateLimitService)
+ * Free users: true if monthly credits remaining
  */
 export function canUseAiAnalysis(): boolean {
+    // SECURITY: Require authentication to prevent credit abuse
+    // Anonymous users could clear localStorage to get infinite credits
+    const userId = localStorage.getItem('somnia_auth_user');
+    if (!userId) {
+        return false; // Must be logged in
+    }
+
     if (isPremium()) return true;
     return getCredits().remaining > 0;
 }

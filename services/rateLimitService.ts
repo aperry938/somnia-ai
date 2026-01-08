@@ -22,7 +22,6 @@ const rateLimitStore: Map<string, RateLimitEntry> = new Map();
 export const RATE_LIMITS: Record<string, RateLimitConfig> = {
     // AI Analysis - expensive operations
     ai_analysis: { maxRequests: 10, windowMs: 60 * 1000 }, // 10 per minute
-    ai_imagery: { maxRequests: 5, windowMs: 60 * 1000 }, // 5 per minute
     ai_coach: { maxRequests: 20, windowMs: 60 * 1000 }, // 20 per minute
     ai_chat: { maxRequests: 30, windowMs: 60 * 1000 }, // 30 per minute
 
@@ -48,11 +47,11 @@ interface DailyLimitConfig {
 }
 
 export const DAILY_LIMITS: Record<string, DailyLimitConfig> = {
-    ai_analysis: { freeLimit: 3, premiumLimit: 100 },
-    ai_imagery: { freeLimit: 2, premiumLimit: 50 },
-    ai_coach: { freeLimit: 10, premiumLimit: 200 },
-    ai_chat: { freeLimit: 20, premiumLimit: 500 },
-    ml_analytics: { freeLimit: 10, premiumLimit: 200 },
+    // Premium gets 1 AI analysis per day, free users use monthly credits (handled by secureSubscriptionService)
+    ai_analysis: { freeLimit: 0, premiumLimit: 1 },  // Free users use monthly credits, not daily
+    ai_coach: { freeLimit: 5, premiumLimit: 30 },    // Chat messages
+    ai_chat: { freeLimit: 10, premiumLimit: 100 },   // General chat
+    ml_analytics: { freeLimit: 0, premiumLimit: 5 }, // Premium only
 };
 
 // Storage for daily limit tracking (persisted to localStorage)
