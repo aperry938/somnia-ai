@@ -4,7 +4,7 @@
  * Shown when logging a dream without prior session data.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ManualSleepActivity, SleepAids } from '../../types';
 import haptics from '../../services/hapticsService';
 
@@ -38,6 +38,15 @@ export const ManualSleepLogModal: React.FC<ManualSleepLogModalProps> = ({ onComp
     const [customActivityName, setCustomActivityName] = useState('');
     const [selectedDuration, setSelectedDuration] = useState(15);
     const [showCustom, setShowCustom] = useState(false);
+
+    // Handle Escape key to skip/close modal
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onSkip();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onSkip]);
 
     const addActivity = (preset: typeof PRESET_ACTIVITIES[0]) => {
         haptics.light();
