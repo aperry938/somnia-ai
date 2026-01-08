@@ -147,8 +147,8 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
     // Step 1: Record dream - Purple alarm theme
     if (step === 'record') {
         return (
-            <div className="fixed inset-0 bg-gradient-to-b from-indigo-900/95 to-purple-900/95 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="dream-scribe-title">
-                <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-6 w-full max-w-lg animate-fadeIn max-h-[90vh] overflow-y-auto text-white" onClick={(e) => e.stopPropagation()}>
+            <div className="fixed inset-0 bg-gradient-to-b from-indigo-900/95 to-purple-900/95 backdrop-blur-md flex items-center justify-center p-4 z-50" role="dialog" aria-modal="true" aria-labelledby="dream-scribe-title">
+                <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-6 w-full max-w-lg animate-fadeIn max-h-[90vh] overflow-y-auto text-white">
                     <h2 id="dream-scribe-title" className="font-serif text-2xl text-center mb-4">The Dream Scribe</h2>
                     <div className="relative">
                         <textarea

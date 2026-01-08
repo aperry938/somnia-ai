@@ -43,10 +43,9 @@ export const AddSleepEntryModal: React.FC<AddSleepEntryModalProps> = ({
     const dayLabels = ['Rough', 'Meh', 'Okay', 'Good', 'Great'];
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="log-sleep-title">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" role="dialog" aria-modal="true" aria-labelledby="log-sleep-title">
             <div
                 className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-lg animate-fadeIn max-h-[90vh] overflow-y-auto"
-                onClick={(e) => e.stopPropagation()}
             >
                 <h2 id="log-sleep-title" className="font-serif text-2xl text-center mb-4">Log Sleep</h2>
 
@@ -86,8 +85,8 @@ export const AddSleepEntryModal: React.FC<AddSleepEntryModalProps> = ({
                                 aria-label={`Rate day ${rating} out of 5 - ${dayLabels[rating - 1]}`}
                                 aria-pressed={dayRating === rating}
                                 className={`flex-1 py-2 px-1 min-h-[56px] rounded-lg flex flex-col items-center justify-center gap-1 transition-all max-w-[60px] ${dayRating === rating
-                                        ? 'bg-day-accent dark:bg-night-accent text-white scale-105'
-                                        : 'bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border'
+                                    ? 'bg-day-accent dark:bg-night-accent text-white scale-105'
+                                    : 'bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border'
                                     }`}
                             >
                                 <span className="text-lg" aria-hidden="true">
