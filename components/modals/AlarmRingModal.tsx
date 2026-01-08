@@ -485,7 +485,10 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                                     step="0.05"
                                     value={boostVolume}
                                     onChange={handleVolumeChange}
-                                    className="w-full h-2 bg-white/20 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-400"
+                                    style={{
+                                        background: `linear-gradient(to right, #fbbf24 0%, #fbbf24 ${boostVolume * 100}%, rgba(255,255,255,0.2) ${boostVolume * 100}%, rgba(255,255,255,0.2) 100%)`
+                                    }}
+                                    className="w-full h-2 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-400 [&::-webkit-slider-thumb]:shadow-md [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-amber-400 [&::-moz-range-thumb]:border-0"
                                     aria-label="Boost volume"
                                 />
                             </div>
