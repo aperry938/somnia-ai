@@ -23,6 +23,13 @@ export interface SleepActivity {
     duration: number; // seconds
 }
 
+// Manual sleep activity (for retroactive logging)
+export interface ManualSleepActivity {
+    type: 'soundscape' | 'breathing' | 'meditation' | 'reading' | 'other';
+    name: string;
+    durationMinutes: number;
+}
+
 // Lucid dreaming induction techniques
 export type LucidTechnique = 'WILD' | 'MILD' | 'WBTB' | 'SSILD' | 'reality_check' | 'none';
 
@@ -43,6 +50,8 @@ export interface SleepAids {
     lucidTechnique?: LucidTechnique; // Technique used before sleep
     realityChecksPerformed?: number; // Number of reality checks done during the day
     wakeBackToBedDuration?: number; // WBTB: minutes stayed awake
+    // Manual retroactive logging
+    manualActivities?: ManualSleepActivity[]; // Activities logged after the fact
 }
 
 export interface Dream {
@@ -64,11 +73,29 @@ export interface Dream {
 // Moods for tracking emotional patterns
 export type DreamMood = 'joyful' | 'peaceful' | 'anxious' | 'sad' | 'fearful' | 'confused' | 'neutral' | 'nostalgic' | 'hopeful';
 
+// Dream emotional telemetry (Russell's Circumplex Model)
+export interface DreamTelemetry {
+    valence: number;  // -1 to 1 (negative to positive emotion)
+    arousal: number;  // 0 to 1 (low to high energy)
+    lucidity?: number; // 0-100 lucidity score
+    tags?: string[];  // Emotional/thematic tags
+}
+
+// Similar dream match result (for Déjà Vu detection)
+export interface SimilarDream {
+    id: number;
+    title: string;
+    dreamText: string;
+    timestamp: string;
+    similarity: number; // 0 to 1
+}
+
 export interface DreamAnalysis {
     title: string;
     analysis: { title: string; content: string }[];
     integration: { title: string; content: string };
     imagePrompt?: string; // Detailed prompt for external AI image generators
+    telemetry?: DreamTelemetry; // Emotional valence/arousal for scatter plot
 }
 
 export interface ChatMessage {
