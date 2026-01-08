@@ -319,7 +319,7 @@ const ThemePreferenceCard: React.FC = () => {
         { value: 'sleep', label: 'Sleep' },
     ] as const;
 
-    const themeLabel = theme === 'sleep' ? 'Sleep (No Blue)' : theme === 'night' ? 'Dark' : 'Light';
+    const themeLabel = theme === 'sleep' ? 'Sleep' : theme === 'night' ? 'Dark' : 'Light';
 
     return (
         <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">

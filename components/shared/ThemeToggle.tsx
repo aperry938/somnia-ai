@@ -12,7 +12,7 @@ export const ThemeToggle: React.FC = () => {
             case 'auto': return 'Auto';
             case 'day': return 'Light';
             case 'night': return 'Dark';
-            case 'sleep': return 'Sleep (No Blue)';
+            case 'sleep': return 'Sleep';
             default: return '';
         }
     };

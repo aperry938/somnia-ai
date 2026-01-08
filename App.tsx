@@ -64,7 +64,7 @@ const App: React.FC = () => {
         return localStorage.getItem('somnia_skipped_auth') === 'true';
     });
     const { timeString, dateString } = useClock();
-    const { ringingAlarm, stopRinging, snooze, triggerSleepDetectionAlarm } = useAlarmManager();
+    const { ringingAlarm, stopRinging, snooze, triggerSleepDetectionAlarm, getWakeMetrics, resetWakeMetrics } = useAlarmManager();
     const { isHelpOpen, closeHelp } = useKeyboardHelp();
 
     // Swipe navigation between main pages
@@ -158,9 +158,13 @@ const App: React.FC = () => {
     }, [stopRinging, setIsScribeOpen]);
 
     const handleAwake = useCallback(() => {
+        // Capture wake metrics BEFORE stopping the alarm (so we have the timing)
+        const wakeMetrics = getWakeMetrics();
+
         stopRinging();
-        // Save the sleep session to Chronicle even without logging a dream
-        if (activeSleepSession) {
+
+        // Save the sleep session to Chronicle (only if there's an alarm)
+        if (activeSleepSession?.alarmId) {
             const today = new Date().toISOString().split('T')[0];
             addSleepEntry(
                 today,
@@ -168,12 +172,15 @@ const App: React.FC = () => {
                 activeSleepSession.sleepGatewayData?.dayNotes,
                 activeSleepSession.sleepGatewayData,
                 activeSleepSession.alarmTime ?? undefined,
-                activeSleepSession.alarmSoundId
+                activeSleepSession.alarmSoundId,
+                wakeMetrics
             );
-            clearSleepSession();
             showToast('Sleep session saved to Chronicle');
         }
-    }, [stopRinging, activeSleepSession, addSleepEntry, clearSleepSession, showToast]);
+
+        clearSleepSession();
+        resetWakeMetrics();
+    }, [stopRinging, activeSleepSession, addSleepEntry, clearSleepSession, showToast, getWakeMetrics, resetWakeMetrics]);
 
 
     const handleScribeSave = useCallback((dreamText: string, sleepQuality: number | null, mood?: DreamMood) => {

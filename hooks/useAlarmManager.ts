@@ -1,6 +1,6 @@
 // hooks/useAlarmManager.ts
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Alarm } from '../types';
+import { Alarm, WakeData } from '../types';
 import { useClock } from './useClock';
 import { useAppContext } from '../contexts/AppContext';
 import { logger } from '../services/logger';
@@ -33,6 +33,11 @@ export const useAlarmManager = () => {
     // Track which alarms have triggered this minute to prevent double-firing
     const triggeredThisMinuteRef = useRef<Set<string>>(new Set());
     const lastMinuteRef = useRef<string>('');
+
+    // Wake metrics tracking
+    const snoozeCountRef = useRef<number>(0);
+    const ringStartTimeRef = useRef<number | null>(null);
+    const alertnessBoostUsedRef = useRef<boolean>(false);
 
     // Cleanup snooze timeout on unmount
     useEffect(() => {
@@ -117,6 +122,12 @@ export const useAlarmManager = () => {
             });
 
             if (triggeredAlarm) {
+                // Start tracking wake metrics when alarm first rings
+                if (ringStartTimeRef.current === null) {
+                    ringStartTimeRef.current = Date.now();
+                    snoozeCountRef.current = 0;
+                    alertnessBoostUsedRef.current = false;
+                }
                 setRingingAlarm(triggeredAlarm);
             }
         };
@@ -151,6 +162,9 @@ export const useAlarmManager = () => {
 
     const snooze = useCallback(() => {
         if (ringingAlarm) {
+            // Track snooze count
+            snoozeCountRef.current += 1;
+
             // Store the alarm for re-triggering
             snoozedAlarmRef.current = ringingAlarm;
 
@@ -170,12 +184,49 @@ export const useAlarmManager = () => {
     }, [ringingAlarm]);
 
     /**
+     * Mark that alertness boost was used
+     */
+    const markAlertnessBoostUsed = useCallback(() => {
+        alertnessBoostUsedRef.current = true;
+    }, []);
+
+    /**
+     * Get the wake metrics for the current alarm session
+     */
+    const getWakeMetrics = useCallback((): WakeData | undefined => {
+        if (ringStartTimeRef.current === null) return undefined;
+
+        const timeToSilence = Math.round((Date.now() - ringStartTimeRef.current) / 1000);
+
+        return {
+            snoozeCount: snoozeCountRef.current,
+            timeToSilence,
+            alertnessBoostUsed: alertnessBoostUsedRef.current,
+            alarmType: ringingAlarm?.id === -1 ? 'smart' : 'manual',
+        };
+    }, [ringingAlarm]);
+
+    /**
+     * Reset wake metrics (call after alarm is fully dismissed)
+     */
+    const resetWakeMetrics = useCallback(() => {
+        ringStartTimeRef.current = null;
+        snoozeCountRef.current = 0;
+        alertnessBoostUsedRef.current = false;
+    }, []);
+
+    /**
      * Trigger a "virtual" alarm for sleep detection.
      * Creates a temporary alarm object with the specified sound.
      */
     const triggerSleepDetectionAlarm = useCallback((soundId: string) => {
         // Don't trigger if an alarm is already ringing
         if (ringingAlarm || isSnoozed) return;
+
+        // Start tracking wake metrics
+        ringStartTimeRef.current = Date.now();
+        snoozeCountRef.current = 0;
+        alertnessBoostUsedRef.current = false;
 
         const virtualAlarm: Alarm = {
             id: -1, // Special ID for sleep detection alarm
@@ -188,5 +239,15 @@ export const useAlarmManager = () => {
         setRingingAlarm(virtualAlarm);
     }, [ringingAlarm, isSnoozed]);
 
-    return { ringingAlarm, stopRinging, snooze, isSnoozed, triggerSleepDetectionAlarm };
+    return {
+        ringingAlarm,
+        stopRinging,
+        snooze,
+        isSnoozed,
+        triggerSleepDetectionAlarm,
+        getWakeMetrics,
+        resetWakeMetrics,
+        markAlertnessBoostUsed,
+    };
 };
+

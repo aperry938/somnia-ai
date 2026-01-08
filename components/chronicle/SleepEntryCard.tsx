@@ -165,17 +165,74 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
                         </div>
                     )}
 
-                    {/* Sleep Aids Used */}
-                    {entry.sleepAids && (entry.sleepAids.sound || entry.sleepAids.relaxation) && (
+                    {/* Sleep Aids / Pre-Sleep Activities */}
+                    {entry.sleepAids && (entry.sleepAids.sound || entry.sleepAids.relaxation || entry.sleepAids.dayRating || entry.sleepAids.checklist?.length || entry.sleepAids.totalPrepTime) && (
                         <div className="px-4 py-2 bg-indigo-50 dark:bg-indigo-900/20 border-b border-day-border dark:border-night-border flex flex-wrap gap-2">
+                            {/* Day Rating */}
+                            {entry.sleepAids.dayRating && (
+                                <span className="text-xs px-2 py-1 bg-amber-100 dark:bg-amber-800/50 text-amber-700 dark:text-amber-300 rounded-full flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                    </svg>
+                                    Day: {entry.sleepAids.dayRating}/5
+                                </span>
+                            )}
+                            {/* Sound */}
                             {entry.sleepAids.sound && (
                                 <span className="text-xs px-2 py-1 bg-indigo-100 dark:bg-indigo-800/50 text-indigo-600 dark:text-indigo-300 rounded-full">
                                     🎵 {entry.sleepAids.sound}
                                 </span>
                             )}
+                            {/* Relaxation */}
                             {entry.sleepAids.relaxation && (
                                 <span className="text-xs px-2 py-1 bg-purple-100 dark:bg-purple-800/50 text-purple-600 dark:text-purple-300 rounded-full">
                                     🧘 {entry.sleepAids.relaxation}
+                                </span>
+                            )}
+                            {/* Checklist items */}
+                            {entry.sleepAids.checklist && entry.sleepAids.checklist.length > 0 && (
+                                <span className="text-xs px-2 py-1 bg-green-100 dark:bg-green-800/50 text-green-700 dark:text-green-300 rounded-full flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    {entry.sleepAids.checklist.length} prep task{entry.sleepAids.checklist.length !== 1 ? 's' : ''}
+                                </span>
+                            )}
+                            {/* Prep time */}
+                            {entry.sleepAids.totalPrepTime && entry.sleepAids.totalPrepTime > 0 && (
+                                <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-800/50 text-blue-700 dark:text-blue-300 rounded-full flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    {Math.floor(entry.sleepAids.totalPrepTime / 60)} min prep
+                                </span>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Wake Metrics */}
+                    {entry.wakeData && (
+                        <div className="px-4 py-2 bg-green-50 dark:bg-green-900/20 border-b border-day-border dark:border-night-border flex flex-wrap gap-3 text-xs">
+                            {entry.wakeData.snoozeCount > 0 && (
+                                <span className="flex items-center gap-1 text-green-700 dark:text-green-300">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                    {entry.wakeData.snoozeCount} snooze{entry.wakeData.snoozeCount !== 1 ? 's' : ''}
+                                </span>
+                            )}
+                            <span className="flex items-center gap-1 text-green-700 dark:text-green-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                {Math.floor(entry.wakeData.timeToSilence / 60)}m {entry.wakeData.timeToSilence % 60}s to wake
+                            </span>
+                            {entry.wakeData.alertnessBoostUsed && (
+                                <span className="flex items-center gap-1 text-amber-700 dark:text-amber-300">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                    </svg>
+                                    Used boost
                                 </span>
                             )}
                         </div>

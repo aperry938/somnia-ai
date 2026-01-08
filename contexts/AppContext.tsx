@@ -67,7 +67,7 @@ interface AppContextType {
     setArtStyle: (style: ArtStyle) => void;
     // Sleep Entries (Chronicle primary entity)
     sleepEntries: SleepEntry[];
-    addSleepEntry: (date: string, sleepQuality: number | null, notes?: string, sleepAids?: SleepAids, alarmTime?: string, alarmSoundId?: string) => number;
+    addSleepEntry: (date: string, sleepQuality: number | null, notes?: string, sleepAids?: SleepAids, alarmTime?: string, alarmSoundId?: string, wakeData?: WakeData) => number;
     updateSleepEntry: (entry: Partial<SleepEntry> & { id: number }) => void;
     deleteSleepEntry: (id: number) => void;
     getSleepEntryById: (id: number) => SleepEntry | undefined;
@@ -404,9 +404,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const dreamId = generateSecureId();
         const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
-        // If we have sleep session data, create a proper SleepEntry
+        // If we have an active alarm session, create a proper SleepEntry
+        // Only sessions with an alarm get saved to Chronicle
         let sleepEntryId: number | undefined = undefined;
-        if (hasSessionData) {
+        if (activeSleepSession?.alarmId) {
             const entryId = generateSecureId();
             const newEntry: SleepEntry = {
                 id: entryId,
@@ -415,7 +416,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 notes: sleepData.dayNotes,
                 sleepAids: sleepData,
                 wakeData: wakeData,
-                manuallyLogged: !!pendingSleepData && !activeSleepSession,
+                alarmTime: activeSleepSession.alarmTime ?? undefined,
+                alarmSoundId: activeSleepSession.alarmSoundId,
+                manuallyLogged: false,
                 dreamIds: [dreamId],
                 createdAt: new Date().toISOString(),
             };
@@ -492,7 +495,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
 
     // ========== Sleep Entry CRUD ==========
-    const addSleepEntry = (date: string, sleepQuality: number | null, notes?: string, sleepAids?: SleepAids, alarmTime?: string, alarmSoundId?: string): number => {
+    const addSleepEntry = (date: string, sleepQuality: number | null, notes?: string, sleepAids?: SleepAids, alarmTime?: string, alarmSoundId?: string, wakeData?: WakeData): number => {
         const newEntry: SleepEntry = {
             id: generateSecureId(),
             date,
@@ -501,6 +504,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             sleepAids,
             alarmTime,
             alarmSoundId,
+            wakeData,
             dreamIds: [],
             createdAt: new Date().toISOString(),
         };

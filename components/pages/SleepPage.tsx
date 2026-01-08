@@ -353,8 +353,9 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                             <button
                                 onClick={() => {
                                     haptics.success();
-                                    // Save the sleep session directly to Chronicle
-                                    if (activeSleepSession) {
+                                    // Only save to Chronicle if there's an alarm attached
+                                    // Sleep Gateway without alarm = never logged to Chronicle
+                                    if (activeSleepSession?.alarmId) {
                                         const today = new Date().toISOString().split('T')[0];
                                         addSleepEntry(
                                             today,
@@ -364,9 +365,9 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                             activeSleepSession.alarmTime ?? undefined,
                                             activeSleepSession.alarmSoundId
                                         );
-                                        clearSleepSession();
                                         showToast('Sleep session saved to Chronicle');
                                     }
+                                    clearSleepSession();
                                     setIsSleeping(false);
                                     // Navigate back to alarms/main page
                                     if (onNavigateToAlarms) onNavigateToAlarms();
@@ -376,7 +377,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                 </svg>
-                                Done - Save to Chronicle
+                                {activeSleepSession?.alarmId ? 'Done - Save to Chronicle' : 'Done - Sweet Dreams'}
                             </button>
                         </div>
                         <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-4 opacity-70 text-center">
