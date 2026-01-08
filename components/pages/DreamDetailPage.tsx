@@ -587,6 +587,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                                             <img
                                                 src={dream.imageUrl}
                                                 alt="Dream visualization"
+                                                loading="lazy"
                                                 className="w-full h-48 object-cover rounded-lg"
                                             />
                                             <button

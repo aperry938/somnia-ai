@@ -306,7 +306,7 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
                                     >
                                         <div className="flex items-start gap-3">
                                             {dream.imageUrl ? (
-                                                <img src={dream.imageUrl} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0 shadow-sm" />
+                                                <img src={dream.imageUrl} alt="" loading="lazy" className="w-14 h-14 rounded-lg object-cover flex-shrink-0 shadow-sm" />
                                             ) : (
                                                 <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30 flex-shrink-0 flex items-center justify-center">
                                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -43,7 +43,7 @@ export const DreamCompareModal: React.FC<DreamCompareModalProps> = ({ dreams, on
             {dream && (
                 <div className="space-y-3">
                     {dream.imageUrl && (
-                        <img src={dream.imageUrl} alt={dream.title} className="w-full h-32 object-cover rounded-lg" />
+                        <img src={dream.imageUrl} alt={dream.title} loading="lazy" className="w-full h-32 object-cover rounded-lg" />
                     )}
                     <h3 className="font-serif text-lg font-bold truncate">{dream.title || 'Untitled'}</h3>
                     <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">
