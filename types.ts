@@ -58,6 +58,7 @@ export interface Dream {
     tags?: string[];
     mood?: DreamMood; // Emotional tone of the dream
     sleepEntryId?: number; // Link to parent sleep entry (optional for migration)
+    embedding?: number[]; // Vector embedding for semantic similarity (Déjà Vu detection)
 }
 
 // Moods for tracking emotional patterns

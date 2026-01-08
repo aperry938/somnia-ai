@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
-import { analyzeDream, generateDreamTitle, generateImagePrompt, DreamArtStyle, DREAM_ART_STYLES } from '../../services/geminiService';
+import { analyzeDream, generateDreamTitle, generateImagePrompt, DreamArtStyle, DREAM_ART_STYLES, generateDreamEmbedding } from '../../services/geminiService';
 import { DreamChatModal } from '../modals/DreamChatModal';
 import { SleepAids, DreamMood } from '../../types';
 import { AnalysisLoading } from '../shared/LoadingStates';
@@ -12,6 +12,7 @@ import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { isPremium } from '../../services/secureSubscriptionService';
 import haptics from '../../services/hapticsService';
 import { MOOD_ICONS, MOOD_LABELS } from '../../constants/uiIcons';
+import { processDejaVuCheck, DejaVuMatch } from '../../services/dejaVuService';
 
 // Evening Reflection Display Component
 const EveningReflectionDisplay: React.FC<{ aids: SleepAids }> = ({ aids }) => {
@@ -174,6 +175,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
     const [selectedPromptStyle, setSelectedPromptStyle] = useState<DreamArtStyle>('surreal');
     const [generatedPrompt, setGeneratedPrompt] = useState<string | null>(null);
     const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
+    const [dejaVuMatch, setDejaVuMatch] = useState<DejaVuMatch | null>(null);
 
     const detectedSymbols = useMemo(() => {
         if (!dream) return [];
@@ -211,17 +213,37 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
             // Increment analysis count
             localStorage.setItem('somnia_daily_analysis', JSON.stringify([today, countAnalysis + 1]));
 
+            // Generate embedding for semantic similarity (Déjà Vu detection)
+            let embedding: number[] | undefined;
+            try {
+                embedding = await generateDreamEmbedding(dream.dreamText);
+
+                // Check for Déjà Vu (similar dream from 30+ days ago)
+                if (embedding && isPremium()) {
+                    const match = await processDejaVuCheck(dream.id, embedding, dreams);
+                    if (match) {
+                        setDejaVuMatch(match);
+                        haptics.success();
+                        showToast(`Déjà Rêvé! This echoes a dream from ${match.daysAgo} days ago`, 'info');
+                    }
+                }
+            } catch (embeddingError) {
+                // Embedding generation is optional - don't fail the whole analysis
+                logger.error('Embedding generation failed:', embeddingError);
+            }
+
             updateDream({
                 id: dream.id,
                 title: analysisData.title || dream.title,
                 aiAnalysis: analysisData,
+                embedding,
             });
             setAnalysisState('success');
         } catch (e) {
             logger.error(e);
             setAnalysisState('error');
         }
-    }, [dream, updateDream, analysisPersonality, biometrics, showToast]);
+    }, [dream, updateDream, analysisPersonality, biometrics, showToast, dreams]);
 
     useEffect(() => {
         if (analysisState === 'pending') {
@@ -383,6 +405,26 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                         </svg>
                     </button>
                 </div>
+
+                {/* Déjà Vu Alert Banner */}
+                {dejaVuMatch && (
+                    <div className="mb-6 bg-gradient-to-r from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30 border border-purple-200 dark:border-purple-700/50 rounded-xl p-4 animate-fadeIn">
+                        <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
+                                <span className="text-xl">🌙</span>
+                            </div>
+                            <div className="flex-grow">
+                                <h4 className="font-serif text-purple-800 dark:text-purple-200 font-medium">Déjà Rêvé Detected!</h4>
+                                <p className="text-sm text-purple-600 dark:text-purple-300 mt-1">
+                                    This dream is <strong>{Math.round(dejaVuMatch.similarity * 100)}% similar</strong> to "{dejaVuMatch.title}" from {dejaVuMatch.daysAgo} days ago.
+                                </p>
+                                <p className="text-xs text-purple-500 dark:text-purple-400 mt-2 italic">
+                                    Recurring dream patterns often reveal deep subconscious themes.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {dream.sleepAids && <EveningReflectionDisplay aids={dream.sleepAids} />}
                 {dream.sleepAids && <SleepAidsDisplay aids={dream.sleepAids} />}
