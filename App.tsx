@@ -43,7 +43,7 @@ const AdminPage = lazy(() => import('./components/pages/AdminPage').then(m => ({
 
 
 const App: React.FC = () => {
-    const { addDream, isScribeOpen, setIsScribeOpen, activeSleepSession, addSleepEntry, clearSleepSession } = useAppContext();
+    const { addDream, isScribeOpen, setIsScribeOpen, activeSleepSession, addSleepEntry, clearSleepSession, startSleepSession } = useAppContext();
     const { isAuthenticated, isLoading: authLoading, isConfigured: authConfigured } = useAuth();
 
     // Check for Stripe success redirect
@@ -69,6 +69,14 @@ const App: React.FC = () => {
 
     // Swipe navigation between main pages
     const { currentIndex, totalPages } = useSwipeNavigation(currentPage, setCurrentPage);
+
+    // When an alarm rings, ensure a sleep session exists so we can save wake metrics
+    useEffect(() => {
+        if (ringingAlarm && !activeSleepSession) {
+            // Auto-create a minimal sleep session when alarm rings
+            startSleepSession(ringingAlarm.id);
+        }
+    }, [ringingAlarm, activeSleepSession, startSleepSession]);
 
     useEffect(() => {
         const resumeAudio = () => {
@@ -135,6 +143,8 @@ const App: React.FC = () => {
     }, []);
 
     const [wakeQuickNote, setWakeQuickNote] = useState<string>('');
+    const { showToast } = useToast();
+    const { dreams } = useAppContext();
 
     // Sleep Detection: triggers alarm wake-up flow after phone inactivity threshold
     useSleepDetection((soundId: string) => {
@@ -159,11 +169,10 @@ const App: React.FC = () => {
                 activeSleepSession.sleepGatewayData
             );
             clearSleepSession();
+            showToast('Sleep session saved to Chronicle');
         }
-    }, [stopRinging, activeSleepSession, addSleepEntry, clearSleepSession]);
+    }, [stopRinging, activeSleepSession, addSleepEntry, clearSleepSession, showToast]);
 
-    const { showToast } = useToast();
-    const { dreams } = useAppContext();
 
     const handleScribeSave = useCallback((dreamText: string, sleepQuality: number | null, mood?: DreamMood) => {
         // Calculate pre-save stats

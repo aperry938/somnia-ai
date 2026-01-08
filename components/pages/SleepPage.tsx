@@ -17,6 +17,7 @@ import { isPremium } from '../../services/secureSubscriptionService';
 import { SleepDetectionSettingsCard } from '../settings/SleepDetectionSettingsCard';
 import haptics from '../../services/hapticsService';
 import { sanitizeTextLive, INPUT_LIMITS } from '../../services/validationService';
+import { useToast } from '../shared/Toast';
 
 const DAY_RATING_LABELS = ['Terrible', 'Poor', 'Okay', 'Good', 'Great'];
 
@@ -59,6 +60,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
     const { isSupported: motionSupported, movementLog } = useWakeWindow(isSleeping);
 
     const { setActiveSleepAid, activeSleepAids, setPendingSleepData, dreams, volume, activeSleepSession, updateSleepSessionData, startSleepSession, alarms, addSleepEntry, clearSleepSession } = useAppContext();
+    const { showToast } = useToast();
 
     // Initialize session data from existing session if present (runs once on mount)
     useEffect(() => {
@@ -361,6 +363,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                             activeSleepSession.sleepGatewayData
                                         );
                                         clearSleepSession();
+                                        showToast('Sleep session saved to Chronicle');
                                     }
                                     setIsSleeping(false);
                                     // Navigate back to alarms/main page
