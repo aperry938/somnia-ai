@@ -23,7 +23,6 @@ export const RATE_LIMITS: Record<string, RateLimitConfig> = {
     // AI Analysis - expensive operations
     ai_analysis: { maxRequests: 10, windowMs: 60 * 1000 }, // 10 per minute
     ai_imagery: { maxRequests: 5, windowMs: 60 * 1000 }, // 5 per minute
-    ai_coach: { maxRequests: 20, windowMs: 60 * 1000 }, // 20 per minute
     ai_chat: { maxRequests: 30, windowMs: 60 * 1000 }, // 30 per minute
 
     // Authentication

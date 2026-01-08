@@ -81,7 +81,7 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
     const highlightFeatures: PremiumFeature[] = [
         'ai_analysis',
         'ai_imagery',
-        'ai_coach',
+        'ai_chat',
         'dream_synthesis',
         'binaural_beats',
     ];

@@ -17,7 +17,6 @@ describe('rateLimitService', () => {
 
             expect(RATE_LIMITS).toHaveProperty('ai_analysis');
             expect(RATE_LIMITS).toHaveProperty('ai_imagery');
-            expect(RATE_LIMITS).toHaveProperty('ai_coach');
             expect(RATE_LIMITS).toHaveProperty('ai_chat');
             expect(RATE_LIMITS).toHaveProperty('auth_login');
             expect(RATE_LIMITS).toHaveProperty('auth_signup');
