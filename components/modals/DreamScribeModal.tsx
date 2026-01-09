@@ -22,11 +22,24 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
     const [step, setStep] = useState<ScribeStep>('record');
     const [dreamText, setDreamText] = useState(initialText);
 
+    // Mount protection: Prevents ghost clicks from previous modal from triggering backdrop close
+    // This fixes the race condition where tapping "Record Full Dream" in AlarmRingModal
+    // would immediately close DreamScribeModal due to touch event propagation
+    const [canCloseViaBackdrop, setCanCloseViaBackdrop] = useState(false);
+
+    useEffect(() => {
+        // Delay enabling backdrop close to prevent ghost clicks from previous modal
+        const timer = setTimeout(() => setCanCloseViaBackdrop(true), 150);
+        return () => clearTimeout(timer);
+    }, []);
+
     // Swipe-to-dismiss
     const y = useMotionValue(0);
     const backdropOpacity = useTransform(y, [0, 200], [1, 0.3]);
 
     const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+        // Use same mount protection for swipe-to-dismiss
+        if (!canCloseViaBackdrop) return;
         if (info.offset.y > 100 || info.velocity.y > 500) {
             haptics.medium();
             onClose();
@@ -151,7 +164,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
         return (
             <motion.div
                 className="fixed inset-0 bg-gradient-to-b from-indigo-900/95 to-purple-900/95 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 z-50"
-                onClick={onClose}
+                onClick={canCloseViaBackdrop ? onClose : undefined}
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="dream-scribe-title"
