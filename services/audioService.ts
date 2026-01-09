@@ -130,8 +130,20 @@ let sleepCompressor: DynamicsCompressorNode | null = null;
 // Synthesis intervals
 let sparkInterval: ReturnType<typeof setTimeout> | null = null;
 
+// Cleanup mutex to prevent race conditions during audio shutdown
+let isCleaningUp = false;
+
 // Additional LFOs for enhanced synthesis
 let additionalLFOs: OscillatorNode[] = [];
+
+// Visibility change handler to stop audio when tab is hidden (prevents orphaned nodes)
+if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden && sleepSourceNode) {
+            stopSleepSound(0.5); // Quick fade on tab hide
+        }
+    });
+}
 
 // Cache for decoded audio files
 const audioBufferCache: Record<string, AudioBuffer> = {};
@@ -1344,7 +1356,7 @@ export const playSleepSound = async (sound: Soundscape, durationMinutes: number,
 
             // Layer B: Spark/crackle generator with filter pinging
             const createSpark = () => {
-                if (!sleepGainNode || !audioContext) return;
+                if (isCleaningUp || !sleepGainNode || !audioContext) return;
 
                 // Random check (roughly 3% chance every 50ms)
                 if (Math.random() > 0.97) {
@@ -1401,6 +1413,9 @@ export const playSleepSound = async (sound: Soundscape, durationMinutes: number,
  * Cleans up audio nodes and oscillators.
  */
 export const stopSleepSound = (fadeDuration: number = 2) => {
+    // Set cleanup mutex to prevent race conditions with spark generation
+    isCleaningUp = true;
+
     // Clear all intervals first
     if (sleepTimeout) {
         clearTimeout(sleepTimeout);
@@ -1499,6 +1514,11 @@ export const stopSleepSound = (fadeDuration: number = 2) => {
 
         sleepSourceNode = null;
     }
+
+    // Reset cleanup mutex after all operations complete
+    setTimeout(() => {
+        isCleaningUp = false;
+    }, (fadeDuration * 1000) + 200);
 };
 
 
