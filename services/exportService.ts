@@ -221,7 +221,7 @@ export const exportDreamJournalToPDF = async (dreams: Dream[]): Promise<void> =>
                 text: text,
                 dialogTitle: 'Share Dream Journal',
             });
-        } catch (e) {
+        } catch (_e) {
             logger.error('[ExportService] Share failed:', e);
             throw new Error('Failed to share dream journal');
         }
@@ -270,7 +270,7 @@ export const exportDreamsAsJSON = async (dreams: Dream[]): Promise<void> => {
                 url: result.uri,
                 dialogTitle: 'Share Dream Backup',
             });
-        } catch (e) {
+        } catch (_e) {
             logger.error('[ExportService] Native export failed:', e);
             throw new Error('Failed to export dreams');
         }
@@ -378,7 +378,7 @@ export const importDreamsFromJSON = (
                 }
 
                 resolve(validDreams);
-            } catch (error) {
+            } catch (_error) {
                 reject(new Error('Failed to parse JSON file'));
             }
         };
@@ -430,7 +430,7 @@ export const exportDreamsEncrypted = async (dreams: Dream[], password: string): 
                 url: result.uri,
                 dialogTitle: 'Share Encrypted Backup',
             });
-        } catch (e) {
+        } catch (_e) {
             logger.error('[ExportService] Native encrypted export failed:', e);
             throw new Error('Failed to export encrypted backup');
         }
@@ -525,7 +525,7 @@ export const importDreamsEncrypted = async (
 
                 resolve(validDreams);
 
-            } catch (err) {
+            } catch (_err) {
                 reject(err);
             }
         };

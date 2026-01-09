@@ -26,7 +26,7 @@ export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }
             const initialHistory = [{ id: Date.now(), role: 'model' as const, parts: [{ text: responseText }] }];
             setHistory(initialHistory);
             updateDream({ ...dream, chatHistory: initialHistory });
-        } catch (e) {
+        } catch (_e) {
             const errorHistory = [{ id: Date.now(), role: 'model' as const, parts: [{ text: "Failed to start conversation." }], isError: true }];
             setHistory(errorHistory);
         } finally {
@@ -90,7 +90,7 @@ export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }
             // Increment chat count
             localStorage.setItem('somnia_daily_chat', JSON.stringify([today, count + 1]));
             haptics.success();
-        } catch (e) {
+        } catch (_e) {
             const errorHistory = [...newHistory, { id: Date.now(), role: 'model' as const, parts: [{ text: "Sorry, I couldn't get a response." }], isError: true }];
             setHistory(errorHistory);
             haptics.error();

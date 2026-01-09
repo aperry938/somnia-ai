@@ -48,7 +48,7 @@ export async function signUp(email: string, password: string): Promise<AuthResul
             user: data.user || undefined,
             session: data.session || undefined,
         };
-    } catch (err) {
+    } catch (_err) {
         return { success: false, error: 'An unexpected error occurred' };
     }
 }
@@ -76,7 +76,7 @@ export async function signIn(email: string, password: string): Promise<AuthResul
             user: data.user || undefined,
             session: data.session || undefined,
         };
-    } catch (err) {
+    } catch (_err) {
         return { success: false, error: 'An unexpected error occurred' };
     }
 }
@@ -103,7 +103,7 @@ export async function signInWithGoogle(): Promise<AuthResult> {
 
         // OAuth redirects, so we return success (user will be redirected)
         return { success: true };
-    } catch (err) {
+    } catch (_err) {
         return { success: false, error: 'An unexpected error occurred' };
     }
 }
@@ -124,7 +124,7 @@ export async function signOut(): Promise<AuthResult> {
         }
 
         return { success: true };
-    } catch (err) {
+    } catch (_err) {
         return { success: false, error: 'An unexpected error occurred' };
     }
 }
@@ -175,7 +175,7 @@ export async function resetPassword(email: string): Promise<AuthResult> {
         }
 
         return { success: true };
-    } catch (err) {
+    } catch (_err) {
         return { success: false, error: 'An unexpected error occurred' };
     }
 }
@@ -198,7 +198,7 @@ export async function updatePassword(newPassword: string): Promise<AuthResult> {
         }
 
         return { success: true };
-    } catch (err) {
+    } catch (_err) {
         return { success: false, error: 'An unexpected error occurred' };
     }
 }

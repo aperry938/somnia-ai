@@ -79,7 +79,7 @@ export function useDeepLink({ onNavigate, onOpenScribe }: DeepLinkOptions): void
                 const url = new URL(event.url);
                 const route = url.pathname || url.host; // somnia://alarm or somnia:///alarm
                 handleRoute(route);
-            } catch (e) {
+            } catch (_e) {
                 // Handle simple scheme URLs like somnia:alarm
                 const path = event.url.replace('somnia://', '').replace('somnia:', '');
                 handleRoute(path);

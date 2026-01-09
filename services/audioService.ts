@@ -603,11 +603,11 @@ const cleanupProceduralAlarm = () => {
             setTimeout(() => {
                 try {
                     nodeToCleanup.disconnect();
-                } catch (e) {
+                } catch (_e) {
                     // Ignore errors if already disconnected
                 }
             }, 200);
-        } catch (e) {
+        } catch (_e) {
             logger.warn('Error cleaning up procedural alarm:', e);
         }
     }
@@ -627,7 +627,7 @@ export const stopAlarmSound = () => {
         alarmGainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
         try {
             alarmOscillator.stop(now + 0.5);
-        } catch (e) {
+        } catch (_e) {
             logger.warn("Error stopping alarm oscillator, it might have already been stopped.", e);
         }
     }
@@ -841,7 +841,7 @@ export const stopAlarmPreview = () => {
         previewGainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
         try {
             previewOscillator.stop(now + 0.2);
-        } catch (e) {
+        } catch (_e) {
             // Already stopped
         }
     }
@@ -1343,7 +1343,7 @@ export const playSleepSound = async (sound: Soundscape, durationMinutes: number,
             sleepSourceNode = sourceNode;
             sleepSourceNode.connect(sleepGainNode);
             (sleepSourceNode as AudioBufferSourceNode).start();
-        } catch (e) {
+        } catch (_e) {
             logger.error("Failed to load or play audio file, fallback to synthesis:", e);
             if (sleepGainNode) {
                 sleepGainNode.disconnect();
@@ -1506,7 +1506,7 @@ export const stopSleepSound = (fadeDuration: number = 2) => {
             // Cleanup Somnia-Grey EQ filters
             if (somniaEqFilters.length > 0) {
                 somniaEqFilters.forEach(filter => {
-                    try { filter.disconnect(); } catch (e) { /* ignore */ }
+                    try { filter.disconnect(); } catch (_e) { /* ignore */ }
                 });
                 somniaEqFilters = [];
             }
@@ -1517,11 +1517,11 @@ export const stopSleepSound = (fadeDuration: number = 2) => {
     if (additionalLFOs.length > 0 && context) {
         const stopTime = context.currentTime + fadeDuration;
         additionalLFOs.forEach(lfo => {
-            try { lfo.stop(stopTime); } catch (e) { /* ignore */ }
+            try { lfo.stop(stopTime); } catch (_e) { /* ignore */ }
         });
         setTimeout(() => {
             additionalLFOs.forEach(lfo => {
-                try { lfo.disconnect(); } catch (e) { /* ignore */ }
+                try { lfo.disconnect(); } catch (_e) { /* ignore */ }
             });
             additionalLFOs = [];
         }, (fadeDuration * 1000) + 100);
@@ -1734,7 +1734,7 @@ export const stopAlertnessBoost = () => {
             oscLeft.disconnect();
             oscRight.disconnect();
             gainNode.disconnect();
-        } catch (e) {
+        } catch (_e) {
             // Already stopped
         }
         alertnessNodes = null;

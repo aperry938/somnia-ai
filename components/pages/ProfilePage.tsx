@@ -446,7 +446,7 @@ const DataManagementCard: React.FC = () => {
             const imported = await importDreamsFromJSON(file, dreams);
             importDreams(imported);
             showToast(`Imported ${imported.length} dreams!`);
-        } catch (error) {
+        } catch (_error) {
             showToast('Failed to import dreams', 'error');
         }
         if (fileInputRef.current) fileInputRef.current.value = '';
@@ -519,7 +519,7 @@ const AccountManagementCard: React.FC = () => {
             showToast('Signed out successfully');
             // Reload to reset app state
             window.location.reload();
-        } catch (error) {
+        } catch (_error) {
             showToast('Failed to sign out', 'error');
         } finally {
             setIsSigningOut(false);

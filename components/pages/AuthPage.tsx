@@ -73,7 +73,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSkip }) => {
                     setSuccess('Password reset email sent! Check your inbox.');
                 }
             }
-        } catch (err) {
+        } catch (_err) {
             setError('An unexpected error occurred');
         } finally {
             setIsLoading(false);

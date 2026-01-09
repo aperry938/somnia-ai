@@ -127,7 +127,7 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
             const result = await synthesizeDreamThemes(dreams);
             setDreamSynthesis(result);
             localStorage.setItem(DREAM_SYNTH_KEY, Date.now().toString());
-        } catch (e) {
+        } catch (_e) {
             setDreamSynthError("Failed to synthesize dream themes. Please try again.");
         } finally {
             setIsDreamSynthLoading(false);
@@ -144,7 +144,7 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
             const result = await analyzeSleepHabits(dreams);
             setHabitAnalysis(result);
             localStorage.setItem(HABIT_ANALYSIS_KEY, Date.now().toString());
-        } catch (e) {
+        } catch (_e) {
             setHabitError("Failed to analyze sleep habits. Please try again.");
         } finally {
             setIsHabitLoading(false);
