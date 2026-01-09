@@ -109,6 +109,7 @@ interface AlarmRingModalProps {
     onRecordDream: (quickNote?: string) => void;
     onSnooze: () => void;
     onAwake: () => void;
+    onFinalize?: (options?: { alertnessBoostUsed?: boolean }) => void;
 }
 
 const DREAM_PROMPTS = [
@@ -123,11 +124,13 @@ type WakeStep = 'alarm' | 'snooze' | 'dream' | 'boost';
 
 const SNOOZE_DURATION = 5 * 60; // 5 minutes in seconds
 
-export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordDream, onSnooze: _onSnooze, onAwake }) => {
+export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordDream, onSnooze: _onSnooze, onAwake, onFinalize }) => {
     // For reminder alarms, skip straight to dismiss - no dream prompts
     const isSleepAlarm = alarm.purpose !== 'reminder';
 
     const [step, setStep] = useState<WakeStep>('alarm');
+    // Track if boost was ever used (for logging to sleep entry)
+    const boostEverUsedRef = React.useRef(false);
     const [quickNote, setQuickNote] = useState('');
     const [currentPrompt] = useState(() => DREAM_PROMPTS[Math.floor(Math.random() * DREAM_PROMPTS.length)]);
     const [showInput, setShowInput] = useState(false);
@@ -317,6 +320,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
         } else {
             playAlertnessBoost(boostVolume);
             setAlertnessOn(true);
+            boostEverUsedRef.current = true; // Track that boost was used
             setBoostTimer(0);
         }
     }, [alertnessOn, boostVolume]);
@@ -349,12 +353,16 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
         }
     }, [alertnessOn]);
 
-    // Final dismiss - close everything
+    // Final dismiss - close everything and save sleep data (when dream was skipped)
     const handleFinish = useCallback(() => {
         haptics.success();
         stopAlertnessBoost();
+        // Finalize the session to create a SleepEntry even without a dream
+        if (onFinalize) {
+            onFinalize({ alertnessBoostUsed: boostEverUsedRef.current });
+        }
         onAwake();
-    }, [onAwake]);
+    }, [onAwake, onFinalize]);
 
     const now = new Date();
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });

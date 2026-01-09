@@ -33,6 +33,7 @@ interface AppContextType {
     logSoundActivity: (name: string, durationSeconds: number) => void;
     logBreathingActivity: (name: string, durationSeconds: number) => void;
     saveWakeData: (wakeData: WakeData) => void;
+    finalizeSleepSession: (options?: { alertnessBoostUsed?: boolean }) => void;
     clearSleepSession: () => void;
     getNextActiveAlarm: () => Alarm | null;
     addAlarm: (time: string, smartWake: boolean, days?: number[], soundId?: string, purpose?: AlarmPurpose, label?: string) => number;
@@ -358,6 +359,39 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setActiveSleepSession(null);
     }, [setActiveSleepSession]);
 
+    // Finalize the sleep session WITHOUT a dream - creates a SleepEntry from session data
+    // Use this when user skips dream recording but we still want to save their sleep data
+    const finalizeSleepSession = useCallback((options?: { alertnessBoostUsed?: boolean }) => {
+        if (!activeSleepSession) return;
+
+        const today = new Date().toISOString().split('T')[0] ?? '';
+        const sleepData = activeSleepSession.sleepGatewayData ?? {};
+        let wakeData = activeSleepSession.wakeData;
+
+        // Update wakeData with boost info if provided
+        if (options?.alertnessBoostUsed !== undefined && wakeData) {
+            wakeData = { ...wakeData, alertnessBoostUsed: options.alertnessBoostUsed };
+        }
+
+        const newEntry: SleepEntry = {
+            id: generateSecureId(),
+            date: today,
+            sleepQuality: null, // No dream means no sleep quality rating
+            ...(sleepData.dayNotes ? { notes: sleepData.dayNotes } : {}),
+            sleepAids: sleepData,
+            wakeData: wakeData,
+            alarmTime: activeSleepSession.alarmTime ?? undefined,
+            alarmSoundId: activeSleepSession.alarmSoundId,
+            manuallyLogged: false,
+            dreamIds: [], // No dreams
+            createdAt: new Date().toISOString(),
+        };
+
+        setSleepEntries(prev => [newEntry, ...prev]);
+        setActiveSleepSession(null);
+        setPendingSleepData(null);
+    }, [activeSleepSession, setActiveSleepSession, setPendingSleepData, setSleepEntries]);
+
     // Mark all dreams as seen (called when Chronicle tab is visited)
     const markDreamsAsSeen = useCallback(() => {
         setLastSeenDreamCount(dreams.length);
@@ -574,6 +608,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         logSoundActivity,
         logBreathingActivity,
         saveWakeData,
+        finalizeSleepSession,
         clearSleepSession,
         getNextActiveAlarm,
         addAlarm,

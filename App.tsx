@@ -52,7 +52,7 @@ const AdminPage = lazy(() => import('./components/pages/AdminPage').then(m => ({
 
 
 const App: React.FC = () => {
-    const { addDream, isScribeOpen, setIsScribeOpen, activeSleepSession, addSleepEntry: _addSleepEntry, clearSleepSession: _clearSleepSession, startSleepSession, saveWakeData, alarms, sleepEntries } = useAppContext();
+    const { addDream, isScribeOpen, setIsScribeOpen, activeSleepSession, addSleepEntry: _addSleepEntry, clearSleepSession: _clearSleepSession, startSleepSession, saveWakeData, finalizeSleepSession, alarms, sleepEntries } = useAppContext();
     const { isAuthenticated, isLoading: authLoading, isConfigured: authConfigured } = useAuth();
 
     // Scroll haptics for tactile feedback
@@ -414,7 +414,7 @@ const App: React.FC = () => {
                     )}
                 </main>
                 <BottomNav currentPage={currentPage} setCurrentPage={setCurrentPage} />
-                {ringingAlarm && <AlarmRingModal alarm={ringingAlarm} onSnooze={snooze} onAwake={handleAwake} onRecordDream={handleRecordDream} />}
+                {ringingAlarm && <AlarmRingModal alarm={ringingAlarm} onSnooze={snooze} onAwake={handleAwake} onRecordDream={handleRecordDream} onFinalize={finalizeSleepSession} />}
                 {isScribeOpen && <DreamScribeModal onSave={handleScribeSave} onClose={() => { setIsScribeOpen(false); setWakeQuickNote(''); }} initialText={wakeQuickNote} />}
                 <KeyboardShortcutsHelp isOpen={isHelpOpen} onClose={closeHelp} />
                 <RealityCheckManager />
