@@ -2,7 +2,10 @@ import { Dream, DreamMood } from '../types';
 import { MOOD_LABELS } from '../constants/uiIcons';
 
 export type ShareCardFormat = 'square' | 'vertical';
-export type ShareCardTheme = 'cosmic' | 'serene' | 'mystic' | 'dawn' | 'night';
+export type ShareCardTheme =
+    | 'cosmic' | 'serene' | 'mystic' | 'dawn' | 'night'
+    | 'aurora' | 'ember' | 'forest' | 'ocean' | 'velvet'
+    | 'storm' | 'honey' | 'lavender' | 'mint' | 'rose';
 
 interface ShareCardOptions {
     dream: Dream;
@@ -19,11 +22,23 @@ const DIMENSIONS = {
 
 // Default fallback gradient backgrounds (used if template images not found)
 const FALLBACK_GRADIENTS: Record<ShareCardTheme, string[]> = {
+    // Original 5
     cosmic: ['#0f0c29', '#302b63', '#24243e'],
     serene: ['#2c3e50', '#3498db', '#2980b9'],
     mystic: ['#1a1a2e', '#4a148c', '#6a1b9a'],
     dawn: ['#2c3e50', '#fd746c', '#ff9068'],
-    night: ['#0f2027', '#203a43', '#2c5364']
+    night: ['#0f2027', '#203a43', '#2c5364'],
+    // New 10
+    aurora: ['#1a2a6c', '#b21f1f', '#2af598'],
+    ember: ['#22223b', '#4a4e69', '#c9ada7'],
+    forest: ['#134e5e', '#71b280', '#0d4749'],
+    ocean: ['#1c3f60', '#2e86ab', '#0a1628'],
+    velvet: ['#200122', '#6f0000', '#440034'],
+    storm: ['#16222a', '#3a6073', '#0f2027'],
+    honey: ['#443627', '#c69749', '#2d2414'],
+    lavender: ['#2e1c4a', '#7b5ea7', '#1a0f2e'],
+    mint: ['#0d3331', '#2a9d8f', '#043836'],
+    rose: ['#3c1642', '#a63d40', '#2b0d31']
 };
 
 // Get appropriate theme based on dream mood and tags
@@ -31,9 +46,13 @@ export function getThemeForMood(mood?: DreamMood, tags?: string[]): ShareCardThe
     // Check tags first for specific dream types
     if (tags?.length) {
         const tagLower = tags.map(t => t.toLowerCase());
-        if (tagLower.includes('lucid')) return 'cosmic';
-        if (tagLower.includes('flying') || tagLower.includes('adventure')) return 'mystic';
-        if (tagLower.includes('recurring')) return 'night';
+        if (tagLower.includes('lucid')) return 'aurora';
+        if (tagLower.includes('flying')) return 'cosmic';
+        if (tagLower.includes('adventure')) return 'forest';
+        if (tagLower.includes('recurring')) return 'velvet';
+        if (tagLower.includes('water') || tagLower.includes('swimming')) return 'ocean';
+        if (tagLower.includes('nature')) return 'forest';
+        if (tagLower.includes('love') || tagLower.includes('romantic')) return 'rose';
     }
 
     // Map mood to theme
@@ -47,10 +66,13 @@ export function getThemeForMood(mood?: DreamMood, tags?: string[]): ShareCardThe
         case 'confused':
             return 'mystic';
         case 'anxious':
+            return 'storm';
         case 'sad':
+            return 'lavender';
         case 'fearful':
-        case 'nightmare':
             return 'night';
+        case 'nightmare':
+            return 'velvet';
         default:
             return 'cosmic';
     }

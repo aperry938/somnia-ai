@@ -18,11 +18,23 @@ interface ShareDreamModalProps {
 }
 
 const THEMES: { id: ShareCardTheme; label: string; emoji: string }[] = [
+    // Original 5
     { id: 'cosmic', label: 'Cosmic', emoji: '✨' },
     { id: 'serene', label: 'Serene', emoji: '🌊' },
     { id: 'mystic', label: 'Mystic', emoji: '🔮' },
     { id: 'dawn', label: 'Dawn', emoji: '🌅' },
     { id: 'night', label: 'Night', emoji: '🌙' },
+    // New 10
+    { id: 'aurora', label: 'Aurora', emoji: '🌌' },
+    { id: 'ember', label: 'Ember', emoji: '🔥' },
+    { id: 'forest', label: 'Forest', emoji: '🌲' },
+    { id: 'ocean', label: 'Ocean', emoji: '🐚' },
+    { id: 'velvet', label: 'Velvet', emoji: '🍷' },
+    { id: 'storm', label: 'Storm', emoji: '⛈️' },
+    { id: 'honey', label: 'Honey', emoji: '🍯' },
+    { id: 'lavender', label: 'Lavender', emoji: '💜' },
+    { id: 'mint', label: 'Mint', emoji: '🌿' },
+    { id: 'rose', label: 'Rose', emoji: '🌹' },
 ];
 
 const FORMATS: { id: ShareCardFormat; label: string; platforms: string }[] = [
