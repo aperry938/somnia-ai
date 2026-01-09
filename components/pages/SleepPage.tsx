@@ -370,22 +370,12 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                             <button
                                 onClick={() => {
                                     haptics.success();
-                                    // Only save to Chronicle if there's an alarm attached
-                                    // Sleep Gateway without alarm = never logged to Chronicle
-                                    if (activeSleepSession?.alarmId) {
-                                        const today = new Date().toISOString().split('T')[0] ?? '';
-                                        addSleepEntry(
-                                            today,
-                                            activeSleepSession.sleepGatewayData?.dayRating ?? null,
-                                            activeSleepSession.sleepGatewayData?.dayNotes,
-                                            activeSleepSession.sleepGatewayData,
-                                            activeSleepSession.alarmTime ?? undefined,
-                                            activeSleepSession.alarmSoundId
-                                        );
-                                        showToast('Sleep session saved to Chronicle');
-                                    }
-                                    clearSleepSession();
+                                    // Session data persists - entry will be created when:
+                                    // 1. Alarm rings and user dismisses (via finalizeSleepSession), OR
+                                    // 2. User logs a dream (via addDream)
+                                    // NOTE: Don't clear session here! Keep it for the alarm flow.
                                     setIsSleeping(false);
+                                    showToast('Sleep prep saved - entry will be logged when you wake up');
                                     // Navigate back to alarms/main page
                                     if (onNavigateToAlarms) onNavigateToAlarms();
                                 }}
@@ -394,11 +384,11 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                 </svg>
-                                {activeSleepSession?.alarmId ? 'Done - Save to Chronicle' : 'Done - Sweet Dreams'}
+                                Done - Sweet Dreams
                             </button>
                         </div>
                         <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-4 opacity-70 text-center">
-                            Your sleep session and activities will be saved to Chronicle
+                            Your sleep prep data will be saved when you log your dream or dismiss your alarm
                         </p>
                     </div>
                 ) : (
