@@ -32,7 +32,7 @@ const FORMATS: { id: ShareCardFormat; label: string; platforms: string }[] = [
 
 export const ShareDreamModal: React.FC<ShareDreamModalProps> = ({ dream, isOpen, onClose }) => {
     const [format, setFormat] = useState<ShareCardFormat>('square');
-    const [theme, setTheme] = useState<ShareCardTheme>(() => getThemeForMood(dream.mood));
+    const [theme, setTheme] = useState<ShareCardTheme>(() => getThemeForMood(dream.mood, dream.tags));
     const [contentType, setContentType] = useState<'dream-excerpt' | 'ai-insight'>('ai-insight');
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -141,8 +141,8 @@ export const ShareDreamModal: React.FC<ShareDreamModalProps> = ({ dream, isOpen,
                                     key={f.id}
                                     onClick={() => setFormat(f.id)}
                                     className={`p-3 rounded-xl border-2 transition-all text-left ${format === f.id
-                                            ? 'border-day-accent dark:border-night-accent bg-day-accent/10 dark:bg-night-accent/10'
-                                            : 'border-day-border dark:border-night-border'
+                                        ? 'border-day-accent dark:border-night-accent bg-day-accent/10 dark:bg-night-accent/10'
+                                        : 'border-day-border dark:border-night-border'
                                         }`}
                                 >
                                     <p className="font-medium">{f.label}</p>
@@ -161,8 +161,8 @@ export const ShareDreamModal: React.FC<ShareDreamModalProps> = ({ dream, isOpen,
                                     key={t.id}
                                     onClick={() => setTheme(t.id)}
                                     className={`flex-shrink-0 px-4 py-2 rounded-full border-2 transition-all ${theme === t.id
-                                            ? 'border-day-accent dark:border-night-accent bg-day-accent/10 dark:bg-night-accent/10'
-                                            : 'border-day-border dark:border-night-border'
+                                        ? 'border-day-accent dark:border-night-accent bg-day-accent/10 dark:bg-night-accent/10'
+                                        : 'border-day-border dark:border-night-border'
                                         }`}
                                 >
                                     <span className="mr-1">{t.emoji}</span>
@@ -180,8 +180,8 @@ export const ShareDreamModal: React.FC<ShareDreamModalProps> = ({ dream, isOpen,
                                 <button
                                     onClick={() => setContentType('ai-insight')}
                                     className={`p-3 rounded-xl border-2 transition-all ${contentType === 'ai-insight'
-                                            ? 'border-day-accent dark:border-night-accent bg-day-accent/10 dark:bg-night-accent/10'
-                                            : 'border-day-border dark:border-night-border'
+                                        ? 'border-day-accent dark:border-night-accent bg-day-accent/10 dark:bg-night-accent/10'
+                                        : 'border-day-border dark:border-night-border'
                                         }`}
                                 >
                                     <p className="font-medium">AI Insight</p>
@@ -190,8 +190,8 @@ export const ShareDreamModal: React.FC<ShareDreamModalProps> = ({ dream, isOpen,
                                 <button
                                     onClick={() => setContentType('dream-excerpt')}
                                     className={`p-3 rounded-xl border-2 transition-all ${contentType === 'dream-excerpt'
-                                            ? 'border-day-accent dark:border-night-accent bg-day-accent/10 dark:bg-night-accent/10'
-                                            : 'border-day-border dark:border-night-border'
+                                        ? 'border-day-accent dark:border-night-accent bg-day-accent/10 dark:bg-night-accent/10'
+                                        : 'border-day-border dark:border-night-border'
                                         }`}
                                 >
                                     <p className="font-medium">Dream Excerpt</p>

@@ -26,17 +26,27 @@ const FALLBACK_GRADIENTS: Record<ShareCardTheme, string[]> = {
     night: ['#0f2027', '#203a43', '#2c5364']
 };
 
-// Get appropriate theme based on dream mood
-export function getThemeForMood(mood?: DreamMood): ShareCardTheme {
+// Get appropriate theme based on dream mood and tags
+export function getThemeForMood(mood?: DreamMood, tags?: string[]): ShareCardTheme {
+    // Check tags first for specific dream types
+    if (tags?.length) {
+        const tagLower = tags.map(t => t.toLowerCase());
+        if (tagLower.includes('lucid')) return 'cosmic';
+        if (tagLower.includes('flying') || tagLower.includes('adventure')) return 'mystic';
+        if (tagLower.includes('recurring')) return 'night';
+    }
+
+    // Map mood to theme
     switch (mood) {
         case 'joyful':
+            return 'dawn';
         case 'peaceful':
             return 'serene';
         case 'neutral':
             return 'cosmic';
         case 'confused':
-        case 'anxious':
             return 'mystic';
+        case 'anxious':
         case 'sad':
         case 'fearful':
         case 'nightmare':
