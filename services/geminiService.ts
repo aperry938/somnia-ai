@@ -10,6 +10,7 @@ import {
     createSynthesisPrompt,
     createHabitAnalysisPrompt
 } from './aiConfig';
+import { detectCrisis, CRISIS_RESPONSE } from './crisisDetectionService';
 
 /**
  * Error thrown when user has no AI credits remaining
@@ -66,6 +67,18 @@ const getAi = (): GoogleGenAI => {
  * @throws Error if AI analysis fails
  */
 export const analyzeDream = async (dreamText: string, sleepAids?: SleepAids, biometrics?: Biometrics, personality: AnalysisPersonality = 'oneironaut'): Promise<DreamAnalysis> => {
+    // SAFETY FIRST: Check for crisis indicators BEFORE any API call
+    // This is a hardcoded safety layer that cannot be bypassed by prompt injection
+    const crisisCheck = detectCrisis(dreamText);
+    if (crisisCheck.detected) {
+        logger.warn('[Safety] Crisis indicators detected in dream text', {
+            confidence: crisisCheck.confidence,
+            triggerCount: crisisCheck.triggers.length,
+        });
+        // Return hardcoded crisis response instead of AI analysis
+        return CRISIS_RESPONSE;
+    }
+
     // Check rate limit first
     const rateCheck = checkRateLimit('ai_analysis');
     if (!rateCheck.allowed) {
