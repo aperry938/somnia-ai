@@ -756,6 +756,9 @@ const TonightsSleepCard: React.FC<{
         }
     }, [activeSleepSession]);
 
+    // Don't show if there's already an active session (user already completed Sleep Gateway)
+    // This card is only for users who skipped the gateway and need to log pre-sleep data
+    if (activeSleepSession) return null;
     if (!shouldShow || !nextSleepAlarm) return null;
 
     // Format alarm time for display
