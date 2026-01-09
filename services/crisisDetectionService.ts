@@ -10,6 +10,72 @@
 import { DreamAnalysis } from '../types';
 
 /**
+ * Words that, when following a crisis phrase, indicate it's NOT a real crisis.
+ * These are context words that change the meaning of the phrase.
+ *
+ * Examples:
+ * - "cutting myself a piece" → "a" indicates it's about cutting something else
+ * - "hurt myself laughing" → "laughing" indicates it's about humor
+ * - "end my life savings" → "savings" indicates it's about money
+ * - "kill myself character" → "character" indicates gaming/fiction
+ */
+const CONTEXT_NEGATORS = [
+    // Actions that follow (indicates cutting/hurting something else)
+    'a ', 'an ', 'the ', 'some ', 'any ',
+    // Emotions that follow (indicates metaphor)
+    'laughing', 'crying', 'smiling',
+    // Nouns that follow crisis phrases (changes meaning)
+    'savings', 'insurance', 'policy', 'character', 'avatar',
+    // Gaming/fiction context
+    'in the game', 'in game', 'my character', 'the character',
+];
+
+/**
+ * Check if a crisis phrase appears in concerning context.
+ * Returns false if the phrase is followed by context that negates the crisis meaning.
+ *
+ * This prevents false positives like:
+ * - "cutting myself a piece of cake" (not a crisis)
+ * - "hurt myself laughing" (not a crisis)
+ * - "end my life savings" (not a crisis)
+ */
+function isCrisisContext(text: string, phrase: string, matchIndex: number): boolean {
+    // Get the text after the phrase
+    const afterPhrase = text.slice(matchIndex + phrase.length).toLowerCase().trim();
+
+    // Check if followed by a context negator
+    for (const negator of CONTEXT_NEGATORS) {
+        if (afterPhrase.startsWith(negator.toLowerCase())) {
+            return false; // Not a crisis - context negates it
+        }
+    }
+
+    return true; // Appears to be genuine crisis context
+}
+
+/**
+ * Check if a phrase appears in the text as a complete crisis indicator.
+ * Uses context analysis to reduce false positives.
+ */
+function matchesCrisisPhrase(text: string, phrase: string): boolean {
+    const lowerText = text.toLowerCase();
+    const lowerPhrase = phrase.toLowerCase();
+
+    // Find all occurrences of the phrase
+    let index = lowerText.indexOf(lowerPhrase);
+    while (index !== -1) {
+        // Check if this occurrence is in crisis context
+        if (isCrisisContext(lowerText, lowerPhrase, index)) {
+            return true;
+        }
+        // Look for next occurrence
+        index = lowerText.indexOf(lowerPhrase, index + 1);
+    }
+
+    return false;
+}
+
+/**
  * Crisis keywords that trigger immediate intervention.
  * These are checked against normalized (lowercase) dream text.
  *
@@ -148,8 +214,12 @@ export const CRISIS_RESPONSE: DreamAnalysis = {
  * Detects crisis indicators in dream text.
  *
  * This function performs a multi-pass analysis:
- * 1. Primary check: Direct keyword matching (high confidence)
- * 2. Secondary check: Context phrase analysis (medium confidence)
+ * 1. Primary check: Direct keyword matching at word boundaries (high confidence)
+ * 2. Secondary check: Context phrase analysis at word boundaries (medium confidence)
+ *
+ * Uses word boundary matching to prevent false positives like:
+ * - "cutting myself a piece of cake" (not a crisis)
+ * - "the villain wanted to kill myself character" (not a crisis)
  *
  * @param dreamText - The dream text to analyze
  * @returns CrisisDetectionResult with detection status and triggers
@@ -158,9 +228,9 @@ export function detectCrisis(dreamText: string): CrisisDetectionResult {
     const normalized = dreamText.toLowerCase().trim();
     const triggers: string[] = [];
 
-    // Primary check: Direct keyword matching
+    // Primary check: Direct keyword matching with context analysis
     for (const keyword of CRISIS_KEYWORDS) {
-        if (normalized.includes(keyword)) {
+        if (matchesCrisisPhrase(normalized, keyword)) {
             triggers.push(keyword);
         }
     }
@@ -173,9 +243,9 @@ export function detectCrisis(dreamText: string): CrisisDetectionResult {
         };
     }
 
-    // Secondary check: Context phrases
+    // Secondary check: Context phrases with context analysis
     for (const phrase of CRISIS_CONTEXT_PHRASES) {
-        if (normalized.includes(phrase)) {
+        if (matchesCrisisPhrase(normalized, phrase)) {
             triggers.push(phrase);
         }
     }
