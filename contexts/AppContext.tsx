@@ -487,10 +487,27 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const today = new Date().toISOString().split('T')[0] ?? ''; // YYYY-MM-DD
 
         let sleepEntryId: number | undefined = undefined;
+        let foundExistingEntry = false;
 
         // If session has an existing sleepEntryId, UPDATE that entry
         if (activeSleepSession?.sleepEntryId) {
             sleepEntryId = activeSleepSession.sleepEntryId;
+            foundExistingEntry = true;
+        }
+        // FALLBACK: Look for an entry created today with the same alarm time (covers session loss case)
+        else if (activeSleepSession?.alarmTime) {
+            const existingEntry = sleepEntries.find(e =>
+                e.date === today &&
+                e.alarmTime === activeSleepSession.alarmTime &&
+                e.dreamIds.length === 0 // Entry without dreams = ready for update
+            );
+            if (existingEntry) {
+                sleepEntryId = existingEntry.id;
+                foundExistingEntry = true;
+            }
+        }
+
+        if (foundExistingEntry && sleepEntryId) {
             // Update the existing entry with wake data and dream
             setSleepEntries(prev => prev.map(entry => {
                 if (entry.id !== sleepEntryId) return entry;
