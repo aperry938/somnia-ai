@@ -2,10 +2,14 @@ import React, { useState, useEffect } from 'react';
 import {
     getGlobalDreamTrends,
     getGlobalSleepStats,
+    getRegionalTrends,
     fetchGlobalTrends,
     isGlobalTrendsOptedIn,
+    isLocationEnabled,
     setGlobalTrendsOptIn,
-    type TrendPeriod
+    getGlobalTrendsPrefs,
+    type TrendPeriod,
+    type GlobalTrend
 } from '../../services/dreamTrendsService';
 
 const periodLabels: Record<TrendPeriod, string> = {
@@ -18,7 +22,10 @@ const periodLabels: Record<TrendPeriod, string> = {
 export const GlobalTrendsCard: React.FC = () => {
     const [period, setPeriod] = useState<TrendPeriod>('week');
     const [isOptedIn, setIsOptedIn] = useState(isGlobalTrendsOptedIn);
+    const [hasLocation, setHasLocation] = useState(isLocationEnabled);
     const [isLoading, setIsLoading] = useState(false);
+    const [includeLocation, setIncludeLocation] = useState(true); // Default to checked
+    const [showRegional, setShowRegional] = useState(false);
 
     // Fetch fresh data when period changes and user is opted in
     useEffect(() => {
@@ -29,15 +36,21 @@ export const GlobalTrendsCard: React.FC = () => {
     }, [period, isOptedIn]);
 
     const trends = getGlobalDreamTrends(period);
+    const regionalTrends = getRegionalTrends(period);
     const stats = getGlobalSleepStats(period);
+    const prefs = getGlobalTrendsPrefs();
 
     const handleOptIn = async () => {
         setIsLoading(true);
-        await setGlobalTrendsOptIn(true);
+        const newPrefs = await setGlobalTrendsOptIn(true, includeLocation);
         setIsOptedIn(true);
+        setHasLocation(newPrefs.locationEnabled);
         await fetchGlobalTrends(period);
         setIsLoading(false);
     };
+
+    const displayTrends = showRegional && regionalTrends ? regionalTrends : trends;
+    const regionName = prefs.location?.region;
 
     // Show opt-in prompt if user hasn't opted in
     if (!isOptedIn) {
@@ -80,6 +93,28 @@ export const GlobalTrendsCard: React.FC = () => {
                         </li>
                     </ul>
                 </div>
+
+                {/* Location opt-in toggle */}
+                <label className="flex items-start gap-3 p-3 bg-black/20 rounded-lg mb-4 cursor-pointer hover:bg-black/30 transition-colors">
+                    <input
+                        type="checkbox"
+                        checked={includeLocation}
+                        onChange={(e) => setIncludeLocation(e.target.checked)}
+                        className="mt-1 w-5 h-5 rounded border-indigo-400 bg-indigo-900/50 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-0"
+                    />
+                    <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <span className="text-sm font-medium text-indigo-100">Include my location</span>
+                        </div>
+                        <p className="text-xs text-indigo-200/60 mt-1">
+                            See regional trends and what dreamers near you are experiencing. Your exact location is never shared.
+                        </p>
+                    </div>
+                </label>
 
                 <button
                     onClick={handleOptIn}
@@ -129,7 +164,7 @@ export const GlobalTrendsCard: React.FC = () => {
             </div>
 
             {/* Time Period Filter */}
-            <div className="flex gap-1 mb-5 bg-black/20 p-1 rounded-lg" role="group" aria-label="Time period filter">
+            <div className="flex gap-1 mb-4 bg-black/20 p-1 rounded-lg" role="group" aria-label="Time period filter">
                 {(Object.keys(periodLabels) as TrendPeriod[]).map((p) => (
                     <button
                         key={p}
@@ -147,12 +182,56 @@ export const GlobalTrendsCard: React.FC = () => {
                 ))}
             </div>
 
+            {/* Global/Regional Toggle (only if location enabled) */}
+            {hasLocation && regionalTrends && (
+                <div className="flex gap-1 mb-5 bg-black/20 p-1 rounded-lg" role="group" aria-label="Trend scope">
+                    <button
+                        onClick={() => setShowRegional(false)}
+                        aria-pressed={!showRegional}
+                        className={`flex-1 px-3 py-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1 ${
+                            !showRegional
+                                ? 'bg-purple-500 text-white shadow-lg'
+                                : 'text-purple-200 hover:bg-purple-500/30'
+                        }`}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Global
+                    </button>
+                    <button
+                        onClick={() => setShowRegional(true)}
+                        aria-pressed={showRegional}
+                        className={`flex-1 px-3 py-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1 ${
+                            showRegional
+                                ? 'bg-purple-500 text-white shadow-lg'
+                                : 'text-purple-200 hover:bg-purple-500/30'
+                        }`}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        {regionName || 'Regional'}
+                    </button>
+                </div>
+            )}
+
             <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-indigo-200 uppercase tracking-wider">
-                    Trending Themes
+                <h3 className="text-sm font-semibold text-indigo-200 uppercase tracking-wider flex items-center gap-2">
+                    {showRegional && hasLocation ? (
+                        <>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            </svg>
+                            Trending in {regionName || 'Your Area'}
+                        </>
+                    ) : (
+                        'Trending Themes'
+                    )}
                 </h3>
                 <div className="space-y-3">
-                    {trends.map((trend) => (
+                    {displayTrends.map((trend: GlobalTrend) => (
                         <div key={trend.topic} className="relative">
                             <div className="flex justify-between text-sm mb-1">
                                 <span>{trend.topic}</span>
@@ -177,14 +256,30 @@ export const GlobalTrendsCard: React.FC = () => {
 
             <div className="mt-6 pt-4 border-t border-indigo-500/30 grid grid-cols-2 gap-4 text-center">
                 <div>
-                    <p className="text-xs text-indigo-300">Global Avg Sleep</p>
+                    <p className="text-xs text-indigo-300">
+                        {showRegional ? 'Regional' : 'Global'} Avg Sleep
+                    </p>
                     <p className="font-mono text-lg font-bold">{stats.avgSleepTime}</p>
                 </div>
                 <div>
-                    <p className="text-xs text-indigo-300">Global Avg Quality</p>
+                    <p className="text-xs text-indigo-300">
+                        {showRegional ? 'Regional' : 'Global'} Avg Quality
+                    </p>
                     <p className="font-mono text-lg font-bold">{stats.avgQuality} / 5.0</p>
                 </div>
             </div>
+
+            {/* Location indicator */}
+            {hasLocation && regionName && (
+                <div className="mt-3 text-center">
+                    <span className="text-xs text-indigo-300/60 flex items-center justify-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        </svg>
+                        Connected from {regionName}
+                    </span>
+                </div>
+            )}
         </div>
     );
 };

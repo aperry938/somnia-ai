@@ -2,10 +2,16 @@
 -- Enables anonymous aggregation of dream themes/moods for global insights
 -- Users must opt-in to share data for global trends
 
--- 1. Add opt-in column to user profiles (or dreams table)
+-- 1. Add opt-in and location columns to dreams table
 -- Users must explicitly consent to have their dreams included in global stats
 ALTER TABLE public.dreams
-    ADD COLUMN IF NOT EXISTS share_in_global_trends BOOLEAN DEFAULT FALSE;
+    ADD COLUMN IF NOT EXISTS share_in_global_trends BOOLEAN DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS user_region TEXT,      -- State/Province name
+    ADD COLUMN IF NOT EXISTS user_country TEXT;     -- Country name
+
+-- Create index for regional queries
+CREATE INDEX IF NOT EXISTS idx_dreams_region ON public.dreams(user_region) WHERE share_in_global_trends = TRUE;
+CREATE INDEX IF NOT EXISTS idx_dreams_country ON public.dreams(user_country) WHERE share_in_global_trends = TRUE;
 
 -- 2. Create global_trends_cache table for pre-computed aggregations
 -- Refreshed periodically by cron job to avoid expensive real-time queries
@@ -249,20 +255,91 @@ ALTER TABLE public.global_trends_cache ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Anyone can read global trends" ON public.global_trends_cache
     FOR SELECT USING (true);
 
--- 8. Helper function for users to opt-in/out
-CREATE OR REPLACE FUNCTION set_global_trends_opt_in(opt_in BOOLEAN)
+-- 8. Helper function for users to opt-in/out with optional location
+CREATE OR REPLACE FUNCTION set_global_trends_opt_in(
+    opt_in BOOLEAN,
+    latitude FLOAT DEFAULT NULL,
+    longitude FLOAT DEFAULT NULL,
+    region TEXT DEFAULT NULL,
+    country TEXT DEFAULT NULL
+)
 RETURNS VOID
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 BEGIN
     UPDATE public.dreams
-    SET share_in_global_trends = opt_in
+    SET
+        share_in_global_trends = opt_in,
+        user_region = CASE WHEN opt_in THEN region ELSE NULL END,
+        user_country = CASE WHEN opt_in THEN country ELSE NULL END
     WHERE user_id = auth.uid();
 END;
 $$;
 
 GRANT EXECUTE ON FUNCTION set_global_trends_opt_in TO authenticated;
+
+-- 8b. Function to compute regional trends
+CREATE OR REPLACE FUNCTION compute_regional_tag_trends(
+    time_period TEXT DEFAULT 'week',
+    target_region TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    start_date TIMESTAMPTZ;
+    result JSONB;
+BEGIN
+    CASE time_period
+        WHEN 'today' THEN start_date := DATE_TRUNC('day', NOW());
+        WHEN 'week' THEN start_date := NOW() - INTERVAL '7 days';
+        WHEN 'month' THEN start_date := NOW() - INTERVAL '30 days';
+        ELSE start_date := '1970-01-01'::TIMESTAMPTZ;
+    END CASE;
+
+    WITH regional_tags AS (
+        SELECT
+            LOWER(TRIM(unnest(tags))) AS tag,
+            COUNT(*) AS tag_count
+        FROM public.dreams
+        WHERE
+            share_in_global_trends = TRUE
+            AND timestamp >= start_date
+            AND tags IS NOT NULL
+            AND (target_region IS NULL OR user_region = target_region)
+        GROUP BY LOWER(TRIM(unnest(tags)))
+    ),
+    total_dreams AS (
+        SELECT COUNT(DISTINCT id) AS total
+        FROM public.dreams
+        WHERE
+            share_in_global_trends = TRUE
+            AND timestamp >= start_date
+            AND (target_region IS NULL OR user_region = target_region)
+    ),
+    tag_trends AS (
+        SELECT
+            r.tag AS topic,
+            ROUND((r.tag_count::NUMERIC / NULLIF(t.total, 0) * 100)::NUMERIC, 1) AS percentage,
+            'stable' AS change,
+            'neutral' AS sentiment
+        FROM regional_tags r
+        CROSS JOIN total_dreams t
+        ORDER BY r.tag_count DESC
+        LIMIT 5
+    )
+    SELECT COALESCE(jsonb_agg(row_to_json(tag_trends)), '[]'::JSONB)
+    INTO result
+    FROM tag_trends;
+
+    RETURN result;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION compute_regional_tag_trends TO authenticated;
+GRANT EXECUTE ON FUNCTION compute_regional_tag_trends TO anon;
 
 -- 9. Cleanup old cache entries (keep last 10 per period)
 CREATE OR REPLACE FUNCTION cleanup_global_trends_cache()
