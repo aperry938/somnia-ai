@@ -565,11 +565,11 @@ const AccountManagementCard: React.FC = () => {
                 </div>
             )}
 
-            {/* Local only notice */}
+            {/* Local storage notice */}
             {!isAuthenticated && (
-                <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-                    <p className="text-sm text-amber-700 dark:text-amber-300">
-                        Your data is stored locally on this device only.
+                <div className="mb-4 p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg">
+                    <p className="text-sm text-indigo-700 dark:text-indigo-300">
+                        Sign in to sync your dreams across devices and unlock cloud backup.
                     </p>
                 </div>
             )}

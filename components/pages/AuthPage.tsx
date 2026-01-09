@@ -295,7 +295,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSkip }) => {
                             Continue without account
                         </button>
                         <p className="text-xs text-day-text-secondary/70 dark:text-night-text-secondary/70 mt-2">
-                            Your data will be stored locally on your device
+                            You can create an account later to sync across devices
                         </p>
                     </div>
                 )}
