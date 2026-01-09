@@ -27,6 +27,8 @@ import { OnboardingCarousel } from './components/onboarding/OnboardingCarousel';
 import { useSleepDetection } from './hooks/useSleepDetection';
 import { DevModeToggle } from './components/DevModeToggle';
 import { useSwipeNavigation } from './hooks/useSwipeNavigation';
+import { useDeepLink } from './hooks/useDeepLink';
+import { useWidgetSync } from './hooks/useWidgetSync';
 
 
 // Lazy load heavy pages for better code splitting
@@ -44,7 +46,7 @@ const AdminPage = lazy(() => import('./components/pages/AdminPage').then(m => ({
 
 
 const App: React.FC = () => {
-    const { addDream, isScribeOpen, setIsScribeOpen, activeSleepSession, addSleepEntry, clearSleepSession, startSleepSession, saveWakeData } = useAppContext();
+    const { addDream, isScribeOpen, setIsScribeOpen, activeSleepSession, addSleepEntry, clearSleepSession, startSleepSession, saveWakeData, alarms, sleepEntries } = useAppContext();
     const { isAuthenticated, isLoading: authLoading, isConfigured: authConfigured } = useAuth();
 
     // Check for Stripe success redirect
@@ -70,6 +72,12 @@ const App: React.FC = () => {
 
     // Swipe navigation between main pages
     const { currentIndex, totalPages } = useSwipeNavigation(currentPage, setCurrentPage);
+
+    // Deep link and app shortcut navigation
+    useDeepLink({
+        onNavigate: setCurrentPage,
+        onOpenScribe: () => setIsScribeOpen(true),
+    });
 
     // When an alarm rings, ensure a sleep session exists so we can save wake metrics
     useEffect(() => {
@@ -146,6 +154,9 @@ const App: React.FC = () => {
     const [wakeQuickNote, setWakeQuickNote] = useState<string>('');
     const { showToast } = useToast();
     const { dreams } = useAppContext();
+
+    // Keep home screen widgets in sync with app data
+    useWidgetSync({ alarms, dreams, sleepEntries });
 
     // Sleep Detection: triggers alarm wake-up flow after phone inactivity threshold
     useSleepDetection((soundId: string) => {
