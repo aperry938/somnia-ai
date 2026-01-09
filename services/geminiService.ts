@@ -22,6 +22,25 @@ export class NoCreditsError extends Error {
     }
 }
 
+/**
+ * Error thrown when device is offline
+ */
+export class OfflineError extends Error {
+    constructor() {
+        super('You appear to be offline. Please check your connection and try again.');
+        this.name = 'OfflineError';
+    }
+}
+
+/**
+ * Check if device is online
+ */
+const checkOnline = (): void => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        throw new OfflineError();
+    }
+};
+
 let aiInstance: GoogleGenAI | null = null;
 
 // Cache for dream titles to prevent redundant API calls
@@ -43,10 +62,10 @@ const getAi = (): GoogleGenAI => {
     if (aiInstance) {
         return aiInstance;
     }
-    const API_KEY = process.env.API_KEY;
+    const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
     if (!API_KEY) {
         logger.error("Gemini API Key is not configured.");
-        throw new Error("API_KEY is not set. Please configure the Gemini API key to use AI features.");
+        throw new Error("Please configure your Gemini API key in settings to use AI features.");
     }
     aiInstance = new GoogleGenAI({ apiKey: API_KEY });
     return aiInstance;
@@ -78,6 +97,9 @@ export const analyzeDream = async (dreamText: string, sleepAids?: SleepAids, bio
         // Return hardcoded crisis response instead of AI analysis
         return CRISIS_RESPONSE;
     }
+
+    // Check if device is online
+    checkOnline();
 
     // Check rate limit first
     const rateCheck = checkRateLimit('ai_analysis');
@@ -316,7 +338,10 @@ export const generateDreamTitle = async (dreamText: string): Promise<string> => 
         return pending;
     }
 
-    // 3. Create new request and track it
+    // 3. Check online status before making request
+    checkOnline();
+
+    // 4. Create new request and track it
     const request = (async () => {
         try {
             const ai = getAi();
@@ -466,6 +491,9 @@ export const synthesizeDreamThemes = async (dreams: Dream[]): Promise<DreamSynth
  * @returns Promise<SleepHabitAnalysis> - Insights about correlations
  */
 export const analyzeSleepHabits = async (dreams: Dream[]): Promise<SleepHabitAnalysis> => {
+    // Check if device is online
+    checkOnline();
+
     try {
         const ai = getAi();
         const prompt = createHabitAnalysisPrompt(dreams);
@@ -541,6 +569,9 @@ export const generateDreamEmbedding = async (text: string): Promise<number[]> =>
     if (cached) {
         return cached;
     }
+
+    // Check if device is online
+    checkOnline();
 
     try {
         const ai = getAi();
