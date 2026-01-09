@@ -47,9 +47,33 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+
+	<!-- Background Modes - Required for alarm to play when app is backgrounded -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+		<string>fetch</string>
+		<string>processing</string>
+	</array>
+
+	<!-- Microphone and Speech Recognition -->
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Somnia uses the microphone to capture your dreams via voice memo, making it faster to record dreams when you wake up.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Somnia uses speech recognition to transcribe your voice memos into text for your dream journal.</string>
+
+	<!-- HealthKit - For sleep tracking integration -->
+	<key>NSHealthShareUsageDescription</key>
+	<string>Somnia reads your sleep data from Apple Health to provide personalized sleep insights and track your sleep patterns automatically.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Somnia can save your sleep data to Apple Health to keep all your health information in one place.</string>
+
+	<!-- Notifications - Critical for alarms -->
+	<key>NSUserNotificationUsageDescription</key>
+	<string>Somnia sends notifications for your alarms and sleep reminders.</string>
+
+	<!-- Motion - For sleep detection -->
+	<key>NSMotionUsageDescription</key>
+	<string>Somnia uses motion data to detect when you fall asleep and improve smart alarm timing.</string>
 </dict>
 </plist>
