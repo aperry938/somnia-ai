@@ -471,18 +471,13 @@ const OfflineQueueManager: React.FC = () => {
                 return;
             }
 
-            try {
-                const analysisData = await analyzeDream(dreamText, dream.sleepAids, biometrics, 'oneironaut');
-                updateDream({
-                    id: dreamId,
-                    title: analysisData.title || dream.title,
-                    aiAnalysis: analysisData,
-                });
-                logger.info('[OfflineQueue] Successfully processed queued dream:', dreamId);
-            } catch (error) {
-                // Let the queue service handle retries
-                throw error;
-            }
+            const analysisData = await analyzeDream(dreamText, dream.sleepAids, biometrics, 'oneironaut');
+            updateDream({
+                id: dreamId,
+                title: analysisData.title || dream.title,
+                aiAnalysis: analysisData,
+            });
+            logger.info('[OfflineQueue] Successfully processed queued dream:', dreamId);
         };
 
         const cleanup = initializeOfflineQueue(processQueuedDream);
