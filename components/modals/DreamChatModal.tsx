@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, PanInfo, useMotionValue, useTransform } from 'framer-motion';
 import { getDreamChatResponse } from '../../services/geminiService';
 import { ChatMessage, Dream } from '../../types';
 import { useAppContext } from '../../contexts/AppContext';
@@ -113,9 +114,45 @@ export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }
         }
     };
 
+    const y = useMotionValue(0);
+    const backdropOpacity = useTransform(y, [0, 200], [1, 0.3]);
+
+    const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+        if (info.offset.y > 100 || info.velocity.y > 500) {
+            haptics.medium();
+            onClose();
+        }
+    };
+
     return (
-        <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="dream-chat-title">
-            <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-lg animate-fadeIn flex flex-col h-[80vh]" onClick={(e) => e.stopPropagation()}>
+        <motion.div
+            className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 z-50"
+            onClick={onClose}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="dream-chat-title"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{ opacity: backdropOpacity }}
+        >
+            <motion.div
+                className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-t-2xl sm:rounded-2xl p-6 w-full max-w-lg flex flex-col h-[90vh] sm:h-[80vh]"
+                onClick={(e) => e.stopPropagation()}
+                style={{ y }}
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+                drag="y"
+                dragConstraints={{ top: 0 }}
+                dragElastic={{ top: 0, bottom: 0.5 }}
+                onDragEnd={handleDragEnd}
+            >
+                {/* Drag indicator */}
+                <div className="flex justify-center pb-2 sm:hidden cursor-grab active:cursor-grabbing">
+                    <div className="w-10 h-1 rounded-full bg-day-border dark:bg-night-border" />
+                </div>
                 <div className="flex justify-between items-center mb-4 flex-shrink-0">
                     <div>
                         <div className="flex items-center gap-2">
@@ -174,7 +211,7 @@ export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }
                         Send
                     </button>
                 </div>
-            </div>
-        </div>
+            </motion.div>
+        </motion.div>
     );
 };

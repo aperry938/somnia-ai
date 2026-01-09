@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { motion, PanInfo, useMotionValue, useTransform } from 'framer-motion';
 import { GuidedRelaxation } from '../../types';
 import { playBreathSound } from '../../services/audioService';
 import { useAppContext } from '../../contexts/AppContext';
@@ -56,6 +57,17 @@ const triggerHaptic = (duration: number) => {
 export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onClose: () => void }> = ({ relaxation, onClose }) => {
     const [sessionState, setSessionState] = useState<'ready' | 'starting' | 'running'>('ready');
     const [stepIndex, setStepIndex] = useState(0);
+
+    // Swipe-to-dismiss
+    const y = useMotionValue(0);
+    const backdropOpacity = useTransform(y, [0, 200], [1, 0.3]);
+
+    const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+        if (info.offset.y > 100 || info.velocity.y > 500) {
+            haptics.medium();
+            endSession();
+        }
+    };
     const [instruction, setInstruction] = useState('');
     const [countdown, setCountdown] = useState(0);
     const [animationClass, setAnimationClass] = useState('scale-[0.8] opacity-70');
@@ -213,8 +225,34 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
     }, []);
 
     return (
-        <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={endSession} role="dialog" aria-modal="true" aria-labelledby="relaxation-title">
-            <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-sm animate-fadeIn text-center" onClick={(e) => e.stopPropagation()}>
+        <motion.div
+            className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 z-50"
+            onClick={endSession}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="relaxation-title"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{ opacity: backdropOpacity }}
+        >
+            <motion.div
+                className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-t-2xl sm:rounded-2xl p-6 w-full max-w-sm text-center"
+                onClick={(e) => e.stopPropagation()}
+                style={{ y }}
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+                drag="y"
+                dragConstraints={{ top: 0 }}
+                dragElastic={{ top: 0, bottom: 0.5 }}
+                onDragEnd={handleDragEnd}
+            >
+                {/* Drag indicator for mobile */}
+                <div className="flex justify-center pb-2 sm:hidden cursor-grab active:cursor-grabbing">
+                    <div className="w-10 h-1 rounded-full bg-day-border dark:bg-night-border" />
+                </div>
                 <h2 id="relaxation-title" className="font-serif text-2xl mb-4">{relaxation.name}</h2>
 
                 {sessionState === 'ready' ? (
@@ -266,7 +304,7 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
                         <button onClick={endSession} aria-label="End session" className="w-full mt-6 py-2 min-h-[44px] bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">End Session</button>
                     </div>
                 )}
-            </div>
-        </div >
+            </motion.div>
+        </motion.div>
     );
 };
