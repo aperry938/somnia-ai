@@ -3,14 +3,17 @@ import {
     PRICING,
     PREMIUM_FEATURES,
     PremiumFeature,
-    createCheckoutSession,
+    getSubscriptionOfferings,
+    purchaseSubscription,
+    restoreSubscription,
+    type Package,
+    type Offerings,
 } from '../../services/secureSubscriptionService';
 
 interface SecurePaywallModalProps {
     isOpen: boolean;
     onClose: () => void;
     feature?: PremiumFeature;
-    userId: string;
     onNavigateToTerms?: () => void;
 }
 
@@ -18,13 +21,29 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
     isOpen,
     onClose,
     feature,
-    userId,
     onNavigateToTerms
 }) => {
     const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
     const [isProcessing, setIsProcessing] = useState(false);
+    const [isRestoring, setIsRestoring] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [termsAccepted, setTermsAccepted] = useState(false);
+    const [offerings, setOfferings] = useState<Offerings | null>(null);
+    const [isLoadingOfferings, setIsLoadingOfferings] = useState(true);
+
+    // Load offerings on mount
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const loadOfferings = async () => {
+            setIsLoadingOfferings(true);
+            const result = await getSubscriptionOfferings();
+            setOfferings(result);
+            setIsLoadingOfferings(false);
+        };
+
+        loadOfferings();
+    }, [isOpen]);
 
     // Handle Escape key to close modal
     useEffect(() => {
@@ -38,38 +57,83 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
 
     if (!isOpen) return null;
 
+    // Get the selected package from offerings
+    const getSelectedPackage = (): Package | null => {
+        if (!offerings?.current) return null;
+
+        const packages = offerings.current.availablePackages;
+        if (selectedPlan === 'monthly') {
+            return packages.find(p => p.packageType === 'MONTHLY' || p.identifier.includes('monthly')) ?? null;
+        } else {
+            return packages.find(p => p.packageType === 'ANNUAL' || p.identifier.includes('annual') || p.identifier.includes('yearly')) ?? null;
+        }
+    };
+
     const handleSubscribe = async () => {
-        setIsProcessing(true);
-        setError(null);
-
-        const priceId = selectedPlan === 'monthly'
-            ? PRICING.monthly.priceId
-            : PRICING.yearly.priceId;
-
-        if (!priceId) {
-            setError('Stripe not configured. Please contact support.');
-            setIsProcessing(false);
+        const pkg = getSelectedPackage();
+        if (!pkg) {
+            setError('Unable to load subscription options. Please try again.');
             return;
         }
 
-        const result = await createCheckoutSession(
-            priceId,
-            userId,
-            `${window.location.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
-            window.location.href
-        );
+        setIsProcessing(true);
+        setError(null);
+
+        const result = await purchaseSubscription(pkg);
 
         setIsProcessing(false);
+
+        if (result.error === 'cancelled') {
+            // User cancelled - no error message needed
+            return;
+        }
 
         if (result.error) {
             setError(result.error);
             return;
         }
 
-        if (result.url) {
-            // Redirect to Stripe Checkout
-            window.location.href = result.url;
+        if (result.success) {
+            // Purchase successful - close modal
+            onClose();
         }
+    };
+
+    const handleRestore = async () => {
+        setIsRestoring(true);
+        setError(null);
+
+        const result = await restoreSubscription();
+
+        setIsRestoring(false);
+
+        if (result.error) {
+            setError(result.error);
+            return;
+        }
+
+        if (result.isPremium) {
+            // Restored successfully
+            onClose();
+        } else {
+            setError('No previous purchases found');
+        }
+    };
+
+    // Get display price from package or fallback to static pricing
+    const getDisplayPrice = (plan: 'monthly' | 'yearly'): string => {
+        const pkg = offerings?.current?.availablePackages.find(p =>
+            plan === 'monthly'
+                ? (p.packageType === 'MONTHLY' || p.identifier.includes('monthly'))
+                : (p.packageType === 'ANNUAL' || p.identifier.includes('annual') || p.identifier.includes('yearly'))
+        );
+
+        if (pkg?.product.priceString) {
+            return pkg.product.priceString;
+        }
+
+        // Fallback to static pricing
+        return plan === 'monthly' ? `$${PRICING.monthly.price}` : `$${PRICING.yearly.price}`;
     };
 
     const featuredFeature = feature ? PREMIUM_FEATURES[feature] : null;
@@ -116,149 +180,102 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
                 {/* Free vs Premium Comparison */}
                 <div className="p-6">
                     <div className="grid grid-cols-3 gap-2 text-sm mb-6">
-                        {/* Header */}
                         <div className="col-span-1"></div>
                         <div className="text-center font-medium text-day-text-secondary dark:text-night-text-secondary py-2">Free</div>
                         <div className="text-center font-medium py-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-t-lg text-amber-600 dark:text-amber-400">Premium</div>
 
-                        {/* Dream Journaling */}
-                        <div className="py-2 text-day-text-secondary dark:text-night-text-secondary">Dream Journal</div>
-                        <div className="text-center py-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 inline" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                        </div>
-                        <div className="text-center py-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 inline" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                        </div>
-
-                        {/* Sleep Tracking */}
-                        <div className="py-2 text-day-text-secondary dark:text-night-text-secondary">Sleep Tracker</div>
-                        <div className="text-center py-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 inline" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                        </div>
-                        <div className="text-center py-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 inline" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                        </div>
-
-                        {/* Basic Sleep Sounds */}
-                        <div className="py-2 text-day-text-secondary dark:text-night-text-secondary">Sleep Sounds</div>
-                        <div className="text-center py-2 text-xs text-day-text-secondary dark:text-night-text-secondary">Basic</div>
-                        <div className="text-center py-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10 text-xs font-medium text-amber-600 dark:text-amber-400">All + Binaural</div>
-
-                        {/* AI Analysis */}
-                        <div className="py-2 text-day-text-secondary dark:text-night-text-secondary">AI Dream Analysis</div>
-                        <div className="text-center py-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-300 dark:text-gray-600 inline" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                            </svg>
-                        </div>
-                        <div className="text-center py-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 inline" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                        </div>
-
-                        {/* Dream Chat */}
-                        <div className="py-2 text-day-text-secondary dark:text-night-text-secondary">Dream Chat AI</div>
-                        <div className="text-center py-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-300 dark:text-gray-600 inline" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                            </svg>
-                        </div>
-                        <div className="text-center py-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 inline" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                        </div>
-
-                        {/* AI Sleep Coach */}
-                        <div className="py-2 text-day-text-secondary dark:text-night-text-secondary">AI Sleep Coach</div>
-                        <div className="text-center py-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-300 dark:text-gray-600 inline" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                            </svg>
-                        </div>
-                        <div className="text-center py-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 inline" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                        </div>
-
-                        {/* Dream Imagery */}
-                        <div className="py-2 text-day-text-secondary dark:text-night-text-secondary">Dream Imagery</div>
-                        <div className="text-center py-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-300 dark:text-gray-600 inline" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                            </svg>
-                        </div>
-                        <div className="text-center py-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 inline" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                        </div>
-
-                        {/* Breathing Exercises */}
-                        <div className="py-2 text-day-text-secondary dark:text-night-text-secondary">Breathing Exercises</div>
-                        <div className="text-center py-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-300 dark:text-gray-600 inline" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                            </svg>
-                        </div>
-                        <div className="text-center py-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-b-lg">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 inline" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                        </div>
+                        {/* Features comparison rows */}
+                        {[
+                            { name: 'Dream Journal', free: true, premium: true },
+                            { name: 'Sleep Tracker', free: true, premium: true },
+                            { name: 'Sleep Sounds', free: 'Basic', premium: 'All + Binaural' },
+                            { name: 'AI Dream Analysis', free: false, premium: true },
+                            { name: 'Dream Chat AI', free: false, premium: true },
+                            { name: 'AI Sleep Coach', free: false, premium: true },
+                            { name: 'Dream Imagery', free: false, premium: true },
+                            { name: 'Breathing Exercises', free: false, premium: true, last: true },
+                        ].map((row, idx) => (
+                            <React.Fragment key={idx}>
+                                <div className="py-2 text-day-text-secondary dark:text-night-text-secondary">{row.name}</div>
+                                <div className="text-center py-2">
+                                    {typeof row.free === 'boolean' ? (
+                                        row.free ? (
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 inline" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                            </svg>
+                                        ) : (
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-300 dark:text-gray-600 inline" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                            </svg>
+                                        )
+                                    ) : (
+                                        <span className="text-xs text-day-text-secondary dark:text-night-text-secondary">{row.free}</span>
+                                    )}
+                                </div>
+                                <div className={`text-center py-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10 ${row.last ? 'rounded-b-lg' : ''}`}>
+                                    {typeof row.premium === 'boolean' ? (
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 inline" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                        </svg>
+                                    ) : (
+                                        <span className="text-xs font-medium text-amber-600 dark:text-amber-400">{row.premium}</span>
+                                    )}
+                                </div>
+                            </React.Fragment>
+                        ))}
                     </div>
 
-                    {/* Pricing Toggle */}
-                    <div className="flex justify-center gap-2 mb-4" role="group" aria-label="Subscription plan options">
-                        <button
-                            onClick={() => setSelectedPlan('monthly')}
-                            aria-label="Monthly plan"
-                            aria-pressed={selectedPlan === 'monthly'}
-                            className={`px-5 py-2 min-h-[44px] rounded-full text-sm font-medium transition-colors flex items-center justify-center ${selectedPlan === 'monthly'
-                                ? 'bg-day-accent dark:bg-night-accent text-white'
-                                : 'bg-day-border dark:bg-night-border'
-                                }`}
-                        >
-                            Monthly
-                        </button>
-                        <button
-                            onClick={() => setSelectedPlan('yearly')}
-                            aria-label={`Yearly plan, save ${PRICING.yearly.savings}%`}
-                            aria-pressed={selectedPlan === 'yearly'}
-                            className={`px-5 py-2 min-h-[44px] rounded-full text-sm font-medium transition-colors flex items-center justify-center ${selectedPlan === 'yearly'
-                                ? 'bg-day-accent dark:bg-night-accent text-white'
-                                : 'bg-day-border dark:bg-night-border'
-                                }`}
-                        >
-                            Yearly
-                            <span className="ml-1 text-xs opacity-80">Save {PRICING.yearly.savings}%</span>
-                        </button>
-                    </div>
-
-                    {/* Price Display */}
-                    <div className="text-center mb-6">
-                        <div className="text-4xl font-bold">
-                            ${selectedPlan === 'monthly' ? PRICING.monthly.price : PRICING.yearly.price}
+                    {/* Loading State */}
+                    {isLoadingOfferings ? (
+                        <div className="flex justify-center py-4">
+                            <svg className="animate-spin h-6 w-6 text-day-accent" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                            </svg>
                         </div>
-                        <div className="text-day-text-secondary dark:text-night-text-secondary">
-                            per {selectedPlan === 'monthly' ? 'month' : 'year'}
-                        </div>
-                        {selectedPlan === 'yearly' && (
-                            <div className="text-sm text-green-500 mt-1">
-                                That's just ${(PRICING.yearly.price / 12).toFixed(2)}/month
+                    ) : (
+                        <>
+                            {/* Pricing Toggle */}
+                            <div className="flex justify-center gap-2 mb-4" role="group" aria-label="Subscription plan options">
+                                <button
+                                    onClick={() => setSelectedPlan('monthly')}
+                                    aria-pressed={selectedPlan === 'monthly'}
+                                    className={`px-5 py-2 min-h-[44px] rounded-full text-sm font-medium transition-colors ${selectedPlan === 'monthly'
+                                        ? 'bg-day-accent dark:bg-night-accent text-white'
+                                        : 'bg-day-border dark:bg-night-border'
+                                        }`}
+                                >
+                                    Monthly
+                                </button>
+                                <button
+                                    onClick={() => setSelectedPlan('yearly')}
+                                    aria-pressed={selectedPlan === 'yearly'}
+                                    className={`px-5 py-2 min-h-[44px] rounded-full text-sm font-medium transition-colors ${selectedPlan === 'yearly'
+                                        ? 'bg-day-accent dark:bg-night-accent text-white'
+                                        : 'bg-day-border dark:bg-night-border'
+                                        }`}
+                                >
+                                    Yearly
+                                    <span className="ml-1 text-xs opacity-80">Save {PRICING.yearly.savings}%</span>
+                                </button>
                             </div>
-                        )}
-                    </div>
+
+                            {/* Price Display */}
+                            <div className="text-center mb-6">
+                                <div className="text-4xl font-bold">
+                                    {getDisplayPrice(selectedPlan)}
+                                </div>
+                                <div className="text-day-text-secondary dark:text-night-text-secondary">
+                                    per {selectedPlan === 'monthly' ? 'month' : 'year'}
+                                </div>
+                                {selectedPlan === 'yearly' && (
+                                    <div className="text-sm text-green-500 mt-1">
+                                        That's just ${(PRICING.yearly.price / 12).toFixed(2)}/month
+                                    </div>
+                                )}
+                            </div>
+                        </>
+                    )}
 
                     {/* Error Display */}
                     {error && (
@@ -276,7 +293,7 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
                             className="mt-1 w-4 h-4 rounded border-gray-300 text-day-accent focus:ring-day-accent"
                         />
                         <span className="text-sm text-day-text-secondary dark:text-night-text-secondary">
-                            I have read and agree to the{' '}
+                            I agree to the{' '}
                             {onNavigateToTerms ? (
                                 <button
                                     type="button"
@@ -294,7 +311,7 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
                     {/* CTA Button */}
                     <button
                         onClick={handleSubscribe}
-                        disabled={isProcessing || !termsAccepted}
+                        disabled={isProcessing || !termsAccepted || isLoadingOfferings}
                         className="w-full py-3 min-h-[48px] bg-gradient-to-r from-day-accent to-purple-600 text-white rounded-full font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isProcessing ? (
@@ -312,12 +329,21 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
                         )}
                     </button>
 
+                    {/* Restore Purchases */}
+                    <button
+                        onClick={handleRestore}
+                        disabled={isRestoring || isProcessing}
+                        className="w-full py-2 mt-3 min-h-[44px] text-day-text-secondary dark:text-night-text-secondary text-sm hover:text-day-accent dark:hover:text-night-accent transition-colors disabled:opacity-50"
+                    >
+                        {isRestoring ? 'Restoring...' : 'Restore Purchases'}
+                    </button>
+
                     {/* Security Badge */}
-                    <div className="flex items-center justify-center gap-2 mt-4 text-xs text-day-text-secondary dark:text-night-text-secondary">
+                    <div className="flex items-center justify-center gap-2 mt-3 text-xs text-day-text-secondary dark:text-night-text-secondary">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                         </svg>
-                        Secured by Stripe • Cancel anytime
+                        Secure payment via App Store • Cancel anytime
                     </div>
                 </div>
             </div>

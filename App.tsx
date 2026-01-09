@@ -13,6 +13,7 @@ import { calculateUserStats } from './services/userStatsService';
 import { useToast } from './components/shared/Toast';
 import { checkAndMigrateData } from './services/migrationService';
 import { logger } from './services/logger';
+import { initializeSubscriptions } from './services/secureSubscriptionService';
 import { useScrollHaptics } from './hooks/useScrollHaptics';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -106,6 +107,9 @@ const App: React.FC = () => {
 
         // Check data integrity
         checkAndMigrateData();
+
+        // Initialize subscription service (RevenueCat)
+        initializeSubscriptions();
 
         // Initialize native alarms (iOS/Android)
         const initNativeAlarms = async () => {

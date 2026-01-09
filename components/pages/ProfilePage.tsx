@@ -6,7 +6,7 @@ import { Biometrics, Page } from '../../types';
 import { useToast } from '../shared/Toast';
 import { calculateUserStats } from '../../services/userStatsService';
 import { useClock } from '../../hooks/useClock';
-import { isPremium, getRemainingCredits as _getRemainingCredits, getCredits as _getCredits, createCustomerPortalSession, isDevMode } from '../../services/secureSubscriptionService';
+import { isPremium, getRemainingCredits as _getRemainingCredits, getCredits as _getCredits, openSubscriptionManagement, isDevMode } from '../../services/secureSubscriptionService';
 import { SecurePaywallModal } from '../modals/SecurePaywallModal';
 import { LevelGuideModal } from '../modals/LevelGuideModal';
 import { getLevelTitle } from '../../constants/gamification';
@@ -196,29 +196,19 @@ const ProfileInfoCard: React.FC = () => {
 
 // Membership Card
 const MembershipCard: React.FC<{ onNavigateToTerms?: () => void }> = ({ onNavigateToTerms }) => {
-    const { user, session, isAuthenticated } = useAuth();
+    const { isAuthenticated } = useAuth();
     const { showToast } = useToast();
     const premium = isPremium();
     const [showPaywall, setShowPaywall] = useState(false);
     const [isManaging, setIsManaging] = useState(false);
 
     const handleManageSubscription = async () => {
-        if (!session?.access_token) {
-            showToast('Please sign in to manage your subscription', 'error');
-            return;
-        }
-
         setIsManaging(true);
-        const result = await createCustomerPortalSession(session.access_token);
+        const success = await openSubscriptionManagement();
         setIsManaging(false);
 
-        if (result.error) {
-            showToast(result.error, 'error');
-            return;
-        }
-
-        if (result.url) {
-            window.location.href = result.url;
+        if (!success) {
+            showToast('Unable to open subscription management', 'error');
         }
     };
 
@@ -286,14 +276,11 @@ const MembershipCard: React.FC<{ onNavigateToTerms?: () => void }> = ({ onNaviga
             </div>
 
             {/* Paywall Modal */}
-            {user && (
-                <SecurePaywallModal
-                    isOpen={showPaywall}
-                    onClose={() => setShowPaywall(false)}
-                    userId={user.id}
-                    onNavigateToTerms={onNavigateToTerms}
-                />
-            )}
+            <SecurePaywallModal
+                isOpen={showPaywall}
+                onClose={() => setShowPaywall(false)}
+                onNavigateToTerms={onNavigateToTerms}
+            />
         </>
     );
 };

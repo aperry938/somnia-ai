@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { verifySubscription, getCachedStatus } from '../../services/secureSubscriptionService';
-import { useAuth } from '../../contexts/AuthContext';
+import { verifySubscription, isPremium } from '../../services/secureSubscriptionService';
 import { logger } from '../../services/logger';
 
 interface SuccessPageProps {
@@ -8,27 +7,24 @@ interface SuccessPageProps {
 }
 
 export const SuccessPage: React.FC<SuccessPageProps> = ({ onBack }) => {
-    const { session } = useAuth();
     const [isVerifying, setIsVerifying] = useState(true);
-    const [status, setStatus] = useState(getCachedStatus());
+    const [status, setStatus] = useState({ isPremium: isPremium() });
 
     useEffect(() => {
         const verifyAndUpdate = async () => {
-            if (session?.access_token) {
-                try {
-                    const newStatus = await verifySubscription(session.access_token);
-                    setStatus(newStatus);
-                } catch (error) {
-                    logger.error('Failed to verify subscription:', error);
-                }
+            try {
+                const newStatus = await verifySubscription();
+                setStatus(newStatus);
+            } catch (error) {
+                logger.error('Failed to verify subscription:', error);
             }
             setIsVerifying(false);
         };
 
-        // Small delay to allow Stripe webhook to process
+        // Small delay to allow app store webhook to process
         const timer = setTimeout(verifyAndUpdate, 2000);
         return () => clearTimeout(timer);
-    }, [session]);
+    }, []);
 
     return (
         <div className="min-h-[80vh] flex items-center justify-center p-4">
