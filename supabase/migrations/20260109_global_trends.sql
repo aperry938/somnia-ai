@@ -252,6 +252,7 @@ GRANT EXECUTE ON FUNCTION get_global_trends TO anon;
 
 -- Public read access to cached trends (no individual user data exposed)
 ALTER TABLE public.global_trends_cache ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Anyone can read global trends" ON public.global_trends_cache;
 CREATE POLICY "Anyone can read global trends" ON public.global_trends_cache
     FOR SELECT USING (true);
 

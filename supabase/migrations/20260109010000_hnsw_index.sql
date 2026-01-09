@@ -50,16 +50,16 @@ END $$;
 
 CREATE OR REPLACE FUNCTION match_dreams_hnsw(
     query_embedding vector(768),
+    user_id_input UUID,
     match_threshold FLOAT DEFAULT 0.75,
     match_count INT DEFAULT 5,
-    user_id_input UUID,
     accuracy_level TEXT DEFAULT 'balanced' -- 'fast', 'balanced', 'accurate'
 )
 RETURNS TABLE (
     id BIGINT,
     dream_text TEXT,
     title TEXT,
-    timestamp TIMESTAMPTZ,
+    "timestamp" TIMESTAMPTZ,
     similarity FLOAT
 )
 LANGUAGE plpgsql

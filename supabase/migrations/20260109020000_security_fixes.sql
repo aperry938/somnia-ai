@@ -14,15 +14,15 @@ DROP FUNCTION IF EXISTS match_dreams(vector(768), FLOAT, INT, UUID);
 -- Create secure version with mandatory user_id
 CREATE OR REPLACE FUNCTION match_dreams(
     query_embedding vector(768),
+    user_id_input UUID,  -- NOW REQUIRED, NOT OPTIONAL
     match_threshold FLOAT DEFAULT 0.75,
-    match_count INT DEFAULT 5,
-    user_id_input UUID  -- NOW REQUIRED, NOT OPTIONAL
+    match_count INT DEFAULT 5
 )
 RETURNS TABLE (
     id BIGINT,
     dream_text TEXT,
     title TEXT,
-    timestamp TIMESTAMPTZ,
+    "timestamp" TIMESTAMPTZ,
     similarity FLOAT
 )
 LANGUAGE plpgsql
@@ -68,6 +68,7 @@ REVOKE EXECUTE ON FUNCTION match_dreams FROM anon;
 GRANT EXECUTE ON FUNCTION match_dreams TO authenticated;
 
 -- 2. Add secure version of get_dream_telemetry with auth check
+DROP FUNCTION IF EXISTS get_dream_telemetry(UUID, INT);
 CREATE OR REPLACE FUNCTION get_dream_telemetry(
     user_id_input UUID,
     limit_count INT DEFAULT 100
@@ -75,7 +76,7 @@ CREATE OR REPLACE FUNCTION get_dream_telemetry(
 RETURNS TABLE (
     id BIGINT,
     title TEXT,
-    timestamp TIMESTAMPTZ,
+    "timestamp" TIMESTAMPTZ,
     valence FLOAT,
     arousal FLOAT,
     lucidity INTEGER,
@@ -115,6 +116,7 @@ END;
 $$;
 
 -- 3. Add secure version of get_dreams_by_quadrant with auth check
+DROP FUNCTION IF EXISTS get_dreams_by_quadrant(UUID, TEXT);
 CREATE OR REPLACE FUNCTION get_dreams_by_quadrant(
     user_id_input UUID,
     quadrant TEXT
@@ -122,7 +124,7 @@ CREATE OR REPLACE FUNCTION get_dreams_by_quadrant(
 RETURNS TABLE (
     id BIGINT,
     title TEXT,
-    timestamp TIMESTAMPTZ,
+    "timestamp" TIMESTAMPTZ,
     valence FLOAT,
     arousal FLOAT
 )
