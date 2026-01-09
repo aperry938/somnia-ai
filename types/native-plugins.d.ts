@@ -6,7 +6,7 @@
  * - iOS: ios/App/App/
  */
 
-import { registerPlugin } from '@capacitor/core';
+import type { registerPlugin as _registerPlugin } from '@capacitor/core';
 
 // ============================================================================
 // Native Alarm Plugin (Android only)

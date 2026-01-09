@@ -37,7 +37,7 @@ describe('sleepPredictionService', () => {
     });
 
     it('falls back to recent average if no specific factors match', () => {
-        const context: SleepAids = { dayRating: 3 }; // Only ID 5 matches (quality 3)
+        const _context: SleepAids = { dayRating: 3 }; // Only ID 5 matches (quality 3)
         // Wait, if 3 matches ID 5, it DOES match a factor.
         // Let's use a rating that doesn't exist.
         const contextNoMatch: SleepAids = { dayRating: 1 };

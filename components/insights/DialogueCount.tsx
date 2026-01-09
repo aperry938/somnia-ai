@@ -10,12 +10,12 @@ export const DialogueCount: React.FC<DialogueCountProps> = ({ dreams }) => {
         if (dreams.length < 5) return null;
 
         let dreamsWithDialogue = 0;
-        let totalQuotes = 0;
+        let _totalQuotes = 0;
 
         dreams.forEach(d => {
             const quotes = (d.dreamText.match(/[""]|said|asked|replied|yelled|whispered|told/gi) || []).length;
             if (quotes > 0) dreamsWithDialogue++;
-            totalQuotes += quotes;
+            _totalQuotes += quotes;
         });
 
         return {

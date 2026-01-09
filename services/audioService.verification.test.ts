@@ -17,7 +17,7 @@ import { SOUNDSCAPES, GUIDED_RELAXATIONS } from '../constants';
 /**
  * Extracts numeric values from code/documentation for verification
  */
-const extractFrequencyFromDescription = (desc: string, pattern: RegExp): number | null => {
+const _extractFrequencyFromDescription = (desc: string, pattern: RegExp): number | null => {
     const match = desc.match(pattern);
     return match ? parseFloat(match[1]) : null;
 };
@@ -593,7 +593,7 @@ describe('False Advertising Risk Assessment', () => {
             { claim: 'Box breathing 4-second intervals', verified: true },
         ];
 
-        claims.forEach(({ claim, verified }) => {
+        claims.forEach(({ claim: _claim, verified }) => {
             expect(verified).toBe(true);
         });
     });

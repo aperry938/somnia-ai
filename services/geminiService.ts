@@ -377,7 +377,7 @@ const createDreamChatSystemPrompt = (dream: Dream, personality: AnalysisPersonal
  * @returns Promise<string> - The AI's response
  */
 export const getDreamChatResponse = async (dream: Dream, history: ChatMessage[]): Promise<string> => {
-    const cleanHistory = history.map(({ id, isError, ...rest }) => rest);
+    const cleanHistory = history.map(({ id: _id, isError: _isError, ...rest }) => rest);
     const chatHistory = [createDreamChatSystemPrompt(dream), ...cleanHistory];
     try {
         const ai = getAi();

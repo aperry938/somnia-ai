@@ -88,7 +88,7 @@ describe('rateLimitService', () => {
         });
 
         it('should decrement remaining with each request', async () => {
-            const { checkRateLimit, RATE_LIMITS } = await import('./rateLimitService');
+            const { checkRateLimit, RATE_LIMITS: _RATE_LIMITS } = await import('./rateLimitService');
 
             const first = checkRateLimit('ai_analysis', 'decrement-test');
             const second = checkRateLimit('ai_analysis', 'decrement-test');

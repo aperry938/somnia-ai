@@ -96,7 +96,7 @@ describe('audioService', () => {
 
     describe('playSleepSound', () => {
         it('should create gain node for volume control', async () => {
-            const { playSleepSound, stopSleepSound } = await import('./audioService');
+            const { playSleepSound: _playSleepSound, stopSleepSound: _stopSleepSound } = await import('./audioService');
 
             // This will use the mocked AudioContext
             // In a real test, we'd verify the gain node is connected properly
@@ -106,7 +106,7 @@ describe('audioService', () => {
 
     describe('playProgressiveAlarm', () => {
         it('should ramp frequency from 300Hz to 800Hz', async () => {
-            const { playProgressiveAlarm } = await import('./audioService');
+            const { playProgressiveAlarm: _playProgressiveAlarm } = await import('./audioService');
 
             // Verify the oscillator is configured correctly
             expect(mockOscillatorNode.frequency).toBeDefined();
@@ -115,7 +115,7 @@ describe('audioService', () => {
 
     describe('noise generation', () => {
         it('should generate white noise buffer correctly', async () => {
-            const { createNoiseNode } = await import('./audioService');
+            const { createNoiseNode: _createNoiseNode } = await import('./audioService');
 
             // White noise should have random values between -1 and 1
             expect(mockAudioContext.createBuffer).toBeDefined();
