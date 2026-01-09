@@ -29,10 +29,12 @@ export const useSwipeNavigation = (
 
         if (direction === 'left' && currentIndex < SWIPE_PAGES.length - 1) {
             // Swipe left = go to next page
-            setCurrentPage(SWIPE_PAGES[currentIndex + 1]);
+            const nextPage = SWIPE_PAGES[currentIndex + 1];
+            if (nextPage) setCurrentPage(nextPage);
         } else if (direction === 'right' && currentIndex > 0) {
             // Swipe right = go to previous page
-            setCurrentPage(SWIPE_PAGES[currentIndex - 1]);
+            const prevPage = SWIPE_PAGES[currentIndex - 1];
+            if (prevPage) setCurrentPage(prevPage);
         }
     }, [currentPage, setCurrentPage]);
 
@@ -50,8 +52,8 @@ export const useSwipeNavigation = (
                 return;
             }
 
-            touchStartX.current = e.touches[0].clientX;
-            touchStartY.current = e.touches[0].clientY;
+            touchStartX.current = e.touches[0]?.clientX ?? 0;
+            touchStartY.current = e.touches[0]?.clientY ?? 0;
             touchStartTime.current = Date.now();
             isSwiping.current = true;
         };
@@ -59,8 +61,8 @@ export const useSwipeNavigation = (
         const handleTouchMove = (e: TouchEvent) => {
             if (!isSwiping.current) return;
 
-            const deltaX = e.touches[0].clientX - touchStartX.current;
-            const deltaY = e.touches[0].clientY - touchStartY.current;
+            const deltaX = (e.touches[0]?.clientX ?? 0) - touchStartX.current;
+            const deltaY = (e.touches[0]?.clientY ?? 0) - touchStartY.current;
 
             // If vertical scroll is more prominent, cancel swipe navigation
             if (Math.abs(deltaY) > Math.abs(deltaX) * 1.5) {
@@ -71,7 +73,7 @@ export const useSwipeNavigation = (
         const handleTouchEnd = (e: TouchEvent) => {
             if (!isSwiping.current) return;
 
-            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndX = e.changedTouches[0]?.clientX ?? 0;
             const deltaX = touchEndX - touchStartX.current;
             const deltaTime = Date.now() - touchStartTime.current;
             const velocity = Math.abs(deltaX) / deltaTime;

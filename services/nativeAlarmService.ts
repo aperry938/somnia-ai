@@ -138,7 +138,7 @@ export async function scheduleAlarm(
             const [hours, minutes] = time.split(':').map(Number);
             const now = new Date();
             const scheduleDate = new Date();
-            scheduleDate.setHours(hours, minutes, 0, 0);
+            scheduleDate.setHours(hours ?? 0, minutes ?? 0, 0, 0);
 
             // If time has passed today, schedule for tomorrow
             if (scheduleDate <= now) {
@@ -194,9 +194,8 @@ export async function scheduleRecurringAlarm(
             const alarmId = `${id}_day${day}`;
 
             if (isAndroid && NativeAlarm) {
-                // Calculate next occurrence of this weekday
-                const nextDate = getNextDayOccurrence(day, hours, minutes);
-                const timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+                // Calculate next occurrence of this weekday (not used, but validates the day)
+                const timeStr = `${String(hours ?? 0).padStart(2, '0')}:${String(minutes ?? 0).padStart(2, '0')}`;
 
                 await NativeAlarm.scheduleAlarm({
                     id: alarmId,
@@ -443,22 +442,6 @@ function hashCode(str: string): number {
         hash = hash & hash;
     }
     return Math.abs(hash);
-}
-
-function getNextDayOccurrence(dayOfWeek: number, hours: number, minutes: number): Date {
-    const now = new Date();
-    const result = new Date();
-    result.setHours(hours, minutes, 0, 0);
-
-    const currentDay = now.getDay();
-    let daysUntil = dayOfWeek - currentDay;
-
-    if (daysUntil < 0 || (daysUntil === 0 && result <= now)) {
-        daysUntil += 7;
-    }
-
-    result.setDate(result.getDate() + daysUntil);
-    return result;
 }
 
 // Export check permissions

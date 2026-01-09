@@ -38,8 +38,10 @@ class VoiceCommandService {
 
             this.recognition.onresult = (event) => {
                 const lastResultIndex = event.results.length - 1;
-                const transcript = event.results[lastResultIndex][0].transcript.trim().toLowerCase();
-                this.processCommand(transcript);
+                const transcript = event.results[lastResultIndex]?.[0]?.transcript.trim().toLowerCase();
+                if (transcript) {
+                    this.processCommand(transcript);
+                }
             };
 
             this.recognition.onerror = (event) => {

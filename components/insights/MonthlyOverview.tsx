@@ -25,13 +25,13 @@ export const MonthlyOverview: React.FC<MonthlyOverviewProps> = ({ dreams }) => {
             const d = new Date(dream.timestamp);
             const key = `${d.getFullYear()}-${d.getMonth()}`;
             if (key in monthCounts) {
-                monthCounts[key]++;
+                monthCounts[key] = (monthCounts[key] ?? 0) + 1;
             }
         });
 
         const data = Object.entries(monthCounts).map(([key, count]) => {
             const [year, month] = key.split('-').map(Number);
-            return { month: MONTHS[month], year, count };
+            return { month: MONTHS[month ?? 0] ?? '', year: year ?? 0, count };
         });
 
         const max = Math.max(...data.map(d => d.count), 1);

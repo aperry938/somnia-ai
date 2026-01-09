@@ -206,12 +206,12 @@ export function buildScheduleContext(alarms?: Alarm[]): string {
 
     const alarmTimes = activeAlarms.map(a => {
         const [h, m] = a.time.split(':').map(Number);
-        const hour = h === 0 ? 12 : h > 12 ? h - 12 : h;
-        const period = h >= 12 ? 'PM' : 'AM';
+        const hour = (h ?? 0) === 0 ? 12 : (h ?? 0) > 12 ? (h ?? 0) - 12 : (h ?? 0);
+        const period = (h ?? 0) >= 12 ? 'PM' : 'AM';
         const days = a.days.length === 7 ? 'daily' :
                      a.days.length === 0 ? 'one-time' :
                      `${a.days.length} days/week`;
-        return `${hour}:${String(m).padStart(2, '0')} ${period} (${days})`;
+        return `${hour}:${String(m ?? 0).padStart(2, '0')} ${period} (${days})`;
     });
 
     return `SLEEP SCHEDULE:\nActive alarms: ${alarmTimes.join(', ')}`;
@@ -341,7 +341,7 @@ Continue the conversation naturally, inviting the user to explore further.`;
  * Prompt for synthesizing multiple dreams into patterns
  */
 export function createSynthesisPrompt(dreams: Dream[]): string {
-    const dreamLog = dreams.map((d, i) => {
+    const dreamLog = dreams.map((d, _i) => {
         const meta = [
             d.mood ? `Mood: ${d.mood}` : null,
             d.sleepQuality ? `Quality: ${d.sleepQuality}/5` : null,

@@ -1,16 +1,14 @@
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
-import { ChatMessage, Dream, DreamAnalysis, DreamSynthesis, SleepHabitAnalysis, SleepAids, Biometrics, AnalysisPersonality, DreamTelemetry, SimilarDream } from '../types';
-import { requirePremium, canUseAiAnalysis, useAiCredit, getRemainingCredits } from './secureSubscriptionService';
+import { ChatMessage, Dream, DreamAnalysis, DreamSynthesis, SleepHabitAnalysis, SleepAids, Biometrics, AnalysisPersonality, SimilarDream } from '../types';
+import { canUseAiAnalysis, consumeAiCredit } from './secureSubscriptionService';
 import { checkRateLimit, RateLimitError } from './rateLimitService';
 import { logError } from './errorService';
 import { logger } from './logger';
 import {
-    SOMNIA_IDENTITY,
     createAnalysisPrompt,
     createDreamChatPrompt,
     createSynthesisPrompt,
-    createHabitAnalysisPrompt,
-    buildUserContext
+    createHabitAnalysisPrompt
 } from './aiConfig';
 
 /**
@@ -54,12 +52,7 @@ const getAi = (): GoogleGenAI => {
 };
 
 
-const safetySettings = [
-    { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-    { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
-    { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
-    { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
-];
+// Safety settings can be configured here if needed in the future
 
 // Note: createAnalysisPrompt is now imported from aiConfig.ts for centralized prompt management
 
@@ -187,7 +180,7 @@ export const analyzeDream = async (dreamText: string, sleepAids?: SleepAids, bio
         }
 
         // Consume credit only after successful analysis
-        useAiCredit();
+        consumeAiCredit();
 
         return result;
     } catch (error) {
@@ -595,8 +588,8 @@ export const findSimilarDreams = (
     });
 
     return similarities
-        .filter(s => s.similarity >= threshold)
-        .sort((a, b) => b.similarity - a.similarity)
+        .filter(s => s?.similarity >= threshold)
+        .sort((a, b) => (b?.similarity ?? 0) - (a?.similarity ?? 0))
         .slice(0, maxResults);
 };
 
@@ -611,9 +604,9 @@ const cosineSimilarity = (a: number[], b: number[]): number => {
     let normB = 0;
 
     for (let i = 0; i < a.length; i++) {
-        dotProduct += a[i] * b[i];
-        normA += a[i] * a[i];
-        normB += b[i] * b[i];
+        dotProduct += (a[i] ?? 0) * (b[i] ?? 0);
+        normA += (a[i] ?? 0) * (a[i] ?? 0);
+        normB += (b[i] ?? 0) * (b[i] ?? 0);
     }
 
     const denominator = Math.sqrt(normA) * Math.sqrt(normB);
@@ -746,7 +739,7 @@ export const analyzeDreamWithMemory = async (
         const result = JSON.parse(rawJson) as DreamAnalysis & { dreamConnections?: Array<{ pastDreamTitle: string; connection: string }> };
 
         // Consume credit after success
-        useAiCredit();
+        consumeAiCredit();
 
         return {
             analysis: result,

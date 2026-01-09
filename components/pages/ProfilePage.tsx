@@ -1,17 +1,17 @@
 import React, { useState, useRef, useMemo } from 'react';
-import { useAppContext, ArtStyle } from '../../contexts/AppContext';
+import { useAppContext, ArtStyle as _ArtStyle } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { exportDreamJournalToPDF, exportDreamsAsJSON, importDreamsFromJSON } from '../../services/exportService';
 import { Biometrics, Page } from '../../types';
 import { useToast } from '../shared/Toast';
 import { calculateUserStats } from '../../services/userStatsService';
 import { useClock } from '../../hooks/useClock';
-import { isPremium, getRemainingCredits, getCredits, createCustomerPortalSession, isDevMode } from '../../services/secureSubscriptionService';
+import { isPremium, getRemainingCredits as _getRemainingCredits, getCredits as _getCredits, createCustomerPortalSession, isDevMode } from '../../services/secureSubscriptionService';
 import { SecurePaywallModal } from '../modals/SecurePaywallModal';
 import { LevelGuideModal } from '../modals/LevelGuideModal';
 import { getLevelTitle } from '../../constants/gamification';
 
-const FREE_TIER_MAX_CREDITS = 3; // Same as in secureSubscriptionService
+// const _FREE_TIER_MAX_CREDITS = 3; // Same as in secureSubscriptionService
 const APP_VERSION = '1.0.0';
 const ADMIN_TAP_COUNT = 7; // Taps required to unlock admin access
 
@@ -199,8 +199,6 @@ const MembershipCard: React.FC<{ onNavigateToTerms?: () => void }> = ({ onNaviga
     const { user, session, isAuthenticated } = useAuth();
     const { showToast } = useToast();
     const premium = isPremium();
-    const credits = getRemainingCredits();
-    const maxCredits = FREE_TIER_MAX_CREDITS;
     const [showPaywall, setShowPaywall] = useState(false);
     const [isManaging, setIsManaging] = useState(false);
 
@@ -676,7 +674,7 @@ const LegalCard: React.FC<{ onNavigateTo?: (page: 'privacy' | 'terms') => void }
     );
 };
 
-export const ProfilePage: React.FC<{ onBack?: () => void; onNavigateTo?: (page: Page) => void }> = ({ onBack, onNavigateTo }) => {
+export const ProfilePage: React.FC<{ onBack?: () => void; onNavigateTo?: (page: Page) => void }> = ({ onBack: _onBack, onNavigateTo }) => {
     const { dreams, biometrics } = useAppContext();
     const { showToast } = useToast();
     const stats = useMemo(() => calculateUserStats(dreams), [dreams]);

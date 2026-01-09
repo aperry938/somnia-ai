@@ -13,8 +13,6 @@ import { logger } from './logger';
 
 // Check platform
 const isNative = Capacitor.isNativePlatform();
-const isAndroid = Capacitor.getPlatform() === 'android';
-const isIOS = Capacitor.getPlatform() === 'ios';
 
 /**
  * Widget Plugin Interface

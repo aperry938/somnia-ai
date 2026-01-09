@@ -7,10 +7,9 @@
 
 /// <reference types="@testing-library/jest-dom" />
 
-import React from 'react';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { Dream, DreamTelemetry, DreamAnalysis, SleepAids } from '../types';
+import { Dream } from '../types';
 
 // Import components to test
 import { AvgSleepQuality } from '../components/insights/AvgSleepQuality';

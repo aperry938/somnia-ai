@@ -14,8 +14,8 @@ export const AverageRecallTime: React.FC<AverageRecallTimeProps> = ({ dreams }) 
 
         dreams.forEach(d => {
             const hour = new Date(d.timestamp).getHours();
-            hourCounts[hour]++;
-            hourTotals[hour] += d.dreamText.split(/\s+/).length;
+            hourCounts[hour] = (hourCounts[hour] ?? 0) + 1;
+            hourTotals[hour] = (hourTotals[hour] ?? 0) + d.dreamText.split(/\s+/).length;
         });
 
         // Find peak recall hour

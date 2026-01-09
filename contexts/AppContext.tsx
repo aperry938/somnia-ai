@@ -17,7 +17,7 @@ const generateSecureId = (): number => {
     crypto.getRandomValues(array);
     // Combine two 32-bit values to create a larger random number
     // Use bitwise operations to ensure positive number in safe integer range
-    return Math.abs((array[0] * 0x100000000 + array[1]) % Number.MAX_SAFE_INTEGER);
+    return Math.abs(((array[0] ?? 0) * 0x100000000 + (array[1] ?? 0)) % Number.MAX_SAFE_INTEGER);
 };
 
 interface AppContextType {
@@ -141,7 +141,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         // Group legacy dreams by date
         const dreamsByDate = new Map<string, typeof legacyDreams>();
         legacyDreams.forEach(dream => {
-            const date = dream.timestamp.split('T')[0]; // Get YYYY-MM-DD
+            const date = (dream.timestamp ?? '').split('T')[0] ?? ''; // Get YYYY-MM-DD
             const existing = dreamsByDate.get(date) || [];
             dreamsByDate.set(date, [...existing, dream]);
         });
@@ -176,7 +176,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             dreamIds.forEach(dreamId => {
                 const idx = updatedDreams.findIndex(d => d.id === dreamId);
                 if (idx !== -1) {
-                    updatedDreams[idx] = { ...updatedDreams[idx], sleepEntryId: entryId };
+                    updatedDreams[idx] = { ...updatedDreams[idx]!, sleepEntryId: entryId } as Dream;
                 }
             });
         });
@@ -258,7 +258,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
         for (const alarm of activeAlarms) {
             const [h, m] = alarm.time.split(':').map(Number);
-            const alarmMinutes = h * 60 + m;
+            const alarmMinutes = (h ?? 0) * 60 + (m ?? 0);
 
             // Check if alarm is for today or has no days set (one-time)
             const isForToday = alarm.days.length === 0 || alarm.days.includes(currentDay);
@@ -402,10 +402,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         // Use sleep session data if available, otherwise fall back to pendingSleepData
         const sleepData = activeSleepSession?.sleepGatewayData ?? pendingSleepData ?? {};
         const wakeData = activeSleepSession?.wakeData;
-        const hasSessionData = activeSleepSession || pendingSleepData;
 
         const dreamId = generateSecureId();
-        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        const today = new Date().toISOString().split('T')[0] ?? ''; // YYYY-MM-DD
 
         // If we have an active sleep session, create a proper SleepEntry
         // This captures all tracked sleep sessions (with or without alarm)
@@ -416,7 +415,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 id: entryId,
                 date: today,
                 sleepQuality,
-                notes: sleepData.dayNotes,
+                ...(sleepData.dayNotes ? { notes: sleepData.dayNotes } : {}),
                 sleepAids: sleepData,
                 wakeData: wakeData,
                 alarmTime: activeSleepSession.alarmTime ?? undefined,

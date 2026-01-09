@@ -19,8 +19,6 @@ export const useSunTimes = () => {
     const [method, setMethod] = useState<'geolocation' | 'fallback'>('fallback');
 
     useEffect(() => {
-        let interval: number;
-
         const checkNight = (sunTimes: SunTimes) => {
             const now = new Date();
             const isCurrentlyNight = now < sunTimes.sunrise || now > sunTimes.sunset;
@@ -127,13 +125,13 @@ export const useSunTimes = () => {
         init();
 
         // Re-check every 5 minutes
-        interval = window.setInterval(() => {
+        const intervalId = window.setInterval(() => {
             const cached = getCachedTimes();
             const times = cached || getFallbackTimes();
             checkNight(times);
         }, 5 * 60 * 1000);
 
-        return () => clearInterval(interval);
+        return () => clearInterval(intervalId);
     }, []);
 
     return { isNight, method };

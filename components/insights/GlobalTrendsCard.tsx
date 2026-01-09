@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { getGlobalDreamTrends, getGlobalSleepStats, GlobalTrend, TrendPeriod } from '../../services/dreamTrendsService';
+import { getGlobalDreamTrends, getGlobalSleepStats, type GlobalTrend as _GlobalTrend, TrendPeriod } from '../../services/dreamTrendsService';
 
 const periodLabels: Record<TrendPeriod, string> = {
     'today': 'Today',

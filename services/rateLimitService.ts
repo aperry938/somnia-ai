@@ -47,7 +47,7 @@ export const checkRateLimit = (
     category: keyof typeof RATE_LIMITS,
     identifier: string = 'global'
 ): { allowed: boolean; remaining: number; resetIn: number } => {
-    const config = RATE_LIMITS[category] || RATE_LIMITS.api_default;
+    const config = RATE_LIMITS[category] ?? RATE_LIMITS.api_default;
     const key = `${category}:${identifier}`;
     const now = Date.now();
 
@@ -57,15 +57,15 @@ export const checkRateLimit = (
     if (!entry || now >= entry.resetTime) {
         entry = {
             count: 0,
-            resetTime: now + config.windowMs,
+            resetTime: now + (config?.windowMs ?? 60000),
         };
         rateLimitStore.set(key, entry);
     }
 
-    const remaining = Math.max(0, config.maxRequests - entry.count);
+    const remaining = Math.max(0, (config?.maxRequests ?? 100) - entry.count);
     const resetIn = Math.max(0, entry.resetTime - now);
 
-    if (entry.count >= config.maxRequests) {
+    if (entry.count >= (config?.maxRequests ?? 100)) {
         return { allowed: false, remaining: 0, resetIn };
     }
 
@@ -88,17 +88,17 @@ export const getRemainingRequests = (
     category: keyof typeof RATE_LIMITS,
     identifier: string = 'global'
 ): number => {
-    const config = RATE_LIMITS[category] || RATE_LIMITS.api_default;
+    const config = RATE_LIMITS[category] ?? RATE_LIMITS.api_default;
     const key = `${category}:${identifier}`;
     const now = Date.now();
 
     const entry = rateLimitStore.get(key);
 
     if (!entry || now >= entry.resetTime) {
-        return config.maxRequests;
+        return config?.maxRequests ?? 100;
     }
 
-    return Math.max(0, config.maxRequests - entry.count);
+    return Math.max(0, (config?.maxRequests ?? 100) - entry.count);
 };
 
 /**

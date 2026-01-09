@@ -53,8 +53,8 @@ export const DreamWordCloud: React.FC<WordCloudProps> = ({ dreams }) => {
 
         if (sorted.length === 0) return [];
 
-        const maxCount = sorted[0][1];
-        const minCount = sorted[sorted.length - 1][1];
+        const maxCount = sorted[0]?.[1] ?? 0;
+        const minCount = sorted[sorted.length - 1]?.[1] ?? 0;
         const range = maxCount - minCount || 1;
 
         return sorted.map(([word, count]) => ({

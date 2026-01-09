@@ -109,7 +109,7 @@ function getNextAlarm(alarms: Alarm[]): Alarm | null {
 
     for (const alarm of enabledAlarms) {
         const [hours, minutes] = alarm.time.split(':').map(Number);
-        const alarmMinutes = hours * 60 + minutes;
+        const alarmMinutes = (hours ?? 0) * 60 + (minutes ?? 0);
 
         // Check if alarm is set for today or specific days
         const isForToday = !alarm.days || alarm.days.length === 0 ||

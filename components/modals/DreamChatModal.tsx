@@ -106,7 +106,7 @@ export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }
 
         setHistory(historyWithoutError);
 
-        if (lastUserMessage) {
+        if (lastUserMessage && lastUserMessage.parts[0]) {
             await handleSend(lastUserMessage.parts[0].text);
         } else {
             await fetchInitialResponse();
@@ -141,12 +141,12 @@ export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }
                         <div key={msg.id}>
                             {msg.isError ? (
                                 <div className="text-center my-2 p-3 rounded-lg bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300">
-                                    <p>{msg.parts[0].text}</p>
+                                    <p>{msg.parts[0]?.text ?? ''}</p>
                                     <button onClick={handleRetry} aria-label="Retry sending message" className="mt-2 px-4 py-2 min-h-[44px] bg-red-500 text-white text-sm rounded-full">Retry</button>
                                 </div>
                             ) : (
                                 <div className={`my-2 p-3 rounded-lg text-sm md:text-base ${msg.role === 'user' ? 'bg-indigo-100 dark:bg-indigo-900/50 text-right ml-auto' : 'bg-white/50 dark:bg-slate-700/50 text-left mr-auto'} max-w-[85%]`}>
-                                    <p className="whitespace-pre-wrap">{msg.parts[0].text}</p>
+                                    <p className="whitespace-pre-wrap">{msg.parts[0]?.text ?? ''}</p>
                                 </div>
                             )}
                         </div>

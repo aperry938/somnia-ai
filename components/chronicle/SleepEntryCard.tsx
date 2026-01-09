@@ -5,7 +5,7 @@ import { MOOD_ICONS, MOOD_LABELS } from '../../constants/uiIcons';
 interface SleepEntryCardProps {
     entry: SleepEntry;
     dreams: Dream[];
-    onEntryClick: (id: number) => void;
+    _onEntryClick: (id: number) => void;
     onDreamClick: (id: number) => void;
     onAddDream: (entryId: number) => void;
     onDeleteEntry: (id: number) => void;
@@ -30,7 +30,10 @@ const getAlarmSoundName = (soundId?: string): string => {
 // Format time from HH:MM to display format
 const formatAlarmTime = (time?: string): string => {
     if (!time) return '';
-    const [hours, minutes] = time.split(':').map(Number);
+    const parts = time.split(':').map(Number);
+    const hours = parts[0];
+    const minutes = parts[1];
+    if (hours === undefined || minutes === undefined) return '';
     const ampm = hours >= 12 ? 'PM' : 'AM';
     const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
     return `${displayHours}:${String(minutes).padStart(2, '0')} ${ampm}`;
@@ -39,7 +42,7 @@ const formatAlarmTime = (time?: string): string => {
 export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
     entry,
     dreams,
-    onEntryClick,
+    _onEntryClick: _unused_onEntryClick,
     onDreamClick,
     onAddDream,
     onDeleteEntry

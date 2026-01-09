@@ -26,7 +26,7 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label })
         return (
             <div className="bg-day-card-bg/80 dark:bg-night-card-bg/80 backdrop-blur-sm p-2 border border-day-border dark:border-night-border rounded-md shadow-lg">
                 <p className="label font-bold">{`${label}`}</p>
-                <p className="intro text-day-accent dark:text-night-accent">{`Quality : ${payload[0].value} / 5`}</p>
+                <p className="intro text-day-accent dark:text-night-accent">{`Quality : ${payload[0]?.value} / 5`}</p>
             </div>
         );
     }

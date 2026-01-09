@@ -17,7 +17,7 @@ import {
     getCurrentUser,
     onAuthStateChange,
     isAuthConfigured,
-    getAuthToken,
+    getAuthToken as _getAuthToken,
 } from '../services/authService';
 import { verifySubscription, clearSubscriptionCache } from '../services/secureSubscriptionService';
 

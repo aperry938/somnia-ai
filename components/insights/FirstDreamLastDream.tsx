@@ -13,6 +13,8 @@ export const FirstDreamLastDream: React.FC<FirstDreamLastDreamProps> = ({ dreams
         const first = sorted[0];
         const last = sorted[sorted.length - 1];
 
+        if (!first || !last) return null;
+
         const daysSince = Math.floor((Date.now() - new Date(first.timestamp).getTime()) / (1000 * 60 * 60 * 24));
         const dreamsPerMonth = dreams.length / (daysSince / 30) || 0;
 

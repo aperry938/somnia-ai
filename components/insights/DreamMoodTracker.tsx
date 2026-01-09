@@ -59,7 +59,7 @@ export const DreamMoodTracker: React.FC<MoodTrackerProps> = ({ dreams }) => {
 
         const total = Object.values(aggregated).reduce((sum, n) => sum + n, 0);
         const sorted = Object.entries(aggregated).sort((a, b) => b[1] - a[1]);
-        const dominant = sorted.length > 0 ? sorted[0][0] : null;
+        const dominant = sorted[0]?.[0] ?? null;
 
         return { moods: aggregated, total, dominant };
     }, [dreams]);

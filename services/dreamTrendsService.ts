@@ -1,4 +1,4 @@
-import { DreamSynthesis } from '../types';
+// Trend types and services for global dream statistics
 
 export type TrendPeriod = 'today' | 'week' | 'month' | 'all-time';
 

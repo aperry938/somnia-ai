@@ -14,9 +14,13 @@ export const JournalingGaps: React.FC<JournalingGapsProps> = ({ dreams }) => {
         let totalGaps = 0;
 
         for (let i = 1; i < sorted.length; i++) {
-            const gap = (new Date(sorted[i].timestamp).getTime() - new Date(sorted[i - 1].timestamp).getTime()) / (1000 * 60 * 60 * 24);
-            totalGaps += gap;
-            if (gap > maxGap) maxGap = gap;
+            const current = sorted[i];
+            const previous = sorted[i - 1];
+            if (current && previous) {
+                const gap = (new Date(current.timestamp).getTime() - new Date(previous.timestamp).getTime()) / (1000 * 60 * 60 * 24);
+                totalGaps += gap;
+                if (gap > maxGap) maxGap = gap;
+            }
         }
 
         const avgGap = totalGaps / (sorted.length - 1);

@@ -23,7 +23,7 @@ export const AddSleepEntryModal: React.FC<AddSleepEntryModalProps> = ({
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [onClose]);
-    const [sleepDate, setSleepDate] = useState<string>(new Date().toISOString().split('T')[0]);
+    const [sleepDate, setSleepDate] = useState<string>(new Date().toISOString().split('T')[0] ?? '');
     const [sleepQuality, setSleepQuality] = useState<number | null>(null);
     const [notes, setNotes] = useState('');
     const [dayRating, setDayRating] = useState<number | null>(null);

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { LEVEL_TITLES, DREAMS_PER_LEVEL, getLevelTitle } from '../../constants/gamification';
+import { LEVEL_TITLES, DREAMS_PER_LEVEL, getLevelTitle as _getLevelTitle } from '../../constants/gamification';
 
 interface LevelGuideModalProps {
     isOpen: boolean;

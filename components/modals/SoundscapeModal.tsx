@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Soundscape } from '../../types';
-import { playSleepSound, stopSleepSound, setLiveVolume, setLiveBeatFrequency, isSleepSoundPlaying } from '../../services/audioService';
+import { playSleepSound, stopSleepSound, setLiveVolume } from '../../services/audioService';
 import { useAppContext } from '../../contexts/AppContext';
 
 interface SoundscapeModalProps {
@@ -14,9 +14,8 @@ interface SoundscapeModalProps {
 export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlaying, onPlay, onStop, onClose }) => {
     const { volume, setVolume, logSoundActivity, activeSleepSession } = useAppContext();
     const [duration, setDuration] = useState(30);
-    const [beatFreq, setBeatFreq] = useState(sound.type === 'binaural' ? sound.params.diff || 5 : 5);
+    const [beatFreq] = useState(sound.type === 'binaural' ? sound.params.diff || 5 : 5);
     const [isPreviewing, setIsPreviewing] = useState(false);
-    const [baseFreq] = useState(sound.type === 'binaural' ? sound.params.base || 100 : 100);
     const [timeRemaining, setTimeRemaining] = useState<number | null>(null); // Seconds remaining
     const [playStartTime, setPlayStartTime] = useState<number | null>(null);
     const [playDuration, setPlayDuration] = useState<number>(0); // Duration in seconds
@@ -92,14 +91,6 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
             setLiveVolume(newVolume);
         }
     }, [isPreviewing, isPlaying, setVolume]);
-
-    // Live update beat frequency (binaural only)
-    const handleBeatFreqChange = useCallback((newFreq: number) => {
-        setBeatFreq(newFreq);
-        if ((isPreviewing || isPlaying) && sound.type === 'binaural') {
-            setLiveBeatFrequency(baseFreq, newFreq);
-        }
-    }, [isPreviewing, isPlaying, sound.type, baseFreq]);
 
     // Toggle preview on/off
     const togglePreview = useCallback(async () => {
@@ -232,17 +223,8 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
         }
     };
 
-    // Get frequency range label
-    const getFrequencyLabel = (freq: number): string => {
-        if (freq <= 4) return 'Delta (Deep Sleep)';
-        if (freq <= 8) return 'Theta (Dreaming)';
-        if (freq <= 13) return 'Alpha (Relaxed)';
-        return 'Beta (Alert)';
-    };
-
     // Determine if we're in the "playing view" (ready, playing, or paused)
     const isInPlayingView = isPlaying || isReadyToPlay || isPaused;
-    const isActuallyPlaying = isPlaying && !isReadyToPlay && !isPaused && playStartTime !== null;
 
     return (
         <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={handleBackdropClick} role="dialog" aria-modal="true" aria-labelledby="soundscape-title">

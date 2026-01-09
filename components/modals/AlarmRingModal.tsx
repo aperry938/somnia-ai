@@ -123,7 +123,7 @@ type WakeStep = 'alarm' | 'snooze' | 'dream' | 'boost';
 
 const SNOOZE_DURATION = 5 * 60; // 5 minutes in seconds
 
-export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordDream, onSnooze, onAwake }) => {
+export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordDream, onSnooze: _onSnooze, onAwake }) => {
     // For reminder alarms, skip straight to dismiss - no dream prompts
     const isSleepAlarm = alarm.purpose !== 'reminder';
 
@@ -146,6 +146,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
     const handleTouchStart = useCallback((e: TouchEvent<HTMLDivElement>) => {
         if (step !== 'alarm') return;
         const touch = e.touches[0];
+        if (!touch) return;
         touchStartRef.current = { x: touch.clientX, y: touch.clientY };
         hasTriggeredHapticRef.current = false;
         setSwipeOffset(0);
@@ -157,6 +158,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
         if (step !== 'alarm' || !touchStartRef.current) return;
 
         const touch = e.touches[0];
+        if (!touch) return;
         const deltaX = touch.clientX - touchStartRef.current.x;
         const deltaY = Math.abs(touch.clientY - touchStartRef.current.y);
 

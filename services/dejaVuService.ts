@@ -51,6 +51,9 @@ export function checkForDejaVu(
     }
 
     const bestMatch = matches[0];
+    if (!bestMatch) {
+        return null;
+    }
     const dreamDate = new Date(bestMatch.timestamp);
     const daysAgo = Math.floor((now.getTime() - dreamDate.getTime()) / (24 * 60 * 60 * 1000));
 

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect as _useEffect } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
 import { analyzeSleepHabits, synthesizeDreamThemes } from '../../services/geminiService';
 import { DreamSynthesis, SleepHabitAnalysis } from '../../types';
@@ -14,14 +14,14 @@ import { DreamStreakCalendar } from '../insights/DreamStreakCalendar';
 import { RecurringThemes } from '../insights/RecurringThemes';
 import { InsightsGrid } from '../insights/InsightsGrid';
 import { PremiumBadge } from '../shared/PremiumBadge';
-import { canUseAiAnalysis, useAiCredit, isPremium } from '../../services/secureSubscriptionService';
+import { canUseAiAnalysis as _canUseAiAnalysis, consumeAiCredit as _consumeAiCredit, isPremium } from '../../services/secureSubscriptionService';
 import { DreamCompareModal } from '../modals/DreamCompareModal';
 import { DEMO_DREAMS } from '../../constants/demoDreams';
 
 type InsightTab = 'dreams' | 'analysis';
 
 const AnalysisCard: React.FC<{ title: string; description: string; buttonText: string; onAnalyze: () => void; isLoading: boolean; children: React.ReactNode; }> =
-    ({ title, description, buttonText, onAnalyze, isLoading, children }) => (
+    ({ title, description, buttonText: _buttonText, onAnalyze: _onAnalyze, isLoading: _isLoading, children }) => (
         <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">
             <h2 className="font-serif text-2xl">{title}</h2>
             <p className="text-day-text-secondary dark:text-night-text-secondary mt-1 mb-4">{description}</p>
@@ -85,11 +85,11 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
     const touchEndX = useRef(0);
 
     const handleTouchStart = (e: React.TouchEvent) => {
-        touchStartX.current = e.touches[0].clientX;
+        touchStartX.current = e.touches[0]?.clientX ?? 0;
     };
 
     const handleTouchMove = (e: React.TouchEvent) => {
-        touchEndX.current = e.touches[0].clientX;
+        touchEndX.current = e.touches[0]?.clientX ?? 0;
     };
 
     const handleTouchEnd = () => {
@@ -337,8 +337,8 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                         <AnalysisCard title="Dream Weaving" description="Uncover recurring themes and symbols across your dream journal." buttonText="Synthesize" onAnalyze={handleSynthesizeDreams} isLoading={isDreamSynthLoading}>
                             {dreamSynthesis ? (
                                 <div className="space-y-4 pt-2 animate-fadeIn">
-                                    <p className="italic text-day-text-secondary dark:text-night-text-secondary">{dreamSynthesis.overallSummary}</p>
-                                    {dreamSynthesis.recurringThemes.map(item => (
+                                    <p className="italic text-day-text-secondary dark:text-night-text-secondary">{dreamSynthesis?.overallSummary}</p>
+                                    {dreamSynthesis?.recurringThemes.map(item => (
                                         <div key={item.theme}>
                                             <h4 className="font-bold font-serif text-lg">{item.theme}</h4>
                                             <p className="text-sm text-day-text-secondary dark:text-night-text-secondary">{item.description}</p>
@@ -380,16 +380,16 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                                 <div className="space-y-4 pt-2 animate-fadeIn">
                                     <div>
                                         <h4 className="font-bold font-serif text-lg text-emerald-600 dark:text-emerald-400">Positive Correlations</h4>
-                                        {habitAnalysis.positiveCorrelations.map(item => <p key={item.habit} className="text-sm text-day-text-secondary dark:text-night-text-secondary"><strong>{item.habit}:</strong> {item.insight}</p>)}
+                                        {habitAnalysis?.positiveCorrelations?.map(item => <p key={item.habit} className="text-sm text-day-text-secondary dark:text-night-text-secondary"><strong>{item.habit}:</strong> {item.insight}</p>)}
                                     </div>
                                     <div>
                                         <h4 className="font-bold font-serif text-lg text-rose-600 dark:text-rose-400">Negative Correlations</h4>
-                                        {habitAnalysis.negativeCorrelations.map(item => <p key={item.habit} className="text-sm text-day-text-secondary dark:text-night-text-secondary"><strong>{item.habit}:</strong> {item.insight}</p>)}
+                                        {habitAnalysis?.negativeCorrelations?.map(item => <p key={item.habit} className="text-sm text-day-text-secondary dark:text-night-text-secondary"><strong>{item.habit}:</strong> {item.insight}</p>)}
                                     </div>
                                     <div>
                                         <h4 className="font-bold font-serif text-lg">Recommendations</h4>
                                         <ul className="list-disc list-inside text-sm text-day-text-secondary dark:text-night-text-secondary">
-                                            {habitAnalysis.recommendations.map((rec, i) => <li key={i}>{rec}</li>)}
+                                            {habitAnalysis?.recommendations.map((rec, i) => <li key={i}>{rec}</li>)}
                                         </ul>
                                     </div>
                                 </div>

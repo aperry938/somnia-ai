@@ -3,12 +3,6 @@ import { logger } from './logger';
 
 const MIGRATION_VERSION = 1;
 
-interface MigrationLog {
-    version: number;
-    timestamp: string;
-    details: string;
-}
-
 // Type for potentially incomplete dream data during migration
 type PartialDream = Partial<Dream> & { id?: number; sleepAids?: SleepAids; tags?: string[] };
 
@@ -17,14 +11,14 @@ export const checkAndMigrateData = () => {
         const dreamsRaw = localStorage.getItem('somnia_dreams');
         if (!dreamsRaw) return;
 
-        let dreams: PartialDream[] = JSON.parse(dreamsRaw);
+        const dreams: PartialDream[] = JSON.parse(dreamsRaw);
         if (!Array.isArray(dreams)) return;
 
         let hasChanges = false;
 
         // Migration 1: Ensure SleepAids object exists
         const migrated = dreams.map(dream => {
-            let d = { ...dream };
+            const d = { ...dream };
 
             // Fix 1: Add ID if missing (shouldn't happen but valid for stability)
             if (!d.id) {

@@ -14,7 +14,7 @@ export const DayOfWeekAnalysis: React.FC<DayOfWeekAnalysisProps> = ({ dreams }) 
         const counts = [0, 0, 0, 0, 0, 0, 0];
         dreams.forEach(d => {
             const day = new Date(d.timestamp).getDay();
-            counts[day]++;
+            counts[day] = (counts[day] ?? 0) + 1;
         });
 
         const max = Math.max(...counts);

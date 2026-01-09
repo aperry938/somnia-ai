@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
-import { Dream, DreamMood, SleepEntry, SleepAids } from '../../types';
+import { Dream as _Dream, DreamMood, SleepEntry as _SleepEntry, SleepAids } from '../../types';
 import { exportDreamsAsJSON, exportDreamJournalToPDF, exportDreamsEncrypted, importDreamsEncrypted, isEncryptedBackup } from '../../services/exportService';
 import { validateSearchQuery } from '../../services/validationService';
 import { AchievementsCard } from '../insights/AchievementsCard';
@@ -253,7 +253,7 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
                                 key={entry.id}
                                 entry={entry}
                                 dreams={dreams}
-                                onEntryClick={() => { }}
+                                _onEntryClick={() => { }}
                                 onDreamClick={onDreamSelect}
                                 onAddDream={(entryId) => setAddDreamToEntryId(entryId)}
                                 onDeleteEntry={deleteSleepEntry}

@@ -230,7 +230,7 @@ export const shouldPromptSleepGateway = (alarms: Array<{ id: string; time: strin
 
         const [hours, minutes] = alarm.time.split(':').map(Number);
         const alarmToday = new Date(now);
-        alarmToday.setHours(hours, minutes, 0, 0);
+        alarmToday.setHours(hours ?? 0, minutes ?? 0, 0, 0);
 
         // If alarm already passed today, check tomorrow
         if (alarmToday <= now) {

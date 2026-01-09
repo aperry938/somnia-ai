@@ -47,7 +47,7 @@ const AdminPage = lazy(() => import('./components/pages/AdminPage').then(m => ({
 
 
 const App: React.FC = () => {
-    const { addDream, isScribeOpen, setIsScribeOpen, activeSleepSession, addSleepEntry, clearSleepSession, startSleepSession, saveWakeData, alarms, sleepEntries } = useAppContext();
+    const { addDream, isScribeOpen, setIsScribeOpen, activeSleepSession, addSleepEntry: _addSleepEntry, clearSleepSession: _clearSleepSession, startSleepSession, saveWakeData, alarms, sleepEntries } = useAppContext();
     const { isAuthenticated, isLoading: authLoading, isConfigured: authConfigured } = useAuth();
 
     // Check for Stripe success redirect
@@ -203,7 +203,7 @@ const App: React.FC = () => {
         // Calculate pre-save stats
         const oldStats = calculateUserStats(dreams);
 
-        const newDreamId = addDream(dreamText, sleepQuality, mood);
+        addDream(dreamText, sleepQuality, mood);
 
         // Calculate post-save stats (addDream updates state but we can predict or use updated state if available, 
         // but addDream is sync in AppContext logic, however the 'dreams' var from context is closure-bound.

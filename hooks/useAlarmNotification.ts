@@ -24,7 +24,7 @@ const getNextAlarmTime = (alarms: Alarm[]): { alarm: Alarm; timeStr: string; nex
 
     for (const alarm of activeAlarms) {
         const [hours, minutes] = alarm.time.split(':').map(Number);
-        const alarmMinutes = hours * 60 + minutes;
+        const alarmMinutes = (hours ?? 0) * 60 + (minutes ?? 0);
 
         // Check if alarm triggers today
         const triggersToday = !alarm.days || alarm.days.length === 0 || alarm.days.includes(currentDay);
@@ -36,7 +36,7 @@ const getNextAlarmTime = (alarms: Alarm[]): { alarm: Alarm; timeStr: string; nex
                 minDiff = diff;
                 nextAlarm = alarm;
                 nextDate = new Date(now);
-                nextDate.setHours(hours, minutes, 0, 0);
+                nextDate.setHours(hours ?? 0, minutes ?? 0, 0, 0);
             }
         } else if (alarm.days && alarm.days.length > 0) {
             // Check next occurrence in the week
@@ -49,7 +49,7 @@ const getNextAlarmTime = (alarms: Alarm[]): { alarm: Alarm; timeStr: string; nex
                         nextAlarm = alarm;
                         nextDate = new Date(now);
                         nextDate.setDate(nextDate.getDate() + i);
-                        nextDate.setHours(hours, minutes, 0, 0);
+                        nextDate.setHours(hours ?? 0, minutes ?? 0, 0, 0);
                     }
                     break;
                 }
@@ -64,8 +64,8 @@ const getNextAlarmTime = (alarms: Alarm[]): { alarm: Alarm; timeStr: string; nex
 
     // Format time for display
     const [h, m] = nextAlarm.time.split(':').map(Number);
-    const period = h >= 12 ? 'PM' : 'AM';
-    const displayHour = h % 12 || 12;
+    const period = (h ?? 0) >= 12 ? 'PM' : 'AM';
+    const displayHour = (h ?? 0) % 12 || 12;
     const timeStr = `${displayHour}:${String(m).padStart(2, '0')} ${period}`;
 
     return { alarm: nextAlarm, timeStr, nextDate };

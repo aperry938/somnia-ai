@@ -24,7 +24,9 @@ export const EmotionalJourney: React.FC<EmotionalJourneyProps> = ({ dreams }) =>
         });
 
         const avgScore = data.reduce((s, d) => s + d.score, 0) / data.length;
-        const trend = data[data.length - 1].score > data[0].score ? 'improving' : data[data.length - 1].score < data[0].score ? 'declining' : 'stable';
+        const lastScore = data[data.length - 1]?.score ?? 0;
+        const firstScore = data[0]?.score ?? 0;
+        const trend = lastScore > firstScore ? 'improving' : lastScore < firstScore ? 'declining' : 'stable';
 
         return { data, avgScore, trend };
     }, [dreams]);

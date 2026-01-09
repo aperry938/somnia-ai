@@ -16,7 +16,7 @@ export const AddPastDreamModal: React.FC<AddPastDreamModalProps> = ({ onSave, on
     const [dreamText, setDreamText] = useState('');
     const [sleepQuality, setSleepQuality] = useState<number | null>(null);
     const [mood, setMood] = useState<DreamMood | null>(null);
-    const [dreamDate, setDreamDate] = useState<string>(new Date().toISOString().split('T')[0]);
+    const [dreamDate, setDreamDate] = useState<string>(new Date().toISOString().split('T')[0] ?? '');
 
     // Handle Escape key to close modal
     useEffect(() => {

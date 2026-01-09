@@ -53,9 +53,9 @@ export const DreamPersonalityProfile: React.FC<PersonalityProfileProps> = ({ dre
             </h3>
 
             <div className="text-center mb-4">
-                <p className="text-2xl font-bold text-violet-600 dark:text-fuchsia-400">{profile.dominant[0]}</p>
+                <p className="text-2xl font-bold text-violet-600 dark:text-fuchsia-400">{profile.dominant?.[0] ?? 'Unknown'}</p>
                 <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">
-                    with {profile.secondary[0]} tendencies
+                    with {profile.secondary?.[0] ?? 'Unknown'} tendencies
                 </p>
             </div>
 

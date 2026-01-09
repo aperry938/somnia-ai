@@ -54,7 +54,7 @@ const ToggleRow: React.FC<{ label: string; value: boolean; onChange: (val: boole
     </div>
 );
 
-export const AdminPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
+export const AdminPage: React.FC<{ onBack?: () => void }> = ({ onBack: _onBack }) => {
     const { dreams, sleepEntries, alarms } = useAppContext();
     const { user, isAuthenticated } = useAuth();
     const [devMode, setDevModeState] = useState(isDevMode());

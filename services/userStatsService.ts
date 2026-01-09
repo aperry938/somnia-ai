@@ -51,10 +51,10 @@ export const calculateUserStats = (dreams: Dream[]): UserStats => {
             // Count backwards
             const oneDay = 24 * 60 * 60 * 1000;
             // Align expected to the most recent log (today or yesterday) to start counting
-            expected = uniqueDates[0];
+            expected = uniqueDates[0] ?? today.getTime();
 
             for (const time of uniqueDates) {
-                if (Math.abs(time - expected) < 1000) { // allowing small float diffs if any, though getTime is int
+                if (Math.abs((time ?? 0) - expected) < 1000) { // allowing small float diffs if any, though getTime is int
                     currentStreak++;
                     expected -= oneDay;
                 } else {
@@ -69,7 +69,7 @@ export const calculateUserStats = (dreams: Dream[]): UserStats => {
         let tempStreak = 1;
         const oneDay = 24 * 60 * 60 * 1000;
         for (let i = 0; i < uniqueDates.length - 1; i++) {
-            if (uniqueDates[i] - uniqueDates[i + 1] === oneDay) {
+            if ((uniqueDates[i] ?? 0) - (uniqueDates[i + 1] ?? 0) === oneDay) {
                 tempStreak++;
             } else {
                 bestStreak = Math.max(bestStreak, tempStreak);

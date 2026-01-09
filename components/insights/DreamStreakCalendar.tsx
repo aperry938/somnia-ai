@@ -44,12 +44,16 @@ export const DreamStreakCalendar: React.FC<DreamStreakCalendarProps> = ({ dreams
             if (i === 0) {
                 tempStreak = 1;
             } else {
-                const diff = (sortedDates[i].getTime() - sortedDates[i - 1].getTime()) / (1000 * 60 * 60 * 24);
-                if (diff === 1) {
-                    tempStreak++;
-                } else {
-                    longestStreak = Math.max(longestStreak, tempStreak);
-                    tempStreak = 1;
+                const currentDate = sortedDates[i];
+                const previousDate = sortedDates[i - 1];
+                if (currentDate && previousDate) {
+                    const diff = (currentDate.getTime() - previousDate.getTime()) / (1000 * 60 * 60 * 24);
+                    if (diff === 1) {
+                        tempStreak++;
+                    } else {
+                        longestStreak = Math.max(longestStreak, tempStreak);
+                        tempStreak = 1;
+                    }
                 }
             }
         }

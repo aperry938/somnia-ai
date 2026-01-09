@@ -29,8 +29,8 @@ export const LEVEL_TITLES: Record<number, string> = {
  * @returns The title string for that level
  */
 export const getLevelTitle = (level: number): string => {
-    if (level >= 10) return LEVEL_TITLES[10];
-    return LEVEL_TITLES[level] || LEVEL_TITLES[1];
+    if (level >= 10) return LEVEL_TITLES[10] ?? '';
+    return LEVEL_TITLES[level] ?? LEVEL_TITLES[1] ?? '';
 };
 
 /** Dreams required to earn one prestige level after reaching level 10 */
@@ -69,7 +69,7 @@ export const getPrestigeTier = (totalDreams: number): number => {
  */
 export const getPrestigeTitle = (tier: number): string => {
     if (tier <= 0) return '';
-    if (tier <= 10) return PRESTIGE_TITLES[tier];
+    if (tier <= 10) return PRESTIGE_TITLES[tier] ?? '';
     // For tiers beyond 10, use Roman numerals
     return `Transcendent ${tier}`;
 };

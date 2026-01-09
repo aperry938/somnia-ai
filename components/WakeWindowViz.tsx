@@ -26,7 +26,10 @@ export const WakeWindowViz: React.FC<WakeWindowVizProps> = ({ events, height = 1
 
         // Add start/end for area
         const linePath = `M ${points.join(' L ')}`;
-        const areaPath = `M ${points[0]} L ${points.join(' L ')} L ${points[points.length - 1].split(',')[0]},100 L 0,100 Z`;
+        const lastPoint = points[points.length - 1];
+        const areaPath = lastPoint
+            ? `M ${points[0]} L ${points.join(' L ')} L ${lastPoint.split(',')[0]},100 L 0,100 Z`
+            : '';
 
         return { pathD: linePath, areaD: areaPath };
     }, [events]);

@@ -33,11 +33,11 @@ export const MoonPhaseInsight: React.FC<MoonPhaseInsightProps> = ({ dreams }) =>
 
         dreams.forEach(d => {
             const phase = getMoonPhase(new Date(d.timestamp));
-            phaseCounts[phase]++;
+            phaseCounts[phase] = (phaseCounts[phase] ?? 0) + 1;
         });
 
         const sorted = Object.entries(phaseCounts).sort((a, b) => b[1] - a[1]);
-        return { phaseCounts, mostActive: sorted[0][0], leastActive: sorted[sorted.length - 1][0] };
+        return { phaseCounts, mostActive: sorted[0]?.[0] ?? 'Unknown', leastActive: sorted[sorted.length - 1]?.[0] ?? 'Unknown' };
     }, [dreams]);
 
     if (!stats) return null;

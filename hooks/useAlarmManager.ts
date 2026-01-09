@@ -24,7 +24,7 @@ const shouldTriggerToday = (days: number[] | undefined, currentDay: number): boo
  * Polling happens every second via dependent update loop.
  */
 export const useAlarmManager = () => {
-    const { alarms, toggleAlarmActive, updateAlarm } = useAppContext();
+    const { alarms, toggleAlarmActive, updateAlarm: _updateAlarm } = useAppContext();
     const { date } = useClock();
     const [ringingAlarm, setRingingAlarm] = useState<Alarm | null>(null);
     const [isSnoozed, setIsSnoozed] = useState(false);
@@ -98,7 +98,7 @@ export const useAlarmManager = () => {
                 if (alarm.smartWake) {
                     const [ah, am] = alarm.time.split(':').map(Number);
                     const alarmDate = new Date();
-                    alarmDate.setHours(ah, am, 0, 0);
+                    alarmDate.setHours(ah ?? 0, am ?? 0, 0, 0);
 
                     // If alarm is tomorrow (e.g. alarm 7am, now 11pm), naive check assumes today
                     // Simple check: Is current time within [Alarm - Window, Alarm)?

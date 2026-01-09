@@ -6,7 +6,6 @@
 
 /// <reference types="@testing-library/jest-dom" />
 
-import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { Dream, DreamTelemetry, DreamAnalysis } from '../types';
@@ -344,7 +343,8 @@ describe('TelemetryScatterPlot Component', () => {
 
             // Find and click a data point
             const dataPoints = screen.getAllByRole('button', { name: /Dream/ });
-            fireEvent.click(dataPoints[0]);
+            const firstPoint = dataPoints[0];
+            if (firstPoint) fireEvent.click(firstPoint);
 
             expect(selectedId).toBe(1);
         });

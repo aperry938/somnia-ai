@@ -3,9 +3,9 @@ import { useAppContext } from '../../contexts/AppContext';
 import { analyzeDream, generateDreamTitle, generateImagePrompt, DreamArtStyle, DREAM_ART_STYLES, generateDreamEmbedding } from '../../services/geminiService';
 import { DreamChatModal } from '../modals/DreamChatModal';
 import { SleepAids, DreamMood } from '../../types';
-import { AnalysisLoading } from '../shared/LoadingStates';
+import { AnalysisLoading as _AnalysisLoading } from '../shared/LoadingStates';
 import { TagInput, COMMON_DREAM_TAGS } from '../shared/TagInput';
-import { findDreamSymbols, DreamSymbol } from '../../constants/dreamSymbols';
+import { findDreamSymbols, DreamSymbol as _DreamSymbol } from '../../constants/dreamSymbols';
 import { useToast } from '../shared/Toast';
 import { logger } from '../../services/logger';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
@@ -164,7 +164,7 @@ const AccordionItem: React.FC<{ title: string; content: string; isOpenDefault?: 
 
 // Main Dream Detail Component
 export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => void; }> = ({ dreamId, onBack }) => {
-    const { getDreamById, updateDream, deleteDream, biometrics, dreams, analysisPersonality, setAnalysisPersonality, artStyle } = useAppContext();
+    const { getDreamById, updateDream, deleteDream, biometrics, dreams, analysisPersonality, setAnalysisPersonality, artStyle: _artStyle } = useAppContext();
     const { showToast } = useToast();
     const dream = dreamId ? getDreamById(dreamId) : null;
     const [analysisState, setAnalysisState] = useState<'pending' | 'loading' | 'success' | 'error'>('pending');

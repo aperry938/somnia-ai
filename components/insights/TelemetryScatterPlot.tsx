@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Dream, DreamTelemetry } from '../../types';
+import { Dream, type DreamTelemetry as _DreamTelemetry } from '../../types';
 
 interface TelemetryScatterPlotProps {
     dreams: Dream[];
@@ -283,19 +283,24 @@ export const TelemetryScatterPlot: React.FC<TelemetryScatterPlotProps> = ({ drea
                         {(() => {
                             const dominant = (Object.entries(quadrantStats) as Array<[keyof typeof QUADRANT_LABELS, number]>)
                                 .sort((a, b) => b[1] - a[1])[0];
-                            const dominantLabel = QUADRANT_LABELS[dominant[0]];
-                            const percentage = Math.round((dominant[1] / dreamsWithTelemetry.length) * 100);
+
+                            if (!dominant) return null;
+
+                            const dominantKey = dominant[0];
+                            const dominantCount = dominant[1];
+                            const dominantLabel = QUADRANT_LABELS[dominantKey];
+                            const percentage = Math.round((dominantCount / dreamsWithTelemetry.length) * 100);
 
                             return (
                                 <>
                                     Your dreams tend toward <strong className={dominantLabel.color}>{dominantLabel.label.toLowerCase()}</strong> emotions ({percentage}% of dreams).
-                                    {dominant[0].includes('Negative') && (
+                                    {dominantKey.includes('Negative') && (
                                         <> Consider journaling about what's causing stress in your waking life.</>
                                     )}
-                                    {dominant[0] === 'lowEnergyPositive' && (
+                                    {dominantKey === 'lowEnergyPositive' && (
                                         <> Your dreamscape reflects a peaceful, content state of mind.</>
                                     )}
-                                    {dominant[0] === 'highEnergyPositive' && (
+                                    {dominantKey === 'highEnergyPositive' && (
                                         <> Your dreams are vibrant and energetic - a sign of engagement with life.</>
                                     )}
                                 </>

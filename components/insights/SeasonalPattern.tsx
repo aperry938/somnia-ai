@@ -23,14 +23,14 @@ export const SeasonalPattern: React.FC<SeasonalPatternProps> = ({ dreams }) => {
         dreams.forEach(d => {
             const month = new Date(d.timestamp).getMonth();
             const season = getSeasonFromMonth(month);
-            seasonCounts[season]++;
-            seasonWords[season] += d.dreamText.split(/\s+/).length;
+            seasonCounts[season] = (seasonCounts[season] ?? 0) + 1;
+            seasonWords[season] = (seasonWords[season] ?? 0) + d.dreamText.split(/\s+/).length;
         });
 
-        const seasonAvgWords = seasonCounts.map((c, i) => c > 0 ? Math.round(seasonWords[i] / c) : 0);
+        const seasonAvgWords = seasonCounts.map((c, i) => c > 0 ? Math.round((seasonWords[i] ?? 0) / c) : 0);
         const maxIndex = seasonAvgWords.indexOf(Math.max(...seasonAvgWords));
 
-        return { seasonCounts, seasonAvgWords, mostVividSeason: SEASONS[maxIndex] };
+        return { seasonCounts, seasonAvgWords, mostVividSeason: SEASONS[maxIndex] ?? 'Unknown' };
     }, [dreams]);
 
     if (!stats) return null;
@@ -49,11 +49,11 @@ export const SeasonalPattern: React.FC<SeasonalPatternProps> = ({ dreams }) => {
                         >
                             <div
                                 className="w-full bg-day-accent dark:bg-night-accent rounded"
-                                style={{ height: `${(stats.seasonCounts[i] / maxCount) * 100}%` }}
+                                style={{ height: `${((stats.seasonCounts[i] ?? 0) / maxCount) * 100}%` }}
                             />
                         </div>
                         <div className="text-xs">{season}</div>
-                        <div className="text-[10px] text-day-text-secondary dark:text-night-text-secondary">{stats.seasonCounts[i]}</div>
+                        <div className="text-[10px] text-day-text-secondary dark:text-night-text-secondary">{stats.seasonCounts[i] ?? 0}</div>
                     </div>
                 ))}
             </div>

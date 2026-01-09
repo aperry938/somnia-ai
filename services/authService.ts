@@ -5,7 +5,7 @@
  * Provides methods for sign up, sign in, sign out, and session management.
  */
 
-import { createClient, User, Session, AuthError } from '@supabase/supabase-js';
+import { createClient, User, Session } from '@supabase/supabase-js';
 import { logger } from './logger';
 
 // Supabase configuration
@@ -90,7 +90,7 @@ export async function signInWithGoogle(): Promise<AuthResult> {
     }
 
     try {
-        const { data, error } = await supabase.auth.signInWithOAuth({
+        const { data: _data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
                 redirectTo: `${window.location.origin}`,
@@ -229,7 +229,7 @@ export function onAuthStateChange(callback: (user: User | null, session: Session
         return { unsubscribe: () => { } };
     }
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
         callback(session?.user || null, session);
     });
 

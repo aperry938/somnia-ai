@@ -122,7 +122,10 @@ function runPhase(phase: HapticPhase): void {
                 if (currentPhaseIndex < HAPTIC_PHASES.length) {
                     // Notification pulse to indicate phase change
                     triggerNotification('warning');
-                    setTimeout(() => runPhase(HAPTIC_PHASES[currentPhaseIndex]), 100);
+                    const nextPhase = HAPTIC_PHASES[currentPhaseIndex];
+                    if (nextPhase) {
+                        setTimeout(() => runPhase(nextPhase), 100);
+                    }
                 }
             }
         }
@@ -154,7 +157,10 @@ export function startHapticAlarmRamp(): void {
     // Start first phase after brief delay
     setTimeout(() => {
         if (isRampActive && HAPTIC_PHASES.length > 0) {
-            runPhase(HAPTIC_PHASES[0]);
+            const firstPhase = HAPTIC_PHASES[0];
+            if (firstPhase) {
+                runPhase(firstPhase);
+            }
         }
     }, 500);
 }

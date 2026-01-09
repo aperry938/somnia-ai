@@ -18,6 +18,8 @@ export const LongestShortestDream: React.FC<LongestShortestDreamProps> = ({ drea
         const longest = sorted[0];
         const shortest = sorted[sorted.length - 1];
 
+        if (!longest || !shortest) return null;
+
         return {
             longest: { title: longest.title || 'Untitled', words: longest.wordCount, date: new Date(longest.timestamp).toLocaleDateString() },
             shortest: { title: shortest.title || 'Untitled', words: shortest.wordCount, date: new Date(shortest.timestamp).toLocaleDateString() }

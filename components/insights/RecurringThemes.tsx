@@ -55,7 +55,7 @@ export const RecurringThemes: React.FC<RecurringThemesProps> = ({ dreams }) => {
             </h3>
 
             <div className="space-y-3">
-                {themes.map(({ theme, count, dreams: themeDreams }) => (
+                {themes.map(({ theme, count, dreams: _themeDreams }) => (
                     <div key={theme} className="flex items-center justify-between">
                         <div>
                             <span className="font-medium">{theme}</span>

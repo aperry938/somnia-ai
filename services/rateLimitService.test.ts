@@ -99,7 +99,7 @@ describe('rateLimitService', () => {
         it('should use default limit for unknown category', async () => {
             const { checkRateLimit, RATE_LIMITS } = await import('./rateLimitService');
 
-            // @ts-ignore - testing unknown category
+            // @ts-expect-error - testing unknown category
             const result = checkRateLimit('unknown_category');
             expect(result.allowed).toBe(true);
             // Should use api_default (remaining = max - 1 after first request)

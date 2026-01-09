@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
 import { Alarm, AlarmPurpose } from '../../types';
 import { DailyBriefingWidget } from '../widgets/DailyBriefingWidget';
-import { toggleAlarmPreview, stopAlarmPreview, isPreviewPlaying } from '../../services/audioService';
+import { toggleAlarmPreview, stopAlarmPreview, isPreviewPlaying as _isPreviewPlaying } from '../../services/audioService';
 import haptics from '../../services/hapticsService';
 
 // Helper to format alarm repetition text
@@ -35,10 +35,10 @@ const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = Re
 
     // Format time in 12h format
     const [hourStr, minuteStr] = alarm.time.split(':');
-    const hour = parseInt(hourStr, 10);
+    const hour = parseInt(hourStr ?? '0', 10);
     const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
     const period = hour >= 12 ? 'PM' : 'AM';
-    const displayTime = `${String(displayHour).padStart(2, '0')}:${minuteStr}`;
+    const displayTime = `${String(displayHour).padStart(2, '0')}:${minuteStr ?? '00'}`;
 
     const handleToggle = (e: React.MouseEvent) => {
         e.stopPropagation(); // Prevent card click
@@ -132,11 +132,11 @@ const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = Re
 // Mobile-optimized Drum/Scroll Time Picker
 const DrumTimePicker: React.FC<{ initialTime: string; onChange: (time: string) => void }> = ({ initialTime, onChange }) => {
     const [hour, setHour] = useState(() => {
-        const h = parseInt(initialTime.split(':')[0], 10);
+        const h = parseInt(initialTime.split(':')[0] ?? '0', 10);
         return h === 0 ? 12 : h > 12 ? h - 12 : h;
     });
-    const [minute, setMinute] = useState(() => parseInt(initialTime.split(':')[1], 10));
-    const [period, setPeriod] = useState(() => parseInt(initialTime.split(':')[0], 10) >= 12 ? 'PM' : 'AM');
+    const [minute, setMinute] = useState(() => parseInt(initialTime.split(':')[1] ?? '0', 10));
+    const [period, setPeriod] = useState(() => parseInt(initialTime.split(':')[0] ?? '0', 10) >= 12 ? 'PM' : 'AM');
 
     const hourRef = React.useRef<HTMLDivElement>(null);
     const minuteRef = React.useRef<HTMLDivElement>(null);
@@ -184,7 +184,7 @@ const DrumTimePicker: React.FC<{ initialTime: string; onChange: (time: string) =
         const scrollTop = ref.current.scrollTop;
         const index = Math.round(scrollTop / ITEM_HEIGHT);
         const clampedIndex = Math.max(0, Math.min(index, values.length - 1));
-        setter(values[clampedIndex]);
+        setter(values[clampedIndex] ?? 0);
     };
 
     // Scroll handler for string-based time picker wheels (AM/PM)
@@ -197,14 +197,14 @@ const DrumTimePicker: React.FC<{ initialTime: string; onChange: (time: string) =
         const scrollTop = ref.current.scrollTop;
         const index = Math.round(scrollTop / ITEM_HEIGHT);
         const clampedIndex = Math.max(0, Math.min(index, values.length - 1));
-        setter(values[clampedIndex]);
+        setter(values[clampedIndex] ?? '');
     };
 
     const hours = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
     const minutes = Array.from({ length: 60 }, (_, i) => i);
     const periods = ['AM', 'PM'];
 
-    const scrollToValue = (ref: React.RefObject<HTMLDivElement>, index: number) => {
+    const scrollToValue = (ref: React.RefObject<HTMLDivElement | null>, index: number) => {
         if (ref.current) {
             ref.current.scrollTo({ top: index * ITEM_HEIGHT, behavior: 'smooth' });
         }
@@ -666,7 +666,7 @@ const TonightsSleepCard: React.FC<{
 
         // Parse alarm time
         const [alarmH, alarmM] = nextSleepAlarm.time.split(':').map(Number);
-        const alarmMinutes = alarmH * 60 + alarmM;
+        const alarmMinutes = (alarmH ?? 0) * 60 + (alarmM ?? 0);
 
         // Calculate time until alarm (could be today or tomorrow)
         let minutesUntilAlarm: number;
@@ -695,10 +695,10 @@ const TonightsSleepCard: React.FC<{
 
     // Format alarm time for display
     const [hourStr, minuteStr] = nextSleepAlarm.time.split(':');
-    const hour = parseInt(hourStr, 10);
+    const hour = parseInt(hourStr ?? '0', 10);
     const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
     const period = hour >= 12 ? 'PM' : 'AM';
-    const alarmTimeDisplay = `${displayHour}:${minuteStr} ${period}`;
+    const alarmTimeDisplay = `${displayHour}:${minuteStr ?? '00'} ${period}`;
 
     const handleExpand = () => {
         haptics.light();

@@ -180,9 +180,9 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
     // Format alarm time for display
     const formatAlarmTime = (time: string) => {
         const [h, m] = time.split(':').map(Number);
-        const hour = h === 0 ? 12 : h > 12 ? h - 12 : h;
-        const period = h >= 12 ? 'PM' : 'AM';
-        return `${hour}:${String(m).padStart(2, '0')} ${period}`;
+        const hour = (h ?? 0) === 0 ? 12 : (h ?? 0) > 12 ? (h ?? 0) - 12 : (h ?? 0);
+        const period = (h ?? 0) >= 12 ? 'PM' : 'AM';
+        return `${hour}:${String(m ?? 0).padStart(2, '0')} ${period}`;
     };
 
     return (
@@ -215,7 +215,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                         <option value="">No alarm - track without</option>
                                         {alarms.filter(a => a.isActive).map(alarm => (
                                             <option key={alarm.id} value={alarm.id}>
-                                                {formatAlarmTime(alarm.time)} {alarm.days.length > 0 ? '(recurring)' : '(once)'}
+                                                {formatAlarmTime(alarm.time ?? '00:00')} {alarm.days.length > 0 ? '(recurring)' : '(once)'}
                                             </option>
                                         ))}
                                     </select>
@@ -265,7 +265,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                     </h3>
                                     {activeSleepSession.alarmTime ? (
                                         <p className="text-green-700 dark:text-green-300 font-medium">
-                                            Linked to {formatAlarmTime(activeSleepSession.alarmTime)} alarm
+                                            Linked to {formatAlarmTime(activeSleepSession.alarmTime ?? '00:00')} alarm
                                             {activeSleepSession.alarmSoundId && (
                                                 <span className="text-green-600 dark:text-green-400 font-normal"> • {activeSleepSession.alarmSoundId}</span>
                                             )}
@@ -299,12 +299,12 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
                                         <span className="text-day-text-secondary dark:text-night-text-secondary">Alarm set for</span>
-                                        <span className="font-medium text-day-accent dark:text-night-accent">{formatAlarmTime(activeSleepSession.alarmTime)}</span>
+                                        <span className="font-medium text-day-accent dark:text-night-accent">{formatAlarmTime(activeSleepSession.alarmTime ?? '00:00')}</span>
                                     </div>
                                 )}
 
                                 {/* Breathing Exercises */}
-                                {activeSleepSession.sleepGatewayData.breathingExercises && activeSleepSession.sleepGatewayData.breathingExercises.length > 0 && (
+                                {activeSleepSession.sleepGatewayData?.breathingExercises && activeSleepSession.sleepGatewayData.breathingExercises.length > 0 && (
                                     <div className="flex items-center gap-2 text-sm">
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -315,7 +315,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                 )}
 
                                 {/* Sounds Played */}
-                                {activeSleepSession.sleepGatewayData.soundsPlayed && activeSleepSession.sleepGatewayData.soundsPlayed.length > 0 && (
+                                {activeSleepSession.sleepGatewayData?.soundsPlayed && activeSleepSession.sleepGatewayData.soundsPlayed.length > 0 && (
                                     <div className="flex items-center gap-2 text-sm">
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -326,7 +326,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                 )}
 
                                 {/* Checklist Items */}
-                                {activeSleepSession.sleepGatewayData.checklist && activeSleepSession.sleepGatewayData.checklist.length > 0 && (
+                                {activeSleepSession.sleepGatewayData?.checklist && activeSleepSession.sleepGatewayData.checklist.length > 0 && (
                                     <div className="flex items-center gap-2 text-sm">
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -337,7 +337,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                 )}
 
                                 {/* Day Rating */}
-                                {activeSleepSession.sleepGatewayData.dayRating && (
+                                {activeSleepSession.sleepGatewayData?.dayRating && (
                                     <div className="flex items-center gap-2 text-sm">
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
@@ -348,7 +348,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                 )}
 
                                 {/* Total Prep Time */}
-                                {activeSleepSession.sleepGatewayData.totalPrepTime && activeSleepSession.sleepGatewayData.totalPrepTime > 0 && (
+                                {activeSleepSession.sleepGatewayData?.totalPrepTime && activeSleepSession.sleepGatewayData.totalPrepTime > 0 && (
                                     <div className="flex items-center gap-2 text-sm border-t border-day-border dark:border-night-border pt-2 mt-2">
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -373,7 +373,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                     // Only save to Chronicle if there's an alarm attached
                                     // Sleep Gateway without alarm = never logged to Chronicle
                                     if (activeSleepSession?.alarmId) {
-                                        const today = new Date().toISOString().split('T')[0];
+                                        const today = new Date().toISOString().split('T')[0] ?? '';
                                         addSleepEntry(
                                             today,
                                             activeSleepSession.sleepGatewayData?.dayRating ?? null,
@@ -435,7 +435,8 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                         onClick={() => {
                                             haptics.light();
                                             const randomIndex = Math.floor(Math.random() * SOUNDSCAPES.length);
-                                            openSoundscapeModal(SOUNDSCAPES[randomIndex]);
+                                            const randomSound = SOUNDSCAPES[randomIndex];
+                                            if (randomSound) openSoundscapeModal(randomSound);
                                         }}
                                         className="px-4 py-2 min-h-[44px] text-sm bg-day-accent/10 dark:bg-night-accent/10 text-day-accent dark:text-night-accent rounded-full hover:bg-day-accent/20 dark:hover:bg-night-accent/20 transition-colors flex items-center gap-1"
                                     >
@@ -648,8 +649,8 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                             className="p-3 min-h-[56px] bg-day-accent/10 dark:bg-night-accent/10 rounded-lg cursor-pointer hover:bg-day-accent/20 dark:hover:bg-night-accent/20 transition-colors focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent"
                                             onClick={() => setShowRealityCheckModal(true)}
                                         >
-                                            <p className="font-medium text-day-accent dark:text-night-accent text-sm">{REALITY_CHECKS[new Date().getDay()].check}</p>
-                                            <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-1">{REALITY_CHECKS[new Date().getDay()].description}</p>
+                                            <p className="font-medium text-day-accent dark:text-night-accent text-sm">{REALITY_CHECKS[new Date().getDay()]?.check}</p>
+                                            <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-1">{REALITY_CHECKS[new Date().getDay()]?.description}</p>
                                             <p className="text-xs text-day-accent/70 dark:text-night-accent/70 mt-2">Tap for all reality checks →</p>
                                         </div>
                                     </div>

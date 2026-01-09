@@ -61,6 +61,8 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({ onComple
 
     const slide = slides[currentSlide];
 
+    if (!slide) return null;
+
     return (
         <div className="fixed inset-0 z-50 bg-gradient-to-b from-day-bg-start to-day-bg-end dark:from-night-bg-start dark:to-night-bg-end flex flex-col items-center justify-center p-6">
             {/* Skip button */}

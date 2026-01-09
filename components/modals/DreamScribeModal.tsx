@@ -93,16 +93,6 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
         }
     };
 
-    const handleSkip = () => {
-        haptics.light();
-        // Save dream and close without boost
-        stopAlertnessBoost();
-        if (savedDataRef.current && !dreamSavedRef.current) {
-            dreamSavedRef.current = true;
-            onSave(savedDataRef.current.text, savedDataRef.current.quality, savedDataRef.current.mood);
-        }
-    };
-
     const handleStartMyDay = () => {
         haptics.success();
         // User is done - boost keeps playing if active, just close modal

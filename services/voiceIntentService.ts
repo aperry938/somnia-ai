@@ -73,7 +73,7 @@ Respond with ONLY the JSON object, no explanation.`;
 function sanitizeTranscript(transcript: string): string {
     return transcript
         // Remove JSON-like characters that could inject structure
-        .replace(/[{}\[\]"'`]/g, '')
+        .replace(/[{}[\]"'`]/g, '')
         // Remove potential escape sequences
         .replace(/\\/g, '')
         // Limit length to prevent overflow attacks
@@ -132,7 +132,7 @@ export async function parseVoiceIntent(transcript: string): Promise<VoiceIntent>
 
         const result = await ai.models.generateContent({
             model: 'gemini-2.0-flash',
-            contents: prompt,
+            contents: [{ parts: [{ text: prompt }] }],
         });
         const response = (result.text ?? '').trim();
 
@@ -171,7 +171,7 @@ function parseBasicIntent(transcript: string): VoiceIntent {
     if (text.includes('set alarm') || text.includes('wake me')) {
         // Try to extract time
         const timeMatch = text.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
-        if (timeMatch) {
+        if (timeMatch && timeMatch[1]) {
             let hour = parseInt(timeMatch[1], 10);
             const minute = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
             const period = timeMatch[3]?.toLowerCase();

@@ -213,7 +213,7 @@ const prepareAlarmNodes = (): { context: AudioContext; now: number } => {
  * Creates a simple continuous alarm with exponential ramp
  */
 const createContinuousAlarm = (config: AlarmConfig): void => {
-    const { context, now } = prepareAlarmNodes();
+    const { context: _context, now } = prepareAlarmNodes();
 
     alarmOscillator!.type = config.type;
     alarmOscillator!.frequency.setValueAtTime(config.startFreq, now);
@@ -297,7 +297,10 @@ const createBeepingAlarm = (config: AlarmConfig): void => {
  * Starts almost inaudible and very slowly builds over 60 seconds.
  */
 export const playSomniaAlarm = () => {
-    createContinuousAlarm(ALARM_CONFIGS.somnia);
+    const config = ALARM_CONFIGS.somnia;
+    if (config) {
+        createContinuousAlarm(config);
+    }
     logger.log('[playSomniaAlarm] Started - 60s crescendo to full volume, then sustains');
 };
 
@@ -306,7 +309,10 @@ export const playSomniaAlarm = () => {
  * Starts with low volume and frequency, ramping up over 30 seconds.
  */
 export const playProgressiveAlarm = () => {
-    createContinuousAlarm(ALARM_CONFIGS.progressive);
+    const config = ALARM_CONFIGS.progressive;
+    if (config) {
+        createContinuousAlarm(config);
+    }
 };
 
 /**
@@ -363,7 +369,10 @@ export const playAlarmBySound = (soundId: string = 'somnia') => {
  * Gentle Rise alarm - soft gradual wake-up with crescendo
  */
 const playGentleAlarm = () => {
-    createPulsingAlarm(ALARM_CONFIGS.gentle);
+    const config = ALARM_CONFIGS.gentle;
+    if (config) {
+        createPulsingAlarm(config);
+    }
     logger.log('[playGentleAlarm] Started - 60s crescendo, then 30min sustain');
 };
 
@@ -371,21 +380,30 @@ const playGentleAlarm = () => {
  * Wind Chimes alarm - peaceful chime melody
  */
 const playChimesAlarm = () => {
-    createContinuousAlarm(ALARM_CONFIGS.chimes);
+    const config = ALARM_CONFIGS.chimes;
+    if (config) {
+        createContinuousAlarm(config);
+    }
 };
 
 /**
  * Nature Dawn alarm - birds and morning sounds
  */
 const playNatureAlarm = () => {
-    createContinuousAlarm(ALARM_CONFIGS.nature);
+    const config = ALARM_CONFIGS.nature;
+    if (config) {
+        createContinuousAlarm(config);
+    }
 };
 
 /**
  * Classic Alarm - traditional alarm tone with crescendo
  */
 const playClassicAlarm = () => {
-    createBeepingAlarm(ALARM_CONFIGS.classic);
+    const config = ALARM_CONFIGS.classic;
+    if (config) {
+        createBeepingAlarm(config);
+    }
     logger.log('[playClassicAlarm] Started - 60s crescendo, then 30min sustain');
 };
 
@@ -433,7 +451,7 @@ const playPrismAlarm = () => {
     // Schedule 30 minutes of chimes (720 chimes at 2.5s each)
     const prismNotes = PENTATONIC_SCALE;
     for (let i = 0; i < 720; i++) {
-        const note = prismNotes[i % prismNotes.length];
+        const note = prismNotes[i % prismNotes.length] ?? 261.63;
         const t = now + i * 2.5;
         baseOsc.frequency.setValueAtTime(note, t);
         // Chime envelope: LOUD attack, decay to moderate (not silent)
@@ -446,7 +464,7 @@ const playPrismAlarm = () => {
 
     proceduralAlarmStop = () => {
         logger.log('[playPrismAlarm] Stopping');
-        try { baseOsc.stop(); } catch { }
+        try { baseOsc.stop(); } catch { /* oscillator already stopped */ }
     };
 };
 
@@ -489,7 +507,7 @@ const playAetherAlarm = () => {
 
     proceduralAlarmStop = () => {
         logger.log('[playAetherAlarm] Stopping');
-        try { osc.stop(); } catch { }
+        try { osc.stop(); } catch { /* oscillator already stopped */ }
     };
 };
 
@@ -556,7 +574,7 @@ const playBambooAlarm = () => {
 
     proceduralAlarmStop = () => {
         logger.log('[playBambooAlarm] Stopping');
-        try { osc.stop(); } catch { }
+        try { osc.stop(); } catch { /* oscillator already stopped */ }
     };
 };
 
@@ -694,7 +712,7 @@ export const playAlarmPreview = (soundId: string) => {
             }
             break;
 
-        case 'prism':
+        case 'prism': {
             // Start master at 0.4 (25% of 0.2→1.0), crescendo to 1.0 over 45s - LOUDER
             previewOscillator.type = 'sine';
             const prismMasterGain = ctx.createGain();
@@ -708,13 +726,14 @@ export const playAlarmPreview = (soundId: string) => {
             // Schedule 18 chimes (skip first 6) - LOUD chimes
             const prismNotes = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25];
             for (let i = 0; i < 18; i++) {
-                const note = prismNotes[(i + 6) % prismNotes.length];
+                const note = prismNotes[(i + 6) % prismNotes.length] ?? 261.63;
                 const t = now + i * 2.5;
                 previewOscillator.frequency.setValueAtTime(note, t);
                 previewGainNode.gain.setValueAtTime(1.0, t);
                 previewGainNode.gain.exponentialRampToValueAtTime(0.35, t + 1.5);
             }
             break;
+        }
 
         case 'aether':
             // Start at 25%: ~138Hz, ~0.26 volume, crescendo to 220Hz/0.9 over 45s
@@ -725,7 +744,7 @@ export const playAlarmPreview = (soundId: string) => {
             previewGainNode.gain.linearRampToValueAtTime(0.9, now + 45);
             break;
 
-        case 'bamboo':
+        case 'bamboo': {
             // Start master at 0.44 (25% of 0.25→1.0), crescendo to 1.0 over 45s - LOUDER
             previewOscillator.type = 'sine';
             previewOscillator.frequency.setValueAtTime(150, now);
@@ -751,6 +770,7 @@ export const playAlarmPreview = (soundId: string) => {
                 if (interval <= 0.4) interval = 0.7; // Reset wave
             }
             break;
+        }
 
         default:
             // Fallback to classic at 25%
@@ -1594,11 +1614,11 @@ export const setLiveBeatFrequency = (baseFreq: number, diff: number) => {
     const binauralNode = sleepSourceNode as Partial<BinauralMergerNode> | null;
     if (binauralNode && audioContext && binauralNode.oscillators) {
         const oscillators = binauralNode.oscillators;
-        if (oscillators.length === 2) {
+        if (oscillators?.length === 2) {
             const now = audioContext.currentTime;
             // Smooth transition to new frequencies
-            oscillators[0].frequency.setTargetAtTime(baseFreq - diff / 2, now, 0.1);
-            oscillators[1].frequency.setTargetAtTime(baseFreq + diff / 2, now, 0.1);
+            oscillators[0]?.frequency.setTargetAtTime(baseFreq - diff / 2, now, 0.1);
+            oscillators[1]?.frequency.setTargetAtTime(baseFreq + diff / 2, now, 0.1);
         }
     }
 };

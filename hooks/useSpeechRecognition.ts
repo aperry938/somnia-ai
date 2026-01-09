@@ -157,10 +157,10 @@ export const useSpeechRecognition = (onFinalTranscript: (transcript: string) => 
             let final = '';
             let interim = '';
             for (let i = event.resultIndex; i < event.results.length; ++i) {
-                if (event.results[i].isFinal) {
-                    final += event.results[i][0].transcript;
+                if (event.results[i]?.isFinal) {
+                    final += event.results[i]?.[0]?.transcript ?? '';
                 } else {
-                    interim += event.results[i][0].transcript;
+                    interim += event.results[i]?.[0]?.transcript ?? '';
                 }
             }
             if (final) {
@@ -190,7 +190,7 @@ export const useSpeechRecognition = (onFinalTranscript: (transcript: string) => 
             // Set up listener for partial results
             await CapacitorSpeechRecognition.addListener('partialResults', (data: { matches: string[] }) => {
                 if (data.matches && data.matches.length > 0) {
-                    setInterimTranscript(data.matches[0]);
+                    setInterimTranscript(data.matches[0] ?? '');
                 }
             });
 

@@ -4,7 +4,6 @@ import {
     PREMIUM_FEATURES,
     PremiumFeature,
     createCheckoutSession,
-    getCachedStatus,
 } from '../../services/secureSubscriptionService';
 
 interface SecurePaywallModalProps {
@@ -26,8 +25,6 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [termsAccepted, setTermsAccepted] = useState(false);
-
-    const status = getCachedStatus();
 
     // Handle Escape key to close modal
     useEffect(() => {
@@ -76,15 +73,6 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
     };
 
     const featuredFeature = feature ? PREMIUM_FEATURES[feature] : null;
-
-    // Top 5 features to highlight
-    const highlightFeatures: PremiumFeature[] = [
-        'ai_analysis',
-        'ai_imagery',
-        'ai_chat',
-        'dream_synthesis',
-        'binaural_beats',
-    ];
 
     return (
         <div

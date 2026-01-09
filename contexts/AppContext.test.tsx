@@ -3,7 +3,7 @@
  * Tests state management and LocalStorage persistence
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach as _afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import React from 'react';
 import { AppProvider, useAppContext } from '../contexts/AppContext';
@@ -41,8 +41,8 @@ describe('AppContext', () => {
             });
 
             expect(result.current.dreams).toHaveLength(1);
-            expect(result.current.dreams[0].dreamText).toBe('I was flying over mountains.');
-            expect(result.current.dreams[0].sleepQuality).toBe(4);
+            expect(result.current.dreams[0]?.dreamText).toBe('I was flying over mountains.');
+            expect(result.current.dreams[0]?.sleepQuality).toBe(4);
         });
 
         it('should persist dreams to localStorage', () => {
@@ -59,7 +59,7 @@ describe('AppContext', () => {
         it('should delete a dream', () => {
             const { result } = renderHook(() => useAppContext(), { wrapper });
 
-            let dreamId: number;
+            let dreamId: number = 0;
             act(() => {
                 dreamId = result.current.addDream('Dream to delete', 3);
             });
@@ -76,7 +76,7 @@ describe('AppContext', () => {
         it('should update a dream', () => {
             const { result } = renderHook(() => useAppContext(), { wrapper });
 
-            let dreamId: number;
+            let dreamId: number = 0;
             act(() => {
                 dreamId = result.current.addDream('Original text', 3);
             });
@@ -85,13 +85,13 @@ describe('AppContext', () => {
                 result.current.updateDream({ id: dreamId, title: 'Updated Title' });
             });
 
-            expect(result.current.dreams[0].title).toBe('Updated Title');
+            expect(result.current.dreams[0]?.title).toBe('Updated Title');
         });
 
         it('should get dream by ID', () => {
             const { result } = renderHook(() => useAppContext(), { wrapper });
 
-            let dreamId: number;
+            let dreamId: number = 0;
             act(() => {
                 dreamId = result.current.addDream('Findable dream', 5);
             });
@@ -111,7 +111,7 @@ describe('AppContext', () => {
             });
 
             expect(result.current.alarms).toHaveLength(1);
-            expect(result.current.alarms[0].time).toBe('07:00');
+            expect(result.current.alarms[0]?.time).toBe('07:00');
         });
 
         it('should toggle alarm active state', () => {
@@ -121,14 +121,14 @@ describe('AppContext', () => {
                 result.current.addAlarm('06:30', true);
             });
 
-            const alarmId = result.current.alarms[0].id;
-            expect(result.current.alarms[0].isActive).toBe(true);
+            const alarmId = result.current.alarms[0]?.id ?? 0;
+            expect(result.current.alarms[0]?.isActive).toBe(true);
 
             act(() => {
                 result.current.toggleAlarmActive(alarmId);
             });
 
-            expect(result.current.alarms[0].isActive).toBe(false);
+            expect(result.current.alarms[0]?.isActive).toBe(false);
         });
 
         it('should delete an alarm', () => {
@@ -138,7 +138,7 @@ describe('AppContext', () => {
                 result.current.addAlarm('08:00', false);
             });
 
-            const alarmId = result.current.alarms[0].id;
+            const alarmId = result.current.alarms[0]?.id ?? 0;
 
             act(() => {
                 result.current.deleteAlarm(alarmId);

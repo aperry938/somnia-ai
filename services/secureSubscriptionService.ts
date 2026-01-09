@@ -106,7 +106,6 @@ export function setDevPremium(premium: boolean): void {
 
 // Supabase configuration (set in environment)
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 /**
  * Decode JWT token (without verification - verification is server-side)
@@ -114,6 +113,7 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 function decodeToken(token: string): Record<string, unknown> | null {
     try {
         const base64Url = token.split('.')[1];
+        if (!base64Url) return null;
         const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
         const jsonPayload = decodeURIComponent(
             atob(base64)
@@ -262,7 +262,7 @@ export function isPremium(): boolean {
 /**
  * Check if user can access a premium feature
  */
-export function canAccessFeature(feature: PremiumFeature): boolean {
+export function canAccessFeature(_feature: PremiumFeature): boolean {
     return isPremium();
 }
 
@@ -314,7 +314,7 @@ export function canUseAiAnalysis(): boolean {
  * Consume one AI analysis credit
  * Returns true if successful, false if no credits remaining
  */
-export function useAiCredit(): boolean {
+export function consumeAiCredit(): boolean {
     if (isPremium()) return true; // Premium doesn't consume credits
 
     const credits = getCredits();
