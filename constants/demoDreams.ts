@@ -104,3 +104,45 @@ export const DEMO_DREAMS: Dream[] = [
 ];
 
 export const isDemoDream = (dream: Dream): boolean => dream.id < 0;
+
+/**
+ * Calibration dream with full AI analysis to show new users
+ * what Somnia can do before they log their first dream
+ */
+export const CALIBRATION_DREAM: Dream = {
+    id: -100,
+    timestamp: new Date().toISOString(),
+    dreamText: "I was flying over a vast ocean at sunset. The water below sparkled with golden light. I felt completely free and at peace. A friendly dolphin joined me, swimming through the air alongside me. We communicated without words, sharing a profound understanding.",
+    sleepQuality: 5,
+    title: "Flying Over Golden Waters",
+    imageUrl: null,
+    aiAnalysis: {
+        title: "The Liberated Self",
+        analysis: [
+            {
+                title: "🌊 The Ocean of the Unconscious",
+                content: "Water in dreams often represents the unconscious mind and emotional depth. Your flight over this vast ocean suggests you're gaining perspective on your inner emotional landscape—viewing it from above rather than being submerged in it."
+            },
+            {
+                title: "🕊️ The Freedom of Flight",
+                content: "Flying dreams typically emerge during periods of personal growth or when you're transcending limitations. The sunset timing adds significance: you may be completing one chapter and preparing for transformation."
+            },
+            {
+                title: "🐬 The Dolphin Guide",
+                content: "Dolphins symbolize playful intelligence and emotional guidance. This companion appearing suggests your intuition is strong right now. The wordless communication indicates trust in non-rational knowing."
+            }
+        ],
+        integration: {
+            title: "✨ Integration Practice",
+            content: "This dream invites you to trust your intuitive guidance today. When facing decisions, pause and notice what feels 'right' before analyzing logically. Your unconscious is signaling readiness for expansion."
+        },
+        telemetry: {
+            valence: 0.85,
+            arousal: 0.6,
+            tags: ['peaceful', 'free', 'connected']
+        }
+    },
+    chatHistory: [],
+    tags: ['flying', 'ocean', 'freedom', 'animals'],
+    mood: 'peaceful'
+};

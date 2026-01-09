@@ -13,6 +13,7 @@ import { isPremium } from '../../services/secureSubscriptionService';
 import haptics from '../../services/hapticsService';
 import { MOOD_ICONS, MOOD_LABELS } from '../../constants/uiIcons';
 import { processDejaVuCheck, DejaVuMatch } from '../../services/dejaVuService';
+import { CALIBRATION_DREAM } from '../../constants/demoDreams';
 
 // Evening Reflection Display Component
 const EveningReflectionDisplay: React.FC<{ aids: SleepAids }> = ({ aids }) => {
@@ -166,7 +167,10 @@ const AccordionItem: React.FC<{ title: string; content: string; isOpenDefault?: 
 export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => void; }> = ({ dreamId, onBack }) => {
     const { getDreamById, updateDream, deleteDream, biometrics, dreams, analysisPersonality, setAnalysisPersonality, artStyle: _artStyle } = useAppContext();
     const { showToast } = useToast();
-    const dream = dreamId ? getDreamById(dreamId) : null;
+    // Use calibration dream for sample, otherwise get from context
+    const dream = dreamId === CALIBRATION_DREAM.id ? CALIBRATION_DREAM : (dreamId ? getDreamById(dreamId) : null);
+    const isCalibrationDream = dreamId === CALIBRATION_DREAM.id;
+    const isReadOnly = isCalibrationDream; // Calibration dream is read-only sample
     const [analysisState, setAnalysisState] = useState<'pending' | 'loading' | 'success' | 'error'>('pending');
     const [isChatOpen, setIsChatOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
@@ -274,9 +278,11 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                 <div className="flex justify-between items-center mb-6">
                     <button onClick={onBack} aria-label="Back to Chronicle" className="min-h-[44px] px-3 py-2 text-day-accent dark:text-night-accent flex items-center">&larr; Back to Chronicle</button>
                     <div className="flex gap-1">
-                        <button onClick={() => setIsEditing(!isEditing)} aria-label={isEditing ? 'Cancel editing' : 'Edit dream'} className="min-h-[44px] min-w-[44px] px-3 py-2 text-sm text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent flex items-center">
-                            {isEditing ? 'Cancel' : 'Edit'}
-                        </button>
+                        {!isReadOnly && (
+                            <button onClick={() => setIsEditing(!isEditing)} aria-label={isEditing ? 'Cancel editing' : 'Edit dream'} className="min-h-[44px] min-w-[44px] px-3 py-2 text-sm text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent flex items-center">
+                                {isEditing ? 'Cancel' : 'Edit'}
+                            </button>
+                        )}
                         <button
                             onClick={async () => {
                                 const shareData = {
@@ -302,19 +308,21 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                             </svg>
                             Share
                         </button>
-                        <button
-                            onClick={() => {
-                                if (window.confirm('Are you sure you want to delete this dream? This cannot be undone.')) {
-                                    deleteDream(dream.id);
-                                    showToast('Dream deleted');
-                                    onBack();
-                                }
-                            }}
-                            aria-label="Delete dream"
-                            className="min-h-[44px] min-w-[44px] px-3 py-2 text-sm text-red-500 hover:text-red-700 flex items-center"
-                        >
-                            Delete
-                        </button>
+                        {!isReadOnly && (
+                            <button
+                                onClick={() => {
+                                    if (window.confirm('Are you sure you want to delete this dream? This cannot be undone.')) {
+                                        deleteDream(dream.id);
+                                        showToast('Dream deleted');
+                                        onBack();
+                                    }
+                                }}
+                                aria-label="Delete dream"
+                                className="min-h-[44px] min-w-[44px] px-3 py-2 text-sm text-red-500 hover:text-red-700 flex items-center"
+                            >
+                                Delete
+                            </button>
+                        )}
                     </div>
                 </div>
 

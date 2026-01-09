@@ -10,6 +10,7 @@ import { AddSleepEntryModal } from '../modals/AddSleepEntryModal';
 import { AddDreamToEntryModal } from '../modals/AddDreamToEntryModal';
 import { PasswordInputModal } from '../modals/PasswordInputModal';
 import { useToast } from '../shared/Toast';
+import { CALIBRATION_DREAM } from '../../constants/demoDreams';
 
 
 export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = ({ onDreamSelect }) => {
@@ -274,24 +275,80 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
                         )}
                     </>
                 ) : (
-                    // Empty state
-                    <div className="text-center py-12">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-day-text-secondary/30 dark:text-night-text-secondary/30 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                        </svg>
-                        <h3 className="font-serif text-xl mb-2">Your Sleep Journal Awaits</h3>
-                        <p className="text-day-text-secondary dark:text-night-text-secondary mb-6 max-w-xs mx-auto">
-                            Log your sleep to track patterns and record the dreams that follow.
-                        </p>
-                        <button
-                            onClick={() => setIsAddSleepModalOpen(true)}
-                            className="inline-flex items-center justify-center gap-2 px-6 py-3 min-h-[48px] bg-day-accent dark:bg-night-accent text-white rounded-full font-medium hover:opacity-90 transition-opacity"
+                    // Calibration Dream - Show AI capabilities before first entry
+                    <div className="space-y-6">
+                        {/* Intro Banner */}
+                        <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 dark:from-indigo-500/20 dark:to-purple-500/20 rounded-xl p-4 border border-indigo-500/20">
+                            <div className="flex items-start gap-3">
+                                <span className="text-2xl">✨</span>
+                                <div>
+                                    <h3 className="font-medium text-day-text-primary dark:text-night-text-primary mb-1">
+                                        See How Somnia Analyzes Dreams
+                                    </h3>
+                                    <p className="text-sm text-day-text-secondary dark:text-night-text-secondary">
+                                        Tap this sample dream to explore AI-powered insights. Then record your own!
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Calibration Dream Card */}
+                        <div
+                            onClick={() => onDreamSelect(CALIBRATION_DREAM.id)}
+                            className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-xl p-4 cursor-pointer hover:border-day-accent dark:hover:border-night-accent transition-colors"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                            </svg>
-                            Log Your First Sleep
-                        </button>
+                            <div className="flex items-start justify-between mb-3">
+                                <div>
+                                    <span className="text-xs text-day-text-secondary dark:text-night-text-secondary">
+                                        Sample Dream
+                                    </span>
+                                    <h4 className="font-serif text-lg text-day-text-primary dark:text-night-text-primary">
+                                        {CALIBRATION_DREAM.title}
+                                    </h4>
+                                </div>
+                                <span className="px-2 py-1 bg-green-500/10 text-green-600 dark:text-green-400 text-xs rounded-full">
+                                    ✓ AI Analyzed
+                                </span>
+                            </div>
+                            <p className="text-sm text-day-text-secondary dark:text-night-text-secondary line-clamp-2 mb-3">
+                                {CALIBRATION_DREAM.dreamText}
+                            </p>
+                            {CALIBRATION_DREAM.aiAnalysis && (
+                                <div className="bg-day-bg-start/50 dark:bg-night-bg-start/50 rounded-lg p-3 mb-3">
+                                    <p className="text-sm font-medium text-day-accent dark:text-night-accent mb-1">
+                                        {CALIBRATION_DREAM.aiAnalysis.title}
+                                    </p>
+                                    <p className="text-xs text-day-text-secondary dark:text-night-text-secondary line-clamp-2">
+                                        {CALIBRATION_DREAM.aiAnalysis.analysis[0]?.content}
+                                    </p>
+                                </div>
+                            )}
+                            <div className="flex items-center justify-between">
+                                <div className="flex gap-1">
+                                    {CALIBRATION_DREAM.tags?.slice(0, 3).map(tag => (
+                                        <span key={tag} className="px-2 py-0.5 bg-day-border/50 dark:bg-night-border/50 text-xs rounded-full">
+                                            {tag}
+                                        </span>
+                                    ))}
+                                </div>
+                                <span className="text-day-accent dark:text-night-accent text-sm font-medium">
+                                    Tap to explore →
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* CTA */}
+                        <div className="text-center pt-4">
+                            <button
+                                onClick={() => setIsAddSleepModalOpen(true)}
+                                className="inline-flex items-center justify-center gap-2 px-6 py-3 min-h-[48px] bg-day-accent dark:bg-night-accent text-white rounded-full font-medium hover:opacity-90 transition-opacity"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                </svg>
+                                Record Your First Dream
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>

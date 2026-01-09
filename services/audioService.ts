@@ -607,7 +607,7 @@ const cleanupProceduralAlarm = () => {
                     // Ignore errors if already disconnected
                 }
             }, 200);
-        } catch (_e) {
+        } catch (e) {
             logger.warn('Error cleaning up procedural alarm:', e);
         }
     }
@@ -627,7 +627,7 @@ export const stopAlarmSound = () => {
         alarmGainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
         try {
             alarmOscillator.stop(now + 0.5);
-        } catch (_e) {
+        } catch (e) {
             logger.warn("Error stopping alarm oscillator, it might have already been stopped.", e);
         }
     }
@@ -1343,7 +1343,7 @@ export const playSleepSound = async (sound: Soundscape, durationMinutes: number,
             sleepSourceNode = sourceNode;
             sleepSourceNode.connect(sleepGainNode);
             (sleepSourceNode as AudioBufferSourceNode).start();
-        } catch (_e) {
+        } catch (e) {
             logger.error("Failed to load or play audio file, fallback to synthesis:", e);
             if (sleepGainNode) {
                 sleepGainNode.disconnect();

@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { initAudioContext, playSleepSound, stopSleepSound } from '../../services/audioService';
+import { SOUNDSCAPES } from '../../constants';
 
 interface OnboardingCarouselProps {
     onComplete: () => void;
@@ -47,16 +49,44 @@ const slides = [
 export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({ onComplete }) => {
     const [currentSlide, setCurrentSlide] = useState(0);
 
+    // Play theta wave preview on "Science-Backed Sleep Tools" slide
+    useEffect(() => {
+        if (currentSlide === 2) {
+            // Initialize audio context (requires user gesture - carousel navigation counts)
+            initAudioContext();
+
+            // Find the theta waves soundscape
+            const thetaSound = SOUNDSCAPES.find(s => s.id === 'theta_waves');
+            if (thetaSound) {
+                // Play at 15% volume for subtle preview, 1 minute duration
+                playSleepSound(thetaSound, 1, 0.15);
+            }
+        }
+
+        // Cleanup when leaving the slide or unmounting
+        return () => {
+            if (currentSlide === 2) {
+                stopSleepSound(1); // 1 second fade out
+            }
+        };
+    }, [currentSlide]);
+
+    // Stop audio when completing onboarding
+    const handleComplete = () => {
+        stopSleepSound(0.5);
+        onComplete();
+    };
+
     const handleNext = () => {
         if (currentSlide < slides.length - 1) {
             setCurrentSlide(currentSlide + 1);
         } else {
-            onComplete();
+            handleComplete();
         }
     };
 
     const handleSkip = () => {
-        onComplete();
+        handleComplete();
     };
 
     const slide = slides[currentSlide];
