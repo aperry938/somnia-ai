@@ -34,6 +34,7 @@ interface AppContextType {
     logBreathingActivity: (name: string, durationSeconds: number) => void;
     saveWakeData: (wakeData: WakeData) => void;
     finalizeSleepSession: (options?: { alertnessBoostUsed?: boolean }) => void;
+    createSleepEntryForSession: () => number | null; // Creates entry and links to session
     clearSleepSession: () => void;
     getNextActiveAlarm: () => Alarm | null;
     addAlarm: (time: string, smartWake: boolean, days?: number[], soundId?: string, purpose?: AlarmPurpose, label?: string) => number;
@@ -359,7 +360,39 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setActiveSleepSession(null);
     }, [setActiveSleepSession]);
 
-    // Finalize the sleep session WITHOUT a dream - creates a SleepEntry from session data
+    // Create a sleep entry when completing Sleep Gateway and link it to the session
+    // This allows the entry to be updated later with wake data and dreams
+    const createSleepEntryForSession = useCallback((): number | null => {
+        if (!activeSleepSession) return null;
+        if (activeSleepSession.sleepEntryId) return activeSleepSession.sleepEntryId; // Already has an entry
+
+        const today = new Date().toISOString().split('T')[0] ?? '';
+        const sleepData = activeSleepSession.sleepGatewayData ?? {};
+
+        const entryId = generateSecureId();
+        const newEntry: SleepEntry = {
+            id: entryId,
+            date: today,
+            sleepQuality: null, // Will be set when dream is logged
+            ...(sleepData.dayNotes ? { notes: sleepData.dayNotes } : {}),
+            sleepAids: sleepData,
+            wakeData: undefined, // Will be set when alarm is dismissed
+            alarmTime: activeSleepSession.alarmTime ?? undefined,
+            alarmSoundId: activeSleepSession.alarmSoundId,
+            manuallyLogged: false,
+            dreamIds: [], // Will be populated when dream is logged
+            createdAt: new Date().toISOString(),
+        };
+
+        setSleepEntries(prev => [newEntry, ...prev]);
+
+        // Update the session to link to this entry
+        setActiveSleepSession(prev => prev ? { ...prev, sleepEntryId: entryId } : null);
+
+        return entryId;
+    }, [activeSleepSession, setActiveSleepSession, setSleepEntries]);
+
+    // Finalize the sleep session WITHOUT a dream - updates or creates SleepEntry
     // Use this when user skips dream recording but we still want to save their sleep data
     const finalizeSleepSession = useCallback((options?: { alertnessBoostUsed?: boolean }) => {
         if (!activeSleepSession) return;
@@ -373,21 +406,34 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             wakeData = { ...wakeData, alertnessBoostUsed: options.alertnessBoostUsed };
         }
 
-        const newEntry: SleepEntry = {
-            id: generateSecureId(),
-            date: today,
-            sleepQuality: null, // No dream means no sleep quality rating
-            ...(sleepData.dayNotes ? { notes: sleepData.dayNotes } : {}),
-            sleepAids: sleepData,
-            wakeData: wakeData,
-            alarmTime: activeSleepSession.alarmTime ?? undefined,
-            alarmSoundId: activeSleepSession.alarmSoundId,
-            manuallyLogged: false,
-            dreamIds: [], // No dreams
-            createdAt: new Date().toISOString(),
-        };
+        // If we have an existing entry, UPDATE it
+        if (activeSleepSession.sleepEntryId) {
+            setSleepEntries(prev => prev.map(entry => {
+                if (entry.id !== activeSleepSession.sleepEntryId) return entry;
+                return {
+                    ...entry,
+                    wakeData: wakeData,
+                };
+            }));
+        } else {
+            // No existing entry, create a new one
+            const newEntry: SleepEntry = {
+                id: generateSecureId(),
+                date: today,
+                sleepQuality: null, // No dream means no sleep quality rating
+                ...(sleepData.dayNotes ? { notes: sleepData.dayNotes } : {}),
+                sleepAids: sleepData,
+                wakeData: wakeData,
+                alarmTime: activeSleepSession.alarmTime ?? undefined,
+                alarmSoundId: activeSleepSession.alarmSoundId,
+                manuallyLogged: false,
+                dreamIds: [], // No dreams
+                createdAt: new Date().toISOString(),
+            };
 
-        setSleepEntries(prev => [newEntry, ...prev]);
+            setSleepEntries(prev => [newEntry, ...prev]);
+        }
+
         setActiveSleepSession(null);
         setPendingSleepData(null);
     }, [activeSleepSession, setActiveSleepSession, setPendingSleepData, setSleepEntries]);
@@ -440,10 +486,24 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const dreamId = generateSecureId();
         const today = new Date().toISOString().split('T')[0] ?? ''; // YYYY-MM-DD
 
-        // If we have an active sleep session, create a proper SleepEntry
-        // This captures all tracked sleep sessions (with or without alarm)
         let sleepEntryId: number | undefined = undefined;
-        if (activeSleepSession) {
+
+        // If session has an existing sleepEntryId, UPDATE that entry
+        if (activeSleepSession?.sleepEntryId) {
+            sleepEntryId = activeSleepSession.sleepEntryId;
+            // Update the existing entry with wake data and dream
+            setSleepEntries(prev => prev.map(entry => {
+                if (entry.id !== sleepEntryId) return entry;
+                return {
+                    ...entry,
+                    sleepQuality,
+                    wakeData: wakeData,
+                    dreamIds: [...entry.dreamIds, dreamId],
+                };
+            }));
+        }
+        // If we have an active sleep session but NO existing entry, create one
+        else if (activeSleepSession) {
             const entryId = generateSecureId();
             const newEntry: SleepEntry = {
                 id: entryId,
@@ -609,6 +669,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         logBreathingActivity,
         saveWakeData,
         finalizeSleepSession,
+        createSleepEntryForSession,
         clearSleepSession,
         getNextActiveAlarm,
         addAlarm,

@@ -216,6 +216,7 @@ export interface SleepSession {
     sleepGatewayData: SleepAids; // Pre-sleep data from Sleep Gateway
     wakeData?: WakeData; // Wake metrics when alarm was dismissed
     isActive: boolean; // Whether this session is still active (not yet logged)
+    sleepEntryId?: number; // ID of pre-created SleepEntry to update when alarm/dream completes
 }
 
 // Sleep Entry - a logged night of sleep (primary entity in Chronicle)

@@ -59,7 +59,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
     // Wake Window Hook
     const { isSupported: motionSupported, movementLog } = useWakeWindow(isSleeping);
 
-    const { setActiveSleepAid, activeSleepAids, setPendingSleepData, dreams, volume, activeSleepSession, updateSleepSessionData, startSleepSession, alarms, addSleepEntry, clearSleepSession } = useAppContext();
+    const { setActiveSleepAid, activeSleepAids, setPendingSleepData, dreams, volume, activeSleepSession, updateSleepSessionData, startSleepSession, alarms, addSleepEntry, clearSleepSession, createSleepEntryForSession } = useAppContext();
     const { showToast } = useToast();
 
     // Initialize session data from existing session if present (runs once on mount)
@@ -370,12 +370,15 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                             <button
                                 onClick={() => {
                                     haptics.success();
-                                    // Session data persists - entry will be created when:
-                                    // 1. Alarm rings and user dismisses (via finalizeSleepSession), OR
-                                    // 2. User logs a dream (via addDream)
-                                    // NOTE: Don't clear session here! Keep it for the alarm flow.
+                                    // Create the sleep entry NOW with prep data
+                                    // It will be updated later when alarm/dream flow completes
+                                    const entryId = createSleepEntryForSession();
+                                    if (entryId) {
+                                        showToast('Sleep prep logged - will update when you wake up');
+                                    } else {
+                                        showToast('Session started - data will be logged when you wake');
+                                    }
                                     setIsSleeping(false);
-                                    showToast('Sleep prep saved - entry will be logged when you wake up');
                                     // Navigate back to alarms/main page
                                     if (onNavigateToAlarms) onNavigateToAlarms();
                                 }}
@@ -388,7 +391,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                             </button>
                         </div>
                         <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-4 opacity-70 text-center">
-                            Your sleep prep data will be saved when you log your dream or dismiss your alarm
+                            Entry created! Wake data & dream will be added when alarm rings.
                         </p>
                     </div>
                 ) : (
