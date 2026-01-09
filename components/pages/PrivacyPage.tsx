@@ -26,81 +26,44 @@ export const PrivacyPage: React.FC<PrivacyPageProps> = ({ onBack }) => {
                 </p>
 
                 <section>
-                    <h2 className="font-serif text-2xl text-day-text-primary dark:text-night-text-primary mb-3">How Somnia Works</h2>
+                    <h2 className="font-serif text-2xl text-day-text-primary dark:text-night-text-primary mb-3">Your Data</h2>
                     <p>
-                        Somnia uses advanced AI to provide deep psychological analysis of your dreams, powered by
-                        768-dimensional vector embeddings and multiple AI personas trained in Jungian psychology,
-                        neuroscience, and symbolic interpretation.
+                        Your dreams, alarms, and preferences are stored on your device.
+                        If you create an account, you can optionally sync this data to access it on other devices.
                     </p>
                 </section>
 
                 <section>
-                    <h2 className="font-serif text-2xl text-day-text-primary dark:text-night-text-primary mb-3">Data Storage</h2>
+                    <h2 className="font-serif text-2xl text-day-text-primary dark:text-night-text-primary mb-3">AI Features</h2>
                     <p>
-                        Your dream journal, alarms, and preferences are stored in your browser's LocalStorage.
-                        This data remains on your device unless you choose to sync with a Somnia account.
+                        When you use AI features (dream analysis, chat, image prompts), your dream text is
+                        sent to Google's Gemini API for processing. Your email and personal identifiers are
+                        never included. Per Google's API terms, this data is not used to train their models.
                     </p>
-                    <ul className="list-disc pl-6 mt-3 space-y-2">
-                        <li>Dream text and metadata are stored locally</li>
-                        <li>Clearing your browser data will delete local dreams</li>
-                        <li>Account sync (optional) enables cross-device access</li>
+                </section>
+
+                <section>
+                    <h2 className="font-serif text-2xl text-day-text-primary dark:text-night-text-primary mb-3">What We Don't Do</h2>
+                    <ul className="list-disc pl-6 space-y-2">
+                        <li>We don't use analytics or tracking</li>
+                        <li>We don't sell your data</li>
+                        <li>We don't read your dreams</li>
                     </ul>
                 </section>
 
                 <section>
-                    <h2 className="font-serif text-2xl text-day-text-primary dark:text-night-text-primary mb-3">AI Processing</h2>
+                    <h2 className="font-serif text-2xl text-day-text-primary dark:text-night-text-primary mb-3">Your Control</h2>
                     <p>
-                        <strong>When you use AI features</strong> (dream analysis, image generation, chat, sleep coaching),
-                        your dream text is processed by Google's Gemini AI to generate insights. This is essential
-                        to how Somnia works—our AI personas analyze symbolic patterns, archetypal themes, and
-                        emotional undertones to provide meaningful interpretation.
-                    </p>
-                    <p className="mt-3">
-                        <strong>What is sent:</strong> Dream text, optional context (sleep quality, mood), and analysis preferences.
-                    </p>
-                    <p className="mt-3">
-                        <strong>What is not sent:</strong> Your email, personal identifiers, or data from other dreams.
-                    </p>
-                    <p className="mt-3">
-                        Google's data handling is governed by their
-                        <a href="https://ai.google.dev/gemini-api/terms" className="text-day-accent dark:text-night-accent hover:underline ml-1" target="_blank" rel="noopener noreferrer">
-                            Gemini API Terms of Service
-                        </a>.
-                        Per Google's API terms, prompts sent via the API are not used to train their models.
-                    </p>
-                </section>
-
-                <section>
-                    <h2 className="font-serif text-2xl text-day-text-primary dark:text-night-text-primary mb-3">Vector Embeddings</h2>
-                    <p>
-                        Somnia creates semantic embeddings of your dreams to detect patterns over time—like when
-                        you dream about similar themes months apart ("Dream Déjà Vu"). These embeddings are
-                        numerical representations, not readable text, and are stored with your dream data.
-                    </p>
-                </section>
-
-                <section>
-                    <h2 className="font-serif text-2xl text-day-text-primary dark:text-night-text-primary mb-3">Analytics & Tracking</h2>
-                    <p>
-                        <strong>We do not use behavioral analytics.</strong> There are no tracking pixels or
-                        third-party analytics services monitoring your app usage.
-                    </p>
-                </section>
-
-                <section>
-                    <h2 className="font-serif text-2xl text-day-text-primary dark:text-night-text-primary mb-3">Data Export & Deletion</h2>
-                    <p>
-                        You can export your entire dream journal at any time using the Export feature in the Chronicle.
-                        This creates a file you fully control. You can also delete all data by clearing your browser
-                        storage or using the account deletion option if signed in.
+                        You can export your dream journal anytime from Settings. To delete all data,
+                        use the Delete Account option or clear your app data.
                     </p>
                 </section>
 
                 <section>
                     <h2 className="font-serif text-2xl text-day-text-primary dark:text-night-text-primary mb-3">Contact</h2>
                     <p>
-                        If you have questions about this privacy policy, please contact us at:
-                        <a href="mailto:privacy@somnia.ai" className="text-day-accent dark:text-night-accent hover:underline ml-1">
+                        Questions? Email us at{' '}
+                        <a href="mailto:privacy@somnia.ai" className="text-day-accent dark:text-night-accent hover:underline">
                             privacy@somnia.ai
                         </a>
                     </p>
