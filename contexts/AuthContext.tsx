@@ -17,9 +17,8 @@ import {
     getCurrentUser,
     onAuthStateChange,
     isAuthConfigured,
-    getAuthToken as _getAuthToken,
 } from '../services/authService';
-import { verifySubscription, clearSubscriptionCache } from '../services/secureSubscriptionService';
+import { verifySubscription, clearSubscriptionCache, linkUser, unlinkUser } from '../services/secureSubscriptionService';
 
 interface AuthContextType {
     user: User | null;
@@ -118,6 +117,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setUser(result.user);
             setSession(result.session || null);
 
+            // Link user to RevenueCat for cross-device subscription sync
+            await linkUser(result.user.id);
+
             // Verify subscription after login
             if (result.session?.access_token) {
                 verifySubscription().catch(logger.error);
@@ -130,6 +132,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         await authSignOut();
         setUser(null);
         setSession(null);
+        // Unlink from RevenueCat and clear subscription cache
+        await unlinkUser();
         clearSubscriptionCache();
         localStorage.removeItem('somnia_user_email');
     }, []);

@@ -278,7 +278,9 @@ export async function unlinkUser(): Promise<void> {
 /**
  * Check if user can access a premium feature
  */
-export function canAccessFeature(_feature: PremiumFeature): boolean {
+export function canAccessFeature(feature: PremiumFeature): boolean {
+    const requiredTier = FEATURE_TIERS[feature];
+    if (requiredTier === 'free') return true;
     return isPremium();
 }
 
@@ -329,12 +331,6 @@ export function consumeAiCredit(): boolean {
 export function getRemainingCredits(): number {
     if (isPremium()) return -1;
     return getCredits().remaining;
-}
-
-export function requirePremium(feature: PremiumFeature): void {
-    if (!canAccessFeature(feature)) {
-        throw new Error(`Premium subscription required for: ${PREMIUM_FEATURES[feature].name}`);
-    }
 }
 
 export function clearSubscriptionCache(): void {
