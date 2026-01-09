@@ -64,13 +64,40 @@ export const SentimentChart: React.FC<SentimentChartProps> = ({ dreams }) => {
                             domain={[-100, 100]}
                         />
                         <Tooltip
-                            contentStyle={{
-                                backgroundColor: isDark ? '#1f2937' : '#ffffff',
-                                borderColor: gridColor,
-                                borderRadius: '0.5rem',
-                                color: textColor
+                            content={({ active, payload }) => {
+                                if (!active || !payload?.length) return null;
+                                const data = payload[0]?.payload;
+                                const sentiment = data?.sentiment || 0;
+                                const moodLabel = sentiment >= 40 ? 'Very Positive'
+                                    : sentiment >= 15 ? 'Positive'
+                                        : sentiment >= -15 ? 'Neutral'
+                                            : sentiment >= -40 ? 'Low'
+                                                : 'Very Low';
+                                const moodColor = sentiment >= 40 ? '#22c55e'
+                                    : sentiment >= 15 ? '#84cc16'
+                                        : sentiment >= -15 ? '#9ca3af'
+                                            : sentiment >= -40 ? '#f59e0b'
+                                                : '#ef4444';
+                                return (
+                                    <div style={{
+                                        backgroundColor: isDark ? '#1f2937' : '#ffffff',
+                                        borderColor: gridColor,
+                                        border: '1px solid',
+                                        borderRadius: '0.5rem',
+                                        padding: '8px 12px',
+                                        color: isDark ? '#e5e7eb' : '#374151'
+                                    }}>
+                                        <div style={{ fontWeight: 600, marginBottom: 4 }}>{data?.date}</div>
+                                        <div style={{ fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                            <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: moodColor }}></span>
+                                            {moodLabel}
+                                        </div>
+                                        {data?.title && data.title !== 'Untitled Dream' && (
+                                            <div style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>{data.title}</div>
+                                        )}
+                                    </div>
+                                );
                             }}
-                            itemStyle={{ color: areaColor }}
                         />
                         <Area
                             type="monotone"

@@ -5,7 +5,7 @@
  * - iOS: HealthKit (via custom HealthKitPlugin)
  * - Android: Health Connect (via custom HealthConnectPlugin)
  *
- * Provides real sleep data from wearables and health apps.
+ * Provides real sleep data from health apps (Apple Health, Google Fit).
  */
 
 import { Capacitor, registerPlugin } from '@capacitor/core';
@@ -464,7 +464,7 @@ export const isHealthKitAvailable = (): boolean => {
 };
 
 export const getCurrentSleepStage = async (): Promise<'Deep' | 'Core' | 'REM' | 'Awake' | null> => {
-    // Real-time sleep stage would require active wearable connection
+    // Real-time sleep stage would require active health app connection
     // For now, return null - this would need background processing
     return null;
 };

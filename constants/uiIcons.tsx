@@ -48,6 +48,11 @@ export const MOOD_ICONS: Record<DreamMood, React.ReactNode> = {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
         </svg>
     ),
+    nightmare: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 3C8.5 3 6 6.5 6 9c0 1.5.5 2.5 1 3.5.5 1 1 2 1 3.5h8c0-1.5.5-2.5 1-3.5.5-1 1-2 1-3.5 0-2.5-2.5-6-6-6zM9 21h6M10 17v4M14 17v4" />
+        </svg>
+    ),
 };
 
 export const MOOD_LABELS: Record<DreamMood, string> = {
@@ -60,6 +65,7 @@ export const MOOD_LABELS: Record<DreamMood, string> = {
     fearful: 'Fearful',
     nostalgic: 'Nostalgic',
     hopeful: 'Hopeful',
+    nightmare: 'Nightmare',
 };
 
 // Day Rating Icons (1-5 scale)

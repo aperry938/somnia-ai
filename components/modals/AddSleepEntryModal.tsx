@@ -91,7 +91,7 @@ export const AddSleepEntryModal: React.FC<AddSleepEntryModalProps> = ({
                                     }`}
                             >
                                 <span className="text-lg" aria-hidden="true">
-                                    {rating === 1 ? '😓' : rating === 2 ? '😐' : rating === 3 ? '🙂' : rating === 4 ? '😊' : '🌟'}
+                                    {rating}
                                 </span>
                                 <span className="text-[10px]">{dayLabels[rating - 1]}</span>
                             </button>

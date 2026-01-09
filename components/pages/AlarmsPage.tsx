@@ -30,8 +30,11 @@ const getSoundName = (soundId: string | undefined): string => {
 
 // Memoized component for a single alarm item - fully clickable with dynamic styling
 const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = React.memo(({ alarm, onEdit }) => {
-    const { toggleAlarmActive } = useAppContext();
+    const { toggleAlarmActive, deleteAlarm } = useAppContext();
     const id = `toggle-${alarm.id}`;
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const longPressTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+    const isLongPress = React.useRef(false);
 
     // Format time in 12h format
     const [hourStr, minuteStr] = alarm.time.split(':');
@@ -45,89 +48,151 @@ const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = Re
         toggleAlarmActive(alarm.id);
     };
 
-    return (
-        <div
-            onClick={() => onEdit(alarm)}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit(alarm); } }}
-            aria-label={`Alarm at ${displayTime} ${period}${alarm.label ? `, ${alarm.label}` : ''}, ${formatRepeatText(alarm.days)}, ${alarm.isActive ? 'enabled' : 'disabled'}`}
-            className={`group relative bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border shadow-lg rounded-2xl p-4 cursor-pointer transition-all duration-300 flex flex-col justify-between h-32 hover:shadow-xl hover:scale-[1.02] hover:border-day-accent dark:hover:border-night-accent active:scale-[0.98] ${alarm.isActive
-                ? 'ring-2 ring-day-accent/30 dark:ring-night-accent/30'
-                : 'opacity-80 hover:opacity-100'
-                }`}
-        >
-            {/* Active indicator glow */}
-            {alarm.isActive && (
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-day-accent/5 to-purple-500/5 dark:from-night-accent/10 dark:to-purple-500/10 pointer-events-none" />
-            )}
+    // Long press handlers
+    const handleTouchStart = () => {
+        isLongPress.current = false;
+        longPressTimer.current = setTimeout(() => {
+            isLongPress.current = true;
+            haptics.medium();
+            setShowDeleteConfirm(true);
+        }, 500); // 500ms for long press
+    };
 
-            <div className="flex justify-between items-start relative z-10">
-                <div className="flex items-baseline gap-2">
-                    <p className={`text-4xl font-light transition-colors ${alarm.isActive ? 'text-day-text dark:text-night-text' : 'text-gray-400'}`}>
-                        {displayTime}
-                    </p>
-                    <span className={`text-sm font-medium ${alarm.isActive ? 'text-day-accent dark:text-night-accent' : 'text-gray-400'}`}>
-                        {period}
-                    </span>
-                </div>
-                <div
-                    className="relative inline-block w-11 align-middle select-none"
-                    onClick={handleToggle}
-                    role="switch"
-                    aria-checked={alarm.isActive}
-                    aria-label={`${alarm.isActive ? 'Disable' : 'Enable'} alarm`}
-                    tabIndex={0}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleToggle(e as unknown as React.MouseEvent); } }}
-                >
-                    <input
-                        type="checkbox"
-                        id={id}
-                        className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
-                        checked={alarm.isActive}
-                        readOnly
-                        aria-hidden="true"
-                        tabIndex={-1}
-                    />
-                    <label htmlFor={id} className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 dark:bg-gray-700 cursor-pointer transition-colors" aria-hidden="true"></label>
-                </div>
-            </div>
-            <div className="flex items-end justify-between relative z-10 mt-auto">
-                <div className="flex flex-col gap-0.5 min-h-[3.5rem]">
-                    {/* Label for reminders */}
-                    {alarm.label && (
-                        <p className={`text-sm font-medium ${alarm.isActive ? 'text-day-text dark:text-night-text' : 'text-gray-400'}`}>
-                            {alarm.label}
+    const handleTouchEnd = () => {
+        if (longPressTimer.current) {
+            clearTimeout(longPressTimer.current);
+            longPressTimer.current = null;
+        }
+    };
+
+    const handleClick = () => {
+        if (!isLongPress.current && !showDeleteConfirm) {
+            onEdit(alarm);
+        }
+    };
+
+    const handleDelete = () => {
+        haptics.warning();
+        deleteAlarm(alarm.id);
+        setShowDeleteConfirm(false);
+    };
+
+    return (
+        <>
+            <div
+                onClick={handleClick}
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
+                onTouchMove={handleTouchEnd}
+                onContextMenu={(e) => { e.preventDefault(); haptics.medium(); setShowDeleteConfirm(true); }}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit(alarm); } }}
+                aria-label={`Alarm at ${displayTime} ${period}${alarm.label ? `, ${alarm.label}` : ''}, ${formatRepeatText(alarm.days)}, ${alarm.isActive ? 'enabled' : 'disabled'}. Long press to delete.`}
+                className={`group relative bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border shadow-lg rounded-2xl p-4 cursor-pointer transition-all duration-300 flex flex-col justify-between h-32 hover:shadow-xl hover:scale-[1.02] hover:border-day-accent dark:hover:border-night-accent active:scale-[0.98] ${alarm.isActive
+                    ? 'ring-2 ring-day-accent/30 dark:ring-night-accent/30'
+                    : 'opacity-80 hover:opacity-100'
+                    }`}
+            >
+                {/* Active indicator glow */}
+                {alarm.isActive && (
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-day-accent/5 to-purple-500/5 dark:from-night-accent/10 dark:to-purple-500/10 pointer-events-none" />
+                )}
+
+                <div className="flex justify-between items-start relative z-10">
+                    <div className="flex items-baseline gap-2">
+                        <p className={`text-4xl font-light transition-colors ${alarm.isActive ? 'text-day-text dark:text-night-text' : 'text-gray-400'}`}>
+                            {displayTime}
                         </p>
-                    )}
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <p className={`text-sm ${alarm.isActive ? 'text-day-text-secondary dark:text-night-text-secondary' : 'text-gray-400'}`}>
-                            {formatRepeatText(alarm.days)}
-                        </p>
-                        {/* Type badge */}
-                        <span className={`text-xs px-1.5 py-0.5 rounded ${alarm.purpose === 'reminder'
-                            ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
-                            : 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
-                            }`}>
-                            {alarm.purpose === 'reminder' ? 'Reminder' : 'Sleep'}
+                        <span className={`text-sm font-medium ${alarm.isActive ? 'text-day-accent dark:text-night-accent' : 'text-gray-400'}`}>
+                            {period}
                         </span>
                     </div>
-                    {/* Sound name display */}
-                    <div className={`flex items-center gap-1 text-xs ${alarm.isActive ? 'text-day-accent/70 dark:text-night-accent/70' : 'text-gray-400'}`}>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                        </svg>
-                        <span>{getSoundName(alarm.soundId)}</span>
+                    <div
+                        className="relative inline-block w-11 align-middle select-none"
+                        onClick={handleToggle}
+                        role="switch"
+                        aria-checked={alarm.isActive}
+                        aria-label={`${alarm.isActive ? 'Disable' : 'Enable'} alarm`}
+                        tabIndex={0}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleToggle(e as unknown as React.MouseEvent); } }}
+                    >
+                        <input
+                            type="checkbox"
+                            id={id}
+                            className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
+                            checked={alarm.isActive}
+                            readOnly
+                            aria-hidden="true"
+                            tabIndex={-1}
+                        />
+                        <label htmlFor={id} className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 dark:bg-gray-700 cursor-pointer transition-colors" aria-hidden="true"></label>
                     </div>
                 </div>
-                {/* Edit hint on hover */}
-                <div className="text-xs text-day-text-secondary dark:text-night-text-secondary opacity-0 group-hover:opacity-100 transition-opacity self-end">
-                    Tap to edit
+                <div className="flex items-end justify-between relative z-10 mt-auto">
+                    <div className="flex flex-col gap-0.5 min-h-[3.5rem]">
+                        {/* Label for reminders */}
+                        {alarm.label && (
+                            <p className={`text-sm font-medium ${alarm.isActive ? 'text-day-text dark:text-night-text' : 'text-gray-400'}`}>
+                                {alarm.label}
+                            </p>
+                        )}
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <p className={`text-sm ${alarm.isActive ? 'text-day-text-secondary dark:text-night-text-secondary' : 'text-gray-400'}`}>
+                                {formatRepeatText(alarm.days)}
+                            </p>
+                            {/* Type badge */}
+                            <span className={`text-xs px-1.5 py-0.5 rounded ${alarm.purpose === 'reminder'
+                                ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
+                                : 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                                }`}>
+                                {alarm.purpose === 'reminder' ? 'Reminder' : 'Sleep'}
+                            </span>
+                        </div>
+                        {/* Sound name display */}
+                        <div className={`flex items-center gap-1 text-xs ${alarm.isActive ? 'text-day-accent/70 dark:text-night-accent/70' : 'text-gray-400'}`}>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                            </svg>
+                            <span>{getSoundName(alarm.soundId)}</span>
+                        </div>
+                    </div>
+                    {/* Edit hint on hover */}
+                    <div className="text-xs text-day-text-secondary dark:text-night-text-secondary opacity-0 group-hover:opacity-100 transition-opacity self-end">
+                        Tap to edit
+                    </div>
                 </div>
             </div>
-        </div>
+
+            {/* Delete Confirmation Popup */}
+            {showDeleteConfirm && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => setShowDeleteConfirm(false)}>
+                    <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-xs animate-fadeIn" onClick={(e) => e.stopPropagation()}>
+                        <h3 className="font-serif text-lg text-center mb-2">Delete Alarm?</h3>
+                        <p className="text-sm text-center text-day-text-secondary dark:text-night-text-secondary mb-4">
+                            {displayTime} {period}{alarm.label ? ` - ${alarm.label}` : ''}
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowDeleteConfirm(false)}
+                                className="flex-1 py-3 min-h-[48px] bg-gray-200 dark:bg-gray-700 rounded-xl font-medium"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDelete}
+                                className="flex-1 py-3 min-h-[48px] bg-red-500 text-white rounded-xl font-medium"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
     );
 });
+
 
 // Mobile-optimized Drum/Scroll Time Picker
 const DrumTimePicker: React.FC<{ initialTime: string; onChange: (time: string) => void }> = ({ initialTime, onChange }) => {
@@ -630,7 +695,7 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
                     </div>
                     {showSmartWakeInfo && (
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                            Smart Wake will use wearable data to wake you during light sleep phases within a 30-minute window before your alarm. Requires wearable sync integration.
+                            Smart Wake will use health app data to wake you during light sleep phases within a 30-minute window before your alarm. Requires Apple Health or Google Fit connection.
                         </p>
                     )}
                 </div>

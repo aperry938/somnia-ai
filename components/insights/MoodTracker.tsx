@@ -53,6 +53,11 @@ const MoodIcon: React.FC<{ mood: DreamMood; className?: string }> = ({ mood, cla
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
             </svg>
         ),
+        nightmare: (
+            <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 3C8.5 3 6 6.5 6 9c0 1.5.5 2.5 1 3.5.5 1 1 2 1 3.5h8c0-1.5.5-2.5 1-3.5.5-1 1-2 1-3.5 0-2.5-2.5-6-6-6zM9 21h6M10 17v4M14 17v4" />
+            </svg>
+        ),
     };
     return <>{icons[mood]}</>;
 };
@@ -67,9 +72,10 @@ const MOOD_CONFIG: Record<DreamMood, { label: string; color: string }> = {
     neutral: { label: 'Neutral', color: 'bg-slate-400' },
     nostalgic: { label: 'Nostalgic', color: 'bg-amber-400' },
     hopeful: { label: 'Hopeful', color: 'bg-emerald-400' },
+    nightmare: { label: 'Nightmare', color: 'bg-red-600' },
 };
 
-const ALL_MOODS: DreamMood[] = ['joyful', 'peaceful', 'anxious', 'sad', 'fearful', 'confused', 'neutral', 'nostalgic', 'hopeful'];
+const ALL_MOODS: DreamMood[] = ['joyful', 'peaceful', 'anxious', 'sad', 'fearful', 'confused', 'neutral', 'nostalgic', 'hopeful', 'nightmare'];
 
 /**
  * Visualizes emotional patterns across dreams over time.
@@ -82,7 +88,7 @@ export const MoodTracker: React.FC<MoodTrackerProps> = ({ dreams }) => {
 
         // Count mood occurrences
         const counts: Record<DreamMood, number> = {
-            joyful: 0, peaceful: 0, anxious: 0, sad: 0, fearful: 0, confused: 0, neutral: 0, nostalgic: 0, hopeful: 0
+            joyful: 0, peaceful: 0, anxious: 0, sad: 0, fearful: 0, confused: 0, neutral: 0, nostalgic: 0, hopeful: 0, nightmare: 0
         };
 
         dreamsWithMood.forEach(d => {

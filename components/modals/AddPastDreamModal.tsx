@@ -5,7 +5,7 @@ import { DreamMood } from '../../types';
 import haptics from '../../services/hapticsService';
 import { MOOD_ICONS, MOOD_LABELS } from '../../constants/uiIcons';
 
-const MOOD_OPTIONS: DreamMood[] = ['joyful', 'peaceful', 'neutral', 'confused', 'anxious', 'sad', 'fearful'];
+const MOOD_OPTIONS: DreamMood[] = ['joyful', 'peaceful', 'neutral', 'confused', 'anxious', 'sad', 'fearful', 'nightmare'];
 
 interface AddPastDreamModalProps {
     onSave: (dreamText: string, sleepQuality: number | null, mood?: DreamMood, timestamp?: string) => void;

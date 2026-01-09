@@ -26,10 +26,10 @@
     "@capacitor/share": "^8.0.0",
     "@capacitor/splash-screen": "^8.0.0",
     "@capacitor/status-bar": "^8.0.0",
-    "@revenuecat/purchases-capacitor": "^10.0.0",
     "@google/genai": "^1.27.0",
+    "@revenuecat/purchases-capacitor": "^10.4.0",
     "@supabase/supabase-js": "^2.89.0",
-    "framer-motion": "^12.24.12",
+    "framer-motion": "^12.25.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "recharts": "^3.3.0"

@@ -14,19 +14,30 @@ interface ManualSleepLogModalProps {
 }
 
 // Common preset activities for quick-add
+// SVG icon components for activities
+const ActivityIcons: Record<string, React.ReactNode> = {
+    'White Noise': <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>,
+    'Brown Noise': <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z" /></svg>,
+    'Rain Sounds': <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" /></svg>,
+    '4-7-8 Breathing': <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+    'Box Breathing': <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="4" y="4" width="16" height="16" rx="2" strokeWidth={2} /></svg>,
+    'Meditation': <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>,
+    'Reading': <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>,
+    'Other': <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>,
+};
+
 const PRESET_ACTIVITIES: Array<{
     type: ManualSleepActivity['type'];
     name: string;
-    icon: string;
 }> = [
-        { type: 'soundscape', name: 'White Noise', icon: '🔊' },
-        { type: 'soundscape', name: 'Brown Noise', icon: '🌊' },
-        { type: 'soundscape', name: 'Rain Sounds', icon: '🌧️' },
-        { type: 'breathing', name: '4-7-8 Breathing', icon: '🌬️' },
-        { type: 'breathing', name: 'Box Breathing', icon: '⬜' },
-        { type: 'meditation', name: 'Meditation', icon: '🧘' },
-        { type: 'reading', name: 'Reading', icon: '📖' },
-        { type: 'other', name: 'Other', icon: '✨' },
+        { type: 'soundscape', name: 'White Noise' },
+        { type: 'soundscape', name: 'Brown Noise' },
+        { type: 'soundscape', name: 'Rain Sounds' },
+        { type: 'breathing', name: '4-7-8 Breathing' },
+        { type: 'breathing', name: 'Box Breathing' },
+        { type: 'meditation', name: 'Meditation' },
+        { type: 'reading', name: 'Reading' },
+        { type: 'other', name: 'Other' },
     ];
 
 const DURATION_OPTIONS = [5, 10, 15, 20, 30, 45, 60];
@@ -128,8 +139,8 @@ export const ManualSleepLogModal: React.FC<ManualSleepLogModalProps> = ({ onComp
                                     key={d}
                                     onClick={() => setSelectedDuration(d)}
                                     className={`px-3 py-1.5 min-h-[44px] rounded-lg text-sm font-medium transition-all ${selectedDuration === d
-                                            ? 'bg-day-accent dark:bg-night-accent text-white'
-                                            : 'bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border'
+                                        ? 'bg-day-accent dark:bg-night-accent text-white'
+                                        : 'bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border'
                                         }`}
                                 >
                                     {d}m
@@ -150,11 +161,11 @@ export const ManualSleepLogModal: React.FC<ManualSleepLogModalProps> = ({ onComp
                                         onClick={() => addActivity(preset)}
                                         disabled={isAdded && preset.name !== 'Other'}
                                         className={`p-3 min-h-[56px] rounded-xl flex items-center gap-2 transition-all ${isAdded && preset.name !== 'Other'
-                                                ? 'bg-day-accent/20 dark:bg-night-accent/20 border-2 border-day-accent dark:border-night-accent text-day-accent dark:text-night-accent'
-                                                : 'bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border hover:border-day-accent dark:hover:border-night-accent'
+                                            ? 'bg-day-accent/20 dark:bg-night-accent/20 border-2 border-day-accent dark:border-night-accent text-day-accent dark:text-night-accent'
+                                            : 'bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border hover:border-day-accent dark:hover:border-night-accent'
                                             }`}
                                     >
-                                        <span className="text-xl">{preset.icon}</span>
+                                        <span className="text-day-accent dark:text-night-accent">{ActivityIcons[preset.name]}</span>
                                         <span className="text-sm font-medium">{preset.name}</span>
                                         {isAdded && preset.name !== 'Other' && (
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -237,13 +248,13 @@ export const ManualSleepLogModal: React.FC<ManualSleepLogModalProps> = ({ onComp
                                     key={rating}
                                     onClick={() => { haptics.light(); setDayRating(rating); }}
                                     className={`w-12 h-12 min-h-[48px] rounded-full flex items-center justify-center text-lg transition-all ${dayRating === rating
-                                            ? 'bg-day-accent dark:bg-night-accent text-white scale-110 shadow-lg'
-                                            : 'bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border hover:scale-105'
+                                        ? 'bg-day-accent dark:bg-night-accent text-white scale-110 shadow-lg'
+                                        : 'bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border hover:scale-105'
                                         }`}
                                     aria-label={`Rate day ${rating} out of 5`}
                                     aria-pressed={dayRating === rating}
                                 >
-                                    {rating === 1 ? '😔' : rating === 2 ? '😕' : rating === 3 ? '😐' : rating === 4 ? '🙂' : '😊'}
+                                    {rating}
                                 </button>
                             ))}
                         </div>

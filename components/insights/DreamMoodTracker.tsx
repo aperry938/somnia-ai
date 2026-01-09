@@ -5,14 +5,14 @@ interface MoodTrackerProps {
     dreams: Dream[];
 }
 
-// Map keywords to moods
 const MOOD_KEYWORDS: Record<string, string[]> = {
     'Joyful': ['happy', 'joy', 'laugh', 'smile', 'excited', 'celebration', 'love', 'wonderful', 'amazing', 'beautiful', 'great'],
     'Anxious': ['anxious', 'worried', 'nervous', 'stress', 'panic', 'fear', 'scared', 'afraid', 'terror', 'chase', 'running away', 'late', 'exam'],
     'Peaceful': ['calm', 'peace', 'serene', 'quiet', 'relax', 'gentle', 'soft', 'float', 'drift', 'meadow', 'beach', 'sunset'],
     'Confused': ['confused', 'lost', 'strange', 'weird', 'bizarre', 'maze', 'searching', 'unknown', 'unfamiliar', 'disoriented'],
     'Sad': ['sad', 'cry', 'tears', 'grief', 'loss', 'miss', 'lonely', 'alone', 'dark', 'cold', 'abandon'],
-    'Adventurous': ['adventure', 'explore', 'discover', 'journey', 'quest', 'flying', 'travel', 'mountain', 'forest', 'ocean', 'sky']
+    'Adventurous': ['adventure', 'explore', 'discover', 'journey', 'quest', 'flying', 'travel', 'mountain', 'forest', 'ocean', 'sky'],
+    'Nightmare': ['nightmare', 'monster', 'demon', 'death', 'dying', 'killed', 'murder', 'blood', 'horror', 'trapped', 'scream', 'attacked', 'evil', 'haunted', 'ghost', 'hell']
 };
 
 const MOOD_COLORS: Record<string, string> = {
@@ -21,7 +21,8 @@ const MOOD_COLORS: Record<string, string> = {
     'Peaceful': 'from-blue-400 to-cyan-400',
     'Confused': 'from-purple-400 to-indigo-500',
     'Sad': 'from-gray-400 to-slate-500',
-    'Adventurous': 'from-green-400 to-emerald-500'
+    'Adventurous': 'from-green-400 to-emerald-500',
+    'Nightmare': 'from-red-600 to-rose-800'
 };
 
 /**

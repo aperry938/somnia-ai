@@ -71,6 +71,39 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
         });
     }, [sortedSleepEntries, debouncedSearch, dreams]);
 
+    // Group entries by month for collapsible sections
+    const [collapsedMonths, setCollapsedMonths] = useState<Set<string>>(new Set());
+
+    const entriesByMonth = useMemo(() => {
+        const grouped: Record<string, typeof filteredEntries> = {};
+        filteredEntries.forEach(entry => {
+            const date = new Date(entry.date);
+            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            if (!grouped[monthKey]) grouped[monthKey] = [];
+            grouped[monthKey].push(entry);
+        });
+        // Sort months newest first
+        return Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0]));
+    }, [filteredEntries]);
+
+    const toggleMonth = useCallback((monthKey: string) => {
+        setCollapsedMonths(prev => {
+            const next = new Set(prev);
+            if (next.has(monthKey)) {
+                next.delete(monthKey);
+            } else {
+                next.add(monthKey);
+            }
+            return next;
+        });
+    }, []);
+
+    const formatMonthHeader = (monthKey: string) => {
+        const [year, month] = monthKey.split('-');
+        const date = new Date(parseInt(year ?? '2024'), parseInt(month ?? '1') - 1);
+        return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    };
+
 
 
     const handleAddSleepEntry = useCallback((date: string, quality: number | null, notes?: string, sleepAids?: SleepAids) => {
@@ -248,17 +281,52 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
             <div className="space-y-4 max-w-2xl mx-auto">
                 {hasContent ? (
                     <>
-                        {/* Sleep Entries */}
-                        {filteredEntries.map(entry => (
-                            <SleepEntryCard
-                                key={entry.id}
-                                entry={entry}
-                                dreams={dreams}
-                                _onEntryClick={() => { }}
-                                onDreamClick={onDreamSelect}
-                                onAddDream={(entryId) => setAddDreamToEntryId(entryId)}
-                                onDeleteEntry={deleteSleepEntry}
-                            />
+                        {/* Sleep Entries grouped by month */}
+                        {entriesByMonth.map(([monthKey, entries]) => (
+                            <div key={monthKey} className="mb-4">
+                                {/* Month Header - Collapsible */}
+                                <button
+                                    onClick={() => toggleMonth(monthKey)}
+                                    className="w-full flex items-center justify-between p-3 bg-day-card-bg/50 dark:bg-night-card-bg/50 rounded-lg border border-day-border dark:border-night-border hover:bg-day-card-bg dark:hover:bg-night-card-bg transition-colors mb-2"
+                                    aria-expanded={!collapsedMonths.has(monthKey)}
+                                    aria-controls={`month-${monthKey}`}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <span className="font-serif text-lg font-semibold text-day-text-primary dark:text-night-text-primary">
+                                            {formatMonthHeader(monthKey)}
+                                        </span>
+                                        <span className="text-sm text-day-text-secondary dark:text-night-text-secondary bg-day-border dark:bg-night-border px-2 py-0.5 rounded-full">
+                                            {entries.length} {entries.length === 1 ? 'entry' : 'entries'}
+                                        </span>
+                                    </div>
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        className={`h-5 w-5 text-day-text-secondary dark:text-night-text-secondary transition-transform ${collapsedMonths.has(monthKey) ? '' : 'rotate-180'}`}
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                    >
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+
+                                {/* Entries for this month */}
+                                {!collapsedMonths.has(monthKey) && (
+                                    <div id={`month-${monthKey}`} className="space-y-3 pl-2">
+                                        {entries.map(entry => (
+                                            <SleepEntryCard
+                                                key={entry.id}
+                                                entry={entry}
+                                                dreams={dreams}
+                                                _onEntryClick={() => { }}
+                                                onDreamClick={onDreamSelect}
+                                                onAddDream={(entryId) => setAddDreamToEntryId(entryId)}
+                                                onDeleteEntry={deleteSleepEntry}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         ))}
 
                         {/* No results message */}
@@ -280,7 +348,7 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
                         {/* Intro Banner */}
                         <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 dark:from-indigo-500/20 dark:to-purple-500/20 rounded-xl p-4 border border-indigo-500/20">
                             <div className="flex items-start gap-3">
-                                <span className="text-2xl">✨</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
                                 <div>
                                     <h3 className="font-medium text-day-text-primary dark:text-night-text-primary mb-1">
                                         See How Somnia Analyzes Dreams
@@ -307,7 +375,7 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
                                     </h4>
                                 </div>
                                 <span className="px-2 py-1 bg-green-500/10 text-green-600 dark:text-green-400 text-xs rounded-full">
-                                    ✓ AI Analyzed
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>AI Analyzed
                                 </span>
                             </div>
                             <p className="text-sm text-day-text-secondary dark:text-night-text-secondary line-clamp-2 mb-3">

@@ -14,6 +14,7 @@ import { DreamStreakCalendar } from '../insights/DreamStreakCalendar';
 import { RecurringThemes } from '../insights/RecurringThemes';
 import { InsightsGrid } from '../insights/InsightsGrid';
 import { PremiumBadge } from '../shared/PremiumBadge';
+import { FeatureInfoCard } from '../shared/FeatureInfoCard';
 import { canUseAiAnalysis as _canUseAiAnalysis, consumeAiCredit as _consumeAiCredit, isPremium } from '../../services/secureSubscriptionService';
 import { DreamCompareModal } from '../modals/DreamCompareModal';
 import { DEMO_DREAMS } from '../../constants/demoDreams';
@@ -52,17 +53,34 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
     const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
     const DREAM_SYNTH_KEY = 'somnia_last_dream_synth';
     const HABIT_ANALYSIS_KEY = 'somnia_last_habit_analysis';
+    const DREAM_SYNTH_COUNT_KEY = 'somnia_dream_synth_count';
+    const HABIT_ANALYSIS_COUNT_KEY = 'somnia_habit_analysis_count';
+    const MIN_NEW_LOGS = 3; // Minimum new logs required before allowing new analysis
+
+    const getNewDreamsSinceSynth = (): number => {
+        const lastCount = parseInt(localStorage.getItem(DREAM_SYNTH_COUNT_KEY) || '0', 10);
+        return dreams.length - lastCount;
+    };
+
+    const getNewDreamsSinceHabit = (): number => {
+        const lastCount = parseInt(localStorage.getItem(HABIT_ANALYSIS_COUNT_KEY) || '0', 10);
+        return dreams.length - lastCount;
+    };
 
     const canUseDreamSynth = (): boolean => {
         const last = localStorage.getItem(DREAM_SYNTH_KEY);
         if (!last) return true;
-        return Date.now() - parseInt(last, 10) >= WEEK_MS;
+        const weekPassed = Date.now() - parseInt(last, 10) >= WEEK_MS;
+        const hasEnoughNewDreams = getNewDreamsSinceSynth() >= MIN_NEW_LOGS;
+        return weekPassed && hasEnoughNewDreams;
     };
 
     const canUseHabitAnalysis = (): boolean => {
         const last = localStorage.getItem(HABIT_ANALYSIS_KEY);
         if (!last) return true;
-        return Date.now() - parseInt(last, 10) >= WEEK_MS;
+        const weekPassed = Date.now() - parseInt(last, 10) >= WEEK_MS;
+        const hasEnoughNewDreams = getNewDreamsSinceHabit() >= MIN_NEW_LOGS;
+        return weekPassed && hasEnoughNewDreams;
     };
 
     const getDaysUntilNextSynth = (): number => {
@@ -119,7 +137,7 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
 
     const handleSynthesizeDreams = async () => {
         if (!userIsPremium) return; // Premium only
-        if (!canUseDreamSynth()) return; // Weekly limit
+        if (!canUseDreamSynth()) return; // Weekly limit + min logs check
 
         setIsDreamSynthLoading(true);
         setDreamSynthError(null);
@@ -127,6 +145,7 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
             const result = await synthesizeDreamThemes(dreams);
             setDreamSynthesis(result);
             localStorage.setItem(DREAM_SYNTH_KEY, Date.now().toString());
+            localStorage.setItem(DREAM_SYNTH_COUNT_KEY, dreams.length.toString()); // Track count at analysis
         } catch (_e) {
             setDreamSynthError("Failed to synthesize dream themes. Please try again.");
         } finally {
@@ -136,7 +155,7 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
 
     const handleAnalyzeHabits = async () => {
         if (!userIsPremium) return; // Premium only
-        if (!canUseHabitAnalysis()) return; // Weekly limit
+        if (!canUseHabitAnalysis()) return; // Weekly limit + min logs check
 
         setIsHabitLoading(true);
         setHabitError(null);
@@ -144,6 +163,7 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
             const result = await analyzeSleepHabits(dreams);
             setHabitAnalysis(result);
             localStorage.setItem(HABIT_ANALYSIS_KEY, Date.now().toString());
+            localStorage.setItem(HABIT_ANALYSIS_COUNT_KEY, dreams.length.toString()); // Track count at analysis
         } catch (_e) {
             setHabitError("Failed to analyze sleep habits. Please try again.");
         } finally {
@@ -333,96 +353,149 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                                 </div>
                             </PremiumBadge>
                         )}
-                        {/* AI Analysis: Dream Weaving */}
-                        <AnalysisCard title="Dream Weaving" description="Uncover recurring themes and symbols across your dream journal." buttonText="Synthesize" onAnalyze={handleSynthesizeDreams} isLoading={isDreamSynthLoading}>
-                            {dreamSynthesis ? (
-                                <div className="space-y-4 pt-2 animate-fadeIn">
-                                    <p className="italic text-day-text-secondary dark:text-night-text-secondary">{dreamSynthesis?.overallSummary}</p>
-                                    {dreamSynthesis?.recurringThemes.map(item => (
-                                        <div key={item.theme}>
-                                            <h4 className="font-bold font-serif text-lg">{item.theme}</h4>
-                                            <p className="text-sm text-day-text-secondary dark:text-night-text-secondary">{item.description}</p>
-                                            <div className="flex flex-wrap gap-2 mt-2">
-                                                {item.exampleDreamIds.map(id => (
-                                                    <button onClick={() => onDreamSelect(id)} key={id} className="text-xs px-3 py-2 min-h-[44px] bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-md flex items-center">
-                                                        Dream #{id}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : dreamSynthError ? (
-                                <div className="text-center">
-                                    <p className="text-red-500 py-4">{dreamSynthError}</p>
-                                    <button onClick={handleSynthesizeDreams} aria-label="Retry dream synthesis" className="px-6 py-3 min-h-[48px] bg-red-500 text-white text-sm rounded-full flex items-center justify-center mx-auto">Retry</button>
-                                </div>
-                            ) : (
-                                <PremiumBadge feature="dream_synthesis" className="w-full">
-                                    <button
-                                        onClick={handleSynthesizeDreams}
-                                        disabled={isDreamSynthLoading || dreams.length < 3 || (userIsPremium && !canUseDreamSynth())}
-                                        className="w-full py-3 min-h-[48px] bg-day-accent dark:bg-night-accent text-white font-bold rounded-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                                    >
-                                        {isDreamSynthLoading ? 'Analyzing...' :
-                                            userIsPremium && !canUseDreamSynth() ? `Available in ${getDaysUntilNextSynth()} days` :
-                                                'Synthesize Dream Themes'}
-                                    </button>
-                                </PremiumBadge>
-                            )}
-                            {dreams.length < 3 && !dreamSynthesis && <p className="text-xs text-center mt-2 text-day-text-secondary dark:text-night-text-secondary">Requires at least 3 logged dreams.</p>}
-                            {userIsPremium && dreams.length >= 3 && !dreamSynthesis && canUseDreamSynth() && <p className="text-xs text-center mt-1 text-indigo-500 dark:text-indigo-400">Once per week</p>}
-                        </AnalysisCard>
 
-                        {/* AI Analysis: Sleep Analytics */}
-                        <AnalysisCard title="Sleep Analytics" description="AI-powered insights into your sleep patterns and quality." buttonText="Analyze" onAnalyze={handleAnalyzeHabits} isLoading={isHabitLoading}>
-                            {habitAnalysis ? (
-                                <div className="space-y-4 pt-2 animate-fadeIn">
-                                    <div>
-                                        <h4 className="font-bold font-serif text-lg text-emerald-600 dark:text-emerald-400">Positive Correlations</h4>
-                                        {habitAnalysis?.positiveCorrelations?.map(item => <p key={item.habit} className="text-sm text-day-text-secondary dark:text-night-text-secondary"><strong>{item.habit}:</strong> {item.insight}</p>)}
+                        {/* Feature Info Cards - At Top */}
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <FeatureInfoCard
+                                title="Dream Weaving"
+                                description="AI-powered synthesis of your dream patterns using advanced reasoning."
+                                icon={
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                                    </svg>
+                                }
+                                features={[
+                                    "Identify recurring themes across all dreams",
+                                    "Discover hidden symbolic connections",
+                                    "Track evolution of dream narratives"
+                                ]}
+                                usageInfo={{
+                                    frequency: "Deep Analysis",
+                                    requirement: "Pattern Recognition",
+                                    model: "AI Insights"
+                                }}
+                                howItWorks={[
+                                    "Collects all dreams from your journal",
+                                    "AI analyzes patterns and symbols",
+                                    "Generates weekly personalized insights"
+                                ]}
+                                accentColor="purple"
+                                actionLabel={
+                                    !userIsPremium ? "Upgrade to PRO" :
+                                        userIsPremium && !canUseDreamSynth() && getNewDreamsSinceSynth() < MIN_NEW_LOGS
+                                            ? `Need ${MIN_NEW_LOGS - getNewDreamsSinceSynth()} more dreams`
+                                            : userIsPremium && !canUseDreamSynth()
+                                                ? `Available in ${getDaysUntilNextSynth()} days`
+                                                : "Synthesize Dream Themes"
+                                }
+                                onAction={handleSynthesizeDreams}
+                                isLoading={isDreamSynthLoading}
+                                isDisabled={!userIsPremium || dreams.length < 3 || !canUseDreamSynth()}
+                                statusText={dreams.length < 3 ? "Requires at least 3 logged dreams" : undefined}
+                            >
+                                {dreamSynthesis && (
+                                    <div className="space-y-4 pt-2 animate-fadeIn bg-white/5 rounded-xl p-4">
+                                        <p className="italic text-day-text-secondary dark:text-night-text-secondary">{dreamSynthesis.overallSummary}</p>
+                                        {dreamSynthesis.recurringThemes.map(item => (
+                                            <div key={item.theme}>
+                                                <h4 className="font-bold font-serif text-lg text-purple-300">{item.theme}</h4>
+                                                <p className="text-sm text-day-text-secondary dark:text-night-text-secondary">{item.description}</p>
+                                                <div className="flex flex-wrap gap-2 mt-2">
+                                                    {item.exampleDreamIds.map(id => (
+                                                        <button onClick={() => onDreamSelect(id)} key={id} className="text-xs px-3 py-2 min-h-[44px] bg-purple-500/20 text-purple-300 rounded-md flex items-center hover:bg-purple-500/30 transition-colors">
+                                                            Dream #{id}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
-                                    <div>
-                                        <h4 className="font-bold font-serif text-lg text-rose-600 dark:text-rose-400">Negative Correlations</h4>
-                                        {habitAnalysis?.negativeCorrelations?.map(item => <p key={item.habit} className="text-sm text-day-text-secondary dark:text-night-text-secondary"><strong>{item.habit}:</strong> {item.insight}</p>)}
+                                )}
+                                {dreamSynthError && (
+                                    <div className="text-center bg-red-500/10 rounded-xl p-4">
+                                        <p className="text-red-400 mb-2">{dreamSynthError}</p>
+                                        <button onClick={handleSynthesizeDreams} className="px-4 py-2 bg-red-500 text-white text-sm rounded-lg">Retry</button>
                                     </div>
-                                    <div>
-                                        <h4 className="font-bold font-serif text-lg">Recommendations</h4>
-                                        <ul className="list-disc list-inside text-sm text-day-text-secondary dark:text-night-text-secondary">
-                                            {habitAnalysis?.recommendations.map((rec, i) => <li key={i}>{rec}</li>)}
-                                        </ul>
+                                )}
+                            </FeatureInfoCard>
+
+                            <FeatureInfoCard
+                                title="Sleep Analytics"
+                                description="AI-powered insights into your sleep habits and quality patterns."
+                                icon={
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                    </svg>
+                                }
+                                features={[
+                                    "Positive & negative habit correlations",
+                                    "Personalized sleep recommendations",
+                                    "Trend analysis over time"
+                                ]}
+                                usageInfo={{
+                                    frequency: "Smart Insights",
+                                    requirement: "Habit Tracking",
+                                    model: "Actionable Tips"
+                                }}
+                                howItWorks={[
+                                    "Analyzes sleep quality ratings and notes",
+                                    "AI finds habit correlations",
+                                    "Provides weekly actionable recommendations"
+                                ]}
+                                accentColor="emerald"
+                                actionLabel={
+                                    !userIsPremium ? "Upgrade to PRO" :
+                                        userIsPremium && !canUseHabitAnalysis() && getNewDreamsSinceHabit() < MIN_NEW_LOGS
+                                            ? `Need ${MIN_NEW_LOGS - getNewDreamsSinceHabit()} more entries`
+                                            : userIsPremium && !canUseHabitAnalysis()
+                                                ? `Available in ${getDaysUntilNextHabit()} days`
+                                                : "Analyze Sleep Habits"
+                                }
+                                onAction={handleAnalyzeHabits}
+                                isLoading={isHabitLoading}
+                                isDisabled={!userIsPremium || dreams.filter(d => d.sleepQuality).length < 3 || !canUseHabitAnalysis()}
+                                statusText={dreams.filter(d => d.sleepQuality).length < 3 ? "Requires at least 3 nights with sleep quality ratings" : undefined}
+                            >
+                                {habitAnalysis && (
+                                    <div className="space-y-4 pt-2 animate-fadeIn bg-white/5 rounded-xl p-4">
+                                        <div>
+                                            <h4 className="font-bold font-serif text-lg text-emerald-400">Positive Correlations</h4>
+                                            {habitAnalysis.positiveCorrelations?.map(item => (
+                                                <p key={item.habit} className="text-sm text-day-text-secondary dark:text-night-text-secondary">
+                                                    <strong className="text-emerald-300">{item.habit}:</strong> {item.insight}
+                                                </p>
+                                            ))}
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold font-serif text-lg text-rose-400">Negative Correlations</h4>
+                                            {habitAnalysis.negativeCorrelations?.map(item => (
+                                                <p key={item.habit} className="text-sm text-day-text-secondary dark:text-night-text-secondary">
+                                                    <strong className="text-rose-300">{item.habit}:</strong> {item.insight}
+                                                </p>
+                                            ))}
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold font-serif text-lg">Recommendations</h4>
+                                            <ul className="list-disc list-inside text-sm text-day-text-secondary dark:text-night-text-secondary">
+                                                {habitAnalysis.recommendations.map((rec, i) => <li key={i}>{rec}</li>)}
+                                            </ul>
+                                        </div>
                                     </div>
-                                </div>
-                            ) : habitError ? (
-                                <div className="text-center">
-                                    <p className="text-red-500 py-4">{habitError}</p>
-                                    <button onClick={handleAnalyzeHabits} aria-label="Retry sleep habit analysis" className="px-6 py-3 min-h-[48px] bg-red-500 text-white text-sm rounded-full flex items-center justify-center mx-auto">Retry</button>
-                                </div>
-                            ) : (
-                                <PremiumBadge feature="sleep_habits" className="w-full">
-                                    <button
-                                        onClick={handleAnalyzeHabits}
-                                        disabled={isHabitLoading || dreams.filter(d => d.sleepQuality).length < 3 || (userIsPremium && !canUseHabitAnalysis())}
-                                        className="w-full py-3 min-h-[48px] bg-day-accent dark:bg-night-accent text-white font-bold rounded-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                                    >
-                                        {isHabitLoading ? 'Analyzing...' :
-                                            userIsPremium && !canUseHabitAnalysis() ? `Available in ${getDaysUntilNextHabit()} days` :
-                                                'Analyze Sleep Habits'}
-                                    </button>
-                                </PremiumBadge>
-                            )}
-                            {dreams.filter(d => d.sleepQuality).length < 3 && !habitAnalysis && <p className="text-xs text-center mt-2 text-day-text-secondary dark:text-night-text-secondary">Requires at least 3 nights with sleep quality ratings.</p>}
-                            {userIsPremium && dreams.filter(d => d.sleepQuality).length >= 3 && !habitAnalysis && canUseHabitAnalysis() && <p className="text-xs text-center mt-1 text-indigo-500 dark:text-indigo-400">Once per week</p>}
-                        </AnalysisCard>
+                                )}
+                                {habitError && (
+                                    <div className="text-center bg-red-500/10 rounded-xl p-4">
+                                        <p className="text-red-400 mb-2">{habitError}</p>
+                                        <button onClick={handleAnalyzeHabits} className="px-4 py-2 bg-red-500 text-white text-sm rounded-lg">Retry</button>
+                                    </div>
+                                )}
+                            </FeatureInfoCard>
+                        </div>
 
                         {/* Dream Analysis Grid */}
                         <div>
                             <h2 className="font-serif text-2xl text-center mb-4">Dream Analysis</h2>
                             <InsightsGrid dreams={displayDreams} />
                         </div>
-
-                        {/* Global Trends */}
-                        <GlobalTrendsCard />
 
                         {/* Sleep Quality Chart */}
                         {chartData.length > 1 && (
@@ -438,6 +511,9 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                         {dreams.length >= 2 && (
                             <SentimentChart dreams={dreams} />
                         )}
+
+                        {/* Global Trends */}
+                        <GlobalTrendsCard />
                     </div>
                 )}
             </div>

@@ -36,6 +36,7 @@ export const GUIDED_RELAXATIONS: GuidedRelaxation[] = [
 export const SLEEP_CHECKLIST_ITEMS = [
     { key: 'dim_lights', text: 'Dimmed lights 1 hour before bed' },
     { key: 'no_screens', text: 'No screens 30 minutes before bed' },
+    { key: 'blue_light', text: 'Enabled blue light filter/Night Shift on devices' },
     { key: 'cool_room', text: 'Room is cool and comfortable' },
     { key: 'quiet_room', text: 'Room is quiet and dark' },
     { key: 'no_caffeine', text: 'No caffeine in last 8 hours' },

@@ -71,7 +71,7 @@ export interface Dream {
 }
 
 // Moods for tracking emotional patterns
-export type DreamMood = 'joyful' | 'peaceful' | 'anxious' | 'sad' | 'fearful' | 'confused' | 'neutral' | 'nostalgic' | 'hopeful';
+export type DreamMood = 'joyful' | 'peaceful' | 'anxious' | 'sad' | 'fearful' | 'confused' | 'neutral' | 'nostalgic' | 'hopeful' | 'nightmare';
 
 // Dream emotional telemetry (Russell's Circumplex Model)
 export interface DreamTelemetry {

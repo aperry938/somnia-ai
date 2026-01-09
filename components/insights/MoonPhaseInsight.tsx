@@ -44,26 +44,30 @@ export const MoonPhaseInsight: React.FC<MoonPhaseInsightProps> = ({ dreams }) =>
 
     return (
         <div className="bg-gradient-to-br from-slate-500/10 to-indigo-500/10 border border-slate-500/20 dark:border-indigo-500/30 rounded-xl p-4">
-            <h3 className="font-serif text-lg mb-3">Moon Phase Activity</h3>
+            <h3 className="font-serif text-lg mb-4">Moon Phase Activity</h3>
 
-            <div className="flex justify-between items-center mb-2">
+            <div className="grid grid-cols-4 gap-3 mb-2">
                 {PHASES.slice(0, 4).map(phase => (
-                    <div key={phase} className="text-center flex-1">
-                        <div className="text-lg">{stats.phaseCounts[phase]}</div>
-                        <div className="text-[8px] text-day-text-secondary dark:text-night-text-secondary truncate">{phase}</div>
+                    <div key={phase} className="text-center">
+                        <div className="text-xl font-bold">{stats.phaseCounts[phase]}</div>
+                        <div className="text-[10px] text-day-text-secondary dark:text-night-text-secondary leading-tight">
+                            {phase.replace('Waxing ', 'Wax ').replace('Waning ', 'Wan ')}
+                        </div>
                     </div>
                 ))}
             </div>
-            <div className="flex justify-between items-center">
+            <div className="grid grid-cols-4 gap-3">
                 {PHASES.slice(4).map(phase => (
-                    <div key={phase} className="text-center flex-1">
-                        <div className="text-lg">{stats.phaseCounts[phase]}</div>
-                        <div className="text-[8px] text-day-text-secondary dark:text-night-text-secondary truncate">{phase}</div>
+                    <div key={phase} className="text-center">
+                        <div className="text-xl font-bold">{stats.phaseCounts[phase]}</div>
+                        <div className="text-[10px] text-day-text-secondary dark:text-night-text-secondary leading-tight">
+                            {phase.replace('Waxing ', 'Wax ').replace('Waning ', 'Wan ')}
+                        </div>
                     </div>
                 ))}
             </div>
 
-            <p className="text-xs text-center text-day-text-secondary dark:text-night-text-secondary mt-3">
+            <p className="text-xs text-center text-day-text-secondary dark:text-night-text-secondary mt-4">
                 Most dreams on <span className="font-bold">{stats.mostActive}</span>
             </p>
         </div>

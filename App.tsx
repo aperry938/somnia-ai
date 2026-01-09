@@ -189,9 +189,19 @@ const App: React.FC = () => {
     });
 
     const handleRecordDream = useCallback((quickNote?: string) => {
-        stopRinging();
+        // Set quick note first if provided
         if (quickNote) setWakeQuickNote(quickNote);
-        setIsScribeOpen(true);
+
+        // Stop the alarm first (closes AlarmRingModal)
+        stopRinging();
+
+        // Use a small delay to ensure any touch/click events from the alarm modal
+        // have cleared before opening the dream scribe modal. This prevents the
+        // "Record Full Dream" button tap from accidentally triggering the backdrop
+        // click on the newly mounted DreamScribeModal.
+        setTimeout(() => {
+            setIsScribeOpen(true);
+        }, 50);
     }, [stopRinging, setIsScribeOpen]);
 
     const handleAwake = useCallback(() => {

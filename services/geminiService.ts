@@ -434,7 +434,7 @@ export const synthesizeDreamThemes = async (dreams: Dream[]): Promise<DreamSynth
         const ai = getAi();
         const prompt = createSynthesisPrompt(dreams);
         const response: GenerateContentResponse = await ai.models.generateContent({
-            model: 'gemini-2.5-flash', // Switched from Pro to Flash for cost optimization (~10x cheaper)
+            model: 'gemini-2.5-pro', // Pro model for complex multi-dream synthesis
             contents: [{ parts: [{ text: prompt }] }],
             config: {
                 responseMimeType: "application/json",
@@ -498,7 +498,7 @@ export const analyzeSleepHabits = async (dreams: Dream[]): Promise<SleepHabitAna
         const ai = getAi();
         const prompt = createHabitAnalysisPrompt(dreams);
         const response: GenerateContentResponse = await ai.models.generateContent({
-            model: 'gemini-2.5-flash', // Switched from Pro to Flash for cost optimization (~10x cheaper)
+            model: 'gemini-2.5-pro', // Pro model for complex habit correlation analysis
             contents: [{ parts: [{ text: prompt }] }],
             config: {
                 responseMimeType: "application/json",
@@ -690,11 +690,10 @@ export const analyzeDreamWithMemory = async (
     // 3. Build context string from similar dreams
     let contextString = '';
     if (similarDreams.length > 0) {
-        contextString = `\n\n[DREAM MEMORY CONTEXT]\nThe dreamer has experienced similar dreams in the past:\n${
-            similarDreams.map((d, i) =>
-                `${i + 1}. "${d.title}" (${new Date(d.timestamp).toLocaleDateString()}, ${Math.round(d.similarity * 100)}% similar): ${d.dreamText.slice(0, 200)}...`
-            ).join('\n')
-        }\n\nConnect the current dream to these patterns. Note any evolution in recurring themes or symbols.`;
+        contextString = `\n\n[DREAM MEMORY CONTEXT]\nThe dreamer has experienced similar dreams in the past:\n${similarDreams.map((d, i) =>
+            `${i + 1}. "${d.title}" (${new Date(d.timestamp).toLocaleDateString()}, ${Math.round(d.similarity * 100)}% similar): ${d.dreamText.slice(0, 200)}...`
+        ).join('\n')
+            }\n\nConnect the current dream to these patterns. Note any evolution in recurring themes or symbols.`;
     }
 
     // 4. Check rate limit and credits
