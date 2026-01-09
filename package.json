@@ -19,8 +19,6 @@
     "@capacitor/status-bar": "^8.0.0",
     "@google/genai": "^1.27.0",
     "@supabase/supabase-js": "^2.89.0",
-    "@tensorflow/tfjs": "^4.22.0",
-    "@tensorflow-models/speech-commands": "^0.5.4",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "recharts": "^3.3.0"

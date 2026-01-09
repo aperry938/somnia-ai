@@ -15,8 +15,6 @@ import { WakeWindowViz } from '../WakeWindowViz';
 import { PremiumBadge } from '../shared/PremiumBadge';
 import { isPremium } from '../../services/secureSubscriptionService';
 import { SleepDetectionSettingsCard } from '../settings/SleepDetectionSettingsCard';
-import { SleepMonitorCard } from '../settings/SleepMonitorCard';
-import { CircadianDashboardCard } from '../settings/CircadianDashboardCard';
 import haptics from '../../services/hapticsService';
 import { sanitizeTextLive, INPUT_LIMITS } from '../../services/validationService';
 import { useToast } from '../shared/Toast';
@@ -615,16 +613,6 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
 
                         {/* Sleep Detection Settings */}
                         <SleepDetectionSettingsCard />
-
-                        {/* Circadian Rhythm Dashboard (ML) */}
-                        <div className="mt-4">
-                            <CircadianDashboardCard />
-                        </div>
-
-                        {/* Sleep Monitor - Audio Classification (ML) */}
-                        <div className="mt-4">
-                            <SleepMonitorCard />
-                        </div>
 
                         {/* Lucid Dreaming - Collapsible Card */}
                         <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-xl p-4 mt-4">
