@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
-import { analyzeDream, generateDreamTitle, generateImagePrompt, DreamArtStyle, DREAM_ART_STYLES, generateDreamEmbedding } from '../../services/geminiService';
+import { analyzeDream, generateDreamTitle, generateImagePrompt, DreamArtStyle, DREAM_ART_STYLES, generateDreamEmbedding, OfflineError } from '../../services/geminiService';
 import { DreamChatModal } from '../modals/DreamChatModal';
 import { SleepAids, DreamMood } from '../../types';
 import { AnalysisLoading as _AnalysisLoading } from '../shared/LoadingStates';
@@ -15,6 +15,7 @@ import { MOOD_ICONS, MOOD_LABELS } from '../../constants/uiIcons';
 import { processDejaVuCheck, DejaVuMatch } from '../../services/dejaVuService';
 import { CALIBRATION_DREAM } from '../../constants/demoDreams';
 import { AIConsentModal, hasAIConsent } from '../modals/AIConsentModal';
+import { queueForAnalysis, isQueued, isOnline } from '../../services/offlineQueueService';
 
 // Evening Reflection Display Component
 const EveningReflectionDisplay: React.FC<{ aids: SleepAids }> = ({ aids }) => {
@@ -206,6 +207,17 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
             return;
         }
 
+        // Check if offline - queue for later analysis
+        if (!isOnline()) {
+            // Only queue if not already queued
+            if (!isQueued(dream.id)) {
+                queueForAnalysis(dream.id, dream.dreamText);
+                showToast('Dream queued for analysis when back online', 'info');
+            }
+            setAnalysisState('pending');
+            return;
+        }
+
         // Check daily analysis limit (5 per day)
         const today = new Date().toDateString();
         const storedAnalysis = localStorage.getItem('somnia_daily_analysis');
@@ -253,7 +265,14 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
             setAnalysisState('success');
         } catch (e) {
             logger.error(e);
-            setAnalysisState('error');
+            // If offline error, queue for later analysis
+            if (e instanceof OfflineError) {
+                queueForAnalysis(dream.id, dream.dreamText);
+                showToast('Dream queued for analysis when back online', 'info');
+                setAnalysisState('pending');
+            } else {
+                setAnalysisState('error');
+            }
         }
     }, [dream, updateDream, analysisPersonality, biometrics, showToast, dreams]);
 

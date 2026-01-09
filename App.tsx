@@ -33,6 +33,8 @@ import { useSwipeNavigation } from './hooks/useSwipeNavigation';
 import { useDeepLink } from './hooks/useDeepLink';
 import { useWidgetSync } from './hooks/useWidgetSync';
 import { useAppLifecycle } from './hooks/useAppLifecycle';
+import { initializeOfflineQueue, removeFromQueue } from './services/offlineQueueService';
+import { analyzeDream } from './services/geminiService';
 
 
 // Lazy load heavy pages for better code splitting
@@ -408,6 +410,7 @@ const App: React.FC = () => {
                 <RealityCheckManager />
                 <StreakNotificationManager />
                 <AlarmNotificationManager />
+                <OfflineQueueManager />
                 <OfflineIndicator />
                 <ThemeToggle />
                 <SignInButton />
@@ -451,6 +454,41 @@ const AlarmNotificationManager: React.FC = () => {
     const { alarms } = useAppContext();
     // Hook shows persistent notification when alarm is set
     useAlarmNotification(alarms);
+    return null;
+};
+
+// Internal component for Offline Queue Processing
+const OfflineQueueManager: React.FC = () => {
+    const { getDreamById, updateDream, biometrics } = useAppContext();
+
+    useEffect(() => {
+        // Process queued dream analysis when back online
+        const processQueuedDream = async (dreamId: number, dreamText: string) => {
+            const dream = getDreamById(dreamId);
+            // Skip if dream no longer exists or already has analysis
+            if (!dream || dream.aiAnalysis) {
+                removeFromQueue(dreamId);
+                return;
+            }
+
+            try {
+                const analysisData = await analyzeDream(dreamText, dream.sleepAids, biometrics, 'oneironaut');
+                updateDream({
+                    id: dreamId,
+                    title: analysisData.title || dream.title,
+                    aiAnalysis: analysisData,
+                });
+                logger.info('[OfflineQueue] Successfully processed queued dream:', dreamId);
+            } catch (error) {
+                // Let the queue service handle retries
+                throw error;
+            }
+        };
+
+        const cleanup = initializeOfflineQueue(processQueuedDream);
+        return cleanup;
+    }, [getDreamById, updateDream, biometrics]);
+
     return null;
 };
 

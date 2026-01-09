@@ -1,6 +1,9 @@
 /**
  * Rate Limiting Service
  * Prevents API abuse and ensures fair usage of resources.
+ *
+ * Uses localStorage for persistence - survives page refreshes and app restarts.
+ * This is the secondary protection layer; primary protection is the AI credit system.
  */
 
 import { logger } from './logger';
@@ -15,8 +18,8 @@ interface RateLimitEntry {
     resetTime: number;
 }
 
-// Storage for rate limit tracking
-const rateLimitStore: Map<string, RateLimitEntry> = new Map();
+// LocalStorage key prefix
+const STORAGE_PREFIX = 'somnia_ratelimit_';
 
 // Default rate limits by category
 export const RATE_LIMITS: Record<string, RateLimitConfig> = {
@@ -25,7 +28,7 @@ export const RATE_LIMITS: Record<string, RateLimitConfig> = {
     ai_imagery: { maxRequests: 5, windowMs: 60 * 1000 }, // 5 per minute
     ai_chat: { maxRequests: 30, windowMs: 60 * 1000 }, // 30 per minute
 
-    // Authentication
+    // Authentication - stricter limits
     auth_login: { maxRequests: 5, windowMs: 5 * 60 * 1000 }, // 5 per 5 minutes
     auth_signup: { maxRequests: 3, windowMs: 10 * 60 * 1000 }, // 3 per 10 minutes
     auth_reset: { maxRequests: 3, windowMs: 15 * 60 * 1000 }, // 3 per 15 minutes
@@ -38,10 +41,48 @@ export const RATE_LIMITS: Record<string, RateLimitConfig> = {
 };
 
 /**
+ * Get rate limit entry from localStorage
+ */
+function getEntry(key: string): RateLimitEntry | null {
+    try {
+        const stored = localStorage.getItem(STORAGE_PREFIX + key);
+        if (!stored) return null;
+        return JSON.parse(stored) as RateLimitEntry;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Save rate limit entry to localStorage
+ */
+function setEntry(key: string, entry: RateLimitEntry): void {
+    try {
+        localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify(entry));
+    } catch {
+        // localStorage full or unavailable - fall back to memory
+        logger.warn('[RateLimit] localStorage unavailable, using memory only');
+    }
+}
+
+/**
+ * Remove expired entry from localStorage
+ */
+function removeEntry(key: string): void {
+    try {
+        localStorage.removeItem(STORAGE_PREFIX + key);
+    } catch {
+        // Ignore errors
+    }
+}
+
+/**
  * Check if a request should be allowed based on rate limiting
+ * Rate limits persist in localStorage to survive page refreshes.
+ *
  * @param category The rate limit category
  * @param identifier Optional identifier (e.g., user ID) for per-user limiting
- * @returns true if request is allowed, false if rate limited
+ * @returns Object with allowed status, remaining count, and reset time
  */
 export const checkRateLimit = (
     category: keyof typeof RATE_LIMITS,
@@ -51,7 +92,7 @@ export const checkRateLimit = (
     const key = `${category}:${identifier}`;
     const now = Date.now();
 
-    let entry = rateLimitStore.get(key);
+    let entry = getEntry(key);
 
     // If no entry or window has expired, create new entry
     if (!entry || now >= entry.resetTime) {
@@ -59,18 +100,21 @@ export const checkRateLimit = (
             count: 0,
             resetTime: now + (config?.windowMs ?? 60000),
         };
-        rateLimitStore.set(key, entry);
     }
 
-    const remaining = Math.max(0, (config?.maxRequests ?? 100) - entry.count);
+    const maxRequests = config?.maxRequests ?? 100;
+    const remaining = Math.max(0, maxRequests - entry.count);
     const resetIn = Math.max(0, entry.resetTime - now);
 
-    if (entry.count >= (config?.maxRequests ?? 100)) {
+    // Check if rate limited
+    if (entry.count >= maxRequests) {
+        logger.warn(`[RateLimit] ${category} exceeded for ${identifier}. Reset in ${Math.ceil(resetIn / 1000)}s`);
         return { allowed: false, remaining: 0, resetIn };
     }
 
-    // Increment counter
+    // Increment counter and persist
     entry.count++;
+    setEntry(key, entry);
 
     return { allowed: true, remaining: remaining - 1, resetIn };
 };
@@ -82,7 +126,7 @@ export const checkRateLimit = (
 export const consumeRateLimit = checkRateLimit;
 
 /**
- * Get remaining requests for a category
+ * Get remaining requests for a category without consuming a slot
  */
 export const getRemainingRequests = (
     category: keyof typeof RATE_LIMITS,
@@ -92,7 +136,7 @@ export const getRemainingRequests = (
     const key = `${category}:${identifier}`;
     const now = Date.now();
 
-    const entry = rateLimitStore.get(key);
+    const entry = getEntry(key);
 
     if (!entry || now >= entry.resetTime) {
         return config?.maxRequests ?? 100;
@@ -108,15 +152,15 @@ export const waitForRateLimit = async (
     category: keyof typeof RATE_LIMITS,
     identifier: string = 'global'
 ): Promise<void> => {
-    const { allowed, resetIn } = checkRateLimit(category, identifier);
+    const config = RATE_LIMITS[category] ?? RATE_LIMITS.api_default;
+    const key = `${category}:${identifier}`;
+    const now = Date.now();
 
-    if (!allowed && resetIn > 0) {
-        // Don't decrement count since we're just checking
-        const key = `${category}:${identifier}`;
-        const entry = rateLimitStore.get(key);
-        if (entry) entry.count--; // Undo the increment from checkRateLimit
+    const entry = getEntry(key);
 
-        await new Promise(resolve => setTimeout(resolve, resetIn));
+    if (entry && entry.count >= (config?.maxRequests ?? 100) && now < entry.resetTime) {
+        const waitTime = entry.resetTime - now;
+        await new Promise(resolve => setTimeout(resolve, waitTime));
     }
 };
 
@@ -164,18 +208,28 @@ export class RateLimitError extends Error {
 }
 
 /**
- * Clean up expired entries (call periodically to prevent memory leaks)
+ * Clean up expired entries from localStorage
  */
 export const cleanupExpiredEntries = (): void => {
     const now = Date.now();
-    for (const [key, entry] of rateLimitStore.entries()) {
-        if (now >= entry.resetTime) {
-            rateLimitStore.delete(key);
+    try {
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key?.startsWith(STORAGE_PREFIX)) {
+                const entry = getEntry(key.replace(STORAGE_PREFIX, ''));
+                if (entry && now >= entry.resetTime) {
+                    removeEntry(key.replace(STORAGE_PREFIX, ''));
+                }
+            }
         }
+    } catch {
+        // Ignore errors during cleanup
     }
 };
 
 // Cleanup expired entries every 5 minutes
 if (typeof window !== 'undefined') {
     setInterval(cleanupExpiredEntries, 5 * 60 * 1000);
+    // Also cleanup on page load
+    cleanupExpiredEntries();
 }
