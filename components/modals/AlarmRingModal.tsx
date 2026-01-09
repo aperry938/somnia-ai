@@ -1,10 +1,16 @@
 // components/modals/AlarmRingModal.tsx
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, TouchEvent } from 'react';
 import { playAlarmBySound, stopAlarmSound, playAlertnessBoost, stopAlertnessBoost, setAlertnessVolume } from '../../services/audioService';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { Alarm } from '../../types';
 import { isDevMode } from '../../services/secureSubscriptionService';
 import haptics from '../../services/hapticsService';
+import { startHapticAlarmRamp, stopHapticAlarmRamp, triggerWakePattern } from '../../services/hapticAlarmService';
+
+// Minimum distance (px) to trigger a swipe action
+const SWIPE_THRESHOLD = 100;
+// Distance at which haptic feedback fires
+const HAPTIC_THRESHOLD = 60;
 
 // Pulsing visual component that crescendos over 60 seconds
 const PulsingWakeVisual: React.FC<{ isActive: boolean }> = ({ isActive }) => {
@@ -130,6 +136,43 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
     const [boostTimer, setBoostTimer] = useState(0);
     const [snoozeRemaining, setSnoozeRemaining] = useState(SNOOZE_DURATION);
 
+    // Swipe gesture state for easy dismiss (reduces fine motor requirements)
+    const [swipeOffset, setSwipeOffset] = useState(0);
+    const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
+    const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+    const hasTriggeredHapticRef = useRef(false);
+
+    // Handle touch start
+    const handleTouchStart = useCallback((e: TouchEvent<HTMLDivElement>) => {
+        if (step !== 'alarm') return;
+        const touch = e.touches[0];
+        touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+        hasTriggeredHapticRef.current = false;
+        setSwipeOffset(0);
+        setSwipeDirection(null);
+    }, [step]);
+
+    // Handle touch move - track swipe and provide haptic feedback
+    const handleTouchMove = useCallback((e: TouchEvent<HTMLDivElement>) => {
+        if (step !== 'alarm' || !touchStartRef.current) return;
+
+        const touch = e.touches[0];
+        const deltaX = touch.clientX - touchStartRef.current.x;
+        const deltaY = Math.abs(touch.clientY - touchStartRef.current.y);
+
+        // Ignore if vertical scroll is dominant
+        if (deltaY > Math.abs(deltaX) * 0.5) return;
+
+        setSwipeOffset(deltaX);
+        setSwipeDirection(deltaX > 0 ? 'right' : 'left');
+
+        // Haptic feedback when crossing threshold
+        if (!hasTriggeredHapticRef.current && Math.abs(deltaX) > HAPTIC_THRESHOLD) {
+            hasTriggeredHapticRef.current = true;
+            haptics.light();
+        }
+    }, [step]);
+
     // Callback for when speech is finalized
     const handleFinalTranscript = useCallback((text: string) => {
         setQuickNote(prev => (prev + ' ' + text).trim());
@@ -143,8 +186,9 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
     useEffect(() => {
         isMountedRef.current = true;
 
-        // Play the user-selected alarm sound
+        // Play the user-selected alarm sound and start haptic ramp
         playAlarmBySound(alarm.soundId || 'somnia');
+        startHapticAlarmRamp();
 
         return () => {
             // Only stop sound on actual unmount, not strict mode remount
@@ -156,6 +200,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                 if (!isMountedRef.current) {
                     stopAlarmSound();
                     stopAlertnessBoost();
+                    stopHapticAlarmRamp();
                 }
             }, 50);
         };
@@ -165,6 +210,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
     const handleSnooze = useCallback(() => {
         haptics.snooze();
         stopAlarmSound();
+        stopHapticAlarmRamp();
         if (isListening) stopListening();
         setSnoozeRemaining(SNOOZE_DURATION);
         setStep('snooze');
@@ -180,6 +226,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                     // Timer done - ring again
                     setStep('alarm');
                     playAlarmBySound(alarm.soundId || 'somnia');
+                    startHapticAlarmRamp();
                     return SNOOZE_DURATION;
                 }
                 return prev - 1;
@@ -199,6 +246,8 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
     const handleAwake = useCallback(() => {
         haptics.success();
         stopAlarmSound();
+        stopHapticAlarmRamp();
+        triggerWakePattern(); // Triple-pulse wake confirmation
         if (isSleepAlarm) {
             setStep('dream');
         } else {
@@ -206,6 +255,30 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
             onAwake();
         }
     }, [isSleepAlarm, onAwake]);
+
+    // Handle touch end - trigger action if threshold met (defined after handleAwake/handleSnooze)
+    const handleTouchEnd = useCallback(() => {
+        if (step !== 'alarm') return;
+
+        const finalOffset = swipeOffset;
+        const finalDirection = swipeDirection;
+
+        // Reset swipe state
+        setSwipeOffset(0);
+        setSwipeDirection(null);
+        touchStartRef.current = null;
+
+        // Check if swipe threshold met
+        if (Math.abs(finalOffset) >= SWIPE_THRESHOLD) {
+            if (finalDirection === 'right') {
+                // Swipe right = Wake up / Dismiss
+                handleAwake();
+            } else if (finalDirection === 'left') {
+                // Swipe left = Snooze
+                handleSnooze();
+            }
+        }
+    }, [step, swipeOffset, swipeDirection, handleAwake, handleSnooze]);
 
     // Handle recording dream - advance to boost step
     const handleRecordDream = useCallback(() => {
@@ -284,12 +357,74 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
     const now = new Date();
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+    // Calculate swipe progress for visual feedback
+    const swipeProgress = Math.min(Math.abs(swipeOffset) / SWIPE_THRESHOLD, 1);
+    const isSwipingRight = swipeDirection === 'right';
+    const isSwipingLeft = swipeDirection === 'left';
+
     return (
-        <div className="fixed inset-0 bg-gradient-to-b from-indigo-900/95 to-purple-900/95 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto" role="dialog" aria-modal="true" aria-label="Alarm ringing">
+        <div
+            className="fixed inset-0 bg-gradient-to-b from-indigo-900/95 to-purple-900/95 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto touch-pan-y"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Alarm ringing"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+        >
             {/* Pulsing visual wake element - only active during alarm step */}
             <PulsingWakeVisual isActive={step === 'alarm'} />
 
-            <div className="w-full max-w-sm animate-fadeIn text-center py-6 relative z-10">
+            {/* Swipe indicators - shown during active swipe */}
+            {step === 'alarm' && swipeOffset !== 0 && (
+                <>
+                    {/* Left indicator (Snooze) */}
+                    <div
+                        className="fixed left-4 top-1/2 -translate-y-1/2 flex flex-col items-center gap-2 transition-opacity"
+                        style={{ opacity: isSwipingLeft ? swipeProgress : 0.2 }}
+                    >
+                        <div
+                            className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center"
+                            style={{
+                                transform: `scale(${isSwipingLeft ? 0.8 + swipeProgress * 0.4 : 0.8})`,
+                                backgroundColor: isSwipingLeft && swipeProgress >= 1 ? 'rgba(255,255,255,0.4)' : undefined,
+                            }}
+                        >
+                            <span className="text-2xl">💤</span>
+                        </div>
+                        <span className="text-white/60 text-sm font-medium">Snooze</span>
+                    </div>
+
+                    {/* Right indicator (Wake) */}
+                    <div
+                        className="fixed right-4 top-1/2 -translate-y-1/2 flex flex-col items-center gap-2 transition-opacity"
+                        style={{ opacity: isSwipingRight ? swipeProgress : 0.2 }}
+                    >
+                        <div
+                            className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center"
+                            style={{
+                                transform: `scale(${isSwipingRight ? 0.8 + swipeProgress * 0.4 : 0.8})`,
+                                backgroundColor: isSwipingRight && swipeProgress >= 1 ? 'rgba(139,92,246,0.6)' : undefined,
+                            }}
+                        >
+                            <span className="text-2xl">☀️</span>
+                        </div>
+                        <span className="text-white/60 text-sm font-medium">Wake</span>
+                    </div>
+                </>
+            )}
+
+            <div
+                className="w-full max-w-sm animate-fadeIn text-center py-6 relative z-10 transition-transform"
+                style={{ transform: swipeOffset !== 0 ? `translateX(${swipeOffset * 0.3}px)` : undefined }}
+            >
+                {/* Swipe hint - only shown initially on alarm step */}
+                {step === 'alarm' && swipeOffset === 0 && (
+                    <p className="text-white/40 text-xs mb-4 animate-pulse">
+                        ← Swipe to snooze or wake →
+                    </p>
+                )}
+
                 {/* Time Display - Always visible */}
                 <p className="text-6xl font-light text-white/90 mb-2">{timeStr}</p>
                 <h2 className="font-serif text-2xl text-white/80 mb-2">

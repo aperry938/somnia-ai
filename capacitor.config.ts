@@ -22,7 +22,7 @@ const config: CapacitorConfig = {
     // Scroll to input when keyboard appears
     scrollEnabled: true,
     // Enable background audio
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#0F172A', // Matches night-bg-start for seamless loading
   },
 
   // Android-specific configuration
@@ -32,7 +32,7 @@ const config: CapacitorConfig = {
     // Capture external links
     captureInput: true,
     // Background color while loading
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#0F172A', // Matches night-bg-start for seamless loading
     // Build options for release
     buildOptions: {
       keystorePath: undefined, // Set in CI/CD
@@ -47,7 +47,7 @@ const config: CapacitorConfig = {
       // Dark content for light backgrounds, light content for dark
       style: 'Dark',
       // Background color (matches app theme)
-      backgroundColor: '#1a1a2e',
+      backgroundColor: '#0F172A',
     },
 
     // Splash screen configuration
@@ -58,8 +58,8 @@ const config: CapacitorConfig = {
       launchAutoHide: true,
       // Fade out duration
       launchFadeOutDuration: 500,
-      // Background color
-      backgroundColor: '#1a1a2e',
+      // Background color (matches night-bg-start)
+      backgroundColor: '#0F172A',
       // Android-specific
       androidSplashResourceName: 'splash',
       androidScaleType: 'CENTER_CROP',

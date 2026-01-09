@@ -1,5 +1,6 @@
 import { Soundscape } from '../types';
 import { logger } from './logger';
+import { configureAudioSession, setAudioSessionActive, setupInterruptionHandling } from './audioSessionService';
 
 // ============================================================
 // TYPES
@@ -136,14 +137,17 @@ let isCleaningUp = false;
 // Additional LFOs for enhanced synthesis
 let additionalLFOs: OscillatorNode[] = [];
 
-// Visibility change handler to stop audio when tab is hidden (prevents orphaned nodes)
-if (typeof document !== 'undefined') {
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden && sleepSourceNode) {
-            stopSleepSound(0.5); // Quick fade on tab hide
-        }
-    });
-}
+// Phone call interruption handling
+let interruptionCleanup: (() => void) | null = null;
+let currentSleepSound: { sound: Soundscape; durationMinutes: number; volume: number } | null = null;
+let wasPlayingBeforeInterruption = false;
+
+// NOTE: Intentionally NO visibilitychange handler here.
+// Sleep sounds MUST continue playing when the screen locks or app backgrounds.
+// iOS/Android background audio is handled via:
+// - iOS: AVAudioSession configuration in AudioSessionPlugin.swift
+// - Android: Foreground service in AlarmService.java
+// Killing audio on visibility change would break the core sleep sound functionality.
 
 // Cache for decoded audio files
 const audioBufferCache: Record<string, AudioBuffer> = {};
@@ -1238,6 +1242,41 @@ const getAudioBuffer = async (context: AudioContext, src: string): Promise<Audio
  */
 export const playSleepSound = async (sound: Soundscape, durationMinutes: number, volume: number = 0.5) => {
     stopAlarmSound(); // Ensure alarm is stopped
+
+    // Track current sound for resuming after phone call interruption
+    currentSleepSound = { sound, durationMinutes, volume };
+
+    // Configure iOS audio session for background playback BEFORE starting audio
+    // This ensures sleep sounds continue playing when screen locks
+    await configureAudioSession({ mixWithOthers: true, duckOthers: true });
+
+    // Set up interruption handling (phone calls, Siri, etc.)
+    if (interruptionCleanup) {
+        interruptionCleanup();
+    }
+    interruptionCleanup = await setupInterruptionHandling(
+        // On interruption began (phone call started)
+        () => {
+            logger.log('[AudioService] Audio interrupted (phone call)');
+            wasPlayingBeforeInterruption = sleepSourceNode !== null;
+            // Audio will be paused by iOS automatically
+        },
+        // On interruption ended (phone call ended)
+        async (shouldResume: boolean) => {
+            logger.log('[AudioService] Interruption ended, shouldResume:', shouldResume);
+            if (shouldResume && wasPlayingBeforeInterruption && currentSleepSound) {
+                // Resume the sleep sound after phone call
+                logger.log('[AudioService] Resuming sleep sound after interruption');
+                await playSleepSound(
+                    currentSleepSound.sound,
+                    currentSleepSound.durationMinutes,
+                    currentSleepSound.volume
+                );
+            }
+            wasPlayingBeforeInterruption = false;
+        }
+    );
+
     const context = getAudioContext();
 
     if (context.state === 'suspended') {
@@ -1518,6 +1557,15 @@ export const stopSleepSound = (fadeDuration: number = 2) => {
     // Reset cleanup mutex after all operations complete
     setTimeout(() => {
         isCleaningUp = false;
+        // Clear interruption handling
+        if (interruptionCleanup) {
+            interruptionCleanup();
+            interruptionCleanup = null;
+        }
+        currentSleepSound = null;
+        wasPlayingBeforeInterruption = false;
+        // Deactivate iOS audio session after audio stops (be a good citizen)
+        setAudioSessionActive(false);
     }, (fadeDuration * 1000) + 200);
 };
 

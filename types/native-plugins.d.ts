@@ -278,6 +278,48 @@ export interface BatteryOptimizationPlugin {
 }
 
 // ============================================================================
+// Audio Session Plugin (iOS)
+// ============================================================================
+
+export interface AudioSessionPlugin {
+    /**
+     * Configure the audio session for background playback
+     * Call this BEFORE starting any audio that should continue in background
+     */
+    configure(options?: {
+        mixWithOthers?: boolean;
+        duckOthers?: boolean;
+    }): Promise<{ configured: boolean; category: string; isActive: boolean }>;
+
+    /**
+     * Set audio session active/inactive
+     * Deactivate when stopping audio to be a good citizen
+     */
+    setActive(options: { active: boolean }): Promise<{ active: boolean; warning?: string }>;
+
+    /**
+     * Get current audio session status
+     */
+    getStatus(): Promise<{
+        isConfigured: boolean;
+        category: string;
+        mode: string;
+        isOtherAudioPlaying: boolean;
+        outputVolume: number;
+        sampleRate: number;
+        outputLatency: number;
+    }>;
+
+    /**
+     * Add listener for audio session events
+     */
+    addListener(
+        eventName: 'interruptionBegan' | 'interruptionEnded' | 'routeChange',
+        listenerFunc: (data: Record<string, unknown>) => void
+    ): Promise<{ remove: () => void }>;
+}
+
+// ============================================================================
 // Plugin Registration Helpers
 // ============================================================================
 
@@ -289,6 +331,7 @@ declare module '@capacitor/core' {
         Widget: WidgetPlugin;
         CriticalNotifications: CriticalNotificationsPlugin;
         BatteryOptimization: BatteryOptimizationPlugin;
+        AudioSession: AudioSessionPlugin;
     }
 }
 
@@ -299,3 +342,4 @@ export const HealthKit: HealthKitPlugin;
 export const Widget: WidgetPlugin;
 export const CriticalNotifications: CriticalNotificationsPlugin;
 export const BatteryOptimization: BatteryOptimizationPlugin;
+export const AudioSession: AudioSessionPlugin;
