@@ -15,9 +15,9 @@ export const useTheme = () => {
                 return;
             }
 
-            // Auto-activate sleep mode during nighttime hours (10 PM - 6 AM) to minimize blue light
+            // Auto-activate sleep mode during evening/nighttime hours (7 PM - 6 AM) to minimize blue light
             const hour = new Date().getHours();
-            if (hour >= 22 || hour < 6) {
+            if (hour >= 19 || hour < 6) {
                 setTheme('sleep');
                 return;
             }
