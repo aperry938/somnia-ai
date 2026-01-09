@@ -1,12 +1,16 @@
 // hooks/useAlarmNotification.ts
 import { useEffect, useRef } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { LocalNotifications, ScheduleOptions } from '@capacitor/local-notifications';
 import { Alarm } from '../types';
 import { logger } from '../services/logger';
+
+const isNative = Capacitor.isNativePlatform();
 
 /**
  * Get the next upcoming alarm time from a list of alarms
  */
-const getNextAlarmTime = (alarms: Alarm[]): { alarm: Alarm; timeStr: string } | null => {
+const getNextAlarmTime = (alarms: Alarm[]): { alarm: Alarm; timeStr: string; nextDate: Date } | null => {
     const activeAlarms = alarms.filter(a => a.isActive);
     if (activeAlarms.length === 0) return null;
 
@@ -15,6 +19,7 @@ const getNextAlarmTime = (alarms: Alarm[]): { alarm: Alarm; timeStr: string } | 
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
     let nextAlarm: Alarm | null = null;
+    let nextDate: Date | null = null;
     let minDiff = Infinity;
 
     for (const alarm of activeAlarms) {
@@ -30,6 +35,8 @@ const getNextAlarmTime = (alarms: Alarm[]): { alarm: Alarm; timeStr: string } | 
             if (diff < minDiff) {
                 minDiff = diff;
                 nextAlarm = alarm;
+                nextDate = new Date(now);
+                nextDate.setHours(hours, minutes, 0, 0);
             }
         } else if (alarm.days && alarm.days.length > 0) {
             // Check next occurrence in the week
@@ -40,6 +47,9 @@ const getNextAlarmTime = (alarms: Alarm[]): { alarm: Alarm; timeStr: string } | 
                     if (diff < minDiff) {
                         minDiff = diff;
                         nextAlarm = alarm;
+                        nextDate = new Date(now);
+                        nextDate.setDate(nextDate.getDate() + i);
+                        nextDate.setHours(hours, minutes, 0, 0);
                     }
                     break;
                 }
@@ -50,7 +60,7 @@ const getNextAlarmTime = (alarms: Alarm[]): { alarm: Alarm; timeStr: string } | 
         }
     }
 
-    if (!nextAlarm) return null;
+    if (!nextAlarm || !nextDate) return null;
 
     // Format time for display
     const [h, m] = nextAlarm.time.split(':').map(Number);
@@ -58,72 +68,95 @@ const getNextAlarmTime = (alarms: Alarm[]): { alarm: Alarm; timeStr: string } | 
     const displayHour = h % 12 || 12;
     const timeStr = `${displayHour}:${String(m).padStart(2, '0')} ${period}`;
 
-    return { alarm: nextAlarm, timeStr };
+    return { alarm: nextAlarm, timeStr, nextDate };
 };
 
 /**
- * Notification tag for alarm - allows updating existing notification
+ * Notification ID for alarm status - using a constant for easy reference
  */
-const ALARM_NOTIFICATION_TAG = 'somnia-alarm-set';
+const ALARM_STATUS_NOTIFICATION_ID = 999;
 
 /**
- * Shows or updates the alarm notification in the status bar
+ * Shows or updates the alarm notification
  */
 const showAlarmNotification = async (timeStr: string, label?: string): Promise<void> => {
-    if (typeof Notification === 'undefined') return;
-    if (Notification.permission !== 'granted') return;
+    if (!isNative) return;
 
     const title = 'Alarm Set';
     const body = label ? `${timeStr} - ${label}` : timeStr;
 
-    // Close existing notification first (if any)
-    // Then show new one with same tag (replaces it)
     try {
-        const registration = await navigator.serviceWorker?.ready;
-        if (registration) {
-            // Use service worker for persistent notification
-            await registration.showNotification(title, {
+        // Cancel existing status notification first
+        await LocalNotifications.cancel({ notifications: [{ id: ALARM_STATUS_NOTIFICATION_ID }] });
+
+        // Schedule as immediate notification (shows now, doesn't auto-dismiss)
+        await LocalNotifications.schedule({
+            notifications: [{
+                id: ALARM_STATUS_NOTIFICATION_ID,
+                title,
                 body,
-                tag: ALARM_NOTIFICATION_TAG,
-                icon: '/icon-192.png',
-                badge: '/icon-192.png',
-                silent: true,
-                requireInteraction: false,
-                // @ts-ignore - ongoing is supported on Android
                 ongoing: true,
-            });
-        } else {
-            // Fallback to regular notification
-            new Notification(title, {
-                body,
-                tag: ALARM_NOTIFICATION_TAG,
-                icon: '/icon-192.png',
-                silent: true,
-            });
-        }
+                autoCancel: false,
+                smallIcon: 'ic_stat_alarm',
+                largeIcon: 'ic_launcher',
+            }]
+        } as ScheduleOptions);
+
+        logger.log('[AlarmNotification] Status notification shown');
     } catch (e) {
         logger.warn('[AlarmNotification] Failed to show notification:', e);
     }
 };
 
 /**
- * Clears the alarm notification from status bar
+ * Clears the alarm notification
  */
 const clearAlarmNotification = async (): Promise<void> => {
+    if (!isNative) return;
+
     try {
-        const registration = await navigator.serviceWorker?.ready;
-        if (registration) {
-            const notifications = await registration.getNotifications({ tag: ALARM_NOTIFICATION_TAG });
-            notifications.forEach(n => n.close());
-        }
+        await LocalNotifications.cancel({ notifications: [{ id: ALARM_STATUS_NOTIFICATION_ID }] });
+        logger.log('[AlarmNotification] Status notification cleared');
     } catch (e) {
         logger.warn('[AlarmNotification] Failed to clear notification:', e);
     }
 };
 
 /**
- * Hook to manage alarm status bar notification
- * Shows a persistent notification when an alarm is set
+ * Schedule the actual alarm notification that fires at the alarm time
+ */
+const scheduleAlarmTrigger = async (alarm: Alarm, nextDate: Date): Promise<void> => {
+    if (!isNative) return;
+
+    const alarmNotificationId = alarm.id + 1000; // Offset to avoid collision with status notification
+
+    try {
+        // Cancel any existing scheduled alarm for this alarm ID
+        await LocalNotifications.cancel({ notifications: [{ id: alarmNotificationId }] });
+
+        // Schedule the alarm notification
+        await LocalNotifications.schedule({
+            notifications: [{
+                id: alarmNotificationId,
+                title: alarm.label || 'Alarm',
+                body: 'Time to wake up!',
+                schedule: { at: nextDate },
+                sound: 'alarm.wav',
+                smallIcon: 'ic_stat_alarm',
+                largeIcon: 'ic_launcher',
+                actionTypeId: 'ALARM_ACTIONS',
+            }]
+        });
+
+        logger.log('[AlarmNotification] Alarm scheduled for:', nextDate.toISOString());
+    } catch (e) {
+        logger.warn('[AlarmNotification] Failed to schedule alarm:', e);
+    }
+};
+
+/**
+ * Hook to manage alarm notifications using Capacitor Local Notifications
+ * Shows a persistent notification when an alarm is set and schedules the actual alarm
  */
 export const useAlarmNotification = (alarms: Alarm[]) => {
     const lastNotificationRef = useRef<string | null>(null);
@@ -139,6 +172,7 @@ export const useAlarmNotification = (alarms: Alarm[]) => {
                 if (lastNotificationRef.current !== notificationKey) {
                     lastNotificationRef.current = notificationKey;
                     await showAlarmNotification(next.timeStr, next.alarm.label);
+                    await scheduleAlarmTrigger(next.alarm, next.nextDate);
                 }
             } else {
                 // No active alarms - clear notification
@@ -169,14 +203,16 @@ export const useAlarmNotification = (alarms: Alarm[]) => {
  * Request notification permission if not already granted
  */
 export const requestAlarmNotificationPermission = async (): Promise<boolean> => {
-    if (typeof Notification === 'undefined') return false;
+    if (!isNative) return false;
 
-    if (Notification.permission === 'granted') return true;
+    try {
+        const status = await LocalNotifications.checkPermissions();
+        if (status.display === 'granted') return true;
 
-    if (Notification.permission !== 'denied') {
-        const result = await Notification.requestPermission();
-        return result === 'granted';
+        const result = await LocalNotifications.requestPermissions();
+        return result.display === 'granted';
+    } catch (e) {
+        logger.warn('[AlarmNotification] Permission request failed:', e);
+        return false;
     }
-
-    return false;
 };

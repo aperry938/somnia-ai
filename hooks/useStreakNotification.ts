@@ -1,13 +1,18 @@
 /**
  * Hook to manage Streak Reminder notifications.
  * Reminds users to log their dreams to maintain their streak.
- * Checks once per session and sends reminder if no dream logged today.
+ * Uses Capacitor Local Notifications for native mobile support.
  */
 
 import { useEffect, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { LocalNotifications, PermissionStatus } from '@capacitor/local-notifications';
 import { Dream } from '../types';
+import { logger } from '../services/logger';
 
+const isNative = Capacitor.isNativePlatform();
 const LAST_NOTIFICATION_KEY = 'somnia_streak_notification_date';
+const STREAK_NOTIFICATION_ID = 998;
 
 /**
  * Check if user has logged a dream today
@@ -41,51 +46,83 @@ const markNotificationShown = (): void => {
     }
 };
 
-export const useStreakNotification = (dreams: Dream[], currentStreak: number) => {
-    const [permission, setPermission] = useState<NotificationPermission>('default');
+/**
+ * Show streak reminder notification using Capacitor Local Notifications
+ */
+const showStreakNotification = async (currentStreak: number): Promise<void> => {
+    if (!isNative) return;
 
+    try {
+        const message = currentStreak >= 7
+            ? `You're on a ${currentStreak}-day streak! Don't break it—log your dream today.`
+            : `Keep your ${currentStreak}-day streak alive! Log your dream before midnight.`;
+
+        await LocalNotifications.schedule({
+            notifications: [{
+                id: STREAK_NOTIFICATION_ID,
+                title: 'Somnia Dream Reminder',
+                body: message,
+                smallIcon: 'ic_stat_notification',
+                largeIcon: 'ic_launcher',
+            }]
+        });
+
+        markNotificationShown();
+        logger.log('[StreakNotification] Reminder sent');
+    } catch (e) {
+        logger.warn('[StreakNotification] Failed to show notification:', e);
+    }
+};
+
+export const useStreakNotification = (dreams: Dream[], currentStreak: number) => {
+    const [permission, setPermission] = useState<'granted' | 'denied' | 'default'>('default');
+
+    // Check permission on mount
     useEffect(() => {
-        if (typeof Notification !== 'undefined') {
-            setPermission(Notification.permission);
-        }
+        const checkPermission = async () => {
+            if (!isNative) return;
+
+            try {
+                const status: PermissionStatus = await LocalNotifications.checkPermissions();
+                setPermission(status.display === 'granted' ? 'granted' : status.display === 'denied' ? 'denied' : 'default');
+            } catch {
+                setPermission('denied');
+            }
+        };
+        checkPermission();
     }, []);
 
     const requestPermission = async (): Promise<boolean> => {
-        if (typeof Notification !== 'undefined') {
-            const result = await Notification.requestPermission();
-            setPermission(result);
-            return result === 'granted';
+        if (!isNative) return false;
+
+        try {
+            const result = await LocalNotifications.requestPermissions();
+            const granted = result.display === 'granted';
+            setPermission(granted ? 'granted' : 'denied');
+            return granted;
+        } catch {
+            setPermission('denied');
+            return false;
         }
-        return false;
     };
 
     // Check and send streak reminder on mount (once per session)
     useEffect(() => {
-        if (typeof Notification === 'undefined') return;
-        if (Notification.permission !== 'granted') return;
+        if (!isNative) return;
+        if (permission !== 'granted') return;
         if (!shouldShowNotification()) return;
         if (hasLoggedDreamToday(dreams)) return;
 
         // Only remind if user has an active streak worth protecting
         if (currentStreak > 0) {
-            // Delay to avoid notification on immediate page load
+            // Delay to avoid notification on immediate app launch
             const timer = setTimeout(() => {
-                const message = currentStreak >= 7
-                    ? `You're on a ${currentStreak}-day streak! Don't break it—log your dream today.`
-                    : `Keep your ${currentStreak}-day streak alive! Log your dream before midnight.`;
-
-                new Notification("Somnia Dream Reminder", {
-                    body: message,
-                    icon: "/pwa-192x192.png",
-                    tag: "streak-reminder" // Prevents duplicate notifications
-                });
-
-                markNotificationShown();
+                showStreakNotification(currentStreak);
             }, 3000); // 3 second delay
 
             return () => clearTimeout(timer);
         }
-    }, [dreams, currentStreak]);
+    }, [dreams, currentStreak, permission]);
 
     return {
         permission,
