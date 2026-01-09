@@ -67,6 +67,18 @@ export default defineConfig(({ mode }) => {
       alias: {
         '@': path.resolve(__dirname, '.'),
       }
+    },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            // Separate TensorFlow.js into its own chunk for lazy loading
+            tensorflow: ['@tensorflow/tfjs', '@tensorflow-models/speech-commands'],
+            // Keep recharts separate as it's also large
+            recharts: ['recharts']
+          }
+        }
+      }
     }
   };
 });
