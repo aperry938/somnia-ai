@@ -491,19 +491,46 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
         // If session has an existing sleepEntryId, UPDATE that entry
         if (activeSleepSession?.sleepEntryId) {
-            sleepEntryId = activeSleepSession.sleepEntryId;
-            foundExistingEntry = true;
-        }
-        // FALLBACK: Look for an entry created today with the same alarm time (covers session loss case)
-        else if (activeSleepSession?.alarmTime) {
-            const existingEntry = sleepEntries.find(e =>
-                e.date === today &&
-                e.alarmTime === activeSleepSession.alarmTime &&
-                e.dreamIds.length === 0 // Entry without dreams = ready for update
-            );
-            if (existingEntry) {
-                sleepEntryId = existingEntry.id;
+            // Verify the entry still exists before using
+            const entryExists = sleepEntries.some(e => e.id === activeSleepSession.sleepEntryId);
+            if (entryExists) {
+                sleepEntryId = activeSleepSession.sleepEntryId;
                 foundExistingEntry = true;
+            }
+        }
+        // FALLBACK 1: Look for entry by ID if sleepEntryId wasn't found in session but entry exists
+        // This handles edge cases where session state was partially lost
+        if (!foundExistingEntry && activeSleepSession) {
+            // Calculate yesterday's date for overnight sleep scenarios
+            const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0] ?? '';
+
+            // First try: Match by alarmTime (today or yesterday) with no dreams
+            if (activeSleepSession.alarmTime) {
+                const existingEntry = sleepEntries.find(e =>
+                    (e.date === today || e.date === yesterday) &&
+                    e.alarmTime === activeSleepSession.alarmTime &&
+                    e.dreamIds.length === 0
+                );
+                if (existingEntry) {
+                    sleepEntryId = existingEntry.id;
+                    foundExistingEntry = true;
+                }
+            }
+
+            // Second try: Find most recent entry without dreams created in last 24 hours
+            // This handles cases where alarmTime doesn't match or session was recreated
+            if (!foundExistingEntry) {
+                const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+                const recentEntry = sleepEntries.find(e =>
+                    (e.date === today || e.date === yesterday) &&
+                    e.dreamIds.length === 0 &&
+                    e.createdAt >= twentyFourHoursAgo &&
+                    !e.manuallyLogged // Don't link to manually logged entries
+                );
+                if (recentEntry) {
+                    sleepEntryId = recentEntry.id;
+                    foundExistingEntry = true;
+                }
             }
         }
 
