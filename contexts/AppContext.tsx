@@ -220,31 +220,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
         // Schedule native notification for this alarm (iOS/Android)
         if (NativeAlarm.isNative) {
-            const [hour, minute] = time.split(':').map(Number);
             if (days && days.length > 0) {
-                // Recurring alarm - Capacitor uses 1=Sunday, 7=Saturday but our days are 0-6
-                const capacitorDays = days.map(d => d + 1);
+                // Recurring alarm
                 NativeAlarm.scheduleRecurringAlarm(
                     newAlarm.id,
+                    time,  // HH:mm format
+                    days,  // Days array (0-6)
                     label || 'Somnia Alarm',
-                    'Time to wake up!',
-                    hour,
-                    minute,
-                    capacitorDays
+                    soundId
                 );
             } else {
                 // One-time alarm
-                const now = new Date();
-                const alarmDate = new Date();
-                alarmDate.setHours(hour, minute, 0, 0);
-                if (alarmDate <= now) {
-                    alarmDate.setDate(alarmDate.getDate() + 1);
-                }
                 NativeAlarm.scheduleAlarm(
                     newAlarm.id,
+                    time,  // HH:mm format
                     label || 'Somnia Alarm',
-                    'Time to wake up!',
-                    alarmDate
+                    soundId
                 );
             }
         }

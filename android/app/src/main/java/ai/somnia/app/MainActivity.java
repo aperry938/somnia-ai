@@ -10,6 +10,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(NativeAlarmPlugin.class);
         registerPlugin(HealthConnectPlugin.class);
         registerPlugin(WidgetPlugin.class);
+        registerPlugin(BatteryOptimizationPlugin.class);
 
         super.onCreate(savedInstanceState);
     }

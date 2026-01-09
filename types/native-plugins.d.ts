@@ -245,6 +245,39 @@ export interface CriticalNotificationsPlugin {
 }
 
 // ============================================================================
+// Battery Optimization Plugin (Android)
+// ============================================================================
+
+export interface BatteryOptimizationPlugin {
+    /**
+     * Check if the app is exempt from battery optimization
+     */
+    isIgnoringBatteryOptimizations(): Promise<{ isIgnoring: boolean }>;
+
+    /**
+     * Request the user to disable battery optimization for this app
+     * Opens system settings dialog
+     */
+    requestIgnoreBatteryOptimizations(): Promise<{ success: boolean }>;
+
+    /**
+     * Open battery optimization settings directly
+     */
+    openBatteryOptimizationSettings(): Promise<{ success: boolean }>;
+
+    /**
+     * Check if the device manufacturer has aggressive battery management
+     * (Samsung, Xiaomi, Huawei, OnePlus, etc.)
+     */
+    hasAggressiveBatteryManagement(): Promise<{ hasAggressive: boolean; manufacturer: string }>;
+
+    /**
+     * Open manufacturer-specific battery settings (for aggressive OEMs)
+     */
+    openManufacturerBatterySettings(): Promise<{ success: boolean; manufacturer: string }>;
+}
+
+// ============================================================================
 // Plugin Registration Helpers
 // ============================================================================
 
@@ -255,6 +288,7 @@ declare module '@capacitor/core' {
         HealthKit: HealthKitPlugin;
         Widget: WidgetPlugin;
         CriticalNotifications: CriticalNotificationsPlugin;
+        BatteryOptimization: BatteryOptimizationPlugin;
     }
 }
 
@@ -264,3 +298,4 @@ export const HealthConnect: HealthConnectPlugin;
 export const HealthKit: HealthKitPlugin;
 export const Widget: WidgetPlugin;
 export const CriticalNotifications: CriticalNotificationsPlugin;
+export const BatteryOptimization: BatteryOptimizationPlugin;

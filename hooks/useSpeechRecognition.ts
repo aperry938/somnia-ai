@@ -211,13 +211,13 @@ export const useSpeechRecognition = (onFinalTranscript: (transcript: string) => 
 
     const stopNative = useCallback(async () => {
         try {
-            const result = await CapacitorSpeechRecognition.stop();
+            await CapacitorSpeechRecognition.stop();
             await CapacitorSpeechRecognition.removeAllListeners();
 
             setIsListening(false);
 
-            // Get final transcript
-            const finalTranscript = result.matches?.[0] || interimTranscript;
+            // Use accumulated transcript from partial results listener
+            const finalTranscript = interimTranscript;
             setInterimTranscript('');
 
             if (finalTranscript) {

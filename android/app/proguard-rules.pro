@@ -19,3 +19,30 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# ============================================================================
+# Somnia Native Plugins - Keep classes needed for Capacitor bridge
+# ============================================================================
+
+# Keep all Somnia native plugin classes
+-keep class ai.somnia.app.NativeAlarmPlugin { *; }
+-keep class ai.somnia.app.HealthConnectPlugin { *; }
+-keep class ai.somnia.app.WidgetPlugin { *; }
+-keep class ai.somnia.app.BatteryOptimizationPlugin { *; }
+-keep class ai.somnia.app.AlarmReceiver { *; }
+-keep class ai.somnia.app.BootReceiver { *; }
+-keep class ai.somnia.app.AlarmService { *; }
+-keep class ai.somnia.app.SomniaWidgetProvider { *; }
+
+# Keep Capacitor plugin annotations and methods
+-keepclassmembers class * {
+    @com.getcapacitor.annotation.CapacitorPlugin *;
+    @com.getcapacitor.PluginMethod public <methods>;
+}
+
+# Health Connect SDK
+-keep class androidx.health.connect.** { *; }
+-keep class androidx.health.platform.** { *; }
+
+# WorkManager
+-keep class androidx.work.** { *; }
