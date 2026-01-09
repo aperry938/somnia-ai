@@ -16,6 +16,7 @@ import { processDejaVuCheck, DejaVuMatch } from '../../services/dejaVuService';
 import { CALIBRATION_DREAM } from '../../constants/demoDreams';
 import { AIConsentModal, hasAIConsent } from '../modals/AIConsentModal';
 import { queueForAnalysis, isQueued, isOnline } from '../../services/offlineQueueService';
+import { ShareDreamModal } from '../modals/ShareDreamModal';
 
 // Evening Reflection Display Component
 const EveningReflectionDisplay: React.FC<{ aids: SleepAids }> = ({ aids }) => {
@@ -184,6 +185,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
     const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
     const [dejaVuMatch, setDejaVuMatch] = useState<DejaVuMatch | null>(null);
     const [showConsentModal, setShowConsentModal] = useState(false);
+    const [isShareOpen, setIsShareOpen] = useState(false);
 
     const detectedSymbols = useMemo(() => {
         if (!dream) return [];
@@ -312,23 +314,11 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                             </button>
                         )}
                         <button
-                            onClick={async () => {
-                                const shareData = {
-                                    title: `Somnia Dream: ${dream.title}`,
-                                    text: `${dream.title}\n${new Date(dream.timestamp).toLocaleDateString()}\n\n${dream.dreamText}\n\nAnalysed by Somnia.ai`,
-                                };
-                                try {
-                                    if (navigator.share) {
-                                        await navigator.share(shareData);
-                                    } else {
-                                        await navigator.clipboard.writeText(shareData.text);
-                                        showToast('Dream copied to clipboard');
-                                    }
-                                } catch (err) {
-                                    logger.error('Share failed:', err);
-                                }
+                            onClick={() => {
+                                haptics.medium();
+                                setIsShareOpen(true);
                             }}
-                            aria-label="Share dream"
+                            aria-label="Share dream as card"
                             className="min-h-[44px] min-w-[44px] px-3 py-2 text-sm text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent flex items-center gap-1"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -827,6 +817,15 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                     onDecline={() => {
                         setShowConsentModal(false);
                     }}
+                />
+            )}
+
+            {/* Share Dream Modal */}
+            {isShareOpen && dream && (
+                <ShareDreamModal
+                    dream={dream}
+                    isOpen={isShareOpen}
+                    onClose={() => setIsShareOpen(false)}
                 />
             )}
         </>
