@@ -171,7 +171,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                style={{ opacity: backdropOpacity }}
+                transition={{ duration: 0.2 }}
             >
                 <motion.div
                     className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-t-2xl sm:rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto text-white"
