@@ -110,6 +110,7 @@ interface AlarmRingModalProps {
     onSnooze: () => void;
     onAwake: () => void;
     onFinalize?: (options?: { alertnessBoostUsed?: boolean }) => void;
+    onCaptureWakeMetrics?: () => void; // Called when user clicks "I'm Awake" to capture timing
 }
 
 const DREAM_PROMPTS = [
@@ -124,7 +125,7 @@ type WakeStep = 'alarm' | 'snooze' | 'dream' | 'boost';
 
 const SNOOZE_DURATION = 5 * 60; // 5 minutes in seconds
 
-export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordDream, onSnooze: _onSnooze, onAwake, onFinalize }) => {
+export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordDream, onSnooze: _onSnooze, onAwake, onFinalize, onCaptureWakeMetrics }) => {
     // For reminder alarms, skip straight to dismiss - no dream prompts
     const isSleepAlarm = alarm.purpose !== 'reminder';
 
@@ -253,13 +254,19 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
         stopAlarmSound();
         stopHapticAlarmRamp();
         triggerWakePattern(); // Triple-pulse wake confirmation
+
+        // Capture wake metrics NOW (time-to-silence, snooze count) before user goes through dream/boost
+        if (onCaptureWakeMetrics) {
+            onCaptureWakeMetrics();
+        }
+
         if (isSleepAlarm) {
             setStep('dream');
         } else {
             // For reminder alarms, just dismiss
             onAwake();
         }
-    }, [isSleepAlarm, onAwake]);
+    }, [isSleepAlarm, onAwake, onCaptureWakeMetrics]);
 
     // Handle touch end - trigger action if threshold met (defined after handleAwake/handleSnooze)
     const handleTouchEnd = useCallback(() => {

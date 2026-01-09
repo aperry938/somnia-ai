@@ -204,21 +204,20 @@ const App: React.FC = () => {
         }, 50);
     }, [stopRinging, setIsScribeOpen]);
 
-    const handleAwake = useCallback(() => {
-        // Capture wake metrics BEFORE stopping the alarm (so we have the timing)
+    // Capture wake metrics when user first clicks "I'm Awake" - before dream/boost flow
+    const handleCaptureWakeMetrics = useCallback(() => {
         const wakeMetrics = getWakeMetrics();
-
-        stopRinging();
-
-        // Save wake data to the session so it can be included when dream is logged
-        // The SleepEntry will be created by addDream (which includes the wake data)
         if (wakeMetrics && activeSleepSession) {
             saveWakeData(wakeMetrics);
         }
+    }, [activeSleepSession, saveWakeData, getWakeMetrics]);
 
+    const handleAwake = useCallback(() => {
+        // This is called at the very end when modal closes
+        stopRinging();
         resetWakeMetrics();
-        // Note: We do NOT create entry or clear session here - that happens in addDream flow
-    }, [stopRinging, activeSleepSession, saveWakeData, getWakeMetrics, resetWakeMetrics]);
+        // Note: We do NOT create entry or clear session here - that happens in addDream/finalizeSleepSession
+    }, [stopRinging, resetWakeMetrics]);
 
 
     const handleScribeSave = useCallback((dreamText: string, sleepQuality: number | null, mood?: DreamMood) => {
@@ -414,7 +413,7 @@ const App: React.FC = () => {
                     )}
                 </main>
                 <BottomNav currentPage={currentPage} setCurrentPage={setCurrentPage} />
-                {ringingAlarm && <AlarmRingModal alarm={ringingAlarm} onSnooze={snooze} onAwake={handleAwake} onRecordDream={handleRecordDream} onFinalize={finalizeSleepSession} />}
+                {ringingAlarm && <AlarmRingModal alarm={ringingAlarm} onSnooze={snooze} onAwake={handleAwake} onRecordDream={handleRecordDream} onFinalize={finalizeSleepSession} onCaptureWakeMetrics={handleCaptureWakeMetrics} />}
                 {isScribeOpen && <DreamScribeModal onSave={handleScribeSave} onClose={() => { setIsScribeOpen(false); setWakeQuickNote(''); }} initialText={wakeQuickNote} />}
                 <KeyboardShortcutsHelp isOpen={isHelpOpen} onClose={closeHelp} />
                 <RealityCheckManager />
