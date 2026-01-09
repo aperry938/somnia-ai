@@ -193,12 +193,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         localStorage.setItem(migrationKey, 'true');
     }, []); // Only run on initial mount
 
-    // Clear stale sleep sessions when linked alarm no longer exists or is inactive
+    // Clear stale sleep sessions when linked alarm is DELETED (not just deactivated)
+    // We only clear on deletion because:
+    // - When alarm rings and is dismissed, it gets deactivated
+    // - But user may still want to record a dream, which needs the session
+    // - The session will be cleared after dream is recorded (in addDream) or finalizeSleepSession
     useEffect(() => {
         if (activeSleepSession?.alarmId) {
             const linkedAlarm = alarms.find(a => a.id === activeSleepSession.alarmId);
-            // Clear session if alarm was deleted or deactivated
-            if (!linkedAlarm || !linkedAlarm.isActive) {
+            // Only clear session if alarm was DELETED (not found), not just deactivated
+            if (!linkedAlarm) {
+                console.log('[AppContext] Clearing session - linked alarm was deleted');
                 setActiveSleepSession(null);
             }
         }
