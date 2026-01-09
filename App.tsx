@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy, useCallback } from 'react';
+import React, { useState, useEffect, Suspense, lazy, useCallback, useRef } from 'react';
 import { Page, DreamMood } from './types';
 import { useClock } from './hooks/useClock';
 import { useAppContext } from './contexts/AppContext';
@@ -13,6 +13,8 @@ import { calculateUserStats } from './services/userStatsService';
 import { useToast } from './components/shared/Toast';
 import { checkAndMigrateData } from './services/migrationService';
 import { logger } from './services/logger';
+import { useScrollHaptics } from './hooks/useScrollHaptics';
+import { motion, AnimatePresence } from 'framer-motion';
 
 import { AlarmsPage } from './components/pages/AlarmsPage';
 import { BottomNav } from './components/BottomNav';
@@ -49,6 +51,10 @@ const AdminPage = lazy(() => import('./components/pages/AdminPage').then(m => ({
 const App: React.FC = () => {
     const { addDream, isScribeOpen, setIsScribeOpen, activeSleepSession, addSleepEntry: _addSleepEntry, clearSleepSession: _clearSleepSession, startSleepSession, saveWakeData, alarms, sleepEntries } = useAppContext();
     const { isAuthenticated, isLoading: authLoading, isConfigured: authConfigured } = useAuth();
+
+    // Scroll haptics for tactile feedback
+    const mainScrollRef = useRef<HTMLElement>(null);
+    useScrollHaptics(mainScrollRef, { tickInterval: 100, minVelocity: 0.3 });
 
     // Check for Stripe success redirect
     const initialPage = (): Page => {
@@ -253,59 +259,81 @@ const App: React.FC = () => {
         setCurrentPage('alarms');
     }, []);
 
+    // Page transition animation variants
+    const pageTransition = {
+        initial: { opacity: 0, x: 10 },
+        animate: { opacity: 1, x: 0 },
+        exit: { opacity: 0, x: -10 },
+    };
+
     const renderPage = () => {
-        switch (currentPage) {
-            case 'alarms':
-                return <AlarmsPage timeString={timeString} dateString={dateString} onNavigateToSleep={navigateToSleep} />;
-            case 'sleep':
-                return <SleepPage onNavigateToAlarms={navigateToAlarms} />;
-            case 'chronicle':
-                return <ChroniclePage onDreamSelect={navigateToDreamDetail} />;
-            case 'insights':
-                return (
-                    <Suspense fallback={<PageLoading message="Loading insights..." />}>
-                        <InsightsPage onDreamSelect={navigateToDreamDetail} />
-                    </Suspense>
-                );
-            case 'dream-detail':
-                return <DreamDetailPage dreamId={selectedDreamId} onBack={() => setCurrentPage('chronicle')} />;
-            case 'privacy':
-                return (
-                    <Suspense fallback={<PageLoading message="Loading..." />}>
-                        <PrivacyPage onBack={() => setCurrentPage('profile')} />
-                    </Suspense>
-                );
-            case 'terms':
-                return (
-                    <Suspense fallback={<PageLoading message="Loading..." />}>
-                        <TermsPage onBack={() => setCurrentPage('profile')} />
-                    </Suspense>
-                );
-            case 'profile':
-                return (
-                    <Suspense fallback={<PageLoading message="Loading profile..." />}>
-                        <ProfilePage onNavigateTo={(page) => setCurrentPage(page)} />
-                    </Suspense>
-                );
-            case 'success':
-                return (
-                    <Suspense fallback={<PageLoading message="Processing..." />}>
-                        <SuccessPage onBack={() => {
-                            // Clear URL params and navigate to alarms
-                            window.history.replaceState({}, '', '/');
-                            setCurrentPage('alarms');
-                        }} />
-                    </Suspense>
-                );
-            case 'admin':
-                return (
-                    <Suspense fallback={<PageLoading message="Loading admin..." />}>
-                        <AdminPage onBack={() => setCurrentPage('profile')} />
-                    </Suspense>
-                );
-            default:
-                return <AlarmsPage timeString={timeString} dateString={dateString} onNavigateToSleep={navigateToSleep} />;
-        }
+        const pageContent = (() => {
+            switch (currentPage) {
+                case 'alarms':
+                    return <AlarmsPage timeString={timeString} dateString={dateString} onNavigateToSleep={navigateToSleep} />;
+                case 'sleep':
+                    return <SleepPage onNavigateToAlarms={navigateToAlarms} />;
+                case 'chronicle':
+                    return <ChroniclePage onDreamSelect={navigateToDreamDetail} />;
+                case 'insights':
+                    return (
+                        <Suspense fallback={<PageLoading message="Loading insights..." />}>
+                            <InsightsPage onDreamSelect={navigateToDreamDetail} />
+                        </Suspense>
+                    );
+                case 'dream-detail':
+                    return <DreamDetailPage dreamId={selectedDreamId} onBack={() => setCurrentPage('chronicle')} />;
+                case 'privacy':
+                    return (
+                        <Suspense fallback={<PageLoading message="Loading..." />}>
+                            <PrivacyPage onBack={() => setCurrentPage('profile')} />
+                        </Suspense>
+                    );
+                case 'terms':
+                    return (
+                        <Suspense fallback={<PageLoading message="Loading..." />}>
+                            <TermsPage onBack={() => setCurrentPage('profile')} />
+                        </Suspense>
+                    );
+                case 'profile':
+                    return (
+                        <Suspense fallback={<PageLoading message="Loading profile..." />}>
+                            <ProfilePage onNavigateTo={(page) => setCurrentPage(page)} />
+                        </Suspense>
+                    );
+                case 'success':
+                    return (
+                        <Suspense fallback={<PageLoading message="Processing..." />}>
+                            <SuccessPage onBack={() => {
+                                // Clear URL params and navigate to alarms
+                                window.history.replaceState({}, '', '/');
+                                setCurrentPage('alarms');
+                            }} />
+                        </Suspense>
+                    );
+                case 'admin':
+                    return (
+                        <Suspense fallback={<PageLoading message="Loading admin..." />}>
+                            <AdminPage onBack={() => setCurrentPage('profile')} />
+                        </Suspense>
+                    );
+                default:
+                    return <AlarmsPage timeString={timeString} dateString={dateString} onNavigateToSleep={navigateToSleep} />;
+            }
+        })();
+
+        return (
+            <motion.div
+                key={currentPage}
+                variants={pageTransition}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+            >
+                {pageContent}
+            </motion.div>
+        );
     };
 
     const handleOnboardingComplete = useCallback(() => {
@@ -350,10 +378,10 @@ const App: React.FC = () => {
         <NavigationProvider onNavigate={handleGlobalNavigate}>
             <div className="flex flex-col h-screen overflow-hidden bg-gradient-to-b from-day-bg-start to-day-bg-end dark:from-night-bg-start dark:to-night-bg-end text-day-text-primary dark:text-night-text-primary transition-colors duration-500">
                 <a href="#main-content" className="skip-link">Skip to main content</a>
-                <main id="main-content" className="flex-grow overflow-y-auto custom-scrollbar p-4 md:p-6">
-                    <div className="animate-fadeIn">
+                <main ref={mainScrollRef} id="main-content" className="flex-grow overflow-y-auto custom-scrollbar p-4 md:p-6">
+                    <AnimatePresence mode="wait">
                         {renderPage()}
-                    </div>
+                    </AnimatePresence>
                     {/* Page indicator dots for swipe navigation */}
                     {currentIndex !== -1 && (
                         <div className="flex justify-center gap-2 py-3 mt-4">

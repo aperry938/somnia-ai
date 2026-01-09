@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { SleepEntry, Dream } from '../../types';
 import { MOOD_ICONS, MOOD_LABELS } from '../../constants/uiIcons';
+import haptics from '../../services/hapticsService';
 
 interface SleepEntryCardProps {
     entry: SleepEntry;
@@ -103,10 +105,10 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
             {/* Header Row - Always Visible */}
             <div
                 className="p-4 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-                onClick={() => setIsExpanded(!isExpanded)}
+                onClick={() => { haptics.selection(); setIsExpanded(!isExpanded); }}
                 role="button"
                 tabIndex={0}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsExpanded(!isExpanded); } }}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); haptics.selection(); setIsExpanded(!isExpanded); } }}
                 aria-expanded={isExpanded}
             >
                 <div className="flex items-center justify-between">
@@ -166,8 +168,15 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
             </div>
 
             {/* Expanded Content - Timeline Layout */}
-            {isExpanded && (
-                <div className="border-t border-day-border dark:border-night-border animate-fadeIn">
+            <AnimatePresence initial={false}>
+                {isExpanded && (
+                    <motion.div
+                        className="border-t border-day-border dark:border-night-border overflow-hidden"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                    >
 
                     {/* Section 1: Evening Reflection */}
                     {(entry.sleepAids?.dayRating || entry.sleepAids?.dayNotes || entry.notes) && (
@@ -437,8 +446,9 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
                             </div>
                         )}
                     </div>
-                </div>
-            )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };
