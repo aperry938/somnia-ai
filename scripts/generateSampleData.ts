@@ -140,7 +140,7 @@ function randomInt(min: number, max: number): number {
 }
 
 function randomChoice<T>(arr: readonly T[] | T[]): T {
-    return arr[Math.floor(Math.random() * arr.length)];
+    return arr[Math.floor(Math.random() * arr.length)] as T;
 }
 
 function randomChoices<T>(arr: readonly T[] | T[], count: number): T[] {
@@ -255,21 +255,23 @@ export function generateSampleSleepEntries(dreams: Dream[]): SleepEntry[] {
     const dreamsByDate = new Map<string, Dream[]>();
 
     dreams.forEach(dream => {
-        const dateKey = new Date(dream.timestamp).toISOString().split('T')[0];
+        const dateKey = new Date(dream.timestamp).toISOString().split('T')[0] ?? '';
         if (!dreamsByDate.has(dateKey)) dreamsByDate.set(dateKey, []);
-        dreamsByDate.get(dateKey)!.push(dream);
+        dreamsByDate.get(dateKey)?.push(dream);
     });
 
     let entryId = 1;
     dreamsByDate.forEach((dateDreams, dateKey) => {
-        const createdAt = new Date(dateDreams[0].timestamp);
+        const firstDream = dateDreams[0];
+        if (!firstDream) return;
+        const createdAt = new Date(firstDream.timestamp);
         createdAt.setHours(randomInt(6, 10), randomInt(0, 59), 0, 0);
 
         const entry: SleepEntry = {
             id: entryId++,
             date: dateKey,
-            sleepQuality: dateDreams[0].sleepQuality || randomInt(1, 5),
-            sleepAids: dateDreams[0].sleepAids,
+            sleepQuality: firstDream.sleepQuality || randomInt(1, 5),
+            sleepAids: firstDream.sleepAids,
             alarmTime: `${String(randomInt(5, 9)).padStart(2, '0')}:${String(randomInt(0, 5) * 10).padStart(2, '0')}`,
             alarmSoundId: randomChoice(['somnia', 'gentle', 'progressive', 'chime']),
             dreamIds: dateDreams.map(d => d.id),
@@ -439,20 +441,24 @@ if (typeof process !== 'undefined' && process.argv[1]?.includes('generateSampleD
     console.log(`  - ${stats.dreamsWithChat} with chat history`);
 
     console.log('\n=== Sample Dream ===');
-    const sample = dreams.find(d => d.aiAnalysis) || dreams[0];
-    console.log(`  ID: ${sample.id}`);
-    console.log(`  Title: ${sample.title}`);
-    console.log(`  Text: ${(sample.dreamText || '').slice(0, 100)}...`);
-    console.log(`  Mood: ${sample.mood}`);
-    console.log(`  Tags: ${sample.tags?.join(', ') || 'none'}`);
-    console.log(`  Lucidity: ${sample.aiAnalysis?.telemetry?.lucidity ?? 'N/A'}`);
-    console.log(`  Has Analysis: ${!!sample.aiAnalysis}`);
+    const sample = dreams.find(d => d.aiAnalysis) ?? dreams[0];
+    if (sample) {
+        console.log(`  ID: ${sample.id}`);
+        console.log(`  Title: ${sample.title}`);
+        console.log(`  Text: ${(sample.dreamText || '').slice(0, 100)}...`);
+        console.log(`  Mood: ${sample.mood}`);
+        console.log(`  Tags: ${sample.tags?.join(', ') || 'none'}`);
+        console.log(`  Lucidity: ${sample.aiAnalysis?.telemetry?.lucidity ?? 'N/A'}`);
+        console.log(`  Has Analysis: ${!!sample.aiAnalysis}`);
+    }
 
     console.log('\n=== Sample Sleep Entry ===');
     const sleepSample = sleepEntries[0];
-    console.log(`  Date: ${sleepSample.date}`);
-    console.log(`  Quality: ${sleepSample.sleepQuality}/5`);
-    console.log(`  Linked Dreams: ${sleepSample.dreamIds.length}`);
+    if (sleepSample) {
+        console.log(`  Date: ${sleepSample.date}`);
+        console.log(`  Quality: ${sleepSample.sleepQuality}/5`);
+        console.log(`  Linked Dreams: ${sleepSample.dreamIds.length}`);
+    }
 
     console.log('\n=== Validation ===');
     // Check types are correct
