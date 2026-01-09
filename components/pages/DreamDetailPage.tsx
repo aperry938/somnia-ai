@@ -14,6 +14,7 @@ import haptics from '../../services/hapticsService';
 import { MOOD_ICONS, MOOD_LABELS } from '../../constants/uiIcons';
 import { processDejaVuCheck, DejaVuMatch } from '../../services/dejaVuService';
 import { CALIBRATION_DREAM } from '../../constants/demoDreams';
+import { AIConsentModal, hasAIConsent } from '../modals/AIConsentModal';
 
 // Evening Reflection Display Component
 const EveningReflectionDisplay: React.FC<{ aids: SleepAids }> = ({ aids }) => {
@@ -180,6 +181,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
     const [generatedPrompt, setGeneratedPrompt] = useState<string | null>(null);
     const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
     const [dejaVuMatch, setDejaVuMatch] = useState<DejaVuMatch | null>(null);
+    const [showConsentModal, setShowConsentModal] = useState(false);
 
     const detectedSymbols = useMemo(() => {
         if (!dream) return [];
@@ -195,6 +197,12 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
     const performAnalysis = useCallback(async () => {
         if (!dream || dream.aiAnalysis) {
             if (dream?.aiAnalysis) setAnalysisState('success');
+            return;
+        }
+
+        // Check for AI consent before first analysis
+        if (!hasAIConsent()) {
+            setShowConsentModal(true);
             return;
         }
 
@@ -787,6 +795,20 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
             })()}
 
             {isChatOpen && dream && <DreamChatModal dream={dream} onClose={() => setIsChatOpen(false)} />}
+
+            {/* AI Consent Modal */}
+            {showConsentModal && (
+                <AIConsentModal
+                    onConsent={() => {
+                        setShowConsentModal(false);
+                        // Trigger analysis after consent
+                        setAnalysisState('pending');
+                    }}
+                    onDecline={() => {
+                        setShowConsentModal(false);
+                    }}
+                />
+            )}
         </>
     );
 };

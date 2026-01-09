@@ -22,7 +22,7 @@ export const TermsPage: React.FC<TermsPageProps> = ({ onBack }) => {
 
             <div className="prose dark:prose-invert max-w-none space-y-6 text-day-text-secondary dark:text-night-text-secondary">
                 <p className="text-lg">
-                    <strong>Last updated:</strong> January 7, 2026
+                    <strong>Last updated:</strong> January 9, 2026
                 </p>
 
                 <section>
@@ -40,6 +40,23 @@ export const TermsPage: React.FC<TermsPageProps> = ({ onBack }) => {
                         recording dreams, AI-powered dream analysis, sleep soundscapes, and personal insights.
                         The service is provided "as is" without warranties of any kind.
                     </p>
+                </section>
+
+                <section className="bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-lg p-4">
+                    <h2 className="font-serif text-2xl text-rose-800 dark:text-rose-200 mb-3">Wellness Disclaimer</h2>
+                    <p className="font-semibold text-rose-900 dark:text-rose-100 mb-3">
+                        SOMNIA IS A WELLNESS APPLICATION, NOT A MEDICAL DEVICE.
+                    </p>
+                    <p>
+                        Somnia is designed for entertainment, self-reflection, and general wellness purposes only.
+                        It does not diagnose, treat, cure, or prevent any disease, disorder, or medical condition.
+                    </p>
+                    <ul className="list-disc pl-6 mt-3 space-y-2">
+                        <li><strong>Not medical advice:</strong> Dream analyses and sleep insights are not medical or psychological diagnoses</li>
+                        <li><strong>Not therapy:</strong> AI conversations are for reflection only and do not constitute therapy or counseling</li>
+                        <li><strong>Consult professionals:</strong> For sleep disorders, mental health concerns, or medical issues, consult a qualified healthcare provider</li>
+                        <li><strong>No clinical claims:</strong> Somnia makes no claims about improving clinical outcomes or treating conditions</li>
+                    </ul>
                 </section>
 
                 <section>
