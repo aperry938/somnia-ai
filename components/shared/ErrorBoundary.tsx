@@ -98,7 +98,7 @@ export const AIErrorBoundary: React.FC<{ children: ReactNode }> = ({ children })
                         </svg>
                     </div>
                     <p className="text-sm text-day-text-secondary dark:text-night-text-secondary">
-                        The Oneironaut is temporarily unavailable.
+                        Somnia AI is temporarily unavailable.
                     </p>
                     <p className="text-xs text-day-text-secondary/70 dark:text-night-text-secondary/70 mt-1">
                         Check your API key or try again later.

@@ -344,26 +344,8 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                     </div>
                 </div>
 
-                {analysisState === 'pending' && (
-                    <div className="w-full rounded-lg bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border p-4 mb-6">
-                        <p className="text-sm text-day-text-secondary dark:text-night-text-secondary mb-2">Choose analysis persona:</p>
-                        <div className="flex flex-wrap gap-2">
-                            {(['oneironaut', 'jungian', 'scientific'] as const).map(p => (
-                                <button
-                                    key={p}
-                                    onClick={() => setAnalysisPersonality(p)}
-                                    aria-pressed={analysisPersonality === p}
-                                    className={`px-4 py-2 min-h-[44px] rounded-full text-sm transition-colors flex items-center ${analysisPersonality === p
-                                        ? 'bg-indigo-500 dark:bg-indigo-600 text-white'
-                                        : 'bg-white/50 dark:bg-black/20 hover:bg-white/70 dark:hover:bg-black/30'
-                                        }`}
-                                >
-                                    {p === 'oneironaut' ? 'The Oneironaut' : p === 'jungian' ? 'Shadow Walker' : 'Dr. REM'}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                )}
+
+
 
                 <p className="text-day-text-secondary dark:text-night-text-secondary flex items-center gap-2 flex-wrap">
                     <span>{date.toLocaleString()}</span>

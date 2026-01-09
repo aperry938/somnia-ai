@@ -49,10 +49,10 @@ export const AnalysisLoading: React.FC = () => (
             <div className="absolute inset-4 rounded-full bg-day-accent/10 dark:bg-night-accent/10 animate-pulse" />
         </div>
         <h3 className="font-serif text-xl text-day-text-primary dark:text-night-text-primary mb-2">
-            The Oneironaut is listening...
+            Somnia is analyzing...
         </h3>
         <p className="text-sm text-day-text-secondary dark:text-night-text-secondary max-w-xs">
-            Descending into the depths of your dream to illuminate its hidden meaning.
+            Finding meaning in your dream's symbols and patterns.
         </p>
     </div>
 );
