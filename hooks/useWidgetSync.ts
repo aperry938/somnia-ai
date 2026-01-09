@@ -12,7 +12,7 @@
 
 import { useEffect, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { Alarm, Dream } from '../types';
+import { Alarm, Dream, SleepEntry } from '../types';
 import { updateWidget, initializeWidget, WidgetData } from '../services/widgetService';
 import { calculateUserStats } from '../services/userStatsService';
 import { logger } from '../services/logger';
@@ -20,7 +20,7 @@ import { logger } from '../services/logger';
 interface WidgetSyncOptions {
     alarms: Alarm[];
     dreams: Dream[];
-    sleepEntries?: Array<{ duration?: number }>;
+    sleepEntries?: SleepEntry[];
 }
 
 export function useWidgetSync({ alarms, dreams, sleepEntries = [] }: WidgetSyncOptions): void {
@@ -68,7 +68,7 @@ export function useWidgetSync({ alarms, dreams, sleepEntries = [] }: WidgetSyncO
 function calculateWidgetData(
     alarms: Alarm[],
     dreams: Dream[],
-    sleepEntries: Array<{ duration?: number }>
+    sleepEntries: SleepEntry[]
 ): WidgetData {
     // Get next active alarm
     const nextAlarm = getNextAlarm(alarms);
@@ -100,7 +100,7 @@ function getNextAlarm(alarms: Alarm[]): Alarm | null {
     const currentDay = now.getDay(); // 0 = Sunday
 
     // Filter enabled alarms
-    const enabledAlarms = alarms.filter(a => a.enabled);
+    const enabledAlarms = alarms.filter(a => a.isActive);
     if (enabledAlarms.length === 0) return null;
 
     // Find the next alarm to ring
@@ -134,47 +134,43 @@ function getNextAlarm(alarms: Alarm[]): Alarm | null {
 }
 
 /**
- * Calculate average sleep duration in hours
+ * Calculate average sleep quality (1-5 scale converted to hours estimate)
+ * Uses sleep quality as a proxy since we don't track actual duration
  */
-function calculateAverageSleep(sleepEntries: Array<{ duration?: number }>): number {
-    const validEntries = sleepEntries.filter(e => e.duration && e.duration > 0);
+function calculateAverageSleep(sleepEntries: SleepEntry[]): number {
+    const validEntries = sleepEntries.filter(e => e.sleepQuality && e.sleepQuality > 0);
     if (validEntries.length === 0) return 0;
 
-    const totalMinutes = validEntries.reduce((sum, e) => sum + (e.duration || 0), 0);
-    return totalMinutes / validEntries.length / 60; // Convert to hours
+    // Convert sleep quality (1-5) to estimated hours (5-9)
+    // Quality 5 = ~8 hours, Quality 1 = ~5 hours
+    const avgQuality = validEntries.reduce((sum, e) => sum + (e.sleepQuality || 3), 0) / validEntries.length;
+    return 5 + (avgQuality - 1) * 0.75; // Maps 1-5 to 5-8 hours
 }
 
 /**
  * Calculate a simple sleep score (0-100)
- * Based on consistency and adequate sleep duration
+ * Based on quality ratings and streak consistency
  */
 function calculateSleepScore(
-    sleepEntries: Array<{ duration?: number }>,
+    sleepEntries: SleepEntry[],
     streak: number
 ): number {
     if (sleepEntries.length === 0) return 0;
 
-    const avgHours = calculateAverageSleep(sleepEntries);
+    // Calculate average quality (1-5 scale)
+    const validEntries = sleepEntries.filter(e => e.sleepQuality && e.sleepQuality > 0);
+    if (validEntries.length === 0) return Math.min(streak * 5, 50); // Just streak bonus if no quality data
 
-    // Base score from average sleep (7-9 hours is ideal)
-    let durationScore = 0;
-    if (avgHours >= 7 && avgHours <= 9) {
-        durationScore = 100;
-    } else if (avgHours >= 6 && avgHours < 7) {
-        durationScore = 75;
-    } else if (avgHours > 9 && avgHours <= 10) {
-        durationScore = 85;
-    } else if (avgHours >= 5 && avgHours < 6) {
-        durationScore = 50;
-    } else {
-        durationScore = 30;
-    }
+    const avgQuality = validEntries.reduce((sum, e) => sum + (e.sleepQuality || 3), 0) / validEntries.length;
+
+    // Quality score (1-5 maps to 20-100)
+    const qualityScore = Math.round(avgQuality * 20);
 
     // Consistency bonus from streak (up to 20 points)
     const streakBonus = Math.min(streak * 2, 20);
 
     // Final score (capped at 100)
-    return Math.min(Math.round((durationScore * 0.8) + streakBonus), 100);
+    return Math.min(qualityScore + streakBonus, 100);
 }
 
 /**
@@ -183,7 +179,7 @@ function calculateSleepScore(
 export function refreshWidget(
     alarms: Alarm[],
     dreams: Dream[],
-    sleepEntries: Array<{ duration?: number }> = []
+    sleepEntries: SleepEntry[] = []
 ): void {
     if (!Capacitor.isNativePlatform()) return;
 

@@ -177,6 +177,10 @@ export interface Biometrics {
     occupation?: string;
     sleepGoal?: number; // Target hours of sleep
     wakeGoal?: string; // Preferred wake time (HH:MM)
+    // Health platform synced data
+    avgBedtime?: string; // Average bedtime (HH:MM) from health data
+    avgWakeTime?: string; // Average wake time (HH:MM) from health data
+    restingHr?: number; // Resting heart rate from health data
 }
 
 // Sync Types
