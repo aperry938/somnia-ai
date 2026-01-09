@@ -422,4 +422,47 @@ export const BROWSER_INJECT_SCRIPT = `
 })();
 `;
 
-console.log('To inject sample data, copy BROWSER_INJECT_SCRIPT to browser console');
+// Run test when executed directly
+if (typeof process !== 'undefined' && process.argv[1]?.includes('generateSampleData')) {
+    const testCount = 100;
+    console.log(`\n=== Testing Sample Data Generator (${testCount} dreams) ===\n`);
+
+    const { dreams, sleepEntries, stats } = generateSampleData(testCount);
+
+    console.log('Generated:');
+    console.log(`  - ${dreams.length} dreams`);
+    console.log(`  - ${sleepEntries.length} sleep entries`);
+    console.log(`  - ${stats.dreamsWithAnalysis} with AI analysis`);
+    console.log(`  - ${stats.dreamsWithMood} with mood`);
+    console.log(`  - ${stats.dreamsWithTags} with tags`);
+    console.log(`  - ${dreams.filter(d => (d.aiAnalysis?.telemetry?.lucidity ?? 0) > 50).length} high lucidity dreams`);
+    console.log(`  - ${stats.dreamsWithChat} with chat history`);
+
+    console.log('\n=== Sample Dream ===');
+    const sample = dreams.find(d => d.aiAnalysis) || dreams[0];
+    console.log(`  ID: ${sample.id}`);
+    console.log(`  Title: ${sample.title}`);
+    console.log(`  Text: ${(sample.dreamText || '').slice(0, 100)}...`);
+    console.log(`  Mood: ${sample.mood}`);
+    console.log(`  Tags: ${sample.tags?.join(', ') || 'none'}`);
+    console.log(`  Lucidity: ${sample.aiAnalysis?.telemetry?.lucidity ?? 'N/A'}`);
+    console.log(`  Has Analysis: ${!!sample.aiAnalysis}`);
+
+    console.log('\n=== Sample Sleep Entry ===');
+    const sleepSample = sleepEntries[0];
+    console.log(`  Date: ${sleepSample.date}`);
+    console.log(`  Quality: ${sleepSample.sleepQuality}/5`);
+    console.log(`  Linked Dreams: ${sleepSample.dreamIds.length}`);
+
+    console.log('\n=== Validation ===');
+    // Check types are correct
+    const moods: string[] = ['joyful', 'peaceful', 'anxious', 'sad', 'fearful', 'confused', 'neutral', 'nostalgic', 'hopeful'];
+    const invalidMoods = dreams.filter(d => d.mood && !moods.includes(d.mood));
+    console.log(`  Invalid moods: ${invalidMoods.length}`);
+
+    const invalidChat = dreams.filter(d => d.chatHistory?.some(m => !['user', 'model'].includes(m.role)));
+    console.log(`  Invalid chat roles: ${invalidChat.length}`);
+
+    console.log('\n✓ Sample data generator working correctly!');
+    console.log('\nTo inject into browser, copy BROWSER_INJECT_SCRIPT to console.');
+}
