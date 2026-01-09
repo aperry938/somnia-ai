@@ -99,12 +99,7 @@ public class AlarmService extends Service {
 
     private void playAlarmSound(String soundId) {
         try {
-            // Get the alarm sound URI - for now use system default
-            // In future, we can bundle custom sounds in res/raw
-            Uri alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
-            if (alarmUri == null) {
-                alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-            }
+            Uri alarmUri = getAlarmSoundUri(soundId);
 
             mediaPlayer = new MediaPlayer();
             mediaPlayer.setDataSource(this, alarmUri);
@@ -125,11 +120,38 @@ public class AlarmService extends Service {
             mediaPlayer.prepare();
             mediaPlayer.start();
 
-            Log.d(TAG, "Alarm sound playing");
+            Log.d(TAG, "Alarm sound playing: " + soundId);
 
         } catch (Exception e) {
             Log.e(TAG, "Error playing alarm sound", e);
         }
+    }
+
+    /**
+     * Get the URI for the alarm sound based on soundId
+     * Falls back to system default if custom sound not found
+     */
+    private Uri getAlarmSoundUri(String soundId) {
+        // Try to get custom sound from res/raw
+        if (soundId != null && !soundId.isEmpty()) {
+            String resourceName = "alarm_" + soundId.toLowerCase();
+            int resourceId = getResources().getIdentifier(resourceName, "raw", getPackageName());
+
+            if (resourceId != 0) {
+                Uri customUri = Uri.parse("android.resource://" + getPackageName() + "/" + resourceId);
+                Log.d(TAG, "Using custom alarm sound: " + resourceName);
+                return customUri;
+            } else {
+                Log.d(TAG, "Custom sound not found: " + resourceName + ", using system default");
+            }
+        }
+
+        // Fall back to system alarm sound
+        Uri systemAlarm = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+        if (systemAlarm == null) {
+            systemAlarm = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        }
+        return systemAlarm;
     }
 
     private void startVibration() {

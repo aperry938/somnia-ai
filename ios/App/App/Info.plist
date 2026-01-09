@@ -75,5 +75,83 @@
 	<!-- Motion - For sleep detection -->
 	<key>NSMotionUsageDescription</key>
 	<string>Somnia uses motion data to detect when you fall asleep and improve smart alarm timing.</string>
+
+	<!-- Quick Actions (3D Touch / Long Press on app icon) -->
+	<key>UIApplicationShortcutItems</key>
+	<array>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>ai.somnia.app.set_alarm</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Set Alarm</string>
+			<key>UIApplicationShortcutItemSubtitle</key>
+			<string>Set a wake-up alarm</string>
+			<key>UIApplicationShortcutItemIconType</key>
+			<string>UIApplicationShortcutIconTypeAlarm</string>
+			<key>UIApplicationShortcutItemUserInfo</key>
+			<dict>
+				<key>route</key>
+				<string>/alarm</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>ai.somnia.app.start_sleep</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Sleep Now</string>
+			<key>UIApplicationShortcutItemSubtitle</key>
+			<string>Start tracking your sleep</string>
+			<key>UIApplicationShortcutItemIconType</key>
+			<string>UIApplicationShortcutIconTypeTime</string>
+			<key>UIApplicationShortcutItemUserInfo</key>
+			<dict>
+				<key>route</key>
+				<string>/sleep</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>ai.somnia.app.view_stats</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Sleep Stats</string>
+			<key>UIApplicationShortcutItemSubtitle</key>
+			<string>View your sleep statistics</string>
+			<key>UIApplicationShortcutItemIconType</key>
+			<string>UIApplicationShortcutIconTypeSearch</string>
+			<key>UIApplicationShortcutItemUserInfo</key>
+			<dict>
+				<key>route</key>
+				<string>/stats</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>ai.somnia.app.record_dream</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Record Dream</string>
+			<key>UIApplicationShortcutItemSubtitle</key>
+			<string>Record a dream in your journal</string>
+			<key>UIApplicationShortcutItemIconType</key>
+			<string>UIApplicationShortcutIconTypeCompose</string>
+			<key>UIApplicationShortcutItemUserInfo</key>
+			<dict>
+				<key>route</key>
+				<string>/journal/new</string>
+			</dict>
+		</dict>
+	</array>
+
+	<!-- Deep Links URL Scheme -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>somnia</string>
+			</array>
+			<key>CFBundleURLName</key>
+			<string>ai.somnia.app</string>
+		</dict>
+	</array>
 </dict>
 </plist>

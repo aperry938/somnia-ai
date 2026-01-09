@@ -4,4 +4,18 @@
     <string name="title_activity_main">Somnia</string>
     <string name="package_name">ai.somnia.app</string>
     <string name="custom_url_scheme">ai.somnia.app</string>
+
+    <!-- Widget strings -->
+    <string name="widget_description">View your next alarm, sleep stats, and quick actions</string>
+    <string name="widget_name">Somnia Sleep</string>
+
+    <!-- App shortcut strings -->
+    <string name="shortcut_set_alarm">Set Alarm</string>
+    <string name="shortcut_set_alarm_long">Set a wake-up alarm</string>
+    <string name="shortcut_start_sleep">Sleep Now</string>
+    <string name="shortcut_start_sleep_long">Start tracking your sleep</string>
+    <string name="shortcut_view_stats">Sleep Stats</string>
+    <string name="shortcut_view_stats_long">View your sleep statistics</string>
+    <string name="shortcut_record_dream">Record Dream</string>
+    <string name="shortcut_record_dream_long">Record a dream in your journal</string>
 </resources>

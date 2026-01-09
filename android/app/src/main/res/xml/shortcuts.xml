@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Quick action to set an alarm -->
+    <shortcut
+        android:shortcutId="set_alarm"
+        android:enabled="true"
+        android:icon="@android:drawable/ic_lock_idle_alarm"
+        android:shortcutShortLabel="@string/shortcut_set_alarm"
+        android:shortcutLongLabel="@string/shortcut_set_alarm_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="ai.somnia.app"
+            android:targetClass="ai.somnia.app.MainActivity"
+            android:data="somnia://alarm" />
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+
+    <!-- Quick action to start sleep session -->
+    <shortcut
+        android:shortcutId="start_sleep"
+        android:enabled="true"
+        android:icon="@android:drawable/ic_menu_recent_history"
+        android:shortcutShortLabel="@string/shortcut_start_sleep"
+        android:shortcutLongLabel="@string/shortcut_start_sleep_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="ai.somnia.app"
+            android:targetClass="ai.somnia.app.MainActivity"
+            android:data="somnia://sleep" />
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+
+    <!-- Quick action to view stats -->
+    <shortcut
+        android:shortcutId="view_stats"
+        android:enabled="true"
+        android:icon="@android:drawable/ic_menu_info_details"
+        android:shortcutShortLabel="@string/shortcut_view_stats"
+        android:shortcutLongLabel="@string/shortcut_view_stats_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="ai.somnia.app"
+            android:targetClass="ai.somnia.app.MainActivity"
+            android:data="somnia://stats" />
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+
+    <!-- Quick action to record dream -->
+    <shortcut
+        android:shortcutId="record_dream"
+        android:enabled="true"
+        android:icon="@android:drawable/ic_btn_speak_now"
+        android:shortcutShortLabel="@string/shortcut_record_dream"
+        android:shortcutLongLabel="@string/shortcut_record_dream_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="ai.somnia.app"
+            android:targetClass="ai.somnia.app.MainActivity"
+            android:data="somnia://journal/new" />
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+
+</shortcuts>
