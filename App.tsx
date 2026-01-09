@@ -192,6 +192,13 @@ const App: React.FC = () => {
         // Set quick note first if provided
         if (quickNote) setWakeQuickNote(quickNote);
 
+        // Capture wake metrics NOW before stopping the alarm
+        // This ensures we capture timing even if user went directly to "Record Dream"
+        const wakeMetrics = getWakeMetrics();
+        if (wakeMetrics && activeSleepSession) {
+            saveWakeData(wakeMetrics);
+        }
+
         // Stop the alarm first (closes AlarmRingModal)
         stopRinging();
 
@@ -202,7 +209,7 @@ const App: React.FC = () => {
         setTimeout(() => {
             setIsScribeOpen(true);
         }, 50);
-    }, [stopRinging, setIsScribeOpen]);
+    }, [stopRinging, setIsScribeOpen, getWakeMetrics, activeSleepSession, saveWakeData]);
 
     // Capture wake metrics when user first clicks "I'm Awake" - before dream/boost flow
     const handleCaptureWakeMetrics = useCallback(() => {
