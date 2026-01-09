@@ -203,7 +203,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             const linkedAlarm = alarms.find(a => a.id === activeSleepSession.alarmId);
             // Only clear session if alarm was DELETED (not found), not just deactivated
             if (!linkedAlarm) {
-                console.log('[AppContext] Clearing session - linked alarm was deleted');
                 setActiveSleepSession(null);
             }
         }
@@ -368,12 +367,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Create a sleep entry when completing Sleep Gateway and link it to the session
     // This allows the entry to be updated later with wake data and dreams
     const createSleepEntryForSession = useCallback((): number | null => {
-        console.log('[createSleepEntryForSession] Called with:', {
-            hasActiveSleepSession: !!activeSleepSession,
-            existingSleepEntryId: activeSleepSession?.sleepEntryId,
-            alarmTime: activeSleepSession?.alarmTime,
-            alarmId: activeSleepSession?.alarmId
-        });
         if (!activeSleepSession) return null;
         if (activeSleepSession.sleepEntryId) return activeSleepSession.sleepEntryId; // Already has an entry
 
@@ -400,13 +393,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         // Update the session to link to this entry
         setActiveSleepSession(prev => prev ? { ...prev, sleepEntryId: entryId } : null);
 
-        console.log('[createSleepEntryForSession] Created entry:', {
-            entryId,
-            date: newEntry.date,
-            alarmTime: newEntry.alarmTime,
-            createdAt: newEntry.createdAt
-        });
-
         return entryId;
     }, [activeSleepSession, setActiveSleepSession, setSleepEntries]);
 
@@ -420,8 +406,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         let wakeData = activeSleepSession.wakeData;
 
         // Update wakeData with boost info if provided
-        if (options?.alertnessBoostUsed !== undefined && wakeData) {
-            wakeData = { ...wakeData, alertnessBoostUsed: options.alertnessBoostUsed };
+        if (options?.alertnessBoostUsed !== undefined) {
+            if (wakeData) {
+                wakeData = { ...wakeData, alertnessBoostUsed: options.alertnessBoostUsed };
+            } else {
+                // Create minimal wakeData if it doesn't exist but boost was used
+                wakeData = {
+                    snoozeCount: 0,
+                    timeToSilence: 0,
+                    alertnessBoostUsed: options.alertnessBoostUsed,
+                    alarmType: 'manual'
+                };
+            }
         }
 
         // If we have an existing entry, UPDATE it
@@ -504,21 +500,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const dreamId = generateSecureId();
         const today = new Date().toISOString().split('T')[0] ?? ''; // YYYY-MM-DD
 
-        // DEBUG: Log the state when addDream is called
-        console.log('[addDream] Called with:', {
-            hasActiveSleepSession: !!activeSleepSession,
-            sleepEntryId: activeSleepSession?.sleepEntryId,
-            alarmTime: activeSleepSession?.alarmTime,
-            sleepEntriesCount: sleepEntries.length,
-            sleepEntriesWithoutDreams: sleepEntries.filter(e => e.dreamIds.length === 0).map(e => ({
-                id: e.id,
-                date: e.date,
-                alarmTime: e.alarmTime,
-                createdAt: e.createdAt
-            })),
-            today
-        });
-
         let sleepEntryId: number | undefined = undefined;
         let foundExistingEntry = false;
 
@@ -567,15 +548,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             }
         }
 
-        console.log('[addDream] Entry lookup result:', {
-            foundExistingEntry,
-            sleepEntryId,
-            path: foundExistingEntry ? 'UPDATE_EXISTING' : (activeSleepSession ? 'CREATE_NEW' : 'NO_SESSION')
-        });
-
         if (foundExistingEntry && sleepEntryId) {
             // Update the existing entry with wake data and dream
-            console.log('[addDream] Updating existing entry:', sleepEntryId);
             setSleepEntries(prev => prev.map(entry => {
                 if (entry.id !== sleepEntryId) return entry;
                 return {
