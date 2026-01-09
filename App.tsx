@@ -29,6 +29,7 @@ import { DevModeToggle } from './components/DevModeToggle';
 import { useSwipeNavigation } from './hooks/useSwipeNavigation';
 import { useDeepLink } from './hooks/useDeepLink';
 import { useWidgetSync } from './hooks/useWidgetSync';
+import { useAppLifecycle } from './hooks/useAppLifecycle';
 
 
 // Lazy load heavy pages for better code splitting
@@ -157,6 +158,18 @@ const App: React.FC = () => {
 
     // Keep home screen widgets in sync with app data
     useWidgetSync({ alarms, dreams, sleepEntries });
+
+    // Handle app foreground/background transitions (mobile)
+    useAppLifecycle({
+        onForeground: () => {
+            logger.log('[App] Returned to foreground');
+            // Data will auto-refresh through React state/effects
+        },
+        onTick: () => {
+            // Update any time-sensitive UI elements
+            // This runs every minute while app is active
+        },
+    });
 
     // Sleep Detection: triggers alarm wake-up flow after phone inactivity threshold
     useSleepDetection((soundId: string) => {
