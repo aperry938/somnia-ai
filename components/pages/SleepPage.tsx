@@ -80,8 +80,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
         if (activeSleepSession) {
             updateSleepSessionData({ dayRating, dayNotes });
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [dayRating, dayNotes]); // Don't include activeSleepSession - we update it, would cause infinite loop
+    }, [dayRating, dayNotes, activeSleepSession, updateSleepSessionData]);
 
     // Update prediction when dayRating or activeSleepAids change
     useEffect(() => {
