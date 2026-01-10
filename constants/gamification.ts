@@ -3,8 +3,70 @@
  * Defines level thresholds, XP values, and progression milestones
  */
 
-/** Number of dreams required to gain one level */
-export const DREAMS_PER_LEVEL = 5;
+/**
+ * Progressive level thresholds (cumulative dreams required)
+ * Level 2: 5 dreams, Level 3: 15 (5+10), Level 4: 30 (5+10+15), etc.
+ * Formula: threshold(n) = 5 * (n-1) * n / 2
+ */
+export const LEVEL_THRESHOLDS: Record<number, number> = {
+    1: 0,    // Start
+    2: 5,    // 5 dreams
+    3: 15,   // +10 dreams
+    4: 30,   // +15 dreams
+    5: 50,   // +20 dreams
+    6: 75,   // +25 dreams
+    7: 105,  // +30 dreams
+    8: 140,  // +35 dreams
+    9: 180,  // +40 dreams
+    10: 225, // +45 dreams
+};
+
+/**
+ * Get dreams required for a specific level
+ * @param level - Target level
+ * @returns Cumulative dreams needed
+ */
+export const getDreamsForLevel = (level: number): number => {
+    if (level <= 1) return 0;
+    if (level <= 10) return LEVEL_THRESHOLDS[level] ?? 0;
+    // Beyond level 10: continue the pattern (5 * (n-1) * n / 2)
+    return Math.floor(5 * (level - 1) * level / 2);
+};
+
+/**
+ * Get level from total dreams logged
+ * @param totalDreams - Total dreams logged
+ * @returns Current level (1-10+)
+ */
+export const getLevelFromDreams = (totalDreams: number): number => {
+    for (let level = 10; level >= 1; level--) {
+        if (totalDreams >= getDreamsForLevel(level)) {
+            return level;
+        }
+    }
+    return 1;
+};
+
+/**
+ * Get progress percentage toward next level
+ * @param totalDreams - Total dreams logged
+ * @returns Progress percentage (0-100)
+ */
+export const getLevelProgress = (totalDreams: number): number => {
+    const currentLevel = getLevelFromDreams(totalDreams);
+    const currentThreshold = getDreamsForLevel(currentLevel);
+    const nextThreshold = getDreamsForLevel(currentLevel + 1);
+
+    if (currentLevel >= 10) {
+        // At max level, show progress toward prestige
+        return 100;
+    }
+
+    const dreamsInLevel = totalDreams - currentThreshold;
+    const dreamsNeeded = nextThreshold - currentThreshold;
+
+    return Math.min(100, Math.floor((dreamsInLevel / dreamsNeeded) * 100));
+};
 
 /** XP awarded per dream logged */
 export const XP_PER_DREAM = 100;
@@ -56,7 +118,7 @@ export const PRESTIGE_TITLES: Record<number, string> = {
  * @returns Prestige tier (0 if not yet at prestige)
  */
 export const getPrestigeTier = (totalDreams: number): number => {
-    const dreamsAtMaxLevel = DREAMS_PER_LEVEL * 10; // 50 dreams for level 10
+    const dreamsAtMaxLevel = getDreamsForLevel(10); // 225 dreams for level 10
     if (totalDreams < dreamsAtMaxLevel) return 0;
     const prestigeDreams = totalDreams - dreamsAtMaxLevel;
     return Math.floor(prestigeDreams / DREAMS_FOR_PRESTIGE) + 1;

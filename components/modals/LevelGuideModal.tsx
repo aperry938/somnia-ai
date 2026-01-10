@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { LEVEL_TITLES, DREAMS_PER_LEVEL, getLevelTitle as _getLevelTitle } from '../../constants/gamification';
+import { LEVEL_TITLES, getDreamsForLevel } from '../../constants/gamification';
 
 interface LevelGuideModalProps {
     isOpen: boolean;
@@ -40,7 +40,7 @@ export const LevelGuideModal: React.FC<LevelGuideModalProps> = ({ isOpen, onClos
         level: parseInt(level),
         title,
         description: LEVEL_DESCRIPTIONS[parseInt(level)],
-        dreamsRequired: (parseInt(level) - 1) * DREAMS_PER_LEVEL,
+        dreamsRequired: getDreamsForLevel(parseInt(level)),
     }));
 
     return (
@@ -69,7 +69,7 @@ export const LevelGuideModal: React.FC<LevelGuideModalProps> = ({ isOpen, onClos
                 </div>
 
                 <p className="text-sm text-day-text-secondary dark:text-night-text-secondary mb-4">
-                    Earn 1 level for every {DREAMS_PER_LEVEL} dreams logged. You have {totalDreams} dreams.
+                    Each level requires more dreams to unlock. You have {totalDreams} dreams logged.
                 </p>
 
                 <div className="space-y-2">

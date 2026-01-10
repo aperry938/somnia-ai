@@ -17,7 +17,9 @@ import { PremiumBadge } from '../shared/PremiumBadge';
 import { FeatureInfoCard } from '../shared/FeatureInfoCard';
 import { canUseAiAnalysis as _canUseAiAnalysis, consumeAiCredit as _consumeAiCredit, isPremium } from '../../services/secureSubscriptionService';
 import { DreamCompareModal } from '../modals/DreamCompareModal';
+import { ShareAnalyticsModal } from '../modals/ShareAnalyticsModal';
 import { DEMO_DREAMS } from '../../constants/demoDreams';
+import haptics from '../../services/hapticsService';
 
 type InsightTab = 'dreams' | 'analysis';
 
@@ -48,6 +50,7 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
     const [habitError, setHabitError] = useState<string | null>(null);
     const [isCompareOpen, setIsCompareOpen] = useState(false);
     const [isSyncOpen, setIsSyncOpen] = useState(false);
+    const [isShareOpen, setIsShareOpen] = useState(false);
 
     // Weekly rate limit helpers
     const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -173,7 +176,21 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
 
     return (
         <>
-            <h1 className="font-serif page-title text-4xl text-center mb-4">Insights</h1>
+            {/* Header with Share Button */}
+            <div className="flex items-center justify-between mb-4 max-w-2xl mx-auto">
+                <div className="w-12" /> {/* Spacer for centering */}
+                <h1 className="font-serif page-title text-4xl text-center">Insights</h1>
+                <button
+                    onClick={() => { haptics.medium(); setIsShareOpen(true); }}
+                    className="w-12 h-12 rounded-full flex items-center justify-center bg-day-card-bg/50 dark:bg-night-card-bg/50 border border-day-border dark:border-night-border hover:bg-day-accent/10 dark:hover:bg-night-accent/10 transition-colors"
+                    aria-label="Share analytics"
+                    title="Share your analytics"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                    </svg>
+                </button>
+            </div>
 
             {/* Tab Header */}
             <div className="max-w-2xl mx-auto mb-6">
@@ -519,6 +536,13 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
             </div>
 
             {isCompareOpen && <DreamCompareModal dreams={dreams} onClose={() => setIsCompareOpen(false)} />}
+
+            {/* Share Analytics Modal */}
+            <ShareAnalyticsModal
+                dreams={dreams}
+                isOpen={isShareOpen}
+                onClose={() => setIsShareOpen(false)}
+            />
 
             {/* Sync Wearable Modal */}
             {isSyncOpen && (

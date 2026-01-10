@@ -1,4 +1,5 @@
 import { Dream } from '../types';
+import { getLevelFromDreams, getLevelProgress } from '../constants/gamification';
 
 export interface UserStats {
     level: number;
@@ -10,15 +11,10 @@ export interface UserStats {
 }
 
 export const calculateUserStats = (dreams: Dream[]): UserStats => {
-    // 1. Calculate Level
-    // Simple logic: 1 level per 5 dreams
+    // 1. Calculate Level using progressive thresholds
     const totalDreams = dreams.length;
-    const level = Math.floor(totalDreams / 5) + 1;
-    const dreamsForNextLevel = level * 5;
-    const dreamsCurrentLevel = (level - 1) * 5;
-    const progress = totalDreams >= dreamsForNextLevel
-        ? 100
-        : ((totalDreams - dreamsCurrentLevel) / 5) * 100;
+    const level = getLevelFromDreams(totalDreams);
+    const progress = getLevelProgress(totalDreams);
 
     // 2. Calculate Streaks
     const map = new Set<string>();
