@@ -251,14 +251,14 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                                                 </svg>
                                             </div>
                                             <div className="flex-grow">
-                                                <p className="font-medium text-amber-200">
+                                                <p className="font-medium text-amber-700 dark:text-amber-200">
                                                     Viewing sample data
                                                 </p>
-                                                <p className="text-sm text-amber-300/80">
+                                                <p className="text-sm text-amber-600 dark:text-amber-300/80">
                                                     Upgrade to Premium to unlock your personal insights
                                                 </p>
                                             </div>
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                             </svg>
                                         </div>
@@ -339,14 +339,14 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                                             </svg>
                                         </div>
                                         <div className="flex-grow">
-                                            <p className="font-medium text-amber-200">
+                                            <p className="font-medium text-amber-700 dark:text-amber-200">
                                                 Premium Analytics Preview
                                             </p>
-                                            <p className="text-sm text-amber-300/80">
+                                            <p className="text-sm text-amber-600 dark:text-amber-300/80">
                                                 Viewing sample data. Upgrade to unlock your personal sleep & dream analytics.
                                             </p>
                                         </div>
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                         </svg>
                                     </div>
