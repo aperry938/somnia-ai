@@ -658,13 +658,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return dreams.find(d => d.id === id);
     }, [dreams]);
 
-    const setActiveSleepAid = (type: keyof SleepAids, value: string | null) => {
+    const setActiveSleepAid = useCallback((type: keyof SleepAids, value: string | null) => {
         setActiveSleepAids(prev => ({ ...prev, [type]: value }));
-    };
+    }, []);
 
-    const clearActiveSleepAids = () => {
+    const clearActiveSleepAids = useCallback(() => {
         setActiveSleepAids({});
-    };
+    }, []);
 
     // ========== Sleep Entry CRUD ==========
     const addSleepEntry = (date: string, sleepQuality: number | null, notes?: string, sleepAids?: SleepAids, alarmTime?: string, alarmSoundId?: string, wakeData?: WakeData): number => {

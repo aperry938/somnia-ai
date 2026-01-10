@@ -107,14 +107,8 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
 
 
     const openSoundscapeModal = (sound: Soundscape) => {
-        console.log('[SleepPage] openSoundscapeModal called with:', sound.name);
-        console.time('[SleepPage] setSelectedSound');
         setSelectedSound(sound);
-        console.timeEnd('[SleepPage] setSelectedSound');
-        console.time('[SleepPage] setActiveModal');
         setActiveModal('soundscape');
-        console.timeEnd('[SleepPage] setActiveModal');
-        console.log('[SleepPage] openSoundscapeModal finished');
     };
 
     const openRelaxationModal = (relaxation: GuidedRelaxation) => {

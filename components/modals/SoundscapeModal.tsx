@@ -19,7 +19,6 @@ interface SoundscapeModalProps {
 }
 
 export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlaying, onPlay, onStop, onClose, onFallAsleep }) => {
-    console.log('[SoundscapeModal] Rendering for sound:', sound.name);
     const { volume, setVolume, logSoundActivity, activeSleepSession, ensureSleepSession, createSleepEntryForSession } = useAppContext();
     const [duration, setDuration] = useState(30);
 
