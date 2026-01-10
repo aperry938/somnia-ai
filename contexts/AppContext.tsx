@@ -29,6 +29,7 @@ interface AppContextType {
     // Sleep Session Management
     activeSleepSession: SleepSession | null;
     startSleepSession: (alarmId?: number) => void;
+    ensureSleepSession: () => void; // Creates session if none exists (for soundscape auto-start)
     updateSleepSessionData: (data: Partial<SleepAids>) => void;
     logSoundActivity: (name: string, durationSeconds: number) => void;
     logBreathingActivity: (name: string, durationSeconds: number) => void;
@@ -302,6 +303,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         };
         setActiveSleepSession(newSession);
     }, [alarms, getNextActiveAlarm, setActiveSleepSession]);
+
+    // Ensure a sleep session exists (auto-create if none) - for soundscape/breathing auto-start
+    const ensureSleepSession = useCallback(() => {
+        setActiveSleepSession(prev => {
+            if (prev) return prev; // Session already exists
+            // Create a new session without linking to any alarm
+            const newSession: SleepSession = {
+                id: generateSecureId(),
+                alarmId: null,
+                alarmTime: null,
+                startedAt: new Date().toISOString(),
+                sleepGatewayData: {},
+                isActive: true
+            };
+            return newSession;
+        });
+    }, [setActiveSleepSession]);
 
     // Update sleep gateway data for the active session
     const updateSleepSessionData = useCallback((data: Partial<SleepAids>) => {
@@ -722,6 +740,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         pendingSleepData,
         activeSleepSession,
         startSleepSession,
+        ensureSleepSession,
         updateSleepSessionData,
         logSoundActivity,
         logBreathingActivity,

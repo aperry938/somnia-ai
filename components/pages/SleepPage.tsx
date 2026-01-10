@@ -142,6 +142,18 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
         setActiveSleepAid('sound', null);
     }
 
+    // Handle "Fall Asleep Now" from SoundscapeModal - transition to sleep without stopping sound
+    const handleFallAsleep = () => {
+        haptics.success();
+        showToast('Sweet dreams - sound will play as you drift off');
+        // Transition to sleeping state but DON'T stop the sound
+        // The sound will continue playing in the background
+        setIsSleeping(true);
+        // Close the modal (it will close itself, but clear the state)
+        setActiveModal(null);
+        // Don't clear selectedSound - we might want to show it in the sleeping view
+    }
+
     const handleBeginSleep = () => {
         // Calculate final duration if sound is still playing
         let finalDuration = totalSoundDuration;
@@ -288,6 +300,39 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-day-accent dark:text-night-accent mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
                         <h2 className="font-serif text-2xl text-day-accent dark:text-night-accent">Sweet Dreams</h2>
                         <p className="text-day-text-secondary dark:text-night-text-secondary">Your sleep settings are logged. Rest well.</p>
+
+                        {/* Now Playing - show if soundscape is active */}
+                        {playingSoundId && selectedSound && (
+                            <div className="bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 rounded-xl p-4 animate-pulse-slow">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-indigo-500/30 flex items-center justify-center text-indigo-400">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15.536a5 5 0 001.414 1.414m2.828-9.9a9 9 0 012.828-2.828" />
+                                            </svg>
+                                        </div>
+                                        <div className="text-left">
+                                            <p className="text-sm font-medium text-indigo-300">Now Playing</p>
+                                            <p className="text-white font-serif">{selectedSound.name}</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            haptics.light();
+                                            stopSleepSound();
+                                            handleStopSound();
+                                        }}
+                                        className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+                                        aria-label="Stop sound"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Activity Summary */}
                         {activeSleepSession && (
@@ -691,6 +736,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                         onPlay={handlePlaySound}
                         onStop={handleStopSound}
                         isPlaying={playingSoundId === selectedSound.id}
+                        onFallAsleep={handleFallAsleep}
                     />
                 )
             }
