@@ -77,7 +77,7 @@ const App: React.FC = () => {
         return localStorage.getItem('somnia_skipped_auth') === 'true';
     });
     const { timeString, dateString } = useClock();
-    const { ringingAlarm, stopRinging, snooze, triggerSleepDetectionAlarm, getWakeMetrics, resetWakeMetrics, resetRingStartTime } = useAlarmManager();
+    const { ringingAlarm, stopRinging, snooze, triggerSleepDetectionAlarm, getWakeMetrics, resetWakeMetrics, resetRingStartTime, incrementSnoozeCount } = useAlarmManager();
     const { isHelpOpen, closeHelp } = useKeyboardHelp();
 
     // Swipe navigation between main pages
@@ -420,7 +420,7 @@ const App: React.FC = () => {
                     )}
                 </main>
                 <BottomNav currentPage={currentPage} setCurrentPage={setCurrentPage} />
-                {ringingAlarm && <AlarmRingModal alarm={ringingAlarm} onSnooze={snooze} onAwake={handleAwake} onRecordDream={handleRecordDream} onFinalize={finalizeSleepSession} onCaptureWakeMetrics={handleCaptureWakeMetrics} onSnoozeReRing={resetRingStartTime} />}
+                {ringingAlarm && <AlarmRingModal alarm={ringingAlarm} onSnooze={incrementSnoozeCount} onAwake={handleAwake} onRecordDream={handleRecordDream} onFinalize={finalizeSleepSession} onCaptureWakeMetrics={handleCaptureWakeMetrics} onSnoozeReRing={resetRingStartTime} />}
                 {isScribeOpen && <DreamScribeModal onSave={handleScribeSave} onClose={() => { setIsScribeOpen(false); setWakeQuickNote(''); }} initialText={wakeQuickNote} />}
                 <KeyboardShortcutsHelp isOpen={isHelpOpen} onClose={closeHelp} />
                 <RealityCheckManager />
