@@ -155,10 +155,10 @@ export const NowPlayingIndicator: React.FC<NowPlayingIndicatorProps> = ({ onNavi
                                 <p className="text-white font-medium text-sm truncate">{soundName || 'Sleep Sound'}</p>
                             </div>
 
-                            {/* Dismiss button */}
+                            {/* Dismiss button - min 44x44 for mobile touch */}
                             <button
                                 onClick={handleDismiss}
-                                className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors flex-shrink-0"
+                                className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors flex-shrink-0"
                                 aria-label="Dismiss"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -174,21 +174,21 @@ export const NowPlayingIndicator: React.FC<NowPlayingIndicatorProps> = ({ onNavi
                                 <button
                                     onClick={() => handleExtend(15)}
                                     disabled={isExtending}
-                                    className="flex-1 py-2 px-2 bg-white/20 hover:bg-white/30 disabled:opacity-50 rounded-lg text-white text-sm font-medium transition-colors"
+                                    className="flex-1 py-3 px-2 min-h-[44px] bg-white/20 hover:bg-white/30 active:bg-white/40 disabled:opacity-50 rounded-lg text-white text-sm font-medium transition-colors"
                                 >
                                     +15 min
                                 </button>
                                 <button
                                     onClick={() => handleExtend(30)}
                                     disabled={isExtending}
-                                    className="flex-1 py-2 px-2 bg-white/20 hover:bg-white/30 disabled:opacity-50 rounded-lg text-white text-sm font-medium transition-colors"
+                                    className="flex-1 py-3 px-2 min-h-[44px] bg-white/20 hover:bg-white/30 active:bg-white/40 disabled:opacity-50 rounded-lg text-white text-sm font-medium transition-colors"
                                 >
                                     +30 min
                                 </button>
                                 <button
                                     onClick={() => handleExtend(60)}
                                     disabled={isExtending}
-                                    className="flex-1 py-2 px-2 bg-white/20 hover:bg-white/30 disabled:opacity-50 rounded-lg text-white text-sm font-medium transition-colors"
+                                    className="flex-1 py-3 px-2 min-h-[44px] bg-white/20 hover:bg-white/30 active:bg-white/40 disabled:opacity-50 rounded-lg text-white text-sm font-medium transition-colors"
                                 >
                                     +1 hr
                                 </button>
@@ -198,7 +198,7 @@ export const NowPlayingIndicator: React.FC<NowPlayingIndicatorProps> = ({ onNavi
                             {onNavigateToSleep && (
                                 <button
                                     onClick={handleNavigateToSleep}
-                                    className="w-full py-2 px-3 bg-white/10 hover:bg-white/20 rounded-lg text-white text-xs flex items-center justify-center gap-2 transition-colors"
+                                    className="w-full py-3 px-3 min-h-[44px] bg-white/10 hover:bg-white/20 active:bg-white/30 rounded-lg text-white text-xs flex items-center justify-center gap-2 transition-colors"
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -229,11 +229,11 @@ export const NowPlayingIndicator: React.FC<NowPlayingIndicatorProps> = ({ onNavi
             {isExpanded ? (
                 <div className="bg-gradient-to-r from-indigo-600 to-purple-700 rounded-xl shadow-lg overflow-hidden max-w-xs">
                     {/* Main row */}
-                    <div className="p-3 flex items-center gap-3">
+                    <div className="p-3 flex items-center gap-2">
                         {/* Animated sound wave icon - tap to show controls */}
                         <button
                             onClick={toggleControls}
-                            className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center flex-shrink-0 transition-colors"
+                            className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-white/20 hover:bg-white/30 active:bg-white/40 flex items-center justify-center flex-shrink-0 transition-colors"
                             aria-label="Toggle volume controls"
                         >
                             <div className="flex items-end gap-0.5 h-4">
@@ -250,24 +250,24 @@ export const NowPlayingIndicator: React.FC<NowPlayingIndicatorProps> = ({ onNavi
                             <p className="text-white font-medium text-sm truncate">{soundName || 'Sleep Sound'}</p>
                         </div>
 
-                        {/* Stop button */}
+                        {/* Stop button - min 44px for mobile */}
                         <button
                             onClick={handleStop}
-                            className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors flex-shrink-0"
+                            className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-white/20 hover:bg-white/30 active:bg-white/40 flex items-center justify-center transition-colors flex-shrink-0"
                             aria-label="Stop sound"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" viewBox="0 0 24 24" fill="currentColor">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="currentColor">
                                 <rect x="6" y="6" width="12" height="12" rx="1" />
                             </svg>
                         </button>
 
-                        {/* Collapse button */}
+                        {/* Collapse button - min 44px for mobile */}
                         <button
                             onClick={toggleExpanded}
-                            className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors flex-shrink-0"
+                            className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-white/10 hover:bg-white/20 active:bg-white/30 flex items-center justify-center transition-colors flex-shrink-0"
                             aria-label="Minimize"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                             </svg>
                         </button>
@@ -294,19 +294,19 @@ export const NowPlayingIndicator: React.FC<NowPlayingIndicatorProps> = ({ onNavi
                                 <span className="text-white/70 text-xs w-8 text-right">{Math.round(volume * 100)}%</span>
                             </div>
 
-                            {/* Extend time buttons */}
+                            {/* Extend time buttons - min 44px height for mobile */}
                             <div className="flex gap-2">
                                 <button
                                     onClick={() => handleExtend(15)}
                                     disabled={isExtending}
-                                    className="flex-1 py-1.5 px-2 bg-white/10 hover:bg-white/20 disabled:opacity-50 rounded-lg text-white text-xs transition-colors"
+                                    className="flex-1 py-2.5 px-2 min-h-[44px] bg-white/10 hover:bg-white/20 active:bg-white/30 disabled:opacity-50 rounded-lg text-white text-sm transition-colors"
                                 >
                                     +15 min
                                 </button>
                                 <button
                                     onClick={() => handleExtend(30)}
                                     disabled={isExtending}
-                                    className="flex-1 py-1.5 px-2 bg-white/10 hover:bg-white/20 disabled:opacity-50 rounded-lg text-white text-xs transition-colors"
+                                    className="flex-1 py-2.5 px-2 min-h-[44px] bg-white/10 hover:bg-white/20 active:bg-white/30 disabled:opacity-50 rounded-lg text-white text-sm transition-colors"
                                 >
                                     +30 min
                                 </button>
@@ -316,7 +316,7 @@ export const NowPlayingIndicator: React.FC<NowPlayingIndicatorProps> = ({ onNavi
                             {onNavigateToSleep && (
                                 <button
                                     onClick={handleNavigateToSleep}
-                                    className="w-full py-2 px-3 bg-white/10 hover:bg-white/20 rounded-lg text-white text-xs flex items-center justify-center gap-2 transition-colors"
+                                    className="w-full py-3 px-3 min-h-[44px] bg-white/10 hover:bg-white/20 active:bg-white/30 rounded-lg text-white text-xs flex items-center justify-center gap-2 transition-colors"
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -328,9 +328,10 @@ export const NowPlayingIndicator: React.FC<NowPlayingIndicatorProps> = ({ onNavi
                     )}
                 </div>
             ) : (
+                /* Collapsed state - floating button, min 48px for easy tap */
                 <button
                     onClick={toggleExpanded}
-                    className="w-12 h-12 rounded-full bg-gradient-to-r from-indigo-600 to-purple-700 shadow-lg flex items-center justify-center animate-pulse-slow"
+                    className="w-12 h-12 min-w-[48px] min-h-[48px] rounded-full bg-gradient-to-r from-indigo-600 to-purple-700 shadow-lg flex items-center justify-center animate-pulse-slow active:scale-95 transition-transform"
                     aria-label="Now playing - tap to expand"
                 >
                     <div className="flex items-end gap-0.5 h-4">
