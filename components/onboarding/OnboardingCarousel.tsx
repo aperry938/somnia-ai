@@ -15,8 +15,7 @@ const slides = [
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
             </svg>
         ),
-        // Nebula Ocean - Peaceful waves to welcome users into relaxation
-        soundscapeId: 'ocean_waves',
+        // No sound on first slide - browser requires user interaction before audio plays
     },
     {
         title: 'AI-Powered Dream Analysis',

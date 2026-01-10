@@ -1,9 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { motion, PanInfo, useMotionValue, useTransform } from 'framer-motion';
+// Temporarily disable framer-motion to debug freeze issue
+// import { motion, PanInfo, useMotionValue, useTransform } from 'framer-motion';
 import { Soundscape } from '../../types';
 import { playSleepSound, stopSleepSound, setLiveVolume } from '../../services/audioService';
 import { useAppContext } from '../../contexts/AppContext';
 import haptics from '../../services/hapticsService';
+
+// Placeholder types for disabled framer-motion
+type PanInfo = { offset: { y: number }; velocity: { y: number } };
 
 interface SoundscapeModalProps {
     sound: Soundscape;
@@ -19,9 +23,9 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
     const { volume, setVolume, logSoundActivity, activeSleepSession, ensureSleepSession, createSleepEntryForSession } = useAppContext();
     const [duration, setDuration] = useState(30);
 
-    // Swipe-to-dismiss
-    const y = useMotionValue(0);
-    const backdropOpacity = useTransform(y, [0, 200], [1, 0.3]);
+    // Swipe-to-dismiss disabled for now (framer-motion removed for debugging)
+    // const y = useMotionValue(0);
+    // const backdropOpacity = useTransform(y, [0, 200], [1, 0.3]);
 
     const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
         if (info.offset.y > 100 || info.velocity.y > 500) {
@@ -284,29 +288,16 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
     const isInPlayingView = isPlaying || isReadyToPlay || isPaused;
 
     return (
-        <motion.div
+        <div
             className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 z-50"
             onClick={handleBackdropClick}
             role="dialog"
             aria-modal="true"
             aria-labelledby="soundscape-title"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            style={{ opacity: backdropOpacity }}
         >
-            <motion.div
+            <div
                 className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-t-2xl sm:rounded-2xl p-6 w-full max-w-sm text-center relative"
                 onClick={(e) => e.stopPropagation()}
-                style={{ y }}
-                initial={{ y: '100%' }}
-                animate={{ y: 0 }}
-                exit={{ y: '100%' }}
-                transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                drag="y"
-                dragConstraints={{ top: 0 }}
-                dragElastic={{ top: 0, bottom: 0.5 }}
-                onDragEnd={handleDragEnd}
             >
                 {/* Drag indicator for mobile */}
                 <div className="flex justify-center pb-2 sm:hidden cursor-grab active:cursor-grabbing">
@@ -513,7 +504,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                         </div>
                     </>
                 )}
-            </motion.div>
-        </motion.div>
+            </div>
+        </div>
     );
 };
