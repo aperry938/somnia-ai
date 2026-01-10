@@ -83,14 +83,23 @@ export const NowPlayingIndicator: React.FC<NowPlayingIndicatorProps> = ({ onNavi
     const handleExtend = async (minutes: number) => {
         haptics.medium();
         setIsExtending(true);
-        // Re-enable persistence when extending/restarting (it was cleared when sound ended)
-        setSleepSoundPersist(true);
-        clearSoundEndedState();
-        const success = await extendSleepSound(minutes);
-        setIsExtending(false);
-        if (success) {
-            setState('playing');
-            setShowControls(false);
+        try {
+            // Re-enable persistence when extending/restarting
+            setSleepSoundPersist(true);
+            clearSoundEndedState();
+            const success = await extendSleepSound(minutes);
+            if (success) {
+                setState('playing');
+                setShowControls(false);
+            } else {
+                // Failed to extend - keep persistence but stay in current state
+                console.warn('[NowPlayingIndicator] Failed to extend sound');
+            }
+        } catch (error) {
+            console.error('[NowPlayingIndicator] Error extending sound:', error);
+            // On error, revert to checking actual state
+        } finally {
+            setIsExtending(false);
         }
     };
 

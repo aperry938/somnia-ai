@@ -1695,7 +1695,11 @@ export const stopSleepSound = (fadeDuration: number = 2) => {
         }
         currentSleepSound = null;
         wasPlayingBeforeInterruption = false;
-        persistAcrossNavigation = false; // Clear persistence flag when sound actually stops
+        // Only clear persistence if user explicitly stopped (not natural timer end)
+        // This allows the "ended" indicator to show restart options
+        if (!soundEndedNaturally) {
+            persistAcrossNavigation = false;
+        }
         // Deactivate iOS audio session after audio stops (be a good citizen)
         setAudioSessionActive(false);
     }, (fadeDuration * 1000) + 200);
@@ -1741,7 +1745,17 @@ export const setLiveBeatFrequency = (baseFreq: number, diff: number) => {
  * Check if a sleep sound is currently playing
  */
 export const isSleepSoundPlaying = (): boolean => {
-    return sleepSourceNode !== null && sleepGainNode !== null;
+    // Check for regular audio source nodes
+    if (sleepSourceNode !== null && sleepGainNode !== null) {
+        return true;
+    }
+    // Check for psychoacoustic sounds (Theta Waves, Abyssal Pressure, Silicon Forest)
+    // These use window._psychoacousticStop instead of sleepSourceNode
+    const psychoStop = (window as unknown as { _psychoacousticStop?: () => void })._psychoacousticStop;
+    if (psychoStop !== undefined) {
+        return true;
+    }
+    return false;
 };
 
 // --- BREATHING CUE FUNCTIONS ---
