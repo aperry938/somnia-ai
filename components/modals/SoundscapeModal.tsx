@@ -11,10 +11,11 @@ interface SoundscapeModalProps {
     onPlay: (soundId: string) => void;
     onStop: () => void;
     onClose: () => void;
+    onFallAsleep?: () => void; // Called when user clicks "Fall Asleep Now" - keeps sound playing
 }
 
-export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlaying, onPlay, onStop, onClose }) => {
-    const { volume, setVolume, logSoundActivity, activeSleepSession } = useAppContext();
+export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlaying, onPlay, onStop, onClose, onFallAsleep }) => {
+    const { volume, setVolume, logSoundActivity, activeSleepSession, ensureSleepSession, createSleepEntryForSession } = useAppContext();
     const [duration, setDuration] = useState(30);
 
     // Swipe-to-dismiss
@@ -36,6 +37,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
     const [isReadyToPlay, setIsReadyToPlay] = useState(false); // Show play screen but not started yet
     const pausedTimeRef = useRef<number>(0); // Track time remaining when paused
     const soundStartTimeRef = useRef<number | null>(null); // Track when sound actually started (for logging)
+    const accumulatedPlayTimeRef = useRef<number>(0); // Track accumulated play time across pause/resume cycles
 
     // No auto-preview - user must click to start preview
 
@@ -152,6 +154,9 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
 
     // Actually start the sound playback
     const handleStartSound = async () => {
+        // Auto-create sleep session if none exists - ensures sound activity gets logged
+        ensureSleepSession();
+
         const soundToPlay = { ...sound };
         if (sound.type === 'binaural') {
             soundToPlay.params = { ...sound.params, diff: beatFreq };
@@ -162,6 +167,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
         await playSleepSound(soundToPlay, remainingMinutes, volume);
 
         soundStartTimeRef.current = Date.now(); // Track for activity logging
+        accumulatedPlayTimeRef.current = 0; // Reset accumulated time for new session
 
         // Set all states together - playStartTime triggers the timer effect
         setIsReadyToPlay(false);
@@ -169,10 +175,41 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
         setPlayStartTime(Date.now());
     };
 
+    // Fall asleep with sound playing - logs activity, creates entry, keeps sound playing
+    const handleFallAsleep = () => {
+        haptics.success();
+
+        // Log the current sound activity (accumulated time + current segment)
+        let totalPlayTime = accumulatedPlayTimeRef.current;
+        if (soundStartTimeRef.current) {
+            totalPlayTime += Math.floor((Date.now() - soundStartTimeRef.current) / 1000);
+        }
+        if (totalPlayTime > 0) {
+            logSoundActivity(sound.name, totalPlayTime);
+        }
+        // Reset tracking for any continued playback
+        soundStartTimeRef.current = Date.now();
+        accumulatedPlayTimeRef.current = 0;
+
+        // Create the sleep entry with current prep data
+        createSleepEntryForSession();
+
+        // Notify parent to transition to sleeping state (but DON'T stop the sound)
+        // Parent's onFallAsleep already closes the modal and keeps selectedSound intact
+        if (onFallAsleep) {
+            onFallAsleep();
+        }
+        // Don't call onClose() here - it would clear selectedSound which we need for "Now Playing" indicator
+    };
+
     // Pause the sound and timer
     const handlePause = () => {
         stopSleepSound(0.3);
         pausedTimeRef.current = timeRemaining || 0;
+        // Accumulate play time from this segment
+        if (soundStartTimeRef.current) {
+            accumulatedPlayTimeRef.current += Math.floor((Date.now() - soundStartTimeRef.current) / 1000);
+        }
         setIsPaused(true);
         setPlayStartTime(null);
     };
@@ -188,6 +225,9 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
         const remainingMinutes = pausedTimeRef.current / 60;
         await playSleepSound(soundToPlay, remainingMinutes, volume);
 
+        // Reset start time for this segment (accumulated time preserved separately)
+        soundStartTimeRef.current = Date.now();
+
         // Set all states together - playStartTime triggers the timer effect
         setPlayDuration(pausedTimeRef.current);
         setIsReadyToPlay(false);
@@ -197,14 +237,18 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
 
     // Fully stop and close (called by X button)
     const handleStop = () => {
-        // Log sound activity if we actually played something and there's an active session
-        if (soundStartTimeRef.current && activeSleepSession) {
-            const durationSeconds = Math.floor((Date.now() - soundStartTimeRef.current) / 1000);
-            if (durationSeconds > 5) { // Only log if played for more than 5 seconds
-                logSoundActivity(sound.name, durationSeconds);
-            }
+        // Log sound activity (accumulated time + current segment)
+        let totalPlayTime = accumulatedPlayTimeRef.current;
+        if (soundStartTimeRef.current) {
+            totalPlayTime += Math.floor((Date.now() - soundStartTimeRef.current) / 1000);
+        }
+        if (totalPlayTime > 0) {
+            // Ensure session exists before logging (handles race condition from handleStartSound)
+            ensureSleepSession();
+            logSoundActivity(sound.name, totalPlayTime);
         }
         soundStartTimeRef.current = null;
+        accumulatedPlayTimeRef.current = 0;
 
         stopSleepSound();
         setIsPreviewing(false);
@@ -364,16 +408,33 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                                 Resume Sound
                             </button>
                         ) : (
-                            <button
-                                onClick={handlePause}
-                                aria-label="Pause sound"
-                                className="w-full py-4 bg-day-accent/20 dark:bg-night-accent/20 hover:bg-day-accent/30 dark:hover:bg-night-accent/30 text-day-accent dark:text-night-accent font-medium rounded-xl flex items-center justify-center gap-2 transition-colors border border-day-accent/30 dark:border-night-accent/30"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                Pause Sound
-                            </button>
+                            <div className="space-y-3">
+                                <button
+                                    onClick={handlePause}
+                                    aria-label="Pause sound"
+                                    className="w-full py-4 bg-day-accent/20 dark:bg-night-accent/20 hover:bg-day-accent/30 dark:hover:bg-night-accent/30 text-day-accent dark:text-night-accent font-medium rounded-xl flex items-center justify-center gap-2 transition-colors border border-day-accent/30 dark:border-night-accent/30"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Pause Sound
+                                </button>
+
+                                {/* Fall Asleep Now - prominent button when sound is playing */}
+                                <button
+                                    onClick={handleFallAsleep}
+                                    aria-label="Fall asleep now with sound playing"
+                                    className="w-full py-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                                    </svg>
+                                    Fall Asleep Now
+                                </button>
+                                <p className="text-xs text-center text-day-text-secondary dark:text-night-text-secondary opacity-70">
+                                    Sound will continue playing as you drift off
+                                </p>
+                            </div>
                         )}
                     </div>
                 ) : (
