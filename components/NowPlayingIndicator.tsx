@@ -84,11 +84,14 @@ export const NowPlayingIndicator: React.FC<NowPlayingIndicatorProps> = ({ onNavi
         haptics.medium();
         setIsExtending(true);
         try {
-            // Re-enable persistence when extending/restarting
-            setSleepSoundPersist(true);
-            clearSoundEndedState();
+            // DON'T clear soundEndedNaturally before extend - it's needed to allow
+            // stopSleepSound to work inside playSleepSound during restart
+            // DON'T set persistence before extend - it blocks the internal cleanup
             const success = await extendSleepSound(minutes);
             if (success) {
+                // NOW set persistence and clear ended state after successful restart
+                setSleepSoundPersist(true);
+                clearSoundEndedState();
                 setState('playing');
                 setShowControls(false);
             } else {
