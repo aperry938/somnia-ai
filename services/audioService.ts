@@ -155,6 +155,11 @@ let wasPlayingBeforeInterruption = false;
 // When true, stopSleepSound() will be ignored from page cleanup handlers
 let persistAcrossNavigation = false;
 
+// Track the last played sound for restart functionality
+let lastPlayedSound: { sound: Soundscape; volume: number } | null = null;
+// Track if sound ended naturally (timer expired) vs user stopped it
+let soundEndedNaturally = false;
+
 // NOTE: Intentionally NO visibilitychange handler here.
 // Sleep sounds MUST continue playing when the screen locks or app backgrounds.
 // iOS/Android background audio is handled via:
@@ -1381,6 +1386,10 @@ export const playSleepSound = async (sound: Soundscape, durationMinutes: number,
     // Track current sound for resuming after phone call interruption
     currentSleepSound = { sound, durationMinutes, volume };
 
+    // Store for restart functionality (persists even after sound stops)
+    lastPlayedSound = { sound, volume };
+    soundEndedNaturally = false; // Reset - sound is now playing
+
     // Configure iOS audio session for background playback BEFORE starting audio
     // This ensures sleep sounds continue playing when screen locks
     await configureAudioSession({ mixWithOthers: true, duckOthers: true });
@@ -1603,7 +1612,10 @@ export const playSleepSound = async (sound: Soundscape, durationMinutes: number,
 
     if (durationMinutes > 0) {
         // Use a gentle 30-second fade out when the timer expires naturally
-        sleepTimeout = window.setTimeout(() => stopSleepSound(30), durationMinutes * 60 * 1000);
+        sleepTimeout = window.setTimeout(() => {
+            soundEndedNaturally = true; // Mark as natural end (timer expired)
+            stopSleepSound(30);
+        }, durationMinutes * 60 * 1000);
     }
 };
 
@@ -1972,4 +1984,77 @@ export const getCurrentSleepSoundscape = (): { sound: Soundscape; volume: number
         sound: currentSleepSound.sound,
         volume: currentSleepSound.volume
     };
+};
+
+/**
+ * Check if sound ended naturally (timer expired) vs user stopped it
+ */
+export const didSoundEndNaturally = (): boolean => {
+    return soundEndedNaturally && !isSleepSoundPlaying();
+};
+
+/**
+ * Get the last played sound (for restart functionality)
+ * Available even after sound stops
+ */
+export const getLastPlayedSound = (): { sound: Soundscape; volume: number } | null => {
+    return lastPlayedSound;
+};
+
+/**
+ * Check if there's a recent sound session that can be restarted
+ * Returns true if sound ended naturally and user hasn't started a new session
+ */
+export const canRestartSound = (): boolean => {
+    return lastPlayedSound !== null && !isSleepSoundPlaying();
+};
+
+/**
+ * Restart the last played sound with a new duration
+ */
+export const restartLastSound = async (durationMinutes: number): Promise<boolean> => {
+    if (!lastPlayedSound) {
+        logger.warn('[AudioService] No sound to restart');
+        return false;
+    }
+
+    logger.log('[AudioService] Restarting sound:', lastPlayedSound.sound.name, 'for', durationMinutes, 'minutes');
+    await playSleepSound(lastPlayedSound.sound, durationMinutes, lastPlayedSound.volume);
+    return true;
+};
+
+/**
+ * Extend the currently playing sound by adding more time
+ * If sound has stopped, restarts it with the specified duration
+ */
+export const extendSleepSound = async (additionalMinutes: number): Promise<boolean> => {
+    if (isSleepSoundPlaying() && currentSleepSound) {
+        // Sound is still playing - clear old timeout and set new one
+        if (sleepTimeout) {
+            clearTimeout(sleepTimeout);
+            sleepTimeout = null;
+        }
+
+        // Set new timeout with additional time
+        sleepTimeout = window.setTimeout(() => {
+            soundEndedNaturally = true;
+            stopSleepSound(30);
+        }, additionalMinutes * 60 * 1000);
+
+        logger.log('[AudioService] Extended sound by', additionalMinutes, 'minutes');
+        return true;
+    } else if (lastPlayedSound) {
+        // Sound stopped - restart it with the specified duration
+        return restartLastSound(additionalMinutes);
+    }
+
+    return false;
+};
+
+/**
+ * Clear the "ended naturally" state (call when user explicitly dismisses)
+ */
+export const clearSoundEndedState = () => {
+    soundEndedNaturally = false;
+    // Don't clear lastPlayedSound - user might still want to restart
 };
