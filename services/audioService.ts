@@ -1,6 +1,14 @@
 import { Soundscape } from '../types';
 import { logger } from './logger';
 import { configureAudioSession, setAudioSessionActive, setupInterruptionHandling } from './audioSessionService';
+import {
+    playAbyssalPressure,
+    playSiliconForest,
+    setPsychoacousticVolume,
+    stopPsychoacoustic,
+    playCyberDawnAlarm,
+    playSolarAlarm
+} from './psychoacousticService';
 
 // ============================================================
 // TYPES
@@ -359,6 +367,14 @@ export const playAlarmBySound = (soundId: string = 'somnia') => {
             logger.log('[playAlarmBySound] Playing Bamboo alarm');
             playBambooAlarm();
             break;
+        case 'cyber-dawn':
+            logger.log('[playAlarmBySound] Playing Cyber-Dawn alarm');
+            playCyberDawnAlarmWrapper();
+            break;
+        case 'solar-ascent':
+            logger.log('[playAlarmBySound] Playing Solar Ascent alarm');
+            playSolarAlarmWrapper();
+            break;
         default:
             logger.log('[playAlarmBySound] Unknown soundId, defaulting to Somnia:', soundId);
             playSomniaAlarm();
@@ -578,6 +594,51 @@ const playBambooAlarm = () => {
     };
 };
 
+// Track psychoacoustic alarm state for cleanup
+let psychoacousticAlarmStop: (() => void) | null = null;
+
+/**
+ * CYBER-DAWN Alarm - FM Synthesis procedural birds
+ * Wrapper that integrates with the audio service cleanup system
+ */
+const playCyberDawnAlarmWrapper = () => {
+    logger.log('[playCyberDawnAlarm] Starting Cyber-Dawn alarm');
+    stopSleepSound();
+    if (alarmOscillator) stopAlarmSound();
+    cleanupProceduralAlarm();
+    cleanupPsychoacousticAlarm();
+
+    const handle = playCyberDawnAlarm(0.7);
+    psychoacousticAlarmStop = handle.stop;
+    logger.log('[playCyberDawnAlarm] Started - FM synthesis birds awakening');
+};
+
+/**
+ * SOLAR ASCENT Alarm - Additive synthesis harmonic blooming
+ * Wrapper that integrates with the audio service cleanup system
+ */
+const playSolarAlarmWrapper = () => {
+    logger.log('[playSolarAlarm] Starting Solar Ascent alarm');
+    stopSleepSound();
+    if (alarmOscillator) stopAlarmSound();
+    cleanupProceduralAlarm();
+    cleanupPsychoacousticAlarm();
+
+    const handle = playSolarAlarm(0.7);
+    psychoacousticAlarmStop = handle.stop;
+    logger.log('[playSolarAlarm] Started - Harmonic blooming sunrise');
+};
+
+/**
+ * Cleanup psychoacoustic alarm resources
+ */
+const cleanupPsychoacousticAlarm = () => {
+    if (psychoacousticAlarmStop) {
+        psychoacousticAlarmStop();
+        psychoacousticAlarmStop = null;
+    }
+};
+
 /**
  * Cleanup procedural alarm resources
  */
@@ -636,6 +697,9 @@ export const stopAlarmSound = () => {
 
     // Stop procedural alarms (Prism, Aether, Bamboo)
     cleanupProceduralAlarm();
+
+    // Stop psychoacoustic alarms (Cyber-Dawn, Solar Ascent)
+    cleanupPsychoacousticAlarm();
 };
 
 // Preview alarm state
@@ -769,6 +833,34 @@ export const playAlarmPreview = (soundId: string) => {
                 interval = Math.max(0.4, interval * 0.92);
                 if (interval <= 0.4) interval = 0.7; // Reset wave
             }
+            break;
+        }
+
+        case 'cyber-dawn': {
+            // FM synthesis bird chirps preview
+            previewOscillator.type = 'sine';
+            previewOscillator.frequency.setValueAtTime(2500, now);
+            // Create bird-like chirp pattern
+            for (let i = 0; i < 12; i++) {
+                const t = now + i * 1.5;
+                const pitch = 2000 + Math.random() * 2000;
+                previewOscillator.frequency.setValueAtTime(pitch, t);
+                previewGainNode.gain.setValueAtTime(0.25, t);
+                previewGainNode.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+            }
+            break;
+        }
+
+        case 'solar-ascent': {
+            // Additive synthesis harmonic blooming preview
+            previewOscillator.type = 'sine';
+            const fundamental = 261.63; // C4
+            // Simple harmonic sweep simulation
+            previewOscillator.frequency.setValueAtTime(fundamental, now);
+            previewGainNode.gain.setValueAtTime(0.15, now);
+            previewGainNode.gain.linearRampToValueAtTime(0.4, now + 10);
+            // Add octave sweep
+            previewOscillator.frequency.linearRampToValueAtTime(fundamental * 2, now + 20);
             break;
         }
 
@@ -1458,6 +1550,32 @@ export const playSleepSound = async (sound: Soundscape, durationMinutes: number,
 
             sleepSourceNode = rumble;
         }
+    } else if (sound.type === 'psychoacoustic') {
+        // Psychoacoustic Environments - Advanced DSP Synthesis from psychoacousticService
+        const psychoType = sound.params.type;
+
+        // Stop any regular audio setup - psychoacoustic uses its own audio context management
+        if (sleepGainNode) {
+            sleepGainNode.disconnect();
+            sleepGainNode = null;
+        }
+        if (sleepCompressor) {
+            sleepCompressor.disconnect();
+            sleepCompressor = null;
+        }
+
+        if (psychoType === 'abyssal_pressure') {
+            // Deep Sleep: Brown noise + 40Hz gamma pulse
+            const handle = playAbyssalPressure(volume);
+            // Store cleanup function for later
+            (window as unknown as { _psychoacousticStop?: () => void })._psychoacousticStop = handle.stop;
+            logger.log('[playSleepSound] Started Abyssal Pressure psychoacoustic environment');
+        } else if (psychoType === 'silicon_forest') {
+            // Anxiety Clearing: Comb-filtered metallic wind
+            const handle = playSiliconForest(volume);
+            (window as unknown as { _psychoacousticStop?: () => void })._psychoacousticStop = handle.stop;
+            logger.log('[playSleepSound] Started Silicon Forest psychoacoustic environment');
+        }
     }
 
     if (durationMinutes > 0) {
@@ -1483,6 +1601,14 @@ export const stopSleepSound = (fadeDuration: number = 2) => {
     if (sparkInterval) {
         clearTimeout(sparkInterval);
         sparkInterval = null;
+    }
+
+    // Stop psychoacoustic sounds
+    stopPsychoacoustic();
+    const psychoStop = (window as unknown as { _psychoacousticStop?: () => void })._psychoacousticStop;
+    if (psychoStop) {
+        psychoStop();
+        (window as unknown as { _psychoacousticStop?: () => void })._psychoacousticStop = undefined;
     }
 
     const context = audioContext;
@@ -1601,6 +1727,8 @@ export const setLiveVolume = (volume: number) => {
         // Smooth transition to new volume
         sleepGainNode.gain.setTargetAtTime(volume, audioContext.currentTime, 0.1);
     }
+    // Also update psychoacoustic volume if active
+    setPsychoacousticVolume(volume);
 };
 
 /**

@@ -126,18 +126,24 @@ export interface RampParams {
     base: number; // Base carrier frequency (e.g., 110Hz)
 }
 
+export interface PsychoacousticParams {
+    type: 'abyssal_pressure' | 'silicon_forest';
+}
+
 export type Soundscape =
     | { id: string; name: string; description: string; icon: ReactElement; type: 'noise'; params: NoiseParams; isPremium?: boolean }
     | { id: string; name: string; description: string; icon: ReactElement; type: 'binaural'; params: BinauralParams; isPremium?: boolean }
     | { id: string; name: string; description: string; icon: ReactElement; type: 'file'; params: FileParams; isPremium?: boolean }
     | { id: string; name: string; description: string; icon: ReactElement; type: 'synthetic'; params: SyntheticParams; isPremium?: boolean }
-    | { id: string; name: string; description: string; icon: ReactElement; type: 'ramp'; params: RampParams; isPremium?: boolean };
+    | { id: string; name: string; description: string; icon: ReactElement; type: 'ramp'; params: RampParams; isPremium?: boolean }
+    | { id: string; name: string; description: string; icon: ReactElement; type: 'psychoacoustic'; params: PsychoacousticParams; isPremium?: boolean };
 
 export interface GuidedRelaxation {
     id: string;
     name: string;
     description: string;
     icon: ReactElement;
+    isPremium?: boolean;
 }
 
 export interface Achievement {
