@@ -322,12 +322,13 @@ export function playCyberDawnAlarm(volume: number = 0.7): { stop: () => void } {
     let isPlaying = true;
     const t = ctx.currentTime;
 
-    // Master gain with fade-in
+    // Master gain with gentle progressive build
     masterGain = ctx.createGain();
     masterGain.gain.setValueAtTime(0, t);
-    masterGain.gain.linearRampToValueAtTime(volume * 0.3, t + 2); // Start at 30%
-    masterGain.gain.linearRampToValueAtTime(volume * 0.6, t + 15); // Build to 60%
-    masterGain.gain.linearRampToValueAtTime(volume, t + 30); // Full volume by 30s
+    masterGain.gain.linearRampToValueAtTime(volume * 0.25, t + 3);  // Start at 25%
+    masterGain.gain.linearRampToValueAtTime(volume * 0.5, t + 30);  // 50% at 30s
+    masterGain.gain.linearRampToValueAtTime(volume * 0.75, t + 60); // 75% at 1 min
+    masterGain.gain.linearRampToValueAtTime(volume, t + 90);        // Full at 1.5 min
     masterGain.connect(ctx.destination);
 
     // === WARM BED: Filtered pink noise with gentle pulse ===
@@ -355,13 +356,13 @@ export function playCyberDawnAlarm(volume: number = 0.7): { stop: () => void } {
     bedFilter.Q.value = 0.7;
 
     const bedGain = ctx.createGain();
-    bedGain.gain.value = 0.15;
+    bedGain.gain.value = 0.12;
 
     // Gentle LFO pulse on the bed
     const bedLfo = ctx.createOscillator();
     const bedLfoGain = ctx.createGain();
-    bedLfo.frequency.value = 0.5; // Slow breathing pulse
-    bedLfoGain.gain.value = 0.05;
+    bedLfo.frequency.value = 0.3; // Slow breathing pulse
+    bedLfoGain.gain.value = 0.03;
     bedLfo.connect(bedLfoGain);
     bedLfoGain.connect(bedGain.gain);
 
@@ -373,74 +374,78 @@ export function playCyberDawnAlarm(volume: number = 0.7): { stop: () => void } {
 
     // === BIRD SPECIES DEFINITIONS ===
     const species = [
-        { freqRange: [2500, 3500], modRatio: 2.4, name: 'robin' },      // High, metallic
-        { freqRange: [1800, 2400], modRatio: 1.5, name: 'sparrow' },    // Mid, mellow
-        { freqRange: [3000, 4500], modRatio: 3.0, name: 'finch' },      // Very high, bright
-        { freqRange: [1200, 1800], modRatio: 2.0, name: 'thrush' },     // Lower, rich
+        { freqRange: [2500, 3500], modRatio: 2.4, name: 'robin' },
+        { freqRange: [1800, 2400], modRatio: 1.5, name: 'sparrow' },
+        { freqRange: [3000, 4500], modRatio: 3.0, name: 'finch' },
+        { freqRange: [1200, 1800], modRatio: 2.0, name: 'thrush' },
     ];
 
-    let chirpDelay = 1200; // Start with 1.2s between chirps
-    let birdCount = 1; // Start with one bird type
+    let birdCount = 1;
 
-    function chirp() {
-        if (!isPlaying || !masterGain) return;
-        const now = ctx.currentTime;
+    // Create independent voice with its own timing
+    function createVoice(voiceId: number) {
+        let voiceDelay = 2000 + voiceId * 500; // Each voice starts slower, staggers
+        const minDelay = 400 + voiceId * 100;   // Each voice has different min speed
 
-        // Pick a random species from available ones
-        const speciesIndex = Math.floor(Math.random() * birdCount);
-        const bird = species[speciesIndex];
+        function chirp(isFollowUp: boolean = false) {
+            if (!isPlaying || !masterGain) return;
+            const now = ctx.currentTime;
 
-        // FM Synthesis Bird Call
-        const carrier = ctx.createOscillator();
-        const modulator = ctx.createOscillator();
-        const modGain = ctx.createGain();
-        const env = ctx.createGain();
+            const speciesIndex = Math.floor(Math.random() * birdCount);
+            const bird = species[speciesIndex];
 
-        const baseFreq = bird.freqRange[0] + Math.random() * (bird.freqRange[1] - bird.freqRange[0]);
-        carrier.frequency.value = baseFreq;
-        modulator.frequency.value = baseFreq * bird.modRatio;
+            const carrier = ctx.createOscillator();
+            const modulator = ctx.createOscillator();
+            const modGain = ctx.createGain();
+            const env = ctx.createGain();
 
-        // Pitch sweep for more interesting chirp
-        carrier.frequency.setValueAtTime(baseFreq, now);
-        carrier.frequency.exponentialRampToValueAtTime(baseFreq * (1.1 + Math.random() * 0.3), now + 0.08);
-        carrier.frequency.exponentialRampToValueAtTime(baseFreq * 0.9, now + 0.2);
+            const baseFreq = bird.freqRange[0] + Math.random() * (bird.freqRange[1] - bird.freqRange[0]);
+            carrier.frequency.value = baseFreq;
+            modulator.frequency.value = baseFreq * bird.modRatio;
 
-        modGain.gain.value = 600 + Math.random() * 600;
+            // Pitch sweep
+            carrier.frequency.setValueAtTime(baseFreq, now);
+            carrier.frequency.exponentialRampToValueAtTime(baseFreq * (1.1 + Math.random() * 0.2), now + 0.06);
+            carrier.frequency.exponentialRampToValueAtTime(baseFreq * 0.95, now + 0.15);
 
-        // Louder, more prominent envelope
-        env.gain.setValueAtTime(0, now);
-        env.gain.linearRampToValueAtTime(0.5 + Math.random() * 0.2, now + 0.02);
-        env.gain.setValueAtTime(0.5 + Math.random() * 0.2, now + 0.06);
-        env.gain.exponentialRampToValueAtTime(0.001, now + 0.15 + Math.random() * 0.1);
+            modGain.gain.value = 500 + Math.random() * 400;
 
-        modulator.connect(modGain);
-        modGain.connect(carrier.frequency);
-        carrier.connect(env);
+            // Envelope - moderate volume
+            env.gain.setValueAtTime(0, now);
+            env.gain.linearRampToValueAtTime(0.35 + Math.random() * 0.15, now + 0.015);
+            env.gain.setValueAtTime(0.35 + Math.random() * 0.15, now + 0.05);
+            env.gain.exponentialRampToValueAtTime(0.001, now + 0.12 + Math.random() * 0.08);
 
-        // Stereo placement
-        const panner = ctx.createStereoPanner();
-        panner.pan.value = (Math.random() * 2) - 1;
-        env.connect(panner);
-        panner.connect(masterGain);
+            modulator.connect(modGain);
+            modGain.connect(carrier.frequency);
+            carrier.connect(env);
 
-        carrier.start(now);
-        modulator.start(now);
-        carrier.stop(now + 0.4);
-        modulator.stop(now + 0.4);
+            const panner = ctx.createStereoPanner();
+            panner.pan.value = (Math.random() * 2) - 1;
+            env.connect(panner);
+            panner.connect(masterGain);
 
-        // Sometimes do a double/triple chirp
-        if (Math.random() > 0.6) {
-            setTimeout(() => {
-                if (isPlaying) chirp();
-            }, 80 + Math.random() * 60);
+            carrier.start(now);
+            modulator.start(now);
+            carrier.stop(now + 0.3);
+            modulator.stop(now + 0.3);
+
+            // Double chirp - but DON'T let it schedule more chirps
+            if (!isFollowUp && Math.random() > 0.7) {
+                setTimeout(() => {
+                    if (isPlaying) chirp(true); // Mark as follow-up
+                }, 60 + Math.random() * 40);
+            }
+
+            // Schedule next main chirp (only if this wasn't a follow-up)
+            if (!isFollowUp && isPlaying) {
+                voiceDelay = Math.max(minDelay, voiceDelay * 0.992); // Slow decay
+                const nextDelay = voiceDelay * (0.8 + Math.random() * 0.4);
+                setTimeout(() => chirp(false), nextDelay);
+            }
         }
 
-        // Schedule next chirp - progressively faster
-        if (isPlaying) {
-            chirpDelay = Math.max(200, chirpDelay * 0.97); // Get faster over time, min 200ms
-            const nextDelay = chirpDelay * (0.7 + Math.random() * 0.6);
-            setTimeout(chirp, nextDelay);
-        }
+        return chirp;
     }
 
     // Gradually introduce more bird species
@@ -449,20 +454,27 @@ export function playCyberDawnAlarm(volume: number = 0.7): { stop: () => void } {
         if (birdCount < species.length) {
             birdCount++;
         }
-    }, 8000); // New species every 8 seconds
+    }, 15000); // New species every 15 seconds
 
-    // Start first chirp
-    setTimeout(chirp, 800);
+    // Start voices staggered
+    const voice1 = createVoice(0);
+    setTimeout(() => voice1(false), 1000);
 
-    // Add a second "voice" after 5 seconds for density
+    // Second voice after 10 seconds
     setTimeout(() => {
-        if (isPlaying) chirp();
-    }, 5000);
+        if (isPlaying) {
+            const voice2 = createVoice(1);
+            voice2(false);
+        }
+    }, 10000);
 
-    // Add a third voice after 15 seconds
+    // Third voice after 30 seconds
     setTimeout(() => {
-        if (isPlaying) chirp();
-    }, 15000);
+        if (isPlaying) {
+            const voice3 = createVoice(2);
+            voice3(false);
+        }
+    }, 30000);
 
     const stopFn = () => {
         isPlaying = false;

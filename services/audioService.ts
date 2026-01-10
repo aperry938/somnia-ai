@@ -865,23 +865,30 @@ export const playAlarmPreview = (soundId: string) => {
         }
 
         case 'solar-ascent': {
-            // Harmonic sunrise with chimes preview - louder with rhythmic bells
+            // Harmonic pad with shimmering chimes - matches actual alarm character
             previewOscillator.type = 'sine';
             const fundamental = 261.63; // C4
             const chimeFreqs = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
 
-            // Start with pad
+            // Warm pad foundation with tremolo simulation
             previewOscillator.frequency.setValueAtTime(fundamental, now);
-            previewGainNode.gain.setValueAtTime(0.4, now); // Start louder
+            previewGainNode.gain.setValueAtTime(0.3, now);
 
-            // Rhythmic chime pattern overlaid
-            for (let i = 0; i < 15; i++) {
-                const t = now + i * 1.2;
+            // Simulate tremolo + chime pattern (gentler, matches actual alarm)
+            for (let i = 0; i < 20; i++) {
+                const t = now + i * 0.9; // Chimes ~every 900ms
                 const chimeFreq = chimeFreqs[i % chimeFreqs.length];
+
+                // Tremolo shimmer on pad
+                previewGainNode.gain.setValueAtTime(0.25 + (i % 2) * 0.08, t);
+
+                // Chime accent
                 previewOscillator.frequency.setValueAtTime(chimeFreq, t);
-                previewGainNode.gain.setValueAtTime(0.6, t); // Chime hit
-                previewGainNode.gain.exponentialRampToValueAtTime(0.3, t + 0.3);
-                previewOscillator.frequency.setValueAtTime(fundamental * (1 + i * 0.1), t + 0.4); // Return to pad
+                previewGainNode.gain.linearRampToValueAtTime(0.45, t + 0.01);
+                previewGainNode.gain.exponentialRampToValueAtTime(0.25, t + 0.25);
+
+                // Return to rising pad
+                previewOscillator.frequency.setValueAtTime(fundamental * (1 + i * 0.02), t + 0.4);
             }
             break;
         }
