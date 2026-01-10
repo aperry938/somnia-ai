@@ -20,11 +20,9 @@ const formatRepeatText = (days: number[]): string => {
 const getSoundName = (soundId: string | undefined): string => {
     const soundMap: Record<string, string> = {
         'somnia': 'Somnia',
-        'gentle': 'Gentle',
         'classic': 'Classic',
         'prism': 'Prism',
         'aether': 'Aether',
-        'bamboo': 'Bamboo',
         'cyber-dawn': 'Cyber-Dawn',
         'solar-ascent': 'Solar Ascent'
     };
@@ -387,9 +385,7 @@ const ALARM_SOUNDS = [
     { id: 'classic', name: 'Classic', description: 'Traditional alarm beeps' },
     { id: 'aether', name: 'Aether', description: 'Cinematic sunrise drone' },
     { id: 'somnia', name: 'Somnia', description: 'Very slow crescendo tone' },
-    { id: 'gentle', name: 'Gentle', description: 'Soft pulsing wake-up' },
     { id: 'prism', name: 'Prism', description: 'Ethereal glass chimes' },
-    { id: 'bamboo', name: 'Bamboo', description: 'Hollow wood pulse' },
     { id: 'cyber-dawn', name: 'Cyber-Dawn', description: 'FM synthesis bird chorus', isPremium: true },
     { id: 'solar-ascent', name: 'Solar Ascent', description: 'Harmonic sunrise bloom', isPremium: true },
 ];

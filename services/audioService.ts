@@ -349,10 +349,6 @@ export const playAlarmBySound = (soundId: string = 'somnia') => {
             logger.log('[playAlarmBySound] Playing Progressive alarm');
             playProgressiveAlarm();
             break;
-        case 'gentle':
-            logger.log('[playAlarmBySound] Playing Gentle Rise alarm');
-            playGentleAlarm();
-            break;
         case 'chimes':
             logger.log('[playAlarmBySound] Playing Chimes alarm');
             playChimesAlarm();
@@ -372,10 +368,6 @@ export const playAlarmBySound = (soundId: string = 'somnia') => {
         case 'aether':
             logger.log('[playAlarmBySound] Playing Aether alarm');
             playAetherAlarm();
-            break;
-        case 'bamboo':
-            logger.log('[playAlarmBySound] Playing Bamboo alarm');
-            playBambooAlarm();
             break;
         case 'cyber-dawn':
             if (!isPremium()) {
@@ -769,20 +761,6 @@ export const playAlarmPreview = (soundId: string) => {
             previewOscillator.frequency.exponentialRampToValueAtTime(500, now + 45);
             break;
 
-        case 'gentle':
-            // Start at pulse 8 (25% of 30 pulses), continue for remaining 22 pulses
-            previewOscillator.type = 'sine';
-            previewOscillator.frequency.setValueAtTime(220, now);
-            for (let i = 0; i < 22; i++) {
-                const t = now + i * 2;
-                const progress = (i + 8) / 30; // Start from pulse 8
-                const minVol = 0.05 + progress * 0.45;
-                const maxVol = 0.15 + progress * 0.85;
-                previewGainNode.gain.linearRampToValueAtTime(maxVol, t + 1);
-                previewGainNode.gain.linearRampToValueAtTime(minVol, t + 2);
-            }
-            break;
-
         case 'classic':
             // Start at beep 15 (25% of 60), continue for remaining 45 beeps
             previewOscillator.type = 'square';
@@ -827,34 +805,6 @@ export const playAlarmPreview = (soundId: string) => {
             previewOscillator.frequency.exponentialRampToValueAtTime(220, now + 45);
             previewGainNode.gain.linearRampToValueAtTime(0.9, now + 45);
             break;
-
-        case 'bamboo': {
-            // Start master at 0.44 (25% of 0.25→1.0), crescendo to 1.0 over 45s - LOUDER
-            previewOscillator.type = 'sine';
-            previewOscillator.frequency.setValueAtTime(150, now);
-            const bambooMasterGain = ctx.createGain();
-            bambooMasterGain.gain.setValueAtTime(0.44, now);
-            bambooMasterGain.gain.linearRampToValueAtTime(1.0, now + 45);
-            previewOscillator.disconnect();
-            previewOscillator.connect(previewGainNode);
-            previewGainNode.disconnect();
-            previewGainNode.connect(bambooMasterGain);
-            bambooMasterGain.connect(ctx.destination);
-            // Schedule accelerating pulses for 45s - LOUD pulses
-            let baseBeat = 0;
-            let interval = 0.7; // Start faster (as if 15s in)
-            while (baseBeat < 45) {
-                previewGainNode.gain.setValueAtTime(0.05, now + baseBeat);
-                previewGainNode.gain.linearRampToValueAtTime(1.0, now + baseBeat + 0.02);
-                previewOscillator.frequency.setValueAtTime(300, now + baseBeat);
-                previewGainNode.gain.exponentialRampToValueAtTime(0.15, now + baseBeat + 0.2);
-                previewOscillator.frequency.exponentialRampToValueAtTime(150, now + baseBeat + 0.2);
-                baseBeat += interval;
-                interval = Math.max(0.4, interval * 0.92);
-                if (interval <= 0.4) interval = 0.7; // Reset wave
-            }
-            break;
-        }
 
         case 'cyber-dawn': {
             // Use actual Cyber-Dawn alarm for preview (authentic sound)
