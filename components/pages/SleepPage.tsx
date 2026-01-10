@@ -103,8 +103,14 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
 
 
     const openSoundscapeModal = (sound: Soundscape) => {
+        console.log('[SleepPage] openSoundscapeModal called with:', sound.name);
+        console.time('[SleepPage] setSelectedSound');
         setSelectedSound(sound);
+        console.timeEnd('[SleepPage] setSelectedSound');
+        console.time('[SleepPage] setActiveModal');
         setActiveModal('soundscape');
+        console.timeEnd('[SleepPage] setActiveModal');
+        console.log('[SleepPage] openSoundscapeModal finished');
     };
 
     const openRelaxationModal = (relaxation: GuidedRelaxation) => {
@@ -729,18 +735,38 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                     </div >
                 )
             }
-            {
-                activeModal === 'soundscape' && selectedSound && (
-                    <SoundscapeModal
-                        sound={selectedSound}
-                        onClose={closeModal}
-                        onPlay={handlePlaySound}
-                        onStop={handleStopSound}
-                        isPlaying={playingSoundId === selectedSound.id}
-                        onFallAsleep={handleFallAsleep}
-                    />
-                )
-            }
+            {activeModal === 'soundscape' && selectedSound && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white dark:bg-gray-800 p-8 rounded-xl">
+                        <h2 className="text-xl font-bold mb-4">Test Modal</h2>
+                        <p>Soundscape: {selectedSound.name}</p>
+                        <button
+                            onClick={closeModal}
+                            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
+            )}
+            {/* Original SoundscapeModal temporarily disabled for debugging
+            {(() => {
+                if (activeModal === 'soundscape' && selectedSound) {
+                    console.log('[SleepPage] About to render SoundscapeModal for:', selectedSound.name);
+                    return (
+                        <SoundscapeModal
+                            sound={selectedSound}
+                            onClose={closeModal}
+                            onPlay={handlePlaySound}
+                            onStop={handleStopSound}
+                            isPlaying={playingSoundId === selectedSound.id}
+                            onFallAsleep={handleFallAsleep}
+                        />
+                    );
+                }
+                return null;
+            })()}
+            */}
             {
                 activeModal === 'relaxation' && selectedRelaxation && (
                     <GuidedRelaxationModal
