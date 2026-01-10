@@ -15,6 +15,8 @@ const slides = [
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
             </svg>
         ),
+        // Nebula Ocean - Peaceful waves to welcome users into relaxation
+        soundscapeId: 'ocean_waves',
     },
     {
         title: 'AI-Powered Dream Analysis',
@@ -24,6 +26,8 @@ const slides = [
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
             </svg>
         ),
+        // Theta Waves - The "twilight" frequency for dreams and visualization
+        soundscapeId: 'theta_waves',
     },
     {
         title: 'Science-Backed Sleep Tools',
@@ -33,6 +37,8 @@ const slides = [
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
             </svg>
         ),
+        // Abyssal Pressure - Advanced psychoacoustic DSP with 40Hz gamma pulse
+        soundscapeId: 'abyssal_pressure',
     },
     {
         title: 'Ready to Begin?',
@@ -42,6 +48,8 @@ const slides = [
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
         ),
+        // Delta Waves - Deep restorative sleep frequency, ready to rest
+        soundscapeId: 'delta_waves',
         isFinal: true,
     },
 ];
@@ -49,24 +57,26 @@ const slides = [
 export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({ onComplete }) => {
     const [currentSlide, setCurrentSlide] = useState(0);
 
-    // Play theta wave preview on "Science-Backed Sleep Tools" slide
+    // Play premium soundscape preview for each slide - gives free users a taste of PRO features
     useEffect(() => {
-        if (currentSlide === 2) {
+        const currentSoundscapeId = slides[currentSlide]?.soundscapeId;
+
+        if (currentSoundscapeId) {
             // Initialize audio context (requires user gesture - carousel navigation counts)
             initAudioContext();
 
-            // Find the theta waves soundscape
-            const thetaSound = SOUNDSCAPES.find(s => s.id === 'theta_waves');
-            if (thetaSound) {
+            // Find the soundscape for this slide
+            const soundscape = SOUNDSCAPES.find(s => s.id === currentSoundscapeId);
+            if (soundscape) {
                 // Play at 15% volume for subtle preview, 1 minute duration
-                playSleepSound(thetaSound, 1, 0.15);
+                playSleepSound(soundscape, 1, 0.15);
             }
         }
 
         // Cleanup when leaving the slide or unmounting
         return () => {
-            if (currentSlide === 2) {
-                stopSleepSound(1); // 1 second fade out
+            if (currentSoundscapeId) {
+                stopSleepSound(0.5); // 0.5 second fade out for smooth transitions
             }
         };
     }, [currentSlide]);
