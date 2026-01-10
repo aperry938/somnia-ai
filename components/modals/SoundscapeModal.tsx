@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 // Temporarily disable framer-motion to debug freeze issue
 // import { motion, PanInfo, useMotionValue, useTransform } from 'framer-motion';
 import { Soundscape } from '../../types';
-import { playSleepSound, stopSleepSound, setLiveVolume } from '../../services/audioService';
+import { playSleepSound, stopSleepSound, setLiveVolume, shouldPersistSleepSound, isSleepSoundPlaying } from '../../services/audioService';
 import { useAppContext } from '../../contexts/AppContext';
 import haptics from '../../services/hapticsService';
 
@@ -45,14 +45,25 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
     const accumulatedPlayTimeRef = useRef<number>(0); // Track accumulated play time across pause/resume cycles
     const timerStartRef = useRef<number | null>(null); // Track timer start time (avoids closure issues)
     const timerDurationRef = useRef<number>(0); // Track timer duration (avoids closure issues)
+    const skipCleanupRef = useRef<boolean>(false); // Skip cleanup when transitioning to full play or fall asleep
 
     // No auto-preview - user must click to start preview
 
-    // Cleanup preview on unmount (if not transitioning to full play)
+    // Cleanup on unmount - carefully handle different scenarios
     useEffect(() => {
         return () => {
-            // Only stop if we're previewing, not if transitioning to full play
-            if (isPreviewing && !isPlaying) {
+            // NEVER stop if user clicked "Fall Asleep Now" (ref set, or persistence enabled)
+            if (skipCleanupRef.current || shouldPersistSleepSound()) {
+                return;
+            }
+            // If sound is actively playing, don't stop it
+            // This handles stale closure during preview→play transition
+            // isSleepSoundPlaying() checks CURRENT state, not captured
+            if (isSleepSoundPlaying()) {
+                return;
+            }
+            // If we were previewing and sound isn't playing, try to stop (cleanup)
+            if (isPreviewing) {
                 stopSleepSound(0.3);
             }
         };
@@ -216,6 +227,9 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
     const handleFallAsleep = () => {
         haptics.success();
 
+        // CRITICAL: Set skip flag BEFORE any state changes that might trigger cleanup
+        skipCleanupRef.current = true;
+
         // Log the current sound activity (accumulated time + current segment)
         let totalPlayTime = accumulatedPlayTimeRef.current;
         if (soundStartTimeRef.current) {
@@ -232,7 +246,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
         createSleepEntryForSession();
 
         // Notify parent to transition to sleeping state (but DON'T stop the sound)
-        // Parent's onFallAsleep already closes the modal and keeps selectedSound intact
+        // Parent's onFallAsleep sets persistence and closes the modal
         if (onFallAsleep) {
             onFallAsleep();
         }
