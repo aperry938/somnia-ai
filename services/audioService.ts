@@ -848,30 +848,41 @@ export const playAlarmPreview = (soundId: string) => {
         }
 
         case 'cyber-dawn': {
-            // FM synthesis bird chirps preview
+            // FM synthesis dawn chorus preview - dense bird chirps with warm bed
             previewOscillator.type = 'sine';
             previewOscillator.frequency.setValueAtTime(2500, now);
-            // Create bird-like chirp pattern
-            for (let i = 0; i < 12; i++) {
-                const t = now + i * 1.5;
-                const pitch = 2000 + Math.random() * 2000;
+            // Simulate building chorus - frequent chirps with pitch sweeps
+            for (let i = 0; i < 30; i++) {
+                const t = now + i * 0.4; // Much denser chirp pattern
+                const pitch = 1800 + Math.random() * 2500;
                 previewOscillator.frequency.setValueAtTime(pitch, t);
-                previewGainNode.gain.setValueAtTime(0.25, t);
-                previewGainNode.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+                previewOscillator.frequency.exponentialRampToValueAtTime(pitch * 1.2, t + 0.05);
+                previewOscillator.frequency.exponentialRampToValueAtTime(pitch * 0.9, t + 0.12);
+                previewGainNode.gain.setValueAtTime(0.5, t); // Louder
+                previewGainNode.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
             }
             break;
         }
 
         case 'solar-ascent': {
-            // Additive synthesis harmonic blooming preview
+            // Harmonic sunrise with chimes preview - louder with rhythmic bells
             previewOscillator.type = 'sine';
             const fundamental = 261.63; // C4
-            // Simple harmonic sweep simulation
+            const chimeFreqs = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
+
+            // Start with pad
             previewOscillator.frequency.setValueAtTime(fundamental, now);
-            previewGainNode.gain.setValueAtTime(0.15, now);
-            previewGainNode.gain.linearRampToValueAtTime(0.4, now + 10);
-            // Add octave sweep
-            previewOscillator.frequency.linearRampToValueAtTime(fundamental * 2, now + 20);
+            previewGainNode.gain.setValueAtTime(0.4, now); // Start louder
+
+            // Rhythmic chime pattern overlaid
+            for (let i = 0; i < 15; i++) {
+                const t = now + i * 1.2;
+                const chimeFreq = chimeFreqs[i % chimeFreqs.length];
+                previewOscillator.frequency.setValueAtTime(chimeFreq, t);
+                previewGainNode.gain.setValueAtTime(0.6, t); // Chime hit
+                previewGainNode.gain.exponentialRampToValueAtTime(0.3, t + 0.3);
+                previewOscillator.frequency.setValueAtTime(fundamental * (1 + i * 0.1), t + 0.4); // Return to pad
+            }
             break;
         }
 

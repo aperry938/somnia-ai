@@ -315,108 +315,225 @@ export function startResonanceBreathing(volume: number = 0.5): ResonanceBreathin
     };
 }
 
-// --- 4. ALARM: CYBER-DAWN (FM Synthesis Procedural Birds) ---
-export function playCyberDawnAlarm(volume: number = 0.5): { stop: () => void } {
+// --- 4. ALARM: CYBER-DAWN (FM Synthesis Procedural Dawn Chorus) ---
+// A progressively building dawn chorus with warm bed, multiple bird species, and rhythmic pulse
+export function playCyberDawnAlarm(volume: number = 0.7): { stop: () => void } {
     const ctx = getContext();
     let isPlaying = true;
+    const t = ctx.currentTime;
 
     // Master gain with fade-in
     masterGain = ctx.createGain();
-    masterGain.gain.setValueAtTime(0, ctx.currentTime);
-    masterGain.gain.linearRampToValueAtTime(volume, ctx.currentTime + 3);
+    masterGain.gain.setValueAtTime(0, t);
+    masterGain.gain.linearRampToValueAtTime(volume * 0.3, t + 2); // Start at 30%
+    masterGain.gain.linearRampToValueAtTime(volume * 0.6, t + 15); // Build to 60%
+    masterGain.gain.linearRampToValueAtTime(volume, t + 30); // Full volume by 30s
     masterGain.connect(ctx.destination);
+
+    // === WARM BED: Filtered pink noise with gentle pulse ===
+    const noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+    const noiseData = noiseBuffer.getChannelData(0);
+    let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+    for (let i = 0; i < noiseBuffer.length; i++) {
+        const white = Math.random() * 2 - 1;
+        b0 = 0.99886 * b0 + white * 0.0555179;
+        b1 = 0.99332 * b1 + white * 0.0750759;
+        b2 = 0.96900 * b2 + white * 0.1538520;
+        b3 = 0.86650 * b3 + white * 0.3104856;
+        b4 = 0.55000 * b4 + white * 0.5329522;
+        b5 = -0.7616 * b5 - white * 0.0168980;
+        noiseData[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11;
+        b6 = white * 0.115926;
+    }
+    const noiseSource = ctx.createBufferSource();
+    noiseSource.buffer = noiseBuffer;
+    noiseSource.loop = true;
+
+    const bedFilter = ctx.createBiquadFilter();
+    bedFilter.type = 'lowpass';
+    bedFilter.frequency.value = 400;
+    bedFilter.Q.value = 0.7;
+
+    const bedGain = ctx.createGain();
+    bedGain.gain.value = 0.15;
+
+    // Gentle LFO pulse on the bed
+    const bedLfo = ctx.createOscillator();
+    const bedLfoGain = ctx.createGain();
+    bedLfo.frequency.value = 0.5; // Slow breathing pulse
+    bedLfoGain.gain.value = 0.05;
+    bedLfo.connect(bedLfoGain);
+    bedLfoGain.connect(bedGain.gain);
+
+    noiseSource.connect(bedFilter);
+    bedFilter.connect(bedGain);
+    bedGain.connect(masterGain);
+    noiseSource.start(t);
+    bedLfo.start(t);
+
+    // === BIRD SPECIES DEFINITIONS ===
+    const species = [
+        { freqRange: [2500, 3500], modRatio: 2.4, name: 'robin' },      // High, metallic
+        { freqRange: [1800, 2400], modRatio: 1.5, name: 'sparrow' },    // Mid, mellow
+        { freqRange: [3000, 4500], modRatio: 3.0, name: 'finch' },      // Very high, bright
+        { freqRange: [1200, 1800], modRatio: 2.0, name: 'thrush' },     // Lower, rich
+    ];
+
+    let chirpDelay = 1200; // Start with 1.2s between chirps
+    let birdCount = 1; // Start with one bird type
 
     function chirp() {
         if (!isPlaying || !masterGain) return;
-        const t = ctx.currentTime;
+        const now = ctx.currentTime;
 
-        // FM Synthesis Pair
+        // Pick a random species from available ones
+        const speciesIndex = Math.floor(Math.random() * birdCount);
+        const bird = species[speciesIndex];
+
+        // FM Synthesis Bird Call
         const carrier = ctx.createOscillator();
         const modulator = ctx.createOscillator();
         const modGain = ctx.createGain();
         const env = ctx.createGain();
 
-        // Randomized Pitch (2kHz - 4kHz range - bird frequency)
-        const baseFreq = 2000 + Math.random() * 2000;
+        const baseFreq = bird.freqRange[0] + Math.random() * (bird.freqRange[1] - bird.freqRange[0]);
         carrier.frequency.value = baseFreq;
-        modulator.frequency.value = baseFreq * 2.4; // Metallic ratio
+        modulator.frequency.value = baseFreq * bird.modRatio;
 
-        modGain.gain.value = 800 + Math.random() * 400; // FM Depth variation
+        // Pitch sweep for more interesting chirp
+        carrier.frequency.setValueAtTime(baseFreq, now);
+        carrier.frequency.exponentialRampToValueAtTime(baseFreq * (1.1 + Math.random() * 0.3), now + 0.08);
+        carrier.frequency.exponentialRampToValueAtTime(baseFreq * 0.9, now + 0.2);
 
-        // Short envelope (Bird-like chirp)
-        env.gain.setValueAtTime(0, t);
-        env.gain.linearRampToValueAtTime(0.25, t + 0.03 + Math.random() * 0.03);
-        env.gain.exponentialRampToValueAtTime(0.001, t + 0.2 + Math.random() * 0.15);
+        modGain.gain.value = 600 + Math.random() * 600;
 
-        // FM routing
+        // Louder, more prominent envelope
+        env.gain.setValueAtTime(0, now);
+        env.gain.linearRampToValueAtTime(0.5 + Math.random() * 0.2, now + 0.02);
+        env.gain.setValueAtTime(0.5 + Math.random() * 0.2, now + 0.06);
+        env.gain.exponentialRampToValueAtTime(0.001, now + 0.15 + Math.random() * 0.1);
+
         modulator.connect(modGain);
         modGain.connect(carrier.frequency);
         carrier.connect(env);
 
-        // Spatial Pan (Stereo forest effect)
+        // Stereo placement
         const panner = ctx.createStereoPanner();
         panner.pan.value = (Math.random() * 2) - 1;
         env.connect(panner);
         panner.connect(masterGain);
 
-        carrier.start(t);
-        modulator.start(t);
-        carrier.stop(t + 0.5);
-        modulator.stop(t + 0.5);
+        carrier.start(now);
+        modulator.start(now);
+        carrier.stop(now + 0.4);
+        modulator.stop(now + 0.4);
 
-        // Next bird: Random 0.8s to 3s (getting more frequent over time)
+        // Sometimes do a double/triple chirp
+        if (Math.random() > 0.6) {
+            setTimeout(() => {
+                if (isPlaying) chirp();
+            }, 80 + Math.random() * 60);
+        }
+
+        // Schedule next chirp - progressively faster
         if (isPlaying) {
-            const baseDelay = 800 + Math.random() * 2200;
-            setTimeout(chirp, baseDelay);
+            chirpDelay = Math.max(200, chirpDelay * 0.97); // Get faster over time, min 200ms
+            const nextDelay = chirpDelay * (0.7 + Math.random() * 0.6);
+            setTimeout(chirp, nextDelay);
         }
     }
 
-    // Start first chirp after brief silence
-    setTimeout(chirp, 500);
+    // Gradually introduce more bird species
+    const speciesTimer = setInterval(() => {
+        if (!isPlaying) return;
+        if (birdCount < species.length) {
+            birdCount++;
+        }
+    }, 8000); // New species every 8 seconds
+
+    // Start first chirp
+    setTimeout(chirp, 800);
+
+    // Add a second "voice" after 5 seconds for density
+    setTimeout(() => {
+        if (isPlaying) chirp();
+    }, 5000);
+
+    // Add a third voice after 15 seconds
+    setTimeout(() => {
+        if (isPlaying) chirp();
+    }, 15000);
 
     const stopFn = () => {
         isPlaying = false;
+        clearInterval(speciesTimer);
         const now = ctx.currentTime;
         if (masterGain) {
             masterGain.gain.cancelScheduledValues(now);
             masterGain.gain.linearRampToValueAtTime(0, now + 0.5);
         }
+        setTimeout(() => {
+            try { noiseSource.stop(); } catch { /* */ }
+            try { bedLfo.stop(); } catch { /* */ }
+        }, 600);
     };
 
     activeNodes = { stop: stopFn };
     return { stop: stopFn };
 }
 
-// --- 5. ALARM: SOLAR ASCENT (Additive Synthesis Harmonic Blooming) ---
-export function playSolarAlarm(volume: number = 0.5): { stop: () => void } {
+// --- 5. ALARM: SOLAR ASCENT (Harmonic Sunrise with Rhythmic Chimes) ---
+// A warm, building alarm with pulsing harmonics, rhythmic chimes, and progressive intensity
+export function playSolarAlarm(volume: number = 0.7): { stop: () => void } {
     const ctx = getContext();
     const t = ctx.currentTime;
+    let isPlaying = true;
+
+    // Master gain with progressive build
+    masterGain = ctx.createGain();
+    masterGain.gain.setValueAtTime(0, t);
+    masterGain.gain.linearRampToValueAtTime(volume * 0.4, t + 2);   // Start at 40%
+    masterGain.gain.linearRampToValueAtTime(volume * 0.7, t + 15);  // Build to 70%
+    masterGain.gain.linearRampToValueAtTime(volume, t + 30);        // Full by 30s
+    masterGain.connect(ctx.destination);
+
+    // === HARMONIC PAD with Tremolo ===
     const fundamental = 261.63; // C4
-    const harmonics = [1, 2, 3, 4, 5, 6]; // Extended harmonic series
+    const harmonics = [1, 2, 3, 4, 5, 6, 8]; // Extended series including octave
     const oscillators: OscillatorNode[] = [];
     const gains: GainNode[] = [];
 
-    // Master gain
-    masterGain = ctx.createGain();
-    masterGain.gain.setValueAtTime(0, t);
-    masterGain.gain.linearRampToValueAtTime(volume, t + 2);
-    masterGain.connect(ctx.destination);
+    // Global tremolo LFO for movement
+    const tremoloLfo = ctx.createOscillator();
+    const tremoloGain = ctx.createGain();
+    tremoloLfo.frequency.value = 4; // 4Hz shimmer
+    tremoloGain.gain.value = 0.15; // Subtle tremolo
+
+    tremoloLfo.connect(tremoloGain);
+    tremoloLfo.start(t);
 
     harmonics.forEach((h, i) => {
         const osc = ctx.createOscillator();
-        osc.type = 'sine';
+        osc.type = i < 3 ? 'sine' : 'triangle'; // Lower harmonics pure, higher ones warmer
+
         osc.frequency.value = fundamental * h;
 
         const gain = ctx.createGain();
-        gain.gain.value = 0;
+        const baseLevel = (0.35 / Math.sqrt(h)); // Louder base, sqrt rolloff
 
-        // Staggered Entry: Add a harmonic every 8 seconds
-        const startTime = t + (i * 8);
+        // Fast staggered entry (1.5s each, not 8s)
+        const startTime = t + (i * 1.5);
         gain.gain.setValueAtTime(0, startTime);
-        gain.gain.linearRampToValueAtTime((0.12 / h) * volume, startTime + 4);
+        gain.gain.linearRampToValueAtTime(baseLevel, startTime + 1);
 
-        // Slight detune for warmth
-        osc.detune.value = (Math.random() - 0.5) * 5;
+        // Connect tremolo to this harmonic's gain for shimmer
+        const tremoloMix = ctx.createGain();
+        tremoloMix.gain.value = baseLevel * 0.3;
+        tremoloGain.connect(tremoloMix);
+        tremoloMix.connect(gain.gain);
+
+        // Slight detune for richness
+        osc.detune.value = (Math.random() - 0.5) * 8;
 
         osc.connect(gain);
         gain.connect(masterGain);
@@ -426,7 +543,102 @@ export function playSolarAlarm(volume: number = 0.5): { stop: () => void } {
         gains.push(gain);
     });
 
+    // === RHYTHMIC CHIME PATTERN ===
+    let chimeInterval = 2500; // Start every 2.5 seconds
+    const chimeNotes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6 - major arpeggio
+
+    function playChime() {
+        if (!isPlaying || !masterGain) return;
+        const now = ctx.currentTime;
+
+        // Pick note from arpeggio
+        const noteIndex = Math.floor(Math.random() * chimeNotes.length);
+        const freq = chimeNotes[noteIndex];
+
+        // Main chime oscillator
+        const chimeOsc = ctx.createOscillator();
+        chimeOsc.type = 'sine';
+        chimeOsc.frequency.value = freq;
+
+        // Second oscillator for bell-like quality (slight detune)
+        const chimeOsc2 = ctx.createOscillator();
+        chimeOsc2.type = 'triangle';
+        chimeOsc2.frequency.value = freq * 2.01; // Slight inharmonic for bell character
+
+        // Envelope - bell-like attack and decay
+        const chimeEnv = ctx.createGain();
+        chimeEnv.gain.setValueAtTime(0, now);
+        chimeEnv.gain.linearRampToValueAtTime(0.5, now + 0.01); // Fast attack
+        chimeEnv.gain.exponentialRampToValueAtTime(0.2, now + 0.1);
+        chimeEnv.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
+
+        // Second voice envelope (quieter)
+        const chimeEnv2 = ctx.createGain();
+        chimeEnv2.gain.setValueAtTime(0, now);
+        chimeEnv2.gain.linearRampToValueAtTime(0.15, now + 0.01);
+        chimeEnv2.gain.exponentialRampToValueAtTime(0.01, now + 0.8);
+
+        // High-pass filter for sparkle
+        const chimeFilter = ctx.createBiquadFilter();
+        chimeFilter.type = 'highpass';
+        chimeFilter.frequency.value = 400;
+
+        chimeOsc.connect(chimeEnv);
+        chimeOsc2.connect(chimeEnv2);
+        chimeEnv.connect(chimeFilter);
+        chimeEnv2.connect(chimeFilter);
+        chimeFilter.connect(masterGain);
+
+        chimeOsc.start(now);
+        chimeOsc2.start(now);
+        chimeOsc.stop(now + 1.5);
+        chimeOsc2.stop(now + 1.5);
+
+        // Schedule next chime - progressively faster
+        if (isPlaying) {
+            chimeInterval = Math.max(600, chimeInterval * 0.95); // Speed up, min 600ms
+            setTimeout(playChime, chimeInterval);
+        }
+    }
+
+    // Start chime pattern after 1 second
+    setTimeout(playChime, 1000);
+
+    // === BRIGHTNESS SWEEP (Filter automation) ===
+    const brightnessFilter = ctx.createBiquadFilter();
+    brightnessFilter.type = 'lowpass';
+    brightnessFilter.frequency.setValueAtTime(300, t);
+    brightnessFilter.frequency.linearRampToValueAtTime(2000, t + 20);  // Open up over 20s
+    brightnessFilter.frequency.linearRampToValueAtTime(4000, t + 40);  // Continue brightening
+    brightnessFilter.Q.value = 0.5;
+
+    // Reconnect oscillators through brightness filter
+    gains.forEach(g => {
+        g.disconnect();
+        g.connect(brightnessFilter);
+    });
+    brightnessFilter.connect(masterGain);
+
+    // === PULSE/SWELL for urgency (starts after 20s) ===
+    let pulseActive = false;
+    setTimeout(() => {
+        if (!isPlaying) return;
+        pulseActive = true;
+
+        const pulseLfo = ctx.createOscillator();
+        const pulseGain = ctx.createGain();
+        pulseLfo.frequency.value = 0.8; // Gentle pulse
+        pulseGain.gain.value = 0.2;
+        pulseLfo.connect(pulseGain);
+        pulseGain.connect(masterGain.gain);
+        pulseLfo.start();
+
+        // Speed up pulse over time
+        pulseLfo.frequency.linearRampToValueAtTime(2.0, ctx.currentTime + 30);
+    }, 20000);
+
     const stopFn = () => {
+        isPlaying = false;
         const now = ctx.currentTime;
         if (masterGain) {
             masterGain.gain.cancelScheduledValues(now);
@@ -438,8 +650,9 @@ export function playSolarAlarm(volume: number = 0.5): { stop: () => void } {
         });
         setTimeout(() => {
             oscillators.forEach(o => {
-                try { o.stop(); } catch { /* already stopped */ }
+                try { o.stop(); } catch { /* */ }
             });
+            try { tremoloLfo.stop(); } catch { /* */ }
         }, 1100);
     };
 
