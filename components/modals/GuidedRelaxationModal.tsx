@@ -241,6 +241,16 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
 
+    // Emergency cleanup on unmount - prevents audio leaks if component unmounts unexpectedly
+    useEffect(() => {
+        return () => {
+            if (resonanceRef.current) {
+                resonanceRef.current.stop();
+                resonanceRef.current = null;
+            }
+        };
+    }, []);
+
     return (
         <motion.div
             className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 z-50"

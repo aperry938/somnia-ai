@@ -191,12 +191,11 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
         createSleepEntryForSession();
 
         // Notify parent to transition to sleeping state (but DON'T stop the sound)
+        // Parent's onFallAsleep already closes the modal and keeps selectedSound intact
         if (onFallAsleep) {
             onFallAsleep();
         }
-
-        // Close the modal without stopping the sound
-        onClose();
+        // Don't call onClose() here - it would clear selectedSound which we need for "Now Playing" indicator
     };
 
     // Pause the sound and timer
