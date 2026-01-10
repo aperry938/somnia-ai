@@ -60,24 +60,34 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({ onComple
     // Play premium soundscape preview for each slide - gives free users a taste of PRO features
     useEffect(() => {
         const currentSoundscapeId = slides[currentSlide]?.soundscapeId;
+        let isActive = true;
 
         if (currentSoundscapeId) {
             // Initialize audio context (requires user gesture - carousel navigation counts)
             initAudioContext();
 
-            // Find the soundscape for this slide
-            const soundscape = SOUNDSCAPES.find(s => s.id === currentSoundscapeId);
-            if (soundscape) {
-                // Play at 15% volume for subtle preview, 1 minute duration
-                playSleepSound(soundscape, 1, 0.15);
-            }
+            // Small delay to let previous sound fade out
+            const playTimeout = setTimeout(() => {
+                if (!isActive) return;
+
+                // Find the soundscape for this slide
+                const soundscape = SOUNDSCAPES.find(s => s.id === currentSoundscapeId);
+                if (soundscape) {
+                    // Play at 40% volume for audible preview, 0 = infinite duration (until stopped)
+                    playSleepSound(soundscape, 0, 0.4);
+                }
+            }, 300);
+
+            // Cleanup when leaving the slide or unmounting
+            return () => {
+                isActive = false;
+                clearTimeout(playTimeout);
+                stopSleepSound(0.8); // Longer fade out for smoother transitions
+            };
         }
 
-        // Cleanup when leaving the slide or unmounting
         return () => {
-            if (currentSoundscapeId) {
-                stopSleepSound(0.5); // 0.5 second fade out for smooth transitions
-            }
+            isActive = false;
         };
     }, [currentSlide]);
 
