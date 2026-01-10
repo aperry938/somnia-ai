@@ -119,7 +119,7 @@ export const NowPlayingIndicator: React.FC<NowPlayingIndicatorProps> = ({ onNavi
     // Ended state - show restart/extend options
     if (state === 'ended') {
         return (
-            <div className="fixed top-4 right-4 z-50 animate-fadeIn">
+            <div className="fixed top-16 right-4 z-50 animate-fadeIn">
                 {isExpanded ? (
                     <div className="bg-gradient-to-r from-amber-600 to-orange-700 rounded-xl shadow-lg overflow-hidden max-w-xs">
                         {/* Main row */}
@@ -207,7 +207,7 @@ export const NowPlayingIndicator: React.FC<NowPlayingIndicatorProps> = ({ onNavi
 
     // Playing state
     return (
-        <div className="fixed top-4 right-4 z-50 animate-fadeIn">
+        <div className="fixed top-16 right-4 z-50 animate-fadeIn">
             {isExpanded ? (
                 <div className="bg-gradient-to-r from-indigo-600 to-purple-700 rounded-xl shadow-lg overflow-hidden max-w-xs">
                     {/* Main row */}
