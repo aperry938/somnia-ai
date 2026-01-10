@@ -3,6 +3,7 @@ import { useAppContext } from '../../contexts/AppContext';
 import { Alarm, AlarmPurpose } from '../../types';
 import { DailyBriefingWidget } from '../widgets/DailyBriefingWidget';
 import { toggleAlarmPreview, stopAlarmPreview, isPreviewPlaying as _isPreviewPlaying } from '../../services/audioService';
+import { isPremium } from '../../services/secureSubscriptionService';
 import haptics from '../../services/hapticsService';
 
 // Helper to format alarm repetition text
@@ -23,7 +24,9 @@ const getSoundName = (soundId: string | undefined): string => {
         'classic': 'Classic',
         'prism': 'Prism',
         'aether': 'Aether',
-        'bamboo': 'Bamboo'
+        'bamboo': 'Bamboo',
+        'cyber-dawn': 'Cyber-Dawn',
+        'solar-ascent': 'Solar Ascent'
     };
     return soundMap[soundId || 'somnia'] || 'Somnia';
 };
@@ -387,6 +390,8 @@ const ALARM_SOUNDS = [
     { id: 'gentle', name: 'Gentle', description: 'Soft pulsing wake-up' },
     { id: 'prism', name: 'Prism', description: 'Ethereal glass chimes' },
     { id: 'bamboo', name: 'Bamboo', description: 'Hollow wood pulse' },
+    { id: 'cyber-dawn', name: 'Cyber-Dawn', description: 'FM synthesis bird chorus', isPremium: true },
+    { id: 'solar-ascent', name: 'Solar Ascent', description: 'Harmonic sunrise bloom', isPremium: true },
 ];
 
 const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
@@ -658,22 +663,33 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
                 <div className="mt-6">
                     <label className="text-sm font-medium block mb-2">Alarm Sound <span className="text-xs text-day-text-secondary dark:text-night-text-secondary">(tap to preview)</span></label>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        {ALARM_SOUNDS.map(sound => (
-                            <button
-                                key={sound.id}
-                                onClick={() => {
-                                    setSelectedSound(sound.id);
-                                    toggleAlarmPreview(sound.id);
-                                }}
-                                className={`p-4 rounded-xl text-center transition-all ${selectedSound === sound.id
-                                    ? 'bg-day-accent/20 dark:bg-night-accent/20 border-2 border-day-accent dark:border-night-accent'
-                                    : 'bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border hover:border-day-accent/50'
-                                    }`}
-                            >
-                                <span className="text-sm font-medium block">{sound.name}</span>
-                                <span className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-1 block">{sound.description}</span>
-                            </button>
-                        ))}
+                        {ALARM_SOUNDS.map(sound => {
+                            const showProBadge = (sound as { isPremium?: boolean }).isPremium && !isPremium();
+                            return (
+                                <button
+                                    key={sound.id}
+                                    onClick={() => {
+                                        setSelectedSound(sound.id);
+                                        toggleAlarmPreview(sound.id);
+                                    }}
+                                    className={`p-4 rounded-xl text-center transition-all relative ${selectedSound === sound.id
+                                        ? 'bg-day-accent/20 dark:bg-night-accent/20 border-2 border-day-accent dark:border-night-accent'
+                                        : 'bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border hover:border-day-accent/50'
+                                        }`}
+                                >
+                                    {showProBadge && (
+                                        <span className="absolute top-1 right-1 text-[9px] bg-gradient-to-r from-amber-500 to-orange-500 text-white px-1.5 py-0.5 rounded-full font-medium flex items-center gap-0.5">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-2 w-2" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                            </svg>
+                                            PRO
+                                        </span>
+                                    )}
+                                    <span className="text-sm font-medium block">{sound.name}</span>
+                                    <span className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-1 block">{sound.description}</span>
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
 

@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, PanInfo, useMotionValue, useTransform } from 'framer-motion';
 import { GuidedRelaxation } from '../../types';
 import { playBreathSound } from '../../services/audioService';
+import { startResonanceBreathing, ResonanceBreathingState } from '../../services/psychoacousticService';
 import { useAppContext } from '../../contexts/AppContext';
 import haptics from '../../services/hapticsService';
 
@@ -57,6 +58,7 @@ const triggerHaptic = (duration: number) => {
 export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onClose: () => void }> = ({ relaxation, onClose }) => {
     const [sessionState, setSessionState] = useState<'ready' | 'starting' | 'running'>('ready');
     const [stepIndex, setStepIndex] = useState(0);
+    const resonanceRef = useRef<ResonanceBreathingState | null>(null);
 
     // Swipe-to-dismiss
     const y = useMotionValue(0);
@@ -92,6 +94,12 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
                 { text: 'Inhale (nose)', duration: 4000, anim: 'animate-inhale-4s', sound: 'in', vibrate: 100 },
                 { text: 'Hold', duration: 7000, anim: 'scale-[1.6] opacity-100' },
                 { text: 'Exhale (mouth)', duration: 8000, anim: 'animate-exhale-8s', sound: 'out', vibrate: 200 },
+            ];
+        } else if (relaxation.id === 'resonance_chamber') {
+            // HRV-optimized 5.5s in / 5.5s out (11s cycle = 0.1Hz)
+            return [
+                { text: 'Inhale slowly', duration: 5500, anim: 'animate-inhale-5s', vibrate: 100 },
+                { text: 'Exhale slowly', duration: 5500, anim: 'animate-exhale-5s', vibrate: 200 },
             ];
         }
         return [];
@@ -152,6 +160,10 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
             setInstruction('Get ready...');
             setAnimationClass(relaxation.id === 'box_breathing' ? '' : 'scale-[0.8] opacity-70');
             const readyTimer = setTimeout(() => {
+                // Start resonance breathing audio for resonance_chamber
+                if (relaxation.id === 'resonance_chamber') {
+                    resonanceRef.current = startResonanceBreathing(0.5);
+                }
                 setSessionState('running');
                 setStepIndex(0); // Ensure cycle starts from the beginning
             }, 2000);
@@ -187,6 +199,11 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
 
     const endSession = () => {
         haptics.light();
+        // Stop resonance breathing audio if active
+        if (resonanceRef.current) {
+            resonanceRef.current.stop();
+            resonanceRef.current = null;
+        }
         // Log the actual duration spent in this breathing exercise
         if (sessionStartTime) {
             const elapsedSeconds = Math.floor((Date.now() - sessionStartTime) / 1000);

@@ -227,10 +227,12 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
 
     // Fully stop and close (called by X button)
     const handleStop = () => {
-        // Log sound activity if we actually played something and there's an active session
-        if (soundStartTimeRef.current && activeSleepSession) {
+        // Log sound activity if we actually played something
+        if (soundStartTimeRef.current) {
             const durationSeconds = Math.floor((Date.now() - soundStartTimeRef.current) / 1000);
             if (durationSeconds > 5) { // Only log if played for more than 5 seconds
+                // Ensure session exists before logging (handles race condition from handleStartSound)
+                ensureSleepSession();
                 logSoundActivity(sound.name, durationSeconds);
             }
         }

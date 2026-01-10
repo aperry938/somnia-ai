@@ -530,7 +530,8 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                             <h2 className="font-serif text-2xl text-center my-8">Guided Relaxation</h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {GUIDED_RELAXATIONS.map(item => {
-                                    const showProBadge = !isPremium();
+                                    // Only show PRO badge for items that are actually premium
+                                    const showProBadge = item.isPremium && !isPremium();
 
                                     if (showProBadge) {
                                         return (
