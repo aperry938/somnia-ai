@@ -15,6 +15,62 @@ const CircleVisualizer: React.FC<{ animationClass: string; animKey: number; isAn
     </div>
 );
 
+// Waveform visualizer for Resonance Chamber - shows peaks during inhale, valleys during exhale
+const ResonanceWaveVisualizer: React.FC<{ phase: 'inhale' | 'exhale' | 'idle'; isAnimating: boolean }> = ({ phase, isAnimating }) => {
+    const barCount = 24;
+    const bars = Array.from({ length: barCount }, (_, i) => i);
+
+    // Calculate wave position for each bar based on phase
+    const getBarStyle = (index: number): React.CSSProperties => {
+        if (!isAnimating) {
+            return {
+                height: '20%',
+                opacity: 0.5,
+                transition: 'all 0.5s ease-out',
+            };
+        }
+
+        // Create a wave pattern across the bars
+        const position = index / (barCount - 1); // 0 to 1
+        const waveOffset = Math.sin(position * Math.PI); // Peak in middle
+
+        // Different behavior for inhale vs exhale
+        if (phase === 'inhale') {
+            // Inhale: waves rise from center, building intensity
+            const baseHeight = 25 + waveOffset * 55; // 25% to 80%
+            const variation = Math.sin(position * Math.PI * 3) * 8; // Add ripples
+            return {
+                height: `${baseHeight + variation}%`,
+                opacity: 0.6 + waveOffset * 0.4,
+                transition: 'all 5.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                transform: `scaleY(1)`,
+            };
+        } else {
+            // Exhale: waves fall back down, intensity subsides
+            const baseHeight = 15 + waveOffset * 15; // 15% to 30%
+            const variation = Math.sin(position * Math.PI * 3) * 3;
+            return {
+                height: `${baseHeight + variation}%`,
+                opacity: 0.4 + waveOffset * 0.2,
+                transition: 'all 5.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                transform: `scaleY(1)`,
+            };
+        }
+    };
+
+    return (
+        <div className="w-48 h-40 flex items-center justify-center gap-[3px]">
+            {bars.map((_, i) => (
+                <div
+                    key={i}
+                    className="w-1.5 rounded-full bg-day-accent dark:bg-night-accent"
+                    style={getBarStyle(i)}
+                />
+            ))}
+        </div>
+    );
+};
+
 
 const BoxVisualizer: React.FC<{ animKey: number; isAnimating: boolean }> = ({ animKey, isAnimating }) => (
     <div key={animKey} className="w-40 h-40 flex justify-center items-center">
@@ -74,6 +130,7 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
     const [countdown, setCountdown] = useState(0);
     const [animationClass, setAnimationClass] = useState('scale-[0.8] opacity-70');
     const [animationKey, setAnimationKey] = useState(0);
+    const [breathPhase, setBreathPhase] = useState<'inhale' | 'exhale' | 'idle'>('idle');
     const [sessionDuration, setSessionDuration] = useState(5); // minutes
     const [totalTimeRemaining, setTotalTimeRemaining] = useState(0); // seconds
     const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
@@ -128,6 +185,9 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
             if (stepIndex === 0) {
                 setAnimationKey(k => k + 1);
             }
+        } else if (relaxation.id === 'resonance_chamber') {
+            // Update breath phase for waveform visualizer
+            setBreathPhase(stepIndex === 0 ? 'inhale' : 'exhale');
         }
 
         // 2. Play Sound and Haptic
@@ -220,6 +280,7 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
         setSessionStartTime(null);
         setTotalTimeRemaining(0);
         setAnimationClass(relaxation.id === 'box_breathing' ? '' : 'scale-[0.8] opacity-70');
+        setBreathPhase('idle');
         onClose();
     };
 
@@ -317,7 +378,9 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
                         <div className="flex justify-center items-center my-8 h-40">
                             {relaxation.id === 'box_breathing'
                                 ? <BoxVisualizer animKey={animationKey} isAnimating={sessionState === 'running'} />
-                                : <CircleVisualizer animationClass={animationClass} animKey={animationKey} isAnimating={sessionState === 'running'} />
+                                : relaxation.id === 'resonance_chamber'
+                                    ? <ResonanceWaveVisualizer phase={breathPhase} isAnimating={sessionState === 'running'} />
+                                    : <CircleVisualizer animationClass={animationClass} animKey={animationKey} isAnimating={sessionState === 'running'} />
                             }
                         </div>
                         <p className="text-xl font-medium h-8">
