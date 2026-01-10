@@ -276,9 +276,9 @@ export const NowPlayingIndicator: React.FC<NowPlayingIndicatorProps> = ({ onNavi
                     {/* Expanded controls panel */}
                     {showControls && (
                         <div className="px-3 pb-3 space-y-3 border-t border-white/10 pt-3">
-                            {/* Volume slider */}
-                            <div className="flex items-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            {/* Volume slider - larger thumb for mobile touch */}
+                            <div className="flex items-center gap-3 py-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white/70 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                                 </svg>
                                 <input
@@ -288,10 +288,10 @@ export const NowPlayingIndicator: React.FC<NowPlayingIndicatorProps> = ({ onNavi
                                     step="0.05"
                                     value={volume}
                                     onChange={handleVolumeChange}
-                                    className="flex-grow h-1.5 bg-white/20 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-md"
+                                    className="flex-grow h-2 bg-white/20 rounded-full appearance-none cursor-pointer touch-pan-x [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:h-6 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white/50"
                                     aria-label="Volume"
                                 />
-                                <span className="text-white/70 text-xs w-8 text-right">{Math.round(volume * 100)}%</span>
+                                <span className="text-white/70 text-sm w-10 text-right flex-shrink-0">{Math.round(volume * 100)}%</span>
                             </div>
 
                             {/* Extend time buttons - min 44px height for mobile */}
