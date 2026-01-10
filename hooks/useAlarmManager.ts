@@ -184,6 +184,13 @@ export const useAlarmManager = () => {
     }, [ringingAlarm]);
 
     /**
+     * Increment snooze count (for UI-driven snooze that doesn't use hook's snooze logic)
+     */
+    const incrementSnoozeCount = useCallback(() => {
+        snoozeCountRef.current += 1;
+    }, []);
+
+    /**
      * Mark that alertness boost was used
      */
     const markAlertnessBoostUsed = useCallback(() => {
@@ -256,6 +263,7 @@ export const useAlarmManager = () => {
         getWakeMetrics,
         resetWakeMetrics,
         resetRingStartTime,
+        incrementSnoozeCount,
         markAlertnessBoostUsed,
     };
 };

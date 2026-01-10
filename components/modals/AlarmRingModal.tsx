@@ -126,7 +126,7 @@ type WakeStep = 'alarm' | 'snooze' | 'dream' | 'boost';
 
 const SNOOZE_DURATION = 5 * 60; // 5 minutes in seconds
 
-export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordDream, onSnooze: _onSnooze, onAwake, onFinalize, onCaptureWakeMetrics, onSnoozeReRing }) => {
+export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordDream, onSnooze, onAwake, onFinalize, onCaptureWakeMetrics, onSnoozeReRing }) => {
     // For reminder alarms, skip straight to dismiss - no dream prompts
     const isSleepAlarm = alarm.purpose !== 'reminder';
 
@@ -219,9 +219,14 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
         stopAlarmSound();
         stopHapticAlarmRamp();
         if (isListening) stopListening();
+        // Increment snooze count in the alarm manager
+        if (onSnooze) onSnooze();
         setSnoozeRemaining(SNOOZE_DURATION);
         setStep('snooze');
-    }, [isListening, stopListening]);
+    }, [isListening, stopListening, onSnooze]);
+
+    // Track snooze re-ring count to trigger time reset
+    const [snoozeReRingCount, setSnoozeReRingCount] = useState(0);
 
     // Snooze countdown timer
     useEffect(() => {
@@ -234,10 +239,8 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                     setStep('alarm');
                     playAlarmBySound(alarm.soundId || 'somnia');
                     startHapticAlarmRamp();
-                    // Reset the ring start time so "time to wake" measures from THIS ring
-                    if (onSnoozeReRing) {
-                        onSnoozeReRing();
-                    }
+                    // Trigger re-ring count change to reset timer via separate effect
+                    setSnoozeReRingCount(c => c + 1);
                     return SNOOZE_DURATION;
                 }
                 return prev - 1;
@@ -245,7 +248,14 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [step, alarm.soundId, onSnoozeReRing]);
+    }, [step, alarm.soundId]);
+
+    // Reset ring start time when snooze expires and alarm re-rings
+    useEffect(() => {
+        if (snoozeReRingCount > 0 && onSnoozeReRing) {
+            onSnoozeReRing();
+        }
+    }, [snoozeReRingCount, onSnoozeReRing]);
 
     // Cancel snooze and wake up
     const cancelSnooze = useCallback(() => {
