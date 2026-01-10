@@ -770,11 +770,11 @@ const TonightsSleepCard: React.FC<{
 
     const handleExpand = () => {
         haptics.light();
-        setIsExpanded(true);
-        // Start or update session when user engages
+        // Navigate to full Sleep Gateway instead of expanding inline
         if (!activeSleepSession) {
             startSleepSession(nextSleepAlarm.id);
         }
+        onOpenFullGateway();
     };
 
     const handleRatingSelect = (rating: number) => {
