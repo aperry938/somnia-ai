@@ -111,6 +111,7 @@ interface AlarmRingModalProps {
     onAwake: () => void;
     onFinalize?: (options?: { alertnessBoostUsed?: boolean }) => void;
     onCaptureWakeMetrics?: () => void; // Called when user clicks "I'm Awake" to capture timing
+    onSnoozeReRing?: () => void; // Called when snooze expires and alarm re-rings (resets time-to-wake timer)
 }
 
 const DREAM_PROMPTS = [
@@ -125,7 +126,7 @@ type WakeStep = 'alarm' | 'snooze' | 'dream' | 'boost';
 
 const SNOOZE_DURATION = 5 * 60; // 5 minutes in seconds
 
-export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordDream, onSnooze: _onSnooze, onAwake, onFinalize, onCaptureWakeMetrics }) => {
+export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordDream, onSnooze: _onSnooze, onAwake, onFinalize, onCaptureWakeMetrics, onSnoozeReRing }) => {
     // For reminder alarms, skip straight to dismiss - no dream prompts
     const isSleepAlarm = alarm.purpose !== 'reminder';
 
@@ -233,6 +234,10 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                     setStep('alarm');
                     playAlarmBySound(alarm.soundId || 'somnia');
                     startHapticAlarmRamp();
+                    // Reset the ring start time so "time to wake" measures from THIS ring
+                    if (onSnoozeReRing) {
+                        onSnoozeReRing();
+                    }
                     return SNOOZE_DURATION;
                 }
                 return prev - 1;
@@ -240,13 +245,19 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [step, alarm.soundId]);
+    }, [step, alarm.soundId, onSnoozeReRing]);
 
     // Cancel snooze and wake up
     const cancelSnooze = useCallback(() => {
         haptics.medium();
+        stopAlarmSound();
+        stopHapticAlarmRamp();
+        // Capture wake metrics when canceling snooze (same as handleAwake)
+        if (onCaptureWakeMetrics) {
+            onCaptureWakeMetrics();
+        }
         setStep('dream');
-    }, []);
+    }, [onCaptureWakeMetrics]);
 
     // Handle "I'm Awake" - advance to dream capture for sleep alarms, or dismiss for reminders
     const handleAwake = useCallback(() => {

@@ -216,6 +216,14 @@ export const useAlarmManager = () => {
     }, []);
 
     /**
+     * Reset ring start time (call when alarm re-rings after snooze)
+     * This ensures "time to wake" measures from the most recent ring, not the first
+     */
+    const resetRingStartTime = useCallback(() => {
+        ringStartTimeRef.current = Date.now();
+    }, []);
+
+    /**
      * Trigger a "virtual" alarm for sleep detection.
      * Creates a temporary alarm object with the specified sound.
      */
@@ -247,6 +255,7 @@ export const useAlarmManager = () => {
         triggerSleepDetectionAlarm,
         getWakeMetrics,
         resetWakeMetrics,
+        resetRingStartTime,
         markAlertnessBoostUsed,
     };
 };
