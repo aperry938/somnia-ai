@@ -9,6 +9,7 @@ import {
     playCyberDawnAlarm,
     playSolarAlarm
 } from './psychoacousticService';
+import { isPremium } from './secureSubscriptionService';
 
 // ============================================================
 // TYPES
@@ -368,12 +369,22 @@ export const playAlarmBySound = (soundId: string = 'somnia') => {
             playBambooAlarm();
             break;
         case 'cyber-dawn':
-            logger.log('[playAlarmBySound] Playing Cyber-Dawn alarm');
-            playCyberDawnAlarmWrapper();
+            if (!isPremium()) {
+                logger.warn('[playAlarmBySound] Cyber-Dawn requires premium, falling back to Somnia');
+                playSomniaAlarm();
+            } else {
+                logger.log('[playAlarmBySound] Playing Cyber-Dawn alarm');
+                playCyberDawnAlarmWrapper();
+            }
             break;
         case 'solar-ascent':
-            logger.log('[playAlarmBySound] Playing Solar Ascent alarm');
-            playSolarAlarmWrapper();
+            if (!isPremium()) {
+                logger.warn('[playAlarmBySound] Solar Ascent requires premium, falling back to Somnia');
+                playSomniaAlarm();
+            } else {
+                logger.log('[playAlarmBySound] Playing Solar Ascent alarm');
+                playSolarAlarmWrapper();
+            }
             break;
         default:
             logger.log('[playAlarmBySound] Unknown soundId, defaulting to Somnia:', soundId);

@@ -37,6 +37,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
     const [isReadyToPlay, setIsReadyToPlay] = useState(false); // Show play screen but not started yet
     const pausedTimeRef = useRef<number>(0); // Track time remaining when paused
     const soundStartTimeRef = useRef<number | null>(null); // Track when sound actually started (for logging)
+    const accumulatedPlayTimeRef = useRef<number>(0); // Track accumulated play time across pause/resume cycles
 
     // No auto-preview - user must click to start preview
 
@@ -166,6 +167,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
         await playSleepSound(soundToPlay, remainingMinutes, volume);
 
         soundStartTimeRef.current = Date.now(); // Track for activity logging
+        accumulatedPlayTimeRef.current = 0; // Reset accumulated time for new session
 
         // Set all states together - playStartTime triggers the timer effect
         setIsReadyToPlay(false);
@@ -177,15 +179,17 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
     const handleFallAsleep = () => {
         haptics.success();
 
-        // Log the current sound activity
+        // Log the current sound activity (accumulated time + current segment)
+        let totalPlayTime = accumulatedPlayTimeRef.current;
         if (soundStartTimeRef.current) {
-            const durationSeconds = Math.floor((Date.now() - soundStartTimeRef.current) / 1000);
-            if (durationSeconds > 0) {
-                logSoundActivity(sound.name, durationSeconds);
-            }
-            // Reset start time so we track from now for any remaining playback
-            soundStartTimeRef.current = Date.now();
+            totalPlayTime += Math.floor((Date.now() - soundStartTimeRef.current) / 1000);
         }
+        if (totalPlayTime > 0) {
+            logSoundActivity(sound.name, totalPlayTime);
+        }
+        // Reset tracking for any continued playback
+        soundStartTimeRef.current = Date.now();
+        accumulatedPlayTimeRef.current = 0;
 
         // Create the sleep entry with current prep data
         createSleepEntryForSession();
@@ -202,6 +206,10 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
     const handlePause = () => {
         stopSleepSound(0.3);
         pausedTimeRef.current = timeRemaining || 0;
+        // Accumulate play time from this segment
+        if (soundStartTimeRef.current) {
+            accumulatedPlayTimeRef.current += Math.floor((Date.now() - soundStartTimeRef.current) / 1000);
+        }
         setIsPaused(true);
         setPlayStartTime(null);
     };
@@ -217,6 +225,9 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
         const remainingMinutes = pausedTimeRef.current / 60;
         await playSleepSound(soundToPlay, remainingMinutes, volume);
 
+        // Reset start time for this segment (accumulated time preserved separately)
+        soundStartTimeRef.current = Date.now();
+
         // Set all states together - playStartTime triggers the timer effect
         setPlayDuration(pausedTimeRef.current);
         setIsReadyToPlay(false);
@@ -226,16 +237,18 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
 
     // Fully stop and close (called by X button)
     const handleStop = () => {
-        // Log sound activity if we actually played something
+        // Log sound activity (accumulated time + current segment)
+        let totalPlayTime = accumulatedPlayTimeRef.current;
         if (soundStartTimeRef.current) {
-            const durationSeconds = Math.floor((Date.now() - soundStartTimeRef.current) / 1000);
-            if (durationSeconds > 5) { // Only log if played for more than 5 seconds
-                // Ensure session exists before logging (handles race condition from handleStartSound)
-                ensureSleepSession();
-                logSoundActivity(sound.name, durationSeconds);
-            }
+            totalPlayTime += Math.floor((Date.now() - soundStartTimeRef.current) / 1000);
+        }
+        if (totalPlayTime > 0) {
+            // Ensure session exists before logging (handles race condition from handleStartSound)
+            ensureSleepSession();
+            logSoundActivity(sound.name, totalPlayTime);
         }
         soundStartTimeRef.current = null;
+        accumulatedPlayTimeRef.current = 0;
 
         stopSleepSound();
         setIsPreviewing(false);

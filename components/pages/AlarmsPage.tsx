@@ -669,13 +669,17 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
                                 <button
                                     key={sound.id}
                                     onClick={() => {
-                                        setSelectedSound(sound.id);
+                                        // Only allow selection if user is premium or sound is not premium
+                                        if (!showProBadge) {
+                                            setSelectedSound(sound.id);
+                                        }
+                                        // Preview is allowed for all users (demo purposes)
                                         toggleAlarmPreview(sound.id);
                                     }}
                                     className={`p-4 rounded-xl text-center transition-all relative ${selectedSound === sound.id
                                         ? 'bg-day-accent/20 dark:bg-night-accent/20 border-2 border-day-accent dark:border-night-accent'
                                         : 'bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border hover:border-day-accent/50'
-                                        }`}
+                                        } ${showProBadge ? 'opacity-75' : ''}`}
                                 >
                                     {showProBadge && (
                                         <span className="absolute top-1 right-1 text-[9px] bg-gradient-to-r from-amber-500 to-orange-500 text-white px-1.5 py-0.5 rounded-full font-medium flex items-center gap-0.5">

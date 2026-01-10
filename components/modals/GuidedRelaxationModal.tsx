@@ -77,7 +77,7 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
     const [sessionDuration, setSessionDuration] = useState(5); // minutes
     const [totalTimeRemaining, setTotalTimeRemaining] = useState(0); // seconds
     const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
-    const { setActiveSleepAid, logBreathingActivity } = useAppContext();
+    const { setActiveSleepAid, logBreathingActivity, ensureSleepSession } = useAppContext();
 
     const DURATION_PRESETS = [2, 5, 10]; // minutes
 
@@ -173,6 +173,8 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
 
     const startSession = () => {
         haptics.medium();
+        // Ensure session exists so breathing activity gets logged
+        ensureSleepSession();
         setSessionStartTime(Date.now());
         setTotalTimeRemaining(sessionDuration * 60);
         setSessionState('starting');
