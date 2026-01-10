@@ -315,23 +315,22 @@ export function startResonanceBreathing(volume: number = 0.5): ResonanceBreathin
     };
 }
 
-// --- 4. ALARM: CYBER-DAWN (FM Synthesis Procedural Dawn Chorus) ---
-// A progressively building dawn chorus with warm bed, multiple bird species, and rhythmic pulse
-export function playCyberDawnAlarm(volume: number = 0.7): { stop: () => void } {
+// --- 4. ALARM: CYBER-DAWN (Full-Spectrum Synthetic Dawn Chorus) ---
+// Dense, immersive dawn soundscape with multiple layers - designed to WAKE PEOPLE UP
+export function playCyberDawnAlarm(volume: number = 0.8): { stop: () => void } {
     const ctx = getContext();
     let isPlaying = true;
     const t = ctx.currentTime;
 
-    // Master gain with gentle progressive build
+    // Master gain - starts audible, builds to full quickly
     masterGain = ctx.createGain();
     masterGain.gain.setValueAtTime(0, t);
-    masterGain.gain.linearRampToValueAtTime(volume * 0.25, t + 3);  // Start at 25%
-    masterGain.gain.linearRampToValueAtTime(volume * 0.5, t + 30);  // 50% at 30s
-    masterGain.gain.linearRampToValueAtTime(volume * 0.75, t + 60); // 75% at 1 min
-    masterGain.gain.linearRampToValueAtTime(volume, t + 90);        // Full at 1.5 min
+    masterGain.gain.linearRampToValueAtTime(volume * 0.4, t + 2);   // 40% at 2s
+    masterGain.gain.linearRampToValueAtTime(volume * 0.7, t + 15);  // 70% at 15s
+    masterGain.gain.linearRampToValueAtTime(volume, t + 35);        // Full at 35s
     masterGain.connect(ctx.destination);
 
-    // === WARM BED: Filtered pink noise with gentle pulse ===
+    // === LAYER 1: WARM AMBIENT BED (Low-mid frequencies - forest atmosphere) ===
     const noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
     const noiseData = noiseBuffer.getChannelData(0);
     let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
@@ -343,138 +342,168 @@ export function playCyberDawnAlarm(volume: number = 0.7): { stop: () => void } {
         b3 = 0.86650 * b3 + white * 0.3104856;
         b4 = 0.55000 * b4 + white * 0.5329522;
         b5 = -0.7616 * b5 - white * 0.0168980;
-        noiseData[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11;
+        noiseData[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.18;
         b6 = white * 0.115926;
     }
-    const noiseSource = ctx.createBufferSource();
-    noiseSource.buffer = noiseBuffer;
-    noiseSource.loop = true;
+    const bedSource = ctx.createBufferSource();
+    bedSource.buffer = noiseBuffer;
+    bedSource.loop = true;
 
     const bedFilter = ctx.createBiquadFilter();
     bedFilter.type = 'lowpass';
-    bedFilter.frequency.value = 400;
-    bedFilter.Q.value = 0.7;
+    bedFilter.frequency.setValueAtTime(350, t);
+    bedFilter.frequency.linearRampToValueAtTime(700, t + 25);
+    bedFilter.Q.value = 0.5;
 
     const bedGain = ctx.createGain();
-    bedGain.gain.value = 0.12;
+    bedGain.gain.value = 0.3;
 
-    // Gentle LFO pulse on the bed
-    const bedLfo = ctx.createOscillator();
-    const bedLfoGain = ctx.createGain();
-    bedLfo.frequency.value = 0.3; // Slow breathing pulse
-    bedLfoGain.gain.value = 0.03;
-    bedLfo.connect(bedLfoGain);
-    bedLfoGain.connect(bedGain.gain);
-
-    noiseSource.connect(bedFilter);
+    bedSource.connect(bedFilter);
     bedFilter.connect(bedGain);
     bedGain.connect(masterGain);
-    noiseSource.start(t);
-    bedLfo.start(t);
+    bedSource.start(t);
 
-    // === BIRD SPECIES DEFINITIONS ===
+    // === LAYER 2: HIGH SHIMMER (Bright morning sparkle) ===
+    const shimmerBuffer = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+    const shimmerData = shimmerBuffer.getChannelData(0);
+    for (let i = 0; i < shimmerBuffer.length; i++) {
+        shimmerData[i] = (Math.random() * 2 - 1) * 0.4;
+    }
+    const shimmerSource = ctx.createBufferSource();
+    shimmerSource.buffer = shimmerBuffer;
+    shimmerSource.loop = true;
+
+    const shimmerFilter = ctx.createBiquadFilter();
+    shimmerFilter.type = 'highpass';
+    shimmerFilter.frequency.value = 5000;
+    shimmerFilter.Q.value = 0.8;
+
+    const shimmerGain = ctx.createGain();
+    shimmerGain.gain.setValueAtTime(0.02, t);
+    shimmerGain.gain.linearRampToValueAtTime(0.12, t + 20);
+
+    shimmerSource.connect(shimmerFilter);
+    shimmerFilter.connect(shimmerGain);
+    shimmerGain.connect(masterGain);
+    shimmerSource.start(t);
+
+    // === LAYER 3: BIRD CHORUS (Multiple species, LOUD and DENSE) ===
     const species = [
-        { freqRange: [2500, 3500], modRatio: 2.4, name: 'robin' },
-        { freqRange: [1800, 2400], modRatio: 1.5, name: 'sparrow' },
-        { freqRange: [3000, 4500], modRatio: 3.0, name: 'finch' },
-        { freqRange: [1200, 1800], modRatio: 2.0, name: 'thrush' },
+        { freqRange: [2000, 3000], modRatio: 2.4, vol: 0.75 },  // Robin
+        { freqRange: [1500, 2100], modRatio: 1.5, vol: 0.7 },   // Sparrow
+        { freqRange: [2600, 3800], modRatio: 3.0, vol: 0.7 },   // Finch
+        { freqRange: [1100, 1600], modRatio: 2.0, vol: 0.65 },  // Thrush
+        { freqRange: [3200, 4500], modRatio: 2.8, vol: 0.6 },   // Warbler
     ];
 
-    let birdCount = 1;
+    let birdCount = 2;
 
-    // Create independent voice with its own timing
-    function createVoice(voiceId: number) {
-        let voiceDelay = 2000 + voiceId * 500; // Each voice starts slower, staggers
-        const minDelay = 400 + voiceId * 100;   // Each voice has different min speed
+    function chirp(speciesIdx: number, isDouble: boolean = false) {
+        if (!isPlaying || !masterGain) return;
+        const now = ctx.currentTime;
+        const bird = species[speciesIdx % species.length];
 
-        function chirp(isFollowUp: boolean = false) {
-            if (!isPlaying || !masterGain) return;
-            const now = ctx.currentTime;
+        const carrier = ctx.createOscillator();
+        const modulator = ctx.createOscillator();
+        const modGain = ctx.createGain();
+        const env = ctx.createGain();
 
-            const speciesIndex = Math.floor(Math.random() * birdCount);
-            const bird = species[speciesIndex];
+        const baseFreq = bird.freqRange[0] + Math.random() * (bird.freqRange[1] - bird.freqRange[0]);
+        carrier.frequency.value = baseFreq;
+        modulator.frequency.value = baseFreq * bird.modRatio;
 
-            const carrier = ctx.createOscillator();
-            const modulator = ctx.createOscillator();
-            const modGain = ctx.createGain();
-            const env = ctx.createGain();
+        // Dynamic pitch contour
+        carrier.frequency.setValueAtTime(baseFreq * 0.85, now);
+        carrier.frequency.exponentialRampToValueAtTime(baseFreq * 1.25, now + 0.035);
+        carrier.frequency.exponentialRampToValueAtTime(baseFreq * 1.1, now + 0.07);
+        carrier.frequency.exponentialRampToValueAtTime(baseFreq * 0.8, now + 0.14);
 
-            const baseFreq = bird.freqRange[0] + Math.random() * (bird.freqRange[1] - bird.freqRange[0]);
-            carrier.frequency.value = baseFreq;
-            modulator.frequency.value = baseFreq * bird.modRatio;
+        modGain.gain.value = 350 + Math.random() * 450;
 
-            // Pitch sweep
-            carrier.frequency.setValueAtTime(baseFreq, now);
-            carrier.frequency.exponentialRampToValueAtTime(baseFreq * (1.1 + Math.random() * 0.2), now + 0.06);
-            carrier.frequency.exponentialRampToValueAtTime(baseFreq * 0.95, now + 0.15);
+        // LOUD envelope
+        const peakVol = bird.vol + Math.random() * 0.1;
+        env.gain.setValueAtTime(0, now);
+        env.gain.linearRampToValueAtTime(peakVol, now + 0.006);
+        env.gain.setValueAtTime(peakVol * 0.85, now + 0.03);
+        env.gain.linearRampToValueAtTime(peakVol * 0.6, now + 0.07);
+        env.gain.exponentialRampToValueAtTime(0.001, now + 0.12 + Math.random() * 0.06);
 
-            modGain.gain.value = 500 + Math.random() * 400;
+        modulator.connect(modGain);
+        modGain.connect(carrier.frequency);
+        carrier.connect(env);
 
-            // Envelope - moderate volume
-            env.gain.setValueAtTime(0, now);
-            env.gain.linearRampToValueAtTime(0.35 + Math.random() * 0.15, now + 0.015);
-            env.gain.setValueAtTime(0.35 + Math.random() * 0.15, now + 0.05);
-            env.gain.exponentialRampToValueAtTime(0.001, now + 0.12 + Math.random() * 0.08);
+        const panner = ctx.createStereoPanner();
+        panner.pan.value = (Math.random() * 1.4) - 0.7;
+        env.connect(panner);
+        panner.connect(masterGain);
 
-            modulator.connect(modGain);
-            modGain.connect(carrier.frequency);
-            carrier.connect(env);
+        carrier.start(now);
+        modulator.start(now);
+        carrier.stop(now + 0.25);
+        modulator.stop(now + 0.25);
 
-            const panner = ctx.createStereoPanner();
-            panner.pan.value = (Math.random() * 2) - 1;
-            env.connect(panner);
-            panner.connect(masterGain);
-
-            carrier.start(now);
-            modulator.start(now);
-            carrier.stop(now + 0.3);
-            modulator.stop(now + 0.3);
-
-            // Double chirp - but DON'T let it schedule more chirps
-            if (!isFollowUp && Math.random() > 0.7) {
-                setTimeout(() => {
-                    if (isPlaying) chirp(true); // Mark as follow-up
-                }, 60 + Math.random() * 40);
-            }
-
-            // Schedule next main chirp (only if this wasn't a follow-up)
-            if (!isFollowUp && isPlaying) {
-                voiceDelay = Math.max(minDelay, voiceDelay * 0.992); // Slow decay
-                const nextDelay = voiceDelay * (0.8 + Math.random() * 0.4);
-                setTimeout(() => chirp(false), nextDelay);
+        // Double/triple chirps
+        if (!isDouble && Math.random() > 0.4) {
+            setTimeout(() => { if (isPlaying) chirp(speciesIdx, true); }, 45 + Math.random() * 35);
+            if (Math.random() > 0.5) {
+                setTimeout(() => { if (isPlaying) chirp(speciesIdx, true); }, 90 + Math.random() * 40);
             }
         }
-
-        return chirp;
     }
 
-    // Gradually introduce more bird species
+    // Voice stream generator
+    function createVoiceStream(streamId: number, startDelay: number, baseInterval: number) {
+        let interval = baseInterval;
+        const minInterval = 120 + streamId * 20;
+
+        function tick() {
+            if (!isPlaying) return;
+            chirp(Math.floor(Math.random() * birdCount), false);
+            interval = Math.max(minInterval, interval * 0.988);
+            setTimeout(tick, interval * (0.6 + Math.random() * 0.8));
+        }
+
+        setTimeout(tick, startDelay);
+    }
+
+    // Start 4 voice streams immediately
+    createVoiceStream(0, 300, 600);
+    createVoiceStream(1, 600, 700);
+    createVoiceStream(2, 900, 800);
+    createVoiceStream(3, 1500, 750);
+
+    // Add more streams over time
+    setTimeout(() => { if (isPlaying) createVoiceStream(4, 0, 550); }, 6000);
+    setTimeout(() => { if (isPlaying) createVoiceStream(5, 0, 500); }, 15000);
+
+    // Introduce more species
     const speciesTimer = setInterval(() => {
         if (!isPlaying) return;
-        if (birdCount < species.length) {
-            birdCount++;
-        }
-    }, 15000); // New species every 15 seconds
+        if (birdCount < species.length) birdCount++;
+    }, 8000);
 
-    // Start voices staggered
-    const voice1 = createVoice(0);
-    setTimeout(() => voice1(false), 1000);
+    // === LAYER 4: SUBTLE LOW PULSE (Creates urgency) ===
+    const pulseOsc = ctx.createOscillator();
+    pulseOsc.type = 'sine';
+    pulseOsc.frequency.value = 180;
 
-    // Second voice after 10 seconds
-    setTimeout(() => {
-        if (isPlaying) {
-            const voice2 = createVoice(1);
-            voice2(false);
-        }
-    }, 10000);
+    const pulseGain = ctx.createGain();
+    pulseGain.gain.setValueAtTime(0, t);
+    pulseGain.gain.setValueAtTime(0, t + 10);
+    pulseGain.gain.linearRampToValueAtTime(0.1, t + 15);
+    pulseGain.gain.linearRampToValueAtTime(0.18, t + 30);
 
-    // Third voice after 30 seconds
-    setTimeout(() => {
-        if (isPlaying) {
-            const voice3 = createVoice(2);
-            voice3(false);
-        }
-    }, 30000);
+    const pulseLfo = ctx.createOscillator();
+    const pulseLfoGain = ctx.createGain();
+    pulseLfo.frequency.value = 1.5;
+    pulseLfoGain.gain.value = 0.15;
+    pulseLfo.connect(pulseLfoGain);
+    pulseLfoGain.connect(pulseGain.gain);
+
+    pulseOsc.connect(pulseGain);
+    pulseGain.connect(masterGain);
+    pulseOsc.start(t);
+    pulseLfo.start(t);
 
     const stopFn = () => {
         isPlaying = false;
@@ -485,8 +514,10 @@ export function playCyberDawnAlarm(volume: number = 0.7): { stop: () => void } {
             masterGain.gain.linearRampToValueAtTime(0, now + 0.5);
         }
         setTimeout(() => {
-            try { noiseSource.stop(); } catch { /* */ }
-            try { bedLfo.stop(); } catch { /* */ }
+            try { bedSource.stop(); } catch { /* */ }
+            try { shimmerSource.stop(); } catch { /* */ }
+            try { pulseOsc.stop(); } catch { /* */ }
+            try { pulseLfo.stop(); } catch { /* */ }
         }, 600);
     };
 
