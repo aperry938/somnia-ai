@@ -46,10 +46,13 @@ export const NowPlayingIndicator: React.FC<NowPlayingIndicatorProps> = ({ onNavi
 
             if (isPlaying && isPersisting) {
                 setState('playing');
-                setSoundName(getCurrentSleepSoundName());
+                // Use lastSound name as fallback (more reliable than getCurrentSleepSoundName)
+                const currentName = getCurrentSleepSoundName();
+                setSoundName(currentName || lastSound?.sound.name || 'Sleep Sound');
                 setVolume(getCurrentSleepSoundVolume());
-            } else if (endedNaturally && lastSound && isPersisting) {
-                // Sound ended but user was in "fall asleep" mode - show restart options
+            } else if (endedNaturally && lastSound) {
+                // Sound ended naturally (timer expired) - show restart options
+                // Don't require isPersisting since it gets cleared when sound stops
                 setState('ended');
                 setSoundName(lastSound.sound.name);
             } else {
@@ -80,6 +83,9 @@ export const NowPlayingIndicator: React.FC<NowPlayingIndicatorProps> = ({ onNavi
     const handleExtend = async (minutes: number) => {
         haptics.medium();
         setIsExtending(true);
+        // Re-enable persistence when extending/restarting (it was cleared when sound ended)
+        setSleepSoundPersist(true);
+        clearSoundEndedState();
         const success = await extendSleepSound(minutes);
         setIsExtending(false);
         if (success) {
