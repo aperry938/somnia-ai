@@ -7,7 +7,7 @@ import { HardwareSyncModal } from '../modals/HardwareSyncModal';
 import { TechniqueInfoModal } from '../modals/TechniqueInfoModal';
 import { RealityCheckInfoModal } from '../modals/RealityCheckInfoModal';
 import { useAppContext } from '../../contexts/AppContext';
-import { stopSleepSound } from '../../services/audioService';
+import { stopSleepSound, stopSleepSoundIfNotPersisting, setSleepSoundPersist } from '../../services/audioService';
 import { REALITY_CHECKS, LUCID_TECHNIQUES, LucidDreamTechnique } from '../../constants/lucidDreaming';
 import { predictLocalSleepQuality, LocalSleepPrediction } from '../../services/sleepPredictionService';
 import { useWakeWindow } from '../../hooks/useWakeWindow';
@@ -94,9 +94,10 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
     }, [dayRating, dayNotes, activeSleepAids, dreams]);
 
     useEffect(() => {
-        // Stop any playing sounds when navigating away from the page.
+        // Stop playing sounds when navigating away, UNLESS user clicked "Fall Asleep Now"
+        // In that case, sound continues playing until its timer expires
         return () => {
-            stopSleepSound();
+            stopSleepSoundIfNotPersisting();
         };
     }, []);
 
@@ -151,6 +152,8 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
     // Handle "Fall Asleep Now" from SoundscapeModal - transition to sleep without stopping sound
     const handleFallAsleep = () => {
         haptics.success();
+        // Mark sound to persist across page navigation (will stop only when timer expires)
+        setSleepSoundPersist(true);
         showToast('Sweet dreams - sound will play as you drift off');
         // Transition to sleeping state but DON'T stop the sound
         // The sound will continue playing in the background

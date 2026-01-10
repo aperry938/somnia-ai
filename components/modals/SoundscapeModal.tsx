@@ -43,6 +43,8 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
     const pausedTimeRef = useRef<number>(0); // Track time remaining when paused
     const soundStartTimeRef = useRef<number | null>(null); // Track when sound actually started (for logging)
     const accumulatedPlayTimeRef = useRef<number>(0); // Track accumulated play time across pause/resume cycles
+    const timerStartRef = useRef<number | null>(null); // Track timer start time (avoids closure issues)
+    const timerDurationRef = useRef<number>(0); // Track timer duration (avoids closure issues)
 
     // No auto-preview - user must click to start preview
 
@@ -70,16 +72,37 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
     }, []);
 
     // Timer countdown when playing (not when paused or ready)
+    // Uses refs inside interval to avoid stale closure issues
     useEffect(() => {
         if (playStartTime === null || playDuration === 0 || isPaused || isReadyToPlay) return;
 
+        // Store values in refs for interval callback to use (avoids stale closures)
+        timerStartRef.current = playStartTime;
+        timerDurationRef.current = playDuration;
+
+        // Initial tick immediately to sync UI
+        const elapsed = Math.floor((Date.now() - timerStartRef.current) / 1000);
+        const initialRemaining = Math.max(0, timerDurationRef.current - elapsed);
+        setTimeRemaining(initialRemaining);
+
         const interval = setInterval(() => {
-            const elapsed = Math.floor((Date.now() - playStartTime) / 1000);
-            const remaining = Math.max(0, playDuration - elapsed);
+            // Use refs to get current values (avoids closure issues)
+            const startTime = timerStartRef.current;
+            const duration = timerDurationRef.current;
+
+            if (startTime === null || duration === 0) {
+                clearInterval(interval);
+                return;
+            }
+
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const remaining = Math.max(0, duration - elapsed);
             setTimeRemaining(remaining);
 
             // Auto-stop when timer reaches 0
             if (remaining === 0) {
+                timerStartRef.current = null;
+                timerDurationRef.current = 0;
                 setTimeRemaining(null);
                 setPlayStartTime(null);
                 setIsReadyToPlay(false);
@@ -89,7 +112,9 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
             }
         }, 1000);
 
-        return () => clearInterval(interval);
+        return () => {
+            clearInterval(interval);
+        };
     }, [playStartTime, playDuration, isPaused, isReadyToPlay, onStop]);
 
     // Format seconds to MM:SS or HH:MM:SS
@@ -168,16 +193,23 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
         }
 
         // Calculate remaining duration in minutes
-        const remainingMinutes = (timeRemaining || playDuration) / 60;
+        const durationSeconds = timeRemaining || playDuration;
+        const remainingMinutes = durationSeconds / 60;
         await playSleepSound(soundToPlay, remainingMinutes, volume);
 
-        soundStartTimeRef.current = Date.now(); // Track for activity logging
+        const now = Date.now();
+        soundStartTimeRef.current = now; // Track for activity logging
         accumulatedPlayTimeRef.current = 0; // Reset accumulated time for new session
+
+        // Sync refs for timer interval (avoids stale closures)
+        timerStartRef.current = now;
+        timerDurationRef.current = durationSeconds;
 
         // Set all states together - playStartTime triggers the timer effect
         setIsReadyToPlay(false);
         setIsPaused(false);
-        setPlayStartTime(Date.now());
+        setPlayDuration(durationSeconds); // Ensure playDuration is in sync
+        setPlayStartTime(now);
     };
 
     // Fall asleep with sound playing - logs activity, creates entry, keeps sound playing
@@ -215,6 +247,10 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
         if (soundStartTimeRef.current) {
             accumulatedPlayTimeRef.current += Math.floor((Date.now() - soundStartTimeRef.current) / 1000);
         }
+        // Clear timer refs to stop interval
+        timerStartRef.current = null;
+        timerDurationRef.current = 0;
+
         setIsPaused(true);
         setPlayStartTime(null);
     };
@@ -227,17 +263,23 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
         }
 
         // Resume with remaining time
-        const remainingMinutes = pausedTimeRef.current / 60;
+        const remainingSeconds = pausedTimeRef.current;
+        const remainingMinutes = remainingSeconds / 60;
         await playSleepSound(soundToPlay, remainingMinutes, volume);
 
+        const now = Date.now();
         // Reset start time for this segment (accumulated time preserved separately)
-        soundStartTimeRef.current = Date.now();
+        soundStartTimeRef.current = now;
+
+        // Sync refs for timer interval (avoids stale closures)
+        timerStartRef.current = now;
+        timerDurationRef.current = remainingSeconds;
 
         // Set all states together - playStartTime triggers the timer effect
-        setPlayDuration(pausedTimeRef.current);
+        setPlayDuration(remainingSeconds);
         setIsReadyToPlay(false);
         setIsPaused(false);
-        setPlayStartTime(Date.now());
+        setPlayStartTime(now);
     };
 
     // Fully stop and close (called by X button)
@@ -254,6 +296,10 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
         }
         soundStartTimeRef.current = null;
         accumulatedPlayTimeRef.current = 0;
+
+        // Clear timer refs
+        timerStartRef.current = null;
+        timerDurationRef.current = 0;
 
         stopSleepSound();
         setIsPreviewing(false);

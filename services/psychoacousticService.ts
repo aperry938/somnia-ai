@@ -412,21 +412,28 @@ export function playCyberDawnAlarm(volume: number = 0.8): { stop: () => void } {
         carrier.frequency.value = baseFreq;
         modulator.frequency.value = baseFreq * bird.modRatio;
 
-        // Dynamic pitch contour
-        carrier.frequency.setValueAtTime(baseFreq * 0.85, now);
-        carrier.frequency.exponentialRampToValueAtTime(baseFreq * 1.25, now + 0.035);
-        carrier.frequency.exponentialRampToValueAtTime(baseFreq * 1.1, now + 0.07);
-        carrier.frequency.exponentialRampToValueAtTime(baseFreq * 0.8, now + 0.14);
+        // Longer, more natural pitch contour (birds have a "windy" warble)
+        const chirpDuration = 0.25 + Math.random() * 0.12; // 250-370ms total
+        carrier.frequency.setValueAtTime(baseFreq * 0.9, now);
+        carrier.frequency.exponentialRampToValueAtTime(baseFreq * 1.2, now + chirpDuration * 0.2);  // Rise
+        carrier.frequency.exponentialRampToValueAtTime(baseFreq * 1.15, now + chirpDuration * 0.4); // Sustain high
+        carrier.frequency.exponentialRampToValueAtTime(baseFreq * 1.0, now + chirpDuration * 0.65); // Gradual fall
+        carrier.frequency.exponentialRampToValueAtTime(baseFreq * 0.85, now + chirpDuration);       // Tail off
 
-        modGain.gain.value = 350 + Math.random() * 450;
+        // Modulation depth varies through chirp (more vibrato in middle)
+        modGain.gain.setValueAtTime(200, now);
+        modGain.gain.linearRampToValueAtTime(500 + Math.random() * 300, now + chirpDuration * 0.3);
+        modGain.gain.linearRampToValueAtTime(250, now + chirpDuration);
 
-        // LOUD envelope
+        // Natural "breathy" envelope - gradual attack, sustained body, long tail
         const peakVol = bird.vol + Math.random() * 0.1;
         env.gain.setValueAtTime(0, now);
-        env.gain.linearRampToValueAtTime(peakVol, now + 0.006);
-        env.gain.setValueAtTime(peakVol * 0.85, now + 0.03);
-        env.gain.linearRampToValueAtTime(peakVol * 0.6, now + 0.07);
-        env.gain.exponentialRampToValueAtTime(0.001, now + 0.12 + Math.random() * 0.06);
+        env.gain.linearRampToValueAtTime(peakVol * 0.7, now + 0.018);      // 18ms attack (not instant)
+        env.gain.linearRampToValueAtTime(peakVol, now + 0.045);            // Peak at 45ms
+        env.gain.setValueAtTime(peakVol * 0.9, now + chirpDuration * 0.35); // Hold near peak
+        env.gain.linearRampToValueAtTime(peakVol * 0.5, now + chirpDuration * 0.6);  // Start fading
+        env.gain.exponentialRampToValueAtTime(peakVol * 0.15, now + chirpDuration * 0.85); // Long breath out
+        env.gain.exponentialRampToValueAtTime(0.001, now + chirpDuration + 0.05);   // Final whisper tail
 
         modulator.connect(modGain);
         modGain.connect(carrier.frequency);
@@ -439,14 +446,14 @@ export function playCyberDawnAlarm(volume: number = 0.8): { stop: () => void } {
 
         carrier.start(now);
         modulator.start(now);
-        carrier.stop(now + 0.25);
-        modulator.stop(now + 0.25);
+        carrier.stop(now + chirpDuration + 0.1);
+        modulator.stop(now + chirpDuration + 0.1);
 
-        // Double/triple chirps
+        // Double/triple chirps (spaced for longer chirp duration)
         if (!isDouble && Math.random() > 0.4) {
-            setTimeout(() => { if (isPlaying) chirp(speciesIdx, true); }, 45 + Math.random() * 35);
+            setTimeout(() => { if (isPlaying) chirp(speciesIdx, true); }, 180 + Math.random() * 80);
             if (Math.random() > 0.5) {
-                setTimeout(() => { if (isPlaying) chirp(speciesIdx, true); }, 90 + Math.random() * 40);
+                setTimeout(() => { if (isPlaying) chirp(speciesIdx, true); }, 350 + Math.random() * 100);
             }
         }
     }

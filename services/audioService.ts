@@ -151,6 +151,10 @@ let interruptionCleanup: (() => void) | null = null;
 let currentSleepSound: { sound: Soundscape; durationMinutes: number; volume: number } | null = null;
 let wasPlayingBeforeInterruption = false;
 
+// Flag to indicate sound should persist across page navigation (for "Fall Asleep Now" flow)
+// When true, stopSleepSound() will be ignored from page cleanup handlers
+let persistAcrossNavigation = false;
+
 // NOTE: Intentionally NO visibilitychange handler here.
 // Sleep sounds MUST continue playing when the screen locks or app backgrounds.
 // iOS/Android background audio is handled via:
@@ -1739,6 +1743,7 @@ export const stopSleepSound = (fadeDuration: number = 2) => {
         }
         currentSleepSound = null;
         wasPlayingBeforeInterruption = false;
+        persistAcrossNavigation = false; // Clear persistence flag when sound actually stops
         // Deactivate iOS audio session after audio stops (be a good citizen)
         setAudioSessionActive(false);
     }, (fadeDuration * 1000) + 200);
@@ -1912,4 +1917,49 @@ export const setAlertnessVolume = (volume: number) => {
     if (alertnessNodes && audioContext) {
         alertnessNodes.gainNode.gain.setTargetAtTime(volume, audioContext.currentTime, 0.1);
     }
+};
+
+// --- NAVIGATION PERSISTENCE FUNCTIONS ---
+
+/**
+ * Mark sleep sound to persist across page navigation.
+ * Used by "Fall Asleep Now" flow to keep sound playing when user navigates away.
+ * Sound will still stop when its timer expires.
+ */
+export const setSleepSoundPersist = (persist: boolean) => {
+    persistAcrossNavigation = persist;
+    logger.log('[AudioService] Sleep sound persistence:', persist);
+};
+
+/**
+ * Check if sleep sound should persist across navigation
+ */
+export const shouldPersistSleepSound = (): boolean => {
+    return persistAcrossNavigation;
+};
+
+/**
+ * Stops sleep sound only if it's not marked for persistence.
+ * Use this in page cleanup handlers to allow sound to continue
+ * playing when user navigates away after clicking "Fall Asleep Now".
+ *
+ * @returns true if sound was stopped, false if sound was preserved
+ */
+export const stopSleepSoundIfNotPersisting = (fadeDuration: number = 2): boolean => {
+    if (persistAcrossNavigation) {
+        logger.log('[AudioService] Sleep sound preserved (user falling asleep)');
+        return false;
+    }
+    stopSleepSound(fadeDuration);
+    return true;
+};
+
+/**
+ * Get information about the currently playing sleep sound (for Now Playing indicators)
+ */
+export const getCurrentSleepSoundName = (): string | null => {
+    if (!currentSleepSound || !isSleepSoundPlaying()) {
+        return null;
+    }
+    return currentSleepSound.sound.name;
 };

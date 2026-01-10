@@ -30,6 +30,7 @@ import { SignInButton } from './components/shared/SignInButton';
 import { OnboardingCarousel } from './components/onboarding/OnboardingCarousel';
 import { useSleepDetection } from './hooks/useSleepDetection';
 import { DevModeToggle } from './components/DevModeToggle';
+import { NowPlayingIndicator } from './components/NowPlayingIndicator';
 import { useSwipeNavigation } from './hooks/useSwipeNavigation';
 import { useDeepLink } from './hooks/useDeepLink';
 import { useWidgetSync } from './hooks/useWidgetSync';
@@ -432,6 +433,7 @@ const App: React.FC = () => {
                 <AlarmNotificationManager />
                 <OfflineQueueManager />
                 <OfflineIndicator />
+                <NowPlayingIndicator />
                 <ThemeToggle />
                 <SignInButton />
                 {/* DevModeToggle only rendered in development - SECURITY FIX */}
