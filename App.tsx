@@ -233,7 +233,10 @@ const App: React.FC = () => {
 
         addDream(dreamText, sleepQuality, mood);
 
-        // Calculate post-save stats (addDream updates state but we can predict or use updated state if available, 
+        // Reset wake metrics after dream is saved - prevents accumulation across sessions
+        resetWakeMetrics();
+
+        // Calculate post-save stats (addDream updates state but we can predict or use updated state if available,
         // but addDream is sync in AppContext logic, however the 'dreams' var from context is closure-bound.
         // We need to fetch updated dreams? Or just predict.
         // Since we know we added 1 dream, and logic is purely length based for now:
@@ -266,7 +269,7 @@ const App: React.FC = () => {
         setIsScribeOpen(false);
         // Go to homepage, not dream detail - user can view chronicle when ready
         setCurrentPage('alarms');
-    }, [dreams, addDream, showToast, setIsScribeOpen]);
+    }, [dreams, addDream, showToast, setIsScribeOpen, resetWakeMetrics]);
 
     const navigateToSleep = useCallback(() => {
         setCurrentPage('sleep');
