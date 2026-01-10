@@ -162,10 +162,11 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
         await playSleepSound(soundToPlay, remainingMinutes, volume);
 
         soundStartTimeRef.current = Date.now(); // Track for activity logging
+
+        // Set all states together - playStartTime triggers the timer effect
         setIsReadyToPlay(false);
         setIsPaused(false);
-        // Set playStartTime last to trigger the timer effect with updated values
-        setTimeout(() => setPlayStartTime(Date.now()), 0);
+        setPlayStartTime(Date.now());
     };
 
     // Pause the sound and timer
@@ -187,13 +188,11 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
         const remainingMinutes = pausedTimeRef.current / 60;
         await playSleepSound(soundToPlay, remainingMinutes, volume);
 
-        // Set playDuration first, then isPaused, then playStartTime last
-        // This order ensures the useEffect triggers correctly
+        // Set all states together - playStartTime triggers the timer effect
         setPlayDuration(pausedTimeRef.current);
-        setIsReadyToPlay(false); // Ensure we're not in ready state
+        setIsReadyToPlay(false);
         setIsPaused(false);
-        // Set playStartTime last to trigger the timer effect with updated values
-        setTimeout(() => setPlayStartTime(Date.now()), 0);
+        setPlayStartTime(Date.now());
     };
 
     // Fully stop and close (called by X button)
