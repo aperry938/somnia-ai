@@ -458,36 +458,45 @@ export function playCyberDawnAlarm(volume: number = 0.8): { stop: () => void } {
         }
     }
 
-    // Voice stream generator
+    // Voice stream generator - creates one "bird" that chirps periodically
     function createVoiceStream(streamId: number, startDelay: number, baseInterval: number) {
         let interval = baseInterval;
-        const minInterval = 120 + streamId * 20;
+        const minInterval = 200 + streamId * 30; // Longer minimum intervals
 
         function tick() {
             if (!isPlaying) return;
             chirp(Math.floor(Math.random() * birdCount), false);
-            interval = Math.max(minInterval, interval * 0.988);
-            setTimeout(tick, interval * (0.6 + Math.random() * 0.8));
+            // Slower acceleration (0.992 instead of 0.988)
+            interval = Math.max(minInterval, interval * 0.992);
+            setTimeout(tick, interval * (0.7 + Math.random() * 0.6));
         }
 
         setTimeout(tick, startDelay);
     }
 
-    // Start 4 voice streams immediately
-    createVoiceStream(0, 300, 600);
-    createVoiceStream(1, 600, 700);
-    createVoiceStream(2, 900, 800);
-    createVoiceStream(3, 1500, 750);
+    // GRADUAL DAWN CHORUS BUILDUP
+    // Phase 1 (0-10s): Single distant bird, very sparse
+    createVoiceStream(0, 3000, 2500); // First bird at 3s, very slow (2.5s intervals)
 
-    // Add more streams over time
-    setTimeout(() => { if (isPlaying) createVoiceStream(4, 0, 550); }, 6000);
-    setTimeout(() => { if (isPlaying) createVoiceStream(5, 0, 500); }, 15000);
+    // Phase 2 (10-20s): A second bird joins
+    setTimeout(() => { if (isPlaying) createVoiceStream(1, 0, 2000); }, 10000);
 
-    // Introduce more species
+    // Phase 3 (20-35s): More birds wake up
+    setTimeout(() => { if (isPlaying) createVoiceStream(2, 0, 1500); }, 22000);
+    setTimeout(() => { if (isPlaying) createVoiceStream(3, 0, 1400); }, 30000);
+
+    // Phase 4 (35-50s): Dawn chorus intensifies
+    setTimeout(() => { if (isPlaying) createVoiceStream(4, 0, 1000); }, 38000);
+    setTimeout(() => { if (isPlaying) createVoiceStream(5, 0, 900); }, 45000);
+
+    // Phase 5 (50s+): Full chorus
+    setTimeout(() => { if (isPlaying) createVoiceStream(6, 0, 800); }, 52000);
+
+    // Introduce more species gradually (every 12s instead of 8s)
     const speciesTimer = setInterval(() => {
         if (!isPlaying) return;
         if (birdCount < species.length) birdCount++;
-    }, 8000);
+    }, 12000);
 
     // === LAYER 4: SUBTLE LOW PULSE (Creates urgency) ===
     const pulseOsc = ctx.createOscillator();

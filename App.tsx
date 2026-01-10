@@ -433,7 +433,7 @@ const App: React.FC = () => {
                 <AlarmNotificationManager />
                 <OfflineQueueManager />
                 <OfflineIndicator />
-                <NowPlayingIndicator />
+                <NowPlayingIndicator onNavigateToSleep={navigateToSleep} />
                 <ThemeToggle />
                 <SignInButton />
                 {/* DevModeToggle only rendered in development - SECURITY FIX */}

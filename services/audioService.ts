@@ -852,49 +852,33 @@ export const playAlarmPreview = (soundId: string) => {
         }
 
         case 'cyber-dawn': {
-            // FM synthesis dawn chorus preview - dense bird chirps with warm bed
-            previewOscillator.type = 'sine';
-            previewOscillator.frequency.setValueAtTime(2500, now);
-            // Simulate building chorus - frequent chirps with pitch sweeps
-            for (let i = 0; i < 30; i++) {
-                const t = now + i * 0.4; // Much denser chirp pattern
-                const pitch = 1800 + Math.random() * 2500;
-                previewOscillator.frequency.setValueAtTime(pitch, t);
-                previewOscillator.frequency.exponentialRampToValueAtTime(pitch * 1.2, t + 0.05);
-                previewOscillator.frequency.exponentialRampToValueAtTime(pitch * 0.9, t + 0.12);
-                previewGainNode.gain.setValueAtTime(0.5, t); // Louder
-                previewGainNode.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
-            }
-            break;
+            // Use actual Cyber-Dawn alarm for preview (authentic sound)
+            // Don't use the simple oscillator - start the real alarm
+            previewOscillator.disconnect();
+            previewGainNode.disconnect();
+            previewOscillator = null as unknown as OscillatorNode;
+            previewGainNode = null as unknown as GainNode;
+
+            // Start the actual Cyber-Dawn alarm at preview volume
+            const cyberHandle = playCyberDawnAlarm(0.5);
+            psychoacousticAlarmStop = cyberHandle.stop;
+            currentPreviewId = soundId;
+            return; // Don't call start() on null oscillator
         }
 
         case 'solar-ascent': {
-            // Harmonic pad with shimmering chimes - matches actual alarm character
-            previewOscillator.type = 'sine';
-            const fundamental = 261.63; // C4
-            const chimeFreqs = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
+            // Use actual Solar Ascent alarm for preview (authentic sound)
+            // Don't use the simple oscillator - start the real alarm
+            previewOscillator.disconnect();
+            previewGainNode.disconnect();
+            previewOscillator = null as unknown as OscillatorNode;
+            previewGainNode = null as unknown as GainNode;
 
-            // Warm pad foundation with tremolo simulation
-            previewOscillator.frequency.setValueAtTime(fundamental, now);
-            previewGainNode.gain.setValueAtTime(0.3, now);
-
-            // Simulate tremolo + chime pattern (gentler, matches actual alarm)
-            for (let i = 0; i < 20; i++) {
-                const t = now + i * 0.9; // Chimes ~every 900ms
-                const chimeFreq = chimeFreqs[i % chimeFreqs.length];
-
-                // Tremolo shimmer on pad
-                previewGainNode.gain.setValueAtTime(0.25 + (i % 2) * 0.08, t);
-
-                // Chime accent
-                previewOscillator.frequency.setValueAtTime(chimeFreq, t);
-                previewGainNode.gain.linearRampToValueAtTime(0.45, t + 0.01);
-                previewGainNode.gain.exponentialRampToValueAtTime(0.25, t + 0.25);
-
-                // Return to rising pad
-                previewOscillator.frequency.setValueAtTime(fundamental * (1 + i * 0.02), t + 0.4);
-            }
-            break;
+            // Start the actual Solar Ascent alarm at preview volume
+            const solarHandle = playSolarAlarm(0.5);
+            psychoacousticAlarmStop = solarHandle.stop;
+            currentPreviewId = soundId;
+            return; // Don't call start() on null oscillator
         }
 
         default:
@@ -960,6 +944,8 @@ export const stopAlarmPreview = () => {
         clearTimeout(previewTimeout);
         previewTimeout = null;
     }
+
+    // Stop regular oscillator-based previews
     if (previewGainNode && previewOscillator && audioContext) {
         const now = audioContext.currentTime;
         previewGainNode.gain.cancelScheduledValues(now);
@@ -970,6 +956,10 @@ export const stopAlarmPreview = () => {
             // Already stopped
         }
     }
+
+    // Stop psychoacoustic previews (Cyber-Dawn, Solar Ascent)
+    cleanupPsychoacousticAlarm();
+
     previewOscillator = null;
     previewGainNode = null;
     currentPreviewId = null; // Clear tracking
@@ -1962,4 +1952,24 @@ export const getCurrentSleepSoundName = (): string | null => {
         return null;
     }
     return currentSleepSound.sound.name;
+};
+
+/**
+ * Get the current volume of the playing sleep sound
+ */
+export const getCurrentSleepSoundVolume = (): number => {
+    return currentSleepSound?.volume ?? 0.5;
+};
+
+/**
+ * Get the full soundscape object currently playing
+ */
+export const getCurrentSleepSoundscape = (): { sound: Soundscape; volume: number } | null => {
+    if (!currentSleepSound || !isSleepSoundPlaying()) {
+        return null;
+    }
+    return {
+        sound: currentSleepSound.sound,
+        volume: currentSleepSound.volume
+    };
 };
