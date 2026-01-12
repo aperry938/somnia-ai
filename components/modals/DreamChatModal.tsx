@@ -12,6 +12,14 @@ interface DreamChatModalProps {
     onClose: () => void;
 }
 
+// Crisis keywords that trigger mental health resource display
+const CRISIS_KEYWORDS = ['suicide', 'self-harm', 'hurting myself', 'ending it', 'kill myself', 'want to die'];
+
+const hasCrisisContent = (text: string): boolean => {
+    const lowerText = text.toLowerCase();
+    return CRISIS_KEYWORDS.some(keyword => lowerText.includes(keyword));
+};
+
 export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }) => {
     const { updateDream } = useAppContext();
     const [history, setHistory] = useState<ChatMessage[]>(dream.chatHistory || []);
@@ -19,6 +27,9 @@ export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }
     const [isLoading, setIsLoading] = useState(false);
     const chatBoxRef = useRef<HTMLDivElement>(null);
     const { showToast } = useToast();
+
+    // Check if dream content contains crisis-related keywords
+    const showCrisisResources = hasCrisisContent(dream.dreamText);
 
     const fetchInitialResponse = async () => {
         setIsLoading(true);
@@ -171,6 +182,16 @@ export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }
                         </svg>
                     </button>
                 </div>
+
+                {/* Crisis Resources Banner */}
+                {showCrisisResources && (
+                    <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-4 flex-shrink-0">
+                        <p className="text-red-600 dark:text-red-400 text-sm font-medium">
+                            If you're experiencing difficult thoughts, help is available 24/7:
+                            <a href="tel:988" className="underline ml-1 font-bold">988 Suicide & Crisis Lifeline</a>
+                        </p>
+                    </div>
+                )}
 
                 <div ref={chatBoxRef} className="flex-grow overflow-y-auto custom-scrollbar p-2 mb-4 border border-day-border dark:border-night-border rounded-lg">
                     {history.map((msg) => (

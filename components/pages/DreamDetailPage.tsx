@@ -144,6 +144,14 @@ const SleepAidsDisplay: React.FC<{ aids: SleepAids }> = ({ aids }) => {
 };
 
 
+// Crisis keywords that trigger mental health resource display
+const CRISIS_KEYWORDS = ['suicide', 'self-harm', 'hurting myself', 'ending it', 'kill myself', 'want to die'];
+
+const hasCrisisContent = (text: string): boolean => {
+    const lowerText = text.toLowerCase();
+    return CRISIS_KEYWORDS.some(keyword => lowerText.includes(keyword));
+};
+
 // Accordion Item Component
 const AccordionItem: React.FC<{ title: string; content: string; isOpenDefault?: boolean }> = ({ title, content, isOpenDefault = false }) => {
     const [isOpen, setIsOpen] = useState(isOpenDefault);
@@ -487,6 +495,16 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                             {dream.dreamText.split(/\s+/).filter(w => w.length > 0).length} words • {dream.dreamText.length} characters
                         </p>
                     </>
+                )}
+
+                {/* Crisis Resources Banner */}
+                {hasCrisisContent(dream.dreamText) && (
+                    <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mt-4">
+                        <p className="text-red-600 dark:text-red-400 text-sm font-medium">
+                            If you're experiencing difficult thoughts, help is available 24/7:
+                            <a href="tel:988" className="underline ml-1 font-bold">988 Suicide & Crisis Lifeline</a>
+                        </p>
+                    </div>
                 )}
 
                 {/* Dream Tags Section */}

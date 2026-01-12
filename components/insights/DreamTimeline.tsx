@@ -39,6 +39,7 @@ export const DreamTimeline: React.FC<DreamTimelineProps> = ({ dreams, onDreamCli
                             key={dream.id}
                             onClick={() => onDreamClick?.(dream.id)}
                             className="w-full flex items-start gap-3 text-left hover:bg-white/30 dark:hover:bg-black/20 rounded-lg p-2 -ml-2 transition-colors"
+                            aria-label={`View dream: ${dream.title || 'Untitled'}`}
                         >
                             <div className="relative z-10 w-6 h-6 rounded-full bg-day-accent dark:bg-night-accent flex items-center justify-center flex-shrink-0">
                                 <div className="w-2 h-2 rounded-full bg-white" />
