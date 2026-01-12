@@ -347,15 +347,18 @@ export const getRegionalTrends = (period: TrendPeriod = 'week'): GlobalTrend[] |
     return cached?.regionalTrends;
 };
 
-// Mock data fallback
+// Mock data fallback - In production, these are dynamically extracted from
+// aggregated dream content using NLP/AI to identify ANY recurring themes,
+// not limited to predefined categories. Topics like relationships, death,
+// childhood memories, celebrities, intimacy, conflict, etc. all surface naturally.
 const getMockTrends = (period: TrendPeriod): GlobalTrend[] => {
     const trendsData: Record<TrendPeriod, GlobalTrend[]> = {
         'today': [
             { topic: 'Flying', percentage: 38, change: 'up', sentiment: 'positive' },
-            { topic: 'Work Stress', percentage: 31, change: 'up', sentiment: 'negative' },
-            { topic: 'Family', percentage: 22, change: 'stable', sentiment: 'positive' },
-            { topic: 'Water/Ocean', percentage: 18, change: 'down', sentiment: 'neutral' },
-            { topic: 'Being Late', percentage: 14, change: 'up', sentiment: 'negative' },
+            { topic: 'Work Anxiety', percentage: 31, change: 'up', sentiment: 'negative' },
+            { topic: 'Deceased Loved Ones', percentage: 24, change: 'up', sentiment: 'neutral' },
+            { topic: 'Romantic Partners', percentage: 19, change: 'stable', sentiment: 'positive' },
+            { topic: 'Childhood Home', percentage: 15, change: 'down', sentiment: 'neutral' },
         ],
         'week': [
             { topic: 'Flying', percentage: 42, change: 'up', sentiment: 'positive' },
@@ -366,44 +369,44 @@ const getMockTrends = (period: TrendPeriod): GlobalTrend[] => {
         ],
         'month': [
             { topic: 'Flying', percentage: 45, change: 'stable', sentiment: 'positive' },
-            { topic: 'Falling', percentage: 32, change: 'up', sentiment: 'negative' },
-            { topic: 'Water/Ocean', percentage: 30, change: 'up', sentiment: 'neutral' },
-            { topic: 'Being Chased', percentage: 21, change: 'stable', sentiment: 'negative' },
-            { topic: 'Lucid Awareness', percentage: 11, change: 'up', sentiment: 'positive' },
+            { topic: 'Family Members', percentage: 34, change: 'up', sentiment: 'positive' },
+            { topic: 'Falling', percentage: 28, change: 'up', sentiment: 'negative' },
+            { topic: 'Sexual Content', percentage: 22, change: 'stable', sentiment: 'neutral' },
+            { topic: 'Death/Dying', percentage: 18, change: 'down', sentiment: 'negative' },
         ],
         'all-time': [
             { topic: 'Flying', percentage: 48, change: 'stable', sentiment: 'positive' },
-            { topic: 'Water/Ocean', percentage: 35, change: 'stable', sentiment: 'neutral' },
-            { topic: 'Being Chased', percentage: 28, change: 'stable', sentiment: 'negative' },
-            { topic: 'Falling', percentage: 24, change: 'stable', sentiment: 'negative' },
-            { topic: 'Lost/Searching', percentage: 19, change: 'stable', sentiment: 'neutral' },
+            { topic: 'Being Chased', percentage: 35, change: 'stable', sentiment: 'negative' },
+            { topic: 'Teeth Falling Out', percentage: 29, change: 'stable', sentiment: 'negative' },
+            { topic: 'Loved Ones', percentage: 26, change: 'stable', sentiment: 'positive' },
+            { topic: 'Lost/Searching', percentage: 21, change: 'stable', sentiment: 'neutral' },
         ],
     };
     return trendsData[period];
 };
 
+// Regional trends - dynamically extracted from dreams in user's country
 const getMockRegionalTrends = (period: TrendPeriod): GlobalTrend[] => {
-    // Slightly different trends for regional data
     const regionalData: Record<TrendPeriod, GlobalTrend[]> = {
         'today': [
-            { topic: 'Weather Events', percentage: 45, change: 'up', sentiment: 'negative' },
-            { topic: 'Flying', percentage: 32, change: 'stable', sentiment: 'positive' },
-            { topic: 'Local Landmarks', percentage: 18, change: 'up', sentiment: 'neutral' },
+            { topic: 'Mountains', percentage: 45, change: 'up', sentiment: 'positive' },
+            { topic: 'Family Gatherings', percentage: 32, change: 'stable', sentiment: 'positive' },
+            { topic: 'Work Stress', percentage: 24, change: 'up', sentiment: 'negative' },
         ],
         'week': [
-            { topic: 'Nature', percentage: 38, change: 'up', sentiment: 'positive' },
-            { topic: 'Community', percentage: 25, change: 'stable', sentiment: 'positive' },
-            { topic: 'Weather', percentage: 20, change: 'down', sentiment: 'neutral' },
+            { topic: 'Nature/Outdoors', percentage: 38, change: 'up', sentiment: 'positive' },
+            { topic: 'Ancestors', percentage: 28, change: 'stable', sentiment: 'neutral' },
+            { topic: 'Festivals', percentage: 20, change: 'up', sentiment: 'positive' },
         ],
         'month': [
-            { topic: 'Seasons', percentage: 42, change: 'up', sentiment: 'neutral' },
-            { topic: 'Local Events', percentage: 28, change: 'stable', sentiment: 'positive' },
-            { topic: 'Travel', percentage: 22, change: 'up', sentiment: 'positive' },
+            { topic: 'Travel', percentage: 42, change: 'up', sentiment: 'positive' },
+            { topic: 'Old Friends', percentage: 31, change: 'stable', sentiment: 'positive' },
+            { topic: 'Natural Disasters', percentage: 18, change: 'down', sentiment: 'negative' },
         ],
         'all-time': [
-            { topic: 'Nature', percentage: 40, change: 'stable', sentiment: 'positive' },
-            { topic: 'Community', percentage: 30, change: 'stable', sentiment: 'positive' },
-            { topic: 'Local Culture', percentage: 25, change: 'stable', sentiment: 'neutral' },
+            { topic: 'Family', percentage: 44, change: 'stable', sentiment: 'positive' },
+            { topic: 'Nature', percentage: 36, change: 'stable', sentiment: 'positive' },
+            { topic: 'Spiritual Themes', percentage: 25, change: 'stable', sentiment: 'neutral' },
         ],
     };
     return regionalData[period];

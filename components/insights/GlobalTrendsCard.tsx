@@ -11,6 +11,56 @@ import {
     type TrendPeriod,
     type GlobalTrend
 } from '../../services/dreamTrendsService';
+import haptics from '../../services/hapticsService';
+
+// Share global trends as text
+const shareGlobalTrends = async (
+    trends: GlobalTrend[],
+    stats: { avgSleepTime: string; avgQuality: number; activeDreamers: number },
+    period: string,
+    isRegional: boolean,
+    countryName?: string
+) => {
+    haptics.light();
+
+    const scopeLabel = isRegional && countryName ? countryName : 'Global';
+    const trendsList = trends
+        .map((t, i) => `${i + 1}. ${t.topic} (${t.percentage}%)`)
+        .join('\n');
+
+    const shareText = `${scopeLabel} Dream Trends - ${period}
+
+Top Themes:
+${trendsList}
+
+${scopeLabel} Stats:
+Average Sleep: ${stats.avgSleepTime}
+Average Quality: ${stats.avgQuality}/5.0
+Active Dreamers: ${stats.activeDreamers.toLocaleString()}
+
+Shared from Somnia - Dream Journal`;
+
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: `${scopeLabel} Dream Trends`,
+                text: shareText,
+            });
+            haptics.success();
+        } catch (err) {
+            // User cancelled or share failed
+            if ((err as Error).name !== 'AbortError') {
+                // Fall back to clipboard
+                await navigator.clipboard.writeText(shareText);
+                haptics.success();
+            }
+        }
+    } else {
+        // Fall back to clipboard
+        await navigator.clipboard.writeText(shareText);
+        haptics.success();
+    }
+};
 
 const periodLabels: Record<TrendPeriod, string> = {
     'today': 'Today',
@@ -152,14 +202,31 @@ export const GlobalTrendsCard: React.FC = () => {
                     </svg>
                     Global Dream Stream
                 </h2>
-                <div className="text-xs bg-indigo-500/20 px-2 py-1 rounded-full border border-indigo-500/30 flex items-center gap-1">
-                    {isLoading && (
-                        <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => shareGlobalTrends(
+                            displayTrends,
+                            stats,
+                            periodLabels[period],
+                            showRegional && hasLocation,
+                            countryName
+                        )}
+                        className="p-2 rounded-full bg-indigo-500/20 hover:bg-indigo-500/40 border border-indigo-500/30 transition-colors"
+                        aria-label="Share trends"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-indigo-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                         </svg>
-                    )}
-                    {stats.activeDreamers.toLocaleString()} Dreamers
+                    </button>
+                    <div className="text-xs bg-indigo-500/20 px-2 py-1 rounded-full border border-indigo-500/30 flex items-center gap-1">
+                        {isLoading && (
+                            <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            </svg>
+                        )}
+                        {stats.activeDreamers.toLocaleString()} Dreamers
+                    </div>
                 </div>
             </div>
 
@@ -251,6 +318,25 @@ export const GlobalTrendsCard: React.FC = () => {
                             </div>
                         </div>
                     ))}
+                </div>
+
+                {/* Sentiment Color Legend */}
+                <div className="mt-4 pt-3 border-t border-indigo-500/20">
+                    <p className="text-xs text-indigo-300/60 mb-2">Bar colors indicate typical sentiment:</p>
+                    <div className="flex flex-wrap gap-3 text-xs">
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-green-400 to-emerald-500"></div>
+                            <span className="text-indigo-200/80">Positive</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-400 to-indigo-500"></div>
+                            <span className="text-indigo-200/80">Neutral</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-red-400 to-rose-500"></div>
+                            <span className="text-indigo-200/80">Negative</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
