@@ -1576,3 +1576,113 @@ After 6 cycles (19-24), the entire backend codebase has been audited:
 ---
 
 > Backend cycle 26 complete. Optimization scan passed. No critical issues.
+
+---
+
+## Cycle 28 - 2026-01-12 (Vibecode-Aware Audit)
+
+### Focus: Vibecode Pattern Detection
+**Context:** User noted "this app is vibecoded entirely" - shifting focus to detect common AI-assisted coding patterns.
+
+**Audit Areas:**
+1. Unused exports/dead code
+2. Copy-paste duplicated patterns
+3. Over-engineering
+4. Inconsistent patterns
+
+---
+
+### Finding 1: Dead Code ⚠️
+**File:** `components/insights/tabs/LinguisticsTab.tsx`
+- **Status:** DEAD CODE - never imported anywhere in the codebase
+- **Action:** Can be safely deleted in future cleanup
+
+---
+
+### Finding 2: Major Duplication ⚠️⚠️
+**Location:** `components/insights/` directory
+- **Count:** 109 insight component files
+- **Issue:** All follow identical copy-paste pattern
+
+**Pattern Observed:**
+```typescript
+// Every file follows this exact template:
+const KEYWORDS = ['keyword1', 'keyword2', ...];
+
+export const [Theme]Dreams: React.FC<Props> = ({ dreams }) => {
+    const stats = useMemo(() => {
+        const matches = dreams.filter(d =>
+            KEYWORDS.some(k => d.dream_text.toLowerCase().includes(k))
+        );
+        // ... same calculation logic
+    }, [dreams]);
+
+    if (!stats.matchingDreams) return null;
+    return <InsightCard title="..." color="..." />;
+};
+```
+
+**Files Duplicated (109 total):**
+- AdventureDreams.tsx, AnimalDreams.tsx, ArchitectureDreams.tsx
+- ArtDreams.tsx, BirdDreams.tsx, BodyTransformationDreams.tsx
+- BridgeDreams.tsx, CarDreams.tsx, CelebrationDreams.tsx
+- ... (104 more with same pattern)
+
+**Recommendation:**
+Consolidate into single `KeywordInsightCard` component with config:
+```typescript
+interface InsightConfig {
+    id: string;
+    title: string;
+    keywords: string[];
+    color: string;
+    icon?: React.ReactNode;
+}
+
+// 109 files → 1 component + 1 config file
+const INSIGHT_CONFIGS: InsightConfig[] = [
+    { id: 'adventure', title: 'Adventure Dreams', keywords: [...], color: 'blue' },
+    { id: 'animal', title: 'Animal Dreams', keywords: [...], color: 'green' },
+    // ... all 109 configs
+];
+```
+
+**Impact:**
+- Current: 109 files × ~50 lines = ~5,450 lines
+- After: 1 component (~80 lines) + 1 config (~1,000 lines) = ~1,080 lines
+- **Reduction: ~80% less code**
+
+---
+
+### Finding 3: Over-Engineering ✅
+**Status:** None detected
+- No unnecessary abstractions found
+- No premature optimizations
+- Complexity matches feature requirements
+
+---
+
+### Finding 4: Prop Drilling ✅
+**Status:** None detected
+- Context providers used appropriately
+- Props passed at reasonable depths
+
+---
+
+### Summary
+
+| Check | Status | Severity |
+|-------|--------|----------|
+| Unused Exports | ⚠️ LinguisticsTab dead | Low |
+| Copy-Paste Code | ⚠️⚠️ 109 duplicates | Medium |
+| Over-Engineering | ✅ None | - |
+| Prop Drilling | ✅ None | - |
+
+**Vibecode Technical Debt:**
+- Dead code: 1 file (LinguisticsTab.tsx)
+- Duplication: 109 insight components (consolidatable to 2 files)
+- **Priority:** Medium - works correctly but maintenance burden
+
+---
+
+> Backend cycle 28 complete. Vibecode patterns documented. Consolidation opportunity identified.
