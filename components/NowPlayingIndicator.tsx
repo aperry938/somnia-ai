@@ -5,13 +5,13 @@ import {
     stopSleepSound,
     setSleepSoundPersist,
     getCurrentSleepSoundName,
-    getCurrentSleepSoundVolume,
     setLiveVolume,
     didSoundEndNaturally,
     getLastPlayedSound,
     extendSleepSound,
     clearSoundEndedState
 } from '../services/audioService';
+import { useAppContext } from '../contexts/AppContext';
 import haptics from '../services/hapticsService';
 
 interface NowPlayingIndicatorProps {
@@ -29,11 +29,11 @@ type IndicatorState = 'playing' | 'ended' | 'hidden';
  * - Ended: Restart/extend options so user can continue their session
  */
 export const NowPlayingIndicator: React.FC<NowPlayingIndicatorProps> = ({ onNavigateToSleep }) => {
+    const { volume, setVolume } = useAppContext();
     const [state, setState] = useState<IndicatorState>('hidden');
     const [isExpanded, setIsExpanded] = useState(true);
     const [showControls, setShowControls] = useState(false);
     const [soundName, setSoundName] = useState<string | null>(null);
-    const [volume, setVolume] = useState(0.5);
     const [isExtending, setIsExtending] = useState(false);
 
     // Check state periodically
@@ -49,7 +49,7 @@ export const NowPlayingIndicator: React.FC<NowPlayingIndicatorProps> = ({ onNavi
                 // Use lastSound name as fallback (more reliable than getCurrentSleepSoundName)
                 const currentName = getCurrentSleepSoundName();
                 setSoundName(currentName || lastSound?.sound.name || 'Sleep Sound');
-                setVolume(getCurrentSleepSoundVolume());
+                // Volume is now managed by AppContext and persisted to localStorage
             } else if (endedNaturally && lastSound) {
                 // Sound ended naturally (timer expired) - show restart options
                 // Don't require isPersisting since it gets cleared when sound stops
@@ -89,8 +89,27 @@ export const NowPlayingIndicator: React.FC<NowPlayingIndicatorProps> = ({ onNavi
             // DON'T set persistence before extend - it blocks the internal cleanup
             const success = await extendSleepSound(minutes);
             if (success) {
-                // NOW set persistence and clear ended state after successful restart
+                // Set persistence immediately so checkState doesn't hide us
                 setSleepSoundPersist(true);
+
+                // Wait for sound to actually start playing before clearing ended state
+                // This prevents a race condition where checkState runs before the sound starts,
+                // sees "not playing AND not ended naturally", and hides the indicator
+                const waitForSound = () => new Promise<void>((resolve) => {
+                    let attempts = 0;
+                    const checkPlaying = () => {
+                        if (isSleepSoundPlaying() || attempts >= 10) {
+                            resolve();
+                        } else {
+                            attempts++;
+                            setTimeout(checkPlaying, 100);
+                        }
+                    };
+                    checkPlaying();
+                });
+                await waitForSound();
+
+                // NOW clear ended state after sound is confirmed playing
                 clearSoundEndedState();
                 setState('playing');
                 setShowControls(false);
