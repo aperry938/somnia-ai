@@ -29,6 +29,11 @@ const getSoundName = (soundId: string | undefined): string => {
     return soundMap[soundId || 'somnia'] || 'Somnia';
 };
 
+// Constants for time picker - defined outside component to prevent re-creation
+const HOURS_12 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;
+const MINUTES_60 = Array.from({ length: 60 }, (_, i) => i) as const;
+const PERIODS = ['AM', 'PM'] as const;
+
 // Memoized component for a single alarm item - fully clickable with dynamic styling
 const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = React.memo(({ alarm, onEdit }) => {
     const { toggleAlarmActive, deleteAlarm } = useAppContext();
@@ -232,12 +237,16 @@ const DrumTimePicker: React.FC<{ initialTime: string; onChange: (time: string) =
 
         // Use double requestAnimationFrame to ensure layout is complete
         // First RAF waits for next frame, second RAF ensures paint is done
-        let rafId: number;
-        rafId = requestAnimationFrame(() => {
-            rafId = requestAnimationFrame(scrollToInitialValues);
+        let rafId1: number;
+        let rafId2: number | undefined;
+        rafId1 = requestAnimationFrame(() => {
+            rafId2 = requestAnimationFrame(scrollToInitialValues);
         });
 
-        return () => cancelAnimationFrame(rafId);
+        return () => {
+            cancelAnimationFrame(rafId1);
+            if (rafId2 !== undefined) cancelAnimationFrame(rafId2);
+        };
     }, [hour, minute, period]);
 
     // Scroll handler for number-based time picker wheels (hours, minutes)
@@ -266,9 +275,9 @@ const DrumTimePicker: React.FC<{ initialTime: string; onChange: (time: string) =
         setter(values[clampedIndex] ?? '');
     };
 
-    const hours = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-    const minutes = Array.from({ length: 60 }, (_, i) => i);
-    const periods = ['AM', 'PM'];
+    const hours = HOURS_12;
+    const minutes = MINUTES_60;
+    const periods = PERIODS;
 
     const scrollToValue = (ref: React.RefObject<HTMLDivElement | null>, index: number) => {
         if (ref.current) {

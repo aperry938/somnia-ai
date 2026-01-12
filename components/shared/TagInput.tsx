@@ -82,7 +82,7 @@ export const TagInput: React.FC<TagInputProps> = ({
                     onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                     placeholder={tags.length === 0 ? placeholder : ''}
                     aria-label="Add tag"
-                    className="flex-1 min-w-[100px] bg-transparent outline-none text-sm"
+                    className="flex-1 min-w-[100px] bg-transparent outline-none text-base"
                 />
             </div>
 

@@ -102,7 +102,7 @@ export const SwipeableBottomSheet: React.FC<SwipeableBottomSheetProps> = ({
                 )}
 
                 {/* Content */}
-                <div className="overflow-y-auto" style={{ maxHeight: 'calc(90vh - 40px)' }}>
+                <div className="overflow-y-auto pb-[var(--safe-area-inset-bottom)]" style={{ maxHeight: 'calc(90vh - 40px)' }}>
                     {children}
                 </div>
             </motion.div>

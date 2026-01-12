@@ -6,73 +6,76 @@ import { startResonanceBreathing, ResonanceBreathingState } from '../../services
 import { useAppContext } from '../../contexts/AppContext';
 import haptics from '../../services/hapticsService';
 
-const CircleVisualizer: React.FC<{ animationClass: string; animKey: number; isAnimating: boolean }> = ({ animationClass, animKey, isAnimating }) => (
+const CircleVisualizer = React.memo<{ animationClass: string; animKey: number; isAnimating: boolean }>(({ animationClass, animKey, isAnimating }) => (
     <div className="w-40 h-40 flex justify-center items-center">
         <div
             key={animKey}
             className={`w-20 h-20 rounded-full bg-day-accent dark:bg-night-accent transform transition-all duration-300 ${isAnimating ? animationClass : 'scale-[0.8] opacity-70'}`}
         ></div>
     </div>
-);
+));
+
+// Bar indices for wave visualizer - defined outside component to prevent re-creation
+const WAVE_BAR_INDICES = Array.from({ length: 24 }, (_, i) => i);
+const WAVE_BAR_COUNT = WAVE_BAR_INDICES.length;
 
 // Waveform visualizer for Resonance Chamber - shows peaks during inhale, valleys during exhale
-const ResonanceWaveVisualizer: React.FC<{ phase: 'inhale' | 'exhale' | 'idle'; isAnimating: boolean }> = ({ phase, isAnimating }) => {
-    const barCount = 24;
-    const bars = Array.from({ length: barCount }, (_, i) => i);
+const ResonanceWaveVisualizer = React.memo<{ phase: 'inhale' | 'exhale' | 'idle'; isAnimating: boolean }>(({ phase, isAnimating }) => {
+    // Memoize bar styles based on phase and isAnimating
+    const barStyles = useMemo(() => {
+        return WAVE_BAR_INDICES.map((index) => {
+            if (!isAnimating) {
+                return {
+                    height: '20%',
+                    opacity: 0.5,
+                    transition: 'all 0.5s ease-out',
+                };
+            }
 
-    // Calculate wave position for each bar based on phase
-    const getBarStyle = (index: number): React.CSSProperties => {
-        if (!isAnimating) {
-            return {
-                height: '20%',
-                opacity: 0.5,
-                transition: 'all 0.5s ease-out',
-            };
-        }
+            // Create a wave pattern across the bars
+            const position = index / (WAVE_BAR_COUNT - 1); // 0 to 1
+            const waveOffset = Math.sin(position * Math.PI); // Peak in middle
 
-        // Create a wave pattern across the bars
-        const position = index / (barCount - 1); // 0 to 1
-        const waveOffset = Math.sin(position * Math.PI); // Peak in middle
-
-        // Different behavior for inhale vs exhale
-        if (phase === 'inhale') {
-            // Inhale: waves rise from center, building intensity
-            const baseHeight = 25 + waveOffset * 55; // 25% to 80%
-            const variation = Math.sin(position * Math.PI * 3) * 8; // Add ripples
-            return {
-                height: `${baseHeight + variation}%`,
-                opacity: 0.6 + waveOffset * 0.4,
-                transition: 'all 5.5s cubic-bezier(0.4, 0, 0.2, 1)',
-                transform: `scaleY(1)`,
-            };
-        } else {
-            // Exhale: waves fall back down, intensity subsides
-            const baseHeight = 15 + waveOffset * 15; // 15% to 30%
-            const variation = Math.sin(position * Math.PI * 3) * 3;
-            return {
-                height: `${baseHeight + variation}%`,
-                opacity: 0.4 + waveOffset * 0.2,
-                transition: 'all 5.5s cubic-bezier(0.4, 0, 0.2, 1)',
-                transform: `scaleY(1)`,
-            };
-        }
-    };
+            // Different behavior for inhale vs exhale
+            if (phase === 'inhale') {
+                // Inhale: waves rise from center, building intensity
+                const baseHeight = 25 + waveOffset * 55; // 25% to 80%
+                const variation = Math.sin(position * Math.PI * 3) * 8; // Add ripples
+                return {
+                    height: `${baseHeight + variation}%`,
+                    opacity: 0.6 + waveOffset * 0.4,
+                    transition: 'all 5.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                    transform: `scaleY(1)`,
+                };
+            } else {
+                // Exhale: waves fall back down, intensity subsides
+                const baseHeight = 15 + waveOffset * 15; // 15% to 30%
+                const variation = Math.sin(position * Math.PI * 3) * 3;
+                return {
+                    height: `${baseHeight + variation}%`,
+                    opacity: 0.4 + waveOffset * 0.2,
+                    transition: 'all 5.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                    transform: `scaleY(1)`,
+                };
+            }
+        });
+    }, [phase, isAnimating]);
 
     return (
         <div className="w-48 h-40 flex items-center justify-center gap-[3px]">
-            {bars.map((_, i) => (
+            {WAVE_BAR_INDICES.map((i) => (
                 <div
                     key={i}
                     className="w-1.5 rounded-full bg-day-accent dark:bg-night-accent"
-                    style={getBarStyle(i)}
+                    style={barStyles[i]}
                 />
             ))}
         </div>
     );
-};
+});
 
 
-const BoxVisualizer: React.FC<{ animKey: number; isAnimating: boolean }> = ({ animKey, isAnimating }) => (
+const BoxVisualizer = React.memo<{ animKey: number; isAnimating: boolean }>(({ animKey, isAnimating }) => (
     <div key={animKey} className="w-40 h-40 flex justify-center items-center">
         <svg width="120" height="120" viewBox="0 0 120 120" className="-rotate-90">
             <path
@@ -92,7 +95,7 @@ const BoxVisualizer: React.FC<{ animKey: number; isAnimating: boolean }> = ({ an
             />
         </svg>
     </div>
-);
+));
 
 type CycleStep = {
     text: string;
@@ -326,7 +329,7 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
             exit={{ opacity: 0 }}
         >
             <motion.div
-                className="bg-white/95 dark:bg-slate-800/95 border border-day-border dark:border-night-border rounded-t-2xl sm:rounded-2xl p-6 w-full max-w-sm text-center"
+                className="bg-white/95 dark:bg-slate-800/95 border border-day-border dark:border-night-border rounded-t-2xl sm:rounded-2xl p-6 pb-[calc(1.5rem+var(--safe-area-inset-bottom))] sm:pb-6 w-full max-w-sm text-center"
                 onClick={(e) => e.stopPropagation()}
                 style={{ y }}
                 initial={{ y: '100%' }}

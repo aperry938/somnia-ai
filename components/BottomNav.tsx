@@ -30,7 +30,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, setCurrentPag
     ];
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center px-2 pb-1 bg-day-card-bg/95 dark:bg-night-card-bg/95 backdrop-blur-lg border-t border-day-border dark:border-night-border" aria-label="Main navigation">
+        <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center px-2 pb-[calc(0.25rem+var(--safe-area-inset-bottom))] bg-day-card-bg/95 dark:bg-night-card-bg/95 backdrop-blur-lg border-t border-day-border dark:border-night-border" aria-label="Main navigation">
             {navItems.map(item => (
                 <button
                     key={item.page}

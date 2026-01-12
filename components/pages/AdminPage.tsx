@@ -43,7 +43,7 @@ const ToggleRow: React.FC<{ label: string; value: boolean; onChange: (val: boole
             onClick={() => onChange(!value)}
             aria-pressed={value}
             aria-labelledby={`toggle-label-${label.replace(/\s+/g, '-').toLowerCase()}`}
-            className={`w-12 h-8 min-h-[32px] rounded-full transition-colors relative ${
+            className={`w-14 h-8 min-h-[44px] rounded-full transition-colors relative ${
                 value ? 'bg-green-500' : 'bg-gray-400 dark:bg-gray-600'
             }`}
         >

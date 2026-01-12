@@ -191,7 +191,7 @@ export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }
                 </div>
 
                 {/* Input area */}
-                <div className="flex gap-2 flex-shrink-0">
+                <div className="flex gap-2 flex-shrink-0 pb-[var(--safe-area-inset-bottom)] sm:pb-0">
                     <input
                         value={input}
                         onChange={(e) => setInput(e.target.value)}

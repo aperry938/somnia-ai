@@ -369,7 +369,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
             aria-labelledby="soundscape-title"
         >
             <div
-                className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-t-2xl sm:rounded-2xl p-6 w-full max-w-sm text-center relative"
+                className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-t-2xl sm:rounded-2xl p-6 pb-[calc(1.5rem+var(--safe-area-inset-bottom))] sm:pb-6 w-full max-w-sm text-center relative"
                 onClick={(e) => e.stopPropagation()}
                 onTouchEnd={(e) => e.stopPropagation()}
             >

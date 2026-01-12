@@ -357,7 +357,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                             <button
                                 key={rating}
                                 onClick={() => updateDream({ id: dream.id, sleepQuality: rating })}
-                                className={`text-xl p-1 min-w-[32px] min-h-[32px] transition-colors ${dream.sleepQuality && rating <= dream.sleepQuality
+                                className={`text-xl p-2 min-w-[44px] min-h-[44px] transition-colors ${dream.sleepQuality && rating <= dream.sleepQuality
                                     ? 'text-amber-500'
                                     : 'text-gray-300 dark:text-gray-600 hover:text-amber-300'
                                     }`}
@@ -663,7 +663,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                                                             <button
                                                                 key={style}
                                                                 onClick={() => setSelectedPromptStyle(style)}
-                                                                className={`px-3 py-1.5 text-xs rounded-full transition-colors ${selectedPromptStyle === style
+                                                                className={`px-4 py-2 text-sm rounded-full min-h-[44px] transition-colors ${selectedPromptStyle === style
                                                                     ? 'bg-purple-600 text-white'
                                                                     : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-800/40'
                                                                     }`}

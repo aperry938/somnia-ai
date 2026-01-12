@@ -174,7 +174,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                 transition={{ duration: 0.2 }}
             >
                 <motion.div
-                    className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-t-2xl sm:rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto text-white"
+                    className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-t-2xl sm:rounded-2xl p-6 pb-[calc(1.5rem+var(--safe-area-inset-bottom))] sm:pb-6 w-full max-w-lg max-h-[90vh] overflow-y-auto text-white"
                     onClick={(e) => e.stopPropagation()}
                     style={{ y }}
                     initial={{ y: '100%' }}

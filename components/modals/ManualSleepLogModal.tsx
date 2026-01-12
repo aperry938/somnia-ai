@@ -186,7 +186,7 @@ export const ManualSleepLogModal: React.FC<ManualSleepLogModalProps> = ({ onComp
                                 value={customActivityName}
                                 onChange={(e) => setCustomActivityName(e.target.value)}
                                 placeholder="Activity name..."
-                                className="w-full p-2 bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-lg text-sm mb-2"
+                                className="w-full p-3 min-h-[48px] bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-lg text-base mb-2"
                                 autoFocus
                             />
                             <div className="flex gap-2">
