@@ -168,7 +168,7 @@ const AccordionItem: React.FC<{ title: string; content: string; isOpenDefault?: 
 };
 
 // Main Dream Detail Component
-export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => void; }> = ({ dreamId, onBack }) => {
+export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => void; onNavigateToDream?: (dreamId: number) => void; }> = ({ dreamId, onBack, onNavigateToDream }) => {
     const { getDreamById, updateDream, deleteDream, biometrics, dreams, analysisPersonality, setAnalysisPersonality, artStyle: _artStyle } = useAppContext();
     const { showToast } = useToast();
     // Use calibration dream for sample, otherwise get from context
@@ -416,22 +416,34 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
 
                 {/* Déjà Vu Alert Banner */}
                 {dejaVuMatch && (
-                    <div className="mb-6 bg-gradient-to-r from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30 border border-purple-200 dark:border-purple-700/50 rounded-xl p-4 animate-fadeIn">
+                    <button
+                        onClick={() => {
+                            if (onNavigateToDream) {
+                                haptics.light();
+                                onNavigateToDream(dejaVuMatch.dreamId);
+                            }
+                        }}
+                        className="w-full mb-6 bg-gradient-to-r from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30 border border-purple-200 dark:border-purple-700/50 rounded-xl p-4 animate-fadeIn hover:border-purple-400 dark:hover:border-purple-500 transition-colors text-left group"
+                        aria-label={`View similar dream: ${dejaVuMatch.title}`}
+                    >
                         <div className="flex items-start gap-3">
                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-indigo-400" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" /></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" /></svg>
                             </div>
                             <div className="flex-grow">
                                 <h4 className="font-serif text-purple-800 dark:text-purple-200 font-medium">Déjà Rêvé Detected!</h4>
                                 <p className="text-sm text-purple-600 dark:text-purple-300 mt-1">
-                                    This dream is <strong>{Math.round(dejaVuMatch.similarity * 100)}% similar</strong> to "{dejaVuMatch.title}" from {dejaVuMatch.daysAgo} days ago.
+                                    This dream is <strong>{Math.round(dejaVuMatch.similarity * 100)}% similar</strong> to "<span className="underline group-hover:text-purple-800 dark:group-hover:text-purple-100">{dejaVuMatch.title}</span>" from {dejaVuMatch.daysAgo} days ago.
                                 </p>
-                                <p className="text-xs text-purple-500 dark:text-purple-400 mt-2 italic">
-                                    Recurring dream patterns often reveal deep subconscious themes.
+                                <p className="text-xs text-purple-500 dark:text-purple-400 mt-2 flex items-center gap-1">
+                                    <span className="italic">Tap to view the connected dream</span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
                                 </p>
                             </div>
                         </div>
-                    </div>
+                    </button>
                 )}
 
                 {dream.sleepAids && <EveningReflectionDisplay aids={dream.sleepAids} />}

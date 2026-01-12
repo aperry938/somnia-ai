@@ -309,7 +309,7 @@ const App: React.FC = () => {
                         </Suspense>
                     );
                 case 'dream-detail':
-                    return <DreamDetailPage dreamId={selectedDreamId} onBack={() => setCurrentPage('chronicle')} />;
+                    return <DreamDetailPage dreamId={selectedDreamId} onBack={() => setCurrentPage('chronicle')} onNavigateToDream={navigateToDreamDetail} />;
                 case 'privacy':
                     return (
                         <Suspense fallback={<PageLoading message="Loading..." />}>
