@@ -186,6 +186,8 @@ export const ShareDreamModal: React.FC<ShareDreamModalProps> = ({ dream, isOpen,
                                         ? 'border-day-accent dark:border-night-accent bg-day-accent/10 dark:bg-night-accent/10'
                                         : 'border-day-border dark:border-night-border'
                                         }`}
+                                    aria-label={`Select ${f.label} format for ${f.platforms}`}
+                                    aria-pressed={format === f.id}
                                 >
                                     <p className="font-medium">{f.label}</p>
                                     <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">{f.platforms}</p>
@@ -206,6 +208,8 @@ export const ShareDreamModal: React.FC<ShareDreamModalProps> = ({ dream, isOpen,
                                         ? 'border-day-accent dark:border-night-accent bg-day-accent/10 dark:bg-night-accent/10'
                                         : 'border-day-border dark:border-night-border'
                                         }`}
+                                    aria-label={`Select ${t.label} theme`}
+                                    aria-pressed={theme === t.id}
                                 >
                                     <span className="text-day-accent dark:text-night-accent">{THEME_ICONS[t.id]}</span>
                                     <span className="text-sm">{t.label}</span>
@@ -225,6 +229,8 @@ export const ShareDreamModal: React.FC<ShareDreamModalProps> = ({ dream, isOpen,
                                         ? 'border-day-accent dark:border-night-accent bg-day-accent/10 dark:bg-night-accent/10'
                                         : 'border-day-border dark:border-night-border'
                                         }`}
+                                    aria-label="Use AI insight analysis quote as content"
+                                    aria-pressed={contentType === 'ai-insight'}
                                 >
                                     <p className="font-medium">AI Insight</p>
                                     <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">Analysis quote</p>
@@ -235,6 +241,8 @@ export const ShareDreamModal: React.FC<ShareDreamModalProps> = ({ dream, isOpen,
                                         ? 'border-day-accent dark:border-night-accent bg-day-accent/10 dark:bg-night-accent/10'
                                         : 'border-day-border dark:border-night-border'
                                         }`}
+                                    aria-label="Use dream excerpt as content"
+                                    aria-pressed={contentType === 'dream-excerpt'}
                                 >
                                     <p className="font-medium">Dream Excerpt</p>
                                     <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">Your words</p>
