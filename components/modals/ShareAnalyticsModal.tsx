@@ -123,6 +123,16 @@ export const ShareAnalyticsModal: React.FC<ShareAnalyticsModalProps> = ({ dreams
         generatePreview();
     }, [dreams, format, theme, cardType, isOpen]);
 
+    // Handle escape key to close modal
+    useEffect(() => {
+        if (!isOpen) return;
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, onClose]);
+
     const handleDownload = () => {
         if (!previewUrl) return;
         haptics.medium();
@@ -153,6 +163,9 @@ export const ShareAnalyticsModal: React.FC<ShareAnalyticsModalProps> = ({ dreams
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="share-analytics-title"
         >
             <motion.div
                 className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
@@ -163,7 +176,7 @@ export const ShareAnalyticsModal: React.FC<ShareAnalyticsModalProps> = ({ dreams
             >
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-day-border dark:border-night-border">
-                    <h2 className="font-serif text-xl">Share Analytics</h2>
+                    <h2 id="share-analytics-title" className="font-serif text-xl">Share Analytics</h2>
                     <button
                         onClick={onClose}
                         className="w-11 h-11 min-h-[44px] min-w-[44px] rounded-full flex items-center justify-center hover:bg-white/10"
