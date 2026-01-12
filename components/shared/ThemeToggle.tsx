@@ -72,7 +72,7 @@ export const ThemeToggle: React.FC = () => {
             <button
                 onClick={cycleTheme}
                 aria-label={`Toggle theme, currently ${themeOverride}`}
-                className="fixed top-6 left-6 z-40 p-3 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-white/10 dark:bg-black/20 backdrop-blur-md border border-white/20 dark:border-white/10 text-day-text-primary dark:text-night-text-primary shadow-lg hover:bg-white/20 dark:hover:bg-white/10 transition-all"
+                className="fixed top-[calc(0.5rem+var(--safe-area-inset-top))] left-4 z-40 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-white/10 dark:bg-black/20 backdrop-blur-md border border-white/20 dark:border-white/10 text-day-text-primary dark:text-night-text-primary shadow-lg hover:bg-white/20 dark:hover:bg-white/10 transition-all"
                 title={`Theme: ${themeOverride.charAt(0).toUpperCase() + themeOverride.slice(1)}`}
             >
                 {getIcon()}
@@ -80,7 +80,7 @@ export const ThemeToggle: React.FC = () => {
 
             {/* Floating Label */}
             {showLabel && (
-                <div className="fixed top-20 left-6 z-40 px-3 py-1.5 rounded-full bg-white/90 dark:bg-black/80 backdrop-blur-sm border border-white/20 dark:border-white/10 shadow-lg animate-fadeIn">
+                <div className="fixed top-[calc(3.5rem+var(--safe-area-inset-top))] left-4 z-40 px-3 py-1.5 rounded-full bg-white/90 dark:bg-black/80 backdrop-blur-sm border border-white/20 dark:border-white/10 shadow-lg animate-fadeIn">
                     <span className="text-sm font-medium text-day-text-primary dark:text-night-text-primary">
                         {labelText}
                     </span>

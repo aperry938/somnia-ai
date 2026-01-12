@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { isPremium } from '../../services/secureSubscriptionService';
+import { useToast } from '../shared/Toast';
+import {
+    scheduleSleepDetectionNotification,
+    cancelSleepDetectionNotification,
+    requestSleepDetectionPermissions
+} from '../../hooks/useSleepDetection';
+import { Capacitor } from '@capacitor/core';
 
 const STORAGE_KEY = 'somnia_sleep_detection';
 
@@ -16,17 +23,19 @@ const DEFAULT_SETTINGS: SleepDetectionSettings = {
 };
 
 const ALARM_SOUNDS = [
-    { id: 'somnia', name: 'Somnia' },
-    { id: 'gentle', name: 'Gentle' },
     { id: 'classic', name: 'Classic' },
-    { id: 'prism', name: 'Prism' },
     { id: 'aether', name: 'Aether' },
-    { id: 'bamboo', name: 'Bamboo' },
+    { id: 'somnia', name: 'Somnia' },
+    { id: 'prism', name: 'Prism' },
+    { id: 'cyber-dawn', name: 'Cyber-Dawn' },
+    { id: 'solar-ascent', name: 'Solar Ascent' },
 ];
 
 export const SleepDetectionSettingsCard: React.FC = () => {
     const [settings, setSettings] = useState<SleepDetectionSettings>(DEFAULT_SETTINGS);
+    const [isScheduling, setIsScheduling] = useState(false);
     const userIsPremium = isPremium();
+    const { showToast } = useToast();
 
     useEffect(() => {
         try {
@@ -37,10 +46,54 @@ export const SleepDetectionSettingsCard: React.FC = () => {
         }
     }, []);
 
-    const updateSettings = (updates: Partial<SleepDetectionSettings>) => {
+    const updateSettings = async (updates: Partial<SleepDetectionSettings>) => {
         const newSettings = { ...settings, ...updates };
         setSettings(newSettings);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(newSettings));
+
+        // If changing hours or sound while enabled, reschedule the notification
+        if (newSettings.enabled && Capacitor.isNativePlatform()) {
+            await scheduleSleepDetectionNotification(newSettings.inactivityHours, newSettings.soundId);
+        }
+    };
+
+    const handleToggle = async (enabled: boolean) => {
+        if (!userIsPremium) return;
+
+        setIsScheduling(true);
+
+        try {
+            if (enabled) {
+                // Request notification permissions
+                if (Capacitor.isNativePlatform()) {
+                    const granted = await requestSleepDetectionPermissions();
+                    if (!granted) {
+                        showToast('Please enable notifications in Settings for Sleep Detection to work');
+                        setIsScheduling(false);
+                        return;
+                    }
+
+                    // Schedule the notification
+                    await scheduleSleepDetectionNotification(settings.inactivityHours, settings.soundId);
+                    showToast('Sleep Detection enabled - we\'ll wake you after inactivity');
+                }
+
+                updateSettings({ enabled: true });
+            } else {
+                // Cancel any scheduled notification
+                if (Capacitor.isNativePlatform()) {
+                    await cancelSleepDetectionNotification();
+                }
+
+                updateSettings({ enabled: false });
+                showToast('Sleep Detection disabled');
+            }
+        } catch (error) {
+            console.error('[SleepDetection] Toggle error:', error);
+            showToast('Failed to update Sleep Detection');
+        } finally {
+            setIsScheduling(false);
+        }
     };
 
     return (
@@ -62,16 +115,16 @@ export const SleepDetectionSettingsCard: React.FC = () => {
                         </span>
                     )}
                 </div>
-                <label className={`relative inline-flex items-center ${userIsPremium ? 'cursor-pointer' : 'cursor-not-allowed'}`}>
+                <label className={`relative inline-flex items-center ${userIsPremium && !isScheduling ? 'cursor-pointer' : 'cursor-not-allowed'}`}>
                     <input
                         type="checkbox"
                         checked={userIsPremium && settings.enabled}
-                        onChange={(e) => userIsPremium && updateSettings({ enabled: e.target.checked })}
-                        disabled={!userIsPremium}
+                        onChange={(e) => handleToggle(e.target.checked)}
+                        disabled={!userIsPremium || isScheduling}
                         aria-label="Enable sleep detection"
                         className="sr-only peer"
                     />
-                    <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-day-accent dark:peer-checked:bg-night-accent ${!userIsPremium ? 'opacity-50' : ''}`}></div>
+                    <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-day-accent dark:peer-checked:bg-night-accent ${!userIsPremium || isScheduling ? 'opacity-50' : ''}`}></div>
                 </label>
             </div>
 
@@ -122,9 +175,19 @@ export const SleepDetectionSettingsCard: React.FC = () => {
                         </select>
                     </div>
 
-                    <p className="text-xs text-day-text-secondary dark:text-night-text-secondary bg-white/30 dark:bg-black/20 p-2 rounded-lg">
-                        When your phone is inactive for {settings.inactivityHours} hours, we'll trigger your morning wake-up with your selected alarm sound and open the dream capture screen—just like a scheduled alarm.
-                    </p>
+                    <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700/50 rounded-lg p-3">
+                        <div className="flex items-start gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <div>
+                                <p className="text-sm text-green-800 dark:text-green-200 font-medium">Works while phone is locked</p>
+                                <p className="text-xs text-green-700 dark:text-green-300/80 mt-1">
+                                    After {settings.inactivityHours} hours of inactivity, you'll receive a notification to record your dreams—even if the app is closed.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

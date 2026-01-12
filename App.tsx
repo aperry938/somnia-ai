@@ -6,7 +6,7 @@ import { useAuth } from './contexts/AuthContext';
 import { NavigationProvider } from './contexts/NavigationContext';
 import { useAlarmManager } from './hooks/useAlarmManager';
 import { initAudioContext } from './services/audioService';
-import { useRealityChecks } from './hooks/useRealityChecks';
+
 import { useStreakNotification } from './hooks/useStreakNotification';
 import { useAlarmNotification } from './hooks/useAlarmNotification';
 import { calculateUserStats } from './services/userStatsService';
@@ -403,15 +403,15 @@ const App: React.FC = () => {
 
     return (
         <NavigationProvider onNavigate={handleGlobalNavigate}>
-            <div className="flex flex-col h-screen overflow-hidden bg-gradient-to-b from-day-bg-start to-day-bg-end dark:from-night-bg-start dark:to-night-bg-end text-day-text-primary dark:text-night-text-primary transition-colors duration-500">
+            <div className="flex flex-col h-[100dvh] overflow-hidden bg-gradient-to-b from-day-bg-start to-day-bg-end dark:from-night-bg-start dark:to-night-bg-end text-day-text-primary dark:text-night-text-primary transition-colors duration-500">
                 <a href="#main-content" className="skip-link">Skip to main content</a>
-                <main ref={mainScrollRef} id="main-content" className="flex-grow overflow-y-auto custom-scrollbar p-4 md:p-6">
+                <main ref={mainScrollRef} id="main-content" className="flex-grow overflow-y-auto custom-scrollbar p-4 md:p-6 pb-14">
                     <AnimatePresence mode="wait">
                         {renderPage()}
                     </AnimatePresence>
                     {/* Page indicator dots for swipe navigation */}
                     {currentIndex !== -1 && (
-                        <div className="flex justify-center gap-2 py-3 mt-4">
+                        <div className="flex justify-center gap-2 py-1">
                             {Array.from({ length: totalPages }).map((_, i) => (
                                 <div
                                     key={i}
@@ -428,7 +428,7 @@ const App: React.FC = () => {
                 {ringingAlarm && <AlarmRingModal alarm={ringingAlarm} onSnooze={incrementSnoozeCount} onAwake={handleAwake} onRecordDream={handleRecordDream} onFinalize={finalizeSleepSession} onCaptureWakeMetrics={handleCaptureWakeMetrics} onSnoozeReRing={resetRingStartTime} />}
                 {isScribeOpen && <DreamScribeModal onSave={handleScribeSave} onClose={() => { setIsScribeOpen(false); setWakeQuickNote(''); }} initialText={wakeQuickNote} />}
                 <KeyboardShortcutsHelp isOpen={isHelpOpen} onClose={closeHelp} />
-                <RealityCheckManager />
+
                 <StreakNotificationManager />
                 <AlarmNotificationManager />
                 <OfflineQueueManager />
@@ -443,24 +443,7 @@ const App: React.FC = () => {
     );
 };
 
-// Internal component for Reality Checks (could be moved)
-const RealityCheckManager = () => {
-    const { permission, requestPermission } = useRealityChecks();
-    if (permission === 'granted') return null;
-    return (
-        <button
-            onClick={requestPermission}
-            aria-label="Enable Reality Check Notifications"
-            className="fixed bottom-20 left-4 text-xs min-h-[44px] bg-white/20 backdrop-blur px-3 py-2 rounded-lg text-white/90 hover:bg-white/30 transition-all z-50 flex items-center justify-center gap-1"
-            title="Enable Reality Check Notifications"
-        >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-            </svg>
-            Reality Check
-        </button>
-    );
-};
+
 
 // Internal component for Streak Notifications
 const StreakNotificationManager: React.FC = () => {

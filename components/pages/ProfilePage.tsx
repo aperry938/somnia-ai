@@ -362,7 +362,6 @@ const NotificationsCard: React.FC = () => {
         { key: 'sleepReminder', label: 'Sleep Reminder', desc: 'Bedtime notification' },
         { key: 'weeklyDigest', label: 'Weekly Digest', desc: 'Summary of your week' },
         { key: 'achievements', label: 'Achievements', desc: 'Level ups and milestones' },
-        { key: 'realityChecks', label: 'Reality Checks', desc: 'Lucid dream prompts' },
     ];
 
     return (

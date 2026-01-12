@@ -1,7 +1,10 @@
 import { useEffect, useCallback, useRef } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { LocalNotifications } from '@capacitor/local-notifications';
 
 const STORAGE_KEY = 'somnia_sleep_detection';
 const LAST_ACTIVITY_KEY = 'somnia_last_activity';
+const SLEEP_DETECTION_NOTIFICATION_ID = 999999;
 
 interface SleepDetectionSettings {
     enabled: boolean;
@@ -16,8 +19,69 @@ const DEFAULT_SETTINGS: SleepDetectionSettings = {
 };
 
 /**
+ * Schedule a native notification to fire after the inactivity threshold.
+ * This works even when the app is closed/phone is locked.
+ */
+export const scheduleSleepDetectionNotification = async (hoursFromNow: number, soundId: string): Promise<void> => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    try {
+        // Cancel any existing sleep detection notification first
+        await cancelSleepDetectionNotification();
+
+        const notificationTime = new Date();
+        notificationTime.setTime(notificationTime.getTime() + hoursFromNow * 60 * 60 * 1000);
+
+        await LocalNotifications.schedule({
+            notifications: [{
+                id: SLEEP_DETECTION_NOTIFICATION_ID,
+                title: 'Good morning! 🌅',
+                body: 'Time to record your dreams while they\'re fresh!',
+                schedule: { at: notificationTime },
+                sound: `${soundId}.wav`,
+                actionTypeId: 'SLEEP_DETECTION_WAKE',
+                extra: { type: 'sleep_detection', soundId },
+            }]
+        });
+
+        console.log('[SleepDetection] Scheduled notification for', notificationTime.toLocaleString());
+    } catch (error) {
+        console.error('[SleepDetection] Failed to schedule notification:', error);
+    }
+};
+
+/**
+ * Cancel the sleep detection notification.
+ */
+export const cancelSleepDetectionNotification = async (): Promise<void> => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    try {
+        await LocalNotifications.cancel({ notifications: [{ id: SLEEP_DETECTION_NOTIFICATION_ID }] });
+        console.log('[SleepDetection] Cancelled notification');
+    } catch (error) {
+        console.error('[SleepDetection] Failed to cancel notification:', error);
+    }
+};
+
+/**
+ * Request notification permissions. Returns true if granted.
+ */
+export const requestSleepDetectionPermissions = async (): Promise<boolean> => {
+    if (!Capacitor.isNativePlatform()) return false;
+
+    try {
+        const result = await LocalNotifications.requestPermissions();
+        return result.display === 'granted';
+    } catch (error) {
+        console.error('[SleepDetection] Failed to request permissions:', error);
+        return false;
+    }
+};
+
+/**
  * Hook to detect phone inactivity and prompt dream logging.
- * Monitors user activity and triggers a callback when inactivity threshold is reached.
+ * Uses native local notifications for reliable wake-up when phone is locked.
  * @param onWakePrompt - Called with the sound ID to use when inactivity threshold is met
  */
 export const useSleepDetection = (onWakePrompt: (soundId: string) => void) => {
@@ -38,12 +102,18 @@ export const useSleepDetection = (onWakePrompt: (soundId: string) => void) => {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
     }, []);
 
-    // Update last activity timestamp
-    const recordActivity = useCallback(() => {
+    // Update last activity timestamp AND reschedule notification
+    const recordActivity = useCallback(async () => {
         localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
-    }, []);
 
-    // Check if inactivity threshold has been reached
+        // Reschedule the notification further into the future
+        const settings = getSettings();
+        if (settings.enabled && Capacitor.isNativePlatform()) {
+            await scheduleSleepDetectionNotification(settings.inactivityHours, settings.soundId);
+        }
+    }, [getSettings]);
+
+    // Check if inactivity threshold has been reached (fallback for when app is active)
     const checkInactivity = useCallback(() => {
         const settings = getSettings();
         if (!settings.enabled) return false;
@@ -66,13 +136,13 @@ export const useSleepDetection = (onWakePrompt: (soundId: string) => void) => {
         return false;
     }, [getSettings, recordActivity]);
 
-    // Setup activity listeners
+    // Setup activity listeners and notification handlers
     useEffect(() => {
         const settings = getSettings();
         if (!settings.enabled) return;
 
         // Record activity on various user interactions
-        const activityEvents = ['touchstart', 'mousedown', 'keydown', 'scroll', 'visibilitychange'];
+        const activityEvents = ['touchstart', 'mousedown', 'keydown', 'scroll'];
 
         const handleActivity = () => {
             if (document.visibilityState === 'visible') {
@@ -84,10 +154,24 @@ export const useSleepDetection = (onWakePrompt: (soundId: string) => void) => {
             window.addEventListener(event, handleActivity, { passive: true });
         });
 
-        // Initial activity record
+        // Initial activity record and notification schedule
         recordActivity();
 
-        // Check inactivity periodically (every 5 minutes when app is active)
+        // Handle notification clicks - this fires when user taps the notification
+        let notificationListener: { remove: () => void } | undefined;
+        if (Capacitor.isNativePlatform()) {
+            LocalNotifications.addListener('localNotificationActionPerformed', (notification) => {
+                if (notification.notification.id === SLEEP_DETECTION_NOTIFICATION_ID) {
+                    const soundId = notification.notification.extra?.soundId ?? 'somnia';
+                    console.log('[SleepDetection] Notification tapped, triggering wake prompt with sound:', soundId);
+                    onWakePrompt(soundId);
+                }
+            }).then(listener => {
+                notificationListener = listener;
+            });
+        }
+
+        // Fallback: Check inactivity periodically when app IS active (every 5 minutes)
         checkIntervalRef.current = window.setInterval(() => {
             if (document.visibilityState === 'visible' && checkInactivity()) {
                 const settings = getSettings();
@@ -97,9 +181,14 @@ export const useSleepDetection = (onWakePrompt: (soundId: string) => void) => {
 
         // Also check when app becomes visible after being in background
         const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible' && checkInactivity()) {
-                const settings = getSettings();
-                onWakePrompt(settings.soundId);
+            if (document.visibilityState === 'visible') {
+                // Reschedule notification when app comes to foreground
+                recordActivity();
+
+                if (checkInactivity()) {
+                    const settings = getSettings();
+                    onWakePrompt(settings.soundId);
+                }
             }
         };
         document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -112,6 +201,7 @@ export const useSleepDetection = (onWakePrompt: (soundId: string) => void) => {
             if (checkIntervalRef.current) {
                 clearInterval(checkIntervalRef.current);
             }
+            notificationListener?.remove();
         };
     }, [getSettings, recordActivity, checkInactivity, onWakePrompt]);
 

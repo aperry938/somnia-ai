@@ -6,6 +6,7 @@ import { GuidedRelaxationModal } from '../modals/GuidedRelaxationModal';
 import { HardwareSyncModal } from '../modals/HardwareSyncModal';
 import { TechniqueInfoModal } from '../modals/TechniqueInfoModal';
 import { RealityCheckInfoModal } from '../modals/RealityCheckInfoModal';
+
 import { useAppContext } from '../../contexts/AppContext';
 import { stopSleepSound, stopSleepSoundIfNotPersisting, setSleepSoundPersist } from '../../services/audioService';
 import { REALITY_CHECKS, LUCID_TECHNIQUES, LucidDreamTechnique } from '../../constants/lucidDreaming';
@@ -762,6 +763,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                 isOpen={showRealityCheckModal}
                 onClose={() => setShowRealityCheckModal(false)}
             />
+
         </>
     );
 };

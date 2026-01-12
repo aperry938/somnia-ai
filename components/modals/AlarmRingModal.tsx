@@ -413,56 +413,10 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
             {/* Pulsing visual wake element - only active during alarm step */}
             <PulsingWakeVisual isActive={step === 'alarm'} />
 
-            {/* Swipe indicators - shown during active swipe */}
-            {step === 'alarm' && swipeOffset !== 0 && (
-                <>
-                    {/* Left indicator (Snooze) */}
-                    <div
-                        className="fixed left-4 top-1/2 -translate-y-1/2 flex flex-col items-center gap-2 transition-opacity"
-                        style={{ opacity: isSwipingLeft ? swipeProgress : 0.2 }}
-                    >
-                        <div
-                            className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center"
-                            style={{
-                                transform: `scale(${isSwipingLeft ? 0.8 + swipeProgress * 0.4 : 0.8})`,
-                                backgroundColor: isSwipingLeft && swipeProgress >= 1 ? 'rgba(255,255,255,0.4)' : undefined,
-                            }}
-                        >
-                            <span className="text-2xl">💤</span>
-                        </div>
-                        <span className="text-white/60 text-sm font-medium">Snooze</span>
-                    </div>
-
-                    {/* Right indicator (Wake) */}
-                    <div
-                        className="fixed right-4 top-1/2 -translate-y-1/2 flex flex-col items-center gap-2 transition-opacity"
-                        style={{ opacity: isSwipingRight ? swipeProgress : 0.2 }}
-                    >
-                        <div
-                            className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center"
-                            style={{
-                                transform: `scale(${isSwipingRight ? 0.8 + swipeProgress * 0.4 : 0.8})`,
-                                backgroundColor: isSwipingRight && swipeProgress >= 1 ? 'rgba(139,92,246,0.6)' : undefined,
-                            }}
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-                        </div>
-                        <span className="text-white/60 text-sm font-medium">Wake</span>
-                    </div>
-                </>
-            )}
-
             <div
                 className="w-full max-w-sm animate-fadeIn text-center py-6 relative z-10 transition-transform"
                 style={{ transform: swipeOffset !== 0 ? `translateX(${swipeOffset * 0.3}px)` : undefined }}
             >
-                {/* Swipe hint - only shown initially on alarm step */}
-                {step === 'alarm' && swipeOffset === 0 && (
-                    <p className="text-white/40 text-xs mb-4 animate-pulse">
-                        ← Swipe to snooze or wake →
-                    </p>
-                )}
-
                 {/* Time Display - Always visible */}
                 <p className="text-6xl font-light text-white/90 mb-2">{timeStr}</p>
                 <h2 className="font-serif text-2xl text-white/80 mb-2">
@@ -513,6 +467,11 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                                 {isSleepAlarm ? "I'm Awake" : 'Dismiss'}
                             </button>
                         </div>
+
+                        {/* Swipe hint */}
+                        <p className="text-white/40 text-sm mt-4 animate-pulse">
+                            ← Swipe left to snooze · Swipe right to wake →
+                        </p>
                     </div>
                 )}
 
