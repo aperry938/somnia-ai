@@ -3,8 +3,12 @@ import { logger } from './logger';
 
 const SYNC_QUEUE_KEY = 'somnia_sync_queue';
 const MAX_RETRIES = 3;
+const FETCH_TIMEOUT_MS = 10000; // 10 second timeout to prevent hanging
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+
+// Lock to prevent concurrent queue processing
+let isProcessingQueue = false;
 
 export const getSyncQueue = (): SyncAction[] => {
     try {
@@ -43,6 +47,24 @@ export const enqueueAction = (type: SyncActionType, payload: unknown) => {
 };
 
 /**
+ * Fetch with timeout to prevent hanging on CORS/network errors
+ */
+const fetchWithTimeout = async (url: string, options: RequestInit, timeoutMs: number): Promise<Response> => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+        const response = await fetch(url, {
+            ...options,
+            signal: controller.signal,
+        });
+        return response;
+    } finally {
+        clearTimeout(timeoutId);
+    }
+};
+
+/**
  * Sync a single action to the backend
  */
 const syncActionToBackend = async (action: SyncAction): Promise<boolean> => {
@@ -55,66 +77,95 @@ const syncActionToBackend = async (action: SyncAction): Promise<boolean> => {
     // Get auth token if available
     const token = localStorage.getItem('somnia_auth_token');
 
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/sync`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': token ? `Bearer ${token}` : `Bearer ${SUPABASE_ANON_KEY}`,
-            'apikey': SUPABASE_ANON_KEY,
-        },
-        body: JSON.stringify({
-            actionId: action.id,
-            actionType: action.type,
-            payload: action.payload,
-            timestamp: action.timestamp,
-        }),
-    });
+    try {
+        const response = await fetchWithTimeout(
+            `${SUPABASE_URL}/functions/v1/sync`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token ? `Bearer ${token}` : `Bearer ${SUPABASE_ANON_KEY}`,
+                    'apikey': SUPABASE_ANON_KEY,
+                },
+                body: JSON.stringify({
+                    actionId: action.id,
+                    actionType: action.type,
+                    payload: action.payload,
+                    timestamp: action.timestamp,
+                }),
+            },
+            FETCH_TIMEOUT_MS
+        );
 
-    if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`Sync failed: ${response.status} - ${error}`);
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`Sync failed: ${response.status} - ${error}`);
+        }
+
+        return true;
+    } catch (error) {
+        // Re-throw with more context for debugging
+        if (error instanceof Error) {
+            if (error.name === 'AbortError') {
+                throw new Error(`Sync timed out after ${FETCH_TIMEOUT_MS}ms`);
+            }
+            // Network/CORS errors will be TypeErrors with "Failed to fetch"
+            if (error.message.includes('Failed to fetch')) {
+                throw new Error('Network error (possibly CORS) - sync will retry later');
+            }
+        }
+        throw error;
     }
-
-    return true;
 };
 
 export const processSyncQueue = async (): Promise<{ success: number; failed: number }> => {
+    // Prevent concurrent queue processing which can cause UI blocking
+    if (isProcessingQueue) {
+        return { success: 0, failed: 0 };
+    }
+
     const queue = getSyncQueue();
     const pending = queue.filter(a => a.status === 'PENDING' && a.retryCount < MAX_RETRIES);
 
     if (pending.length === 0) return { success: 0, failed: 0 };
 
-    let successCount = 0;
-    let failCount = 0;
+    isProcessingQueue = true;
 
-    const updatedQueue = await Promise.all(queue.map(async (action) => {
-        if (action.status !== 'PENDING' || action.retryCount >= MAX_RETRIES) {
-            // Mark as failed if max retries exceeded
-            if (action.retryCount >= MAX_RETRIES && action.status === 'PENDING') {
-                return { ...action, status: 'FAILED' as const };
+    try {
+        let successCount = 0;
+        let failCount = 0;
+
+        const updatedQueue = await Promise.all(queue.map(async (action) => {
+            if (action.status !== 'PENDING' || action.retryCount >= MAX_RETRIES) {
+                // Mark as failed if max retries exceeded
+                if (action.retryCount >= MAX_RETRIES && action.status === 'PENDING') {
+                    return { ...action, status: 'FAILED' as const };
+                }
+                return action;
             }
-            return action;
-        }
 
-        try {
-            await syncActionToBackend(action);
-            successCount++;
-            return { ...action, status: 'SYNCED' as const };
-        } catch (e) {
-            logger.error(`[SyncService] Failed to sync action ${action.id}:`, e);
-            failCount++;
-            return { ...action, retryCount: action.retryCount + 1 };
-        }
-    }));
+            try {
+                await syncActionToBackend(action);
+                successCount++;
+                return { ...action, status: 'SYNCED' as const };
+            } catch (e) {
+                logger.error(`[SyncService] Failed to sync action ${action.id}:`, e);
+                failCount++;
+                return { ...action, retryCount: action.retryCount + 1 };
+            }
+        }));
 
-    // Cleanup: Keep last 100 synced items, remove older ones
-    const synced = updatedQueue.filter(a => a.status === 'SYNCED');
-    const nonSynced = updatedQueue.filter(a => a.status !== 'SYNCED');
-    const recentSynced = synced.slice(-100);
+        // Cleanup: Keep last 100 synced items, remove older ones
+        const synced = updatedQueue.filter(a => a.status === 'SYNCED');
+        const nonSynced = updatedQueue.filter(a => a.status !== 'SYNCED');
+        const recentSynced = synced.slice(-100);
 
-    saveSyncQueue([...nonSynced, ...recentSynced]);
+        saveSyncQueue([...nonSynced, ...recentSynced]);
 
-    return { success: successCount, failed: failCount };
+        return { success: successCount, failed: failCount };
+    } finally {
+        isProcessingQueue = false;
+    }
 };
 
 export const getPendingCount = (): number => {
