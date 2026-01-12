@@ -1598,27 +1598,37 @@ export const stopSleepSound = (fadeDuration: number = 2) => {
 
     const context = audioContext;
     if (sleepGainNode && context) {
+        // Capture references locally to avoid race condition with newly started sounds
+        const gainNodeToCleanup = sleepGainNode;
+        const compressorToCleanup = sleepCompressor;
+        const eqFiltersToCleanup = [...somniaEqFilters];
+
         const now = context.currentTime;
-        sleepGainNode.gain.cancelScheduledValues(now);
+        gainNodeToCleanup.gain.cancelScheduledValues(now);
         // Ramp down to near-zero first to avoid popping, then disconnect
-        sleepGainNode.gain.linearRampToValueAtTime(0, now + fadeDuration);
+        gainNodeToCleanup.gain.linearRampToValueAtTime(0, now + fadeDuration);
 
         // Disconnect after fade-out is complete
         setTimeout(() => {
-            if (sleepGainNode) {
-                sleepGainNode.disconnect();
-                sleepGainNode = null;
-            }
-            // Cleanup compressor
-            if (sleepCompressor) {
-                sleepCompressor.disconnect();
-                sleepCompressor = null;
+            // Disconnect the captured nodes (not globals, which may have been reassigned)
+            try { gainNodeToCleanup.disconnect(); } catch (_e) { /* ignore */ }
+            if (compressorToCleanup) {
+                try { compressorToCleanup.disconnect(); } catch (_e) { /* ignore */ }
             }
             // Cleanup Somnia-Grey EQ filters
-            if (somniaEqFilters.length > 0) {
-                somniaEqFilters.forEach(filter => {
-                    try { filter.disconnect(); } catch (_e) { /* ignore */ }
-                });
+            eqFiltersToCleanup.forEach(filter => {
+                try { filter.disconnect(); } catch (_e) { /* ignore */ }
+            });
+
+            // Only clear globals if they still reference the same nodes we cleaned up
+            // This prevents clearing state for a newly started sound
+            if (sleepGainNode === gainNodeToCleanup) {
+                sleepGainNode = null;
+            }
+            if (sleepCompressor === compressorToCleanup) {
+                sleepCompressor = null;
+            }
+            if (somniaEqFilters.length > 0 && somniaEqFilters[0] === eqFiltersToCleanup[0]) {
                 somniaEqFilters = [];
             }
         }, (fadeDuration * 1000) + 100);
@@ -1626,15 +1636,20 @@ export const stopSleepSound = (fadeDuration: number = 2) => {
 
     // Cleanup additional LFOs
     if (additionalLFOs.length > 0 && context) {
+        // Capture LFOs locally to avoid race condition with newly started sounds
+        const lfosToCleanup = [...additionalLFOs];
         const stopTime = context.currentTime + fadeDuration;
-        additionalLFOs.forEach(lfo => {
+        lfosToCleanup.forEach(lfo => {
             try { lfo.stop(stopTime); } catch (_e) { /* ignore */ }
         });
         setTimeout(() => {
-            additionalLFOs.forEach(lfo => {
+            lfosToCleanup.forEach(lfo => {
                 try { lfo.disconnect(); } catch (_e) { /* ignore */ }
             });
-            additionalLFOs = [];
+            // Only clear global if it still references the same LFOs
+            if (additionalLFOs.length > 0 && additionalLFOs[0] === lfosToCleanup[0]) {
+                additionalLFOs = [];
+            }
         }, (fadeDuration * 1000) + 100);
     }
 
