@@ -39,6 +39,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
     const [playDuration, setPlayDuration] = useState<number>(0); // Duration in seconds
     const [isPaused, setIsPaused] = useState(false); // Track pause state
     const [isReadyToPlay, setIsReadyToPlay] = useState(false); // Show play screen but not started yet
+    const [isSettling, setIsSettling] = useState(true); // Prevent accidental backdrop clicks on mount
     const pausedTimeRef = useRef<number>(0); // Track time remaining when paused
     const soundStartTimeRef = useRef<number | null>(null); // Track when sound actually started (for logging)
     const accumulatedPlayTimeRef = useRef<number>(0); // Track accumulated play time across pause/resume cycles
@@ -47,6 +48,14 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
     const skipCleanupRef = useRef<boolean>(false); // Skip cleanup when transitioning to full play or fall asleep
 
     // No auto-preview - user must click to start preview
+
+    // Allow backdrop clicks after modal has settled (prevents accidental closes on touch devices)
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsSettling(false);
+        }, 300); // 300ms settling time for touch interactions
+        return () => clearTimeout(timer);
+    }, []);
 
     // Cleanup on unmount - carefully handle different scenarios
     useEffect(() => {
@@ -336,9 +345,14 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
         onClose();
     };
 
-    // Handle backdrop click - only close if not in playing state
+    // Handle backdrop click - only close if not in playing state and modal has settled
     const handleBackdropClick = () => {
-        if (!isPlaying && !isReadyToPlay && !isPaused) {
+        // Prevent accidental closes during settling period (fixes mobile touch issues)
+        if (isSettling) {
+            return;
+        }
+        // Don't close if in any active state
+        if (!isPlaying && !isReadyToPlay && !isPaused && !isPreviewing) {
             handleClose();
         }
     };
@@ -357,6 +371,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
             <div
                 className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-t-2xl sm:rounded-2xl p-6 w-full max-w-sm text-center relative"
                 onClick={(e) => e.stopPropagation()}
+                onTouchEnd={(e) => e.stopPropagation()}
             >
                 {/* Drag indicator for mobile */}
                 <div className="flex justify-center pb-2 sm:hidden cursor-grab active:cursor-grabbing">
