@@ -214,7 +214,7 @@ export const GlobalTrendsCard: React.FC = () => {
                             showRegional && hasLocation,
                             countryName
                         )}
-                        className="p-2 rounded-full bg-indigo-500/20 hover:bg-indigo-500/40 border border-indigo-500/30 transition-colors"
+                        className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-indigo-500/20 hover:bg-indigo-500/40 border border-indigo-500/30 transition-colors"
                         aria-label="Share trends"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-indigo-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">

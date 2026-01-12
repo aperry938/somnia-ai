@@ -285,12 +285,12 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
                     )}
 
                     {/* Terms Checkbox */}
-                    <label className="flex items-start gap-3 mb-4 cursor-pointer">
+                    <label className="flex items-start gap-3 mb-4 py-2 min-h-[44px] cursor-pointer">
                         <input
                             type="checkbox"
                             checked={termsAccepted}
                             onChange={(e) => setTermsAccepted(e.target.checked)}
-                            className="mt-1 w-4 h-4 rounded border-gray-300 text-day-accent focus:ring-day-accent"
+                            className="mt-0.5 w-5 h-5 rounded border-gray-300 text-day-accent focus:ring-day-accent"
                         />
                         <span className="text-sm text-day-text-secondary dark:text-night-text-secondary">
                             I agree to the{' '}

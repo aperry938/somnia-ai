@@ -115,7 +115,7 @@ export const SleepDetectionSettingsCard: React.FC = () => {
                         </span>
                     )}
                 </div>
-                <label className={`relative inline-flex items-center ${userIsPremium && !isScheduling ? 'cursor-pointer' : 'cursor-not-allowed'}`}>
+                <label className={`relative inline-flex items-center min-h-[44px] ${userIsPremium && !isScheduling ? 'cursor-pointer' : 'cursor-not-allowed'}`}>
                     <input
                         type="checkbox"
                         checked={userIsPremium && settings.enabled}

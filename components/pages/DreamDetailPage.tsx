@@ -612,7 +612,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                                             />
                                             <button
                                                 onClick={() => updateDream({ id: dream.id, imageUrl: null })}
-                                                className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                                className="absolute top-2 right-2 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                                                 aria-label="Remove image"
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

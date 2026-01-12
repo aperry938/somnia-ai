@@ -115,7 +115,7 @@ const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = Re
                         </span>
                     </div>
                     <div
-                        className="relative inline-block w-11 align-middle select-none"
+                        className="relative inline-flex items-center w-11 min-h-[44px] align-middle select-none"
                         onClick={handleToggle}
                         role="switch"
                         aria-checked={alarm.isActive}

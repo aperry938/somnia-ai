@@ -586,10 +586,10 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                             <h2 className="font-serif text-2xl text-center my-8">Sleep Preparation</h2>
                             <div id="sleep-checklist" className="space-y-3">
                                 {SLEEP_CHECKLIST_ITEMS.map(item => (
-                                    <div key={item.key} className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-4 rounded-lg flex items-center">
+                                    <label key={item.key} htmlFor={`check-${item.key}`} className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-4 min-h-[52px] rounded-lg flex items-center cursor-pointer">
                                         <input type="checkbox" id={`check-${item.key}`} data-key={item.key} className="h-5 w-5 rounded text-day-accent focus:ring-day-accent border-gray-300 bg-transparent" />
-                                        <label htmlFor={`check-${item.key}`} className="ml-3 text-sm">{item.text}</label>
-                                    </div>
+                                        <span className="ml-3 text-sm">{item.text}</span>
+                                    </label>
                                 ))}
                             </div>
                         </div>
