@@ -3,13 +3,15 @@ import {
     getGlobalDreamTrends,
     getGlobalSleepStats,
     getRegionalTrends,
+    getCountryTopDreams,
     fetchGlobalTrends,
     isGlobalTrendsOptedIn,
     isLocationEnabled,
     setGlobalTrendsOptIn,
     getGlobalTrendsPrefs,
     type TrendPeriod,
-    type GlobalTrend
+    type GlobalTrend,
+    type CountryTopDream
 } from '../../services/dreamTrendsService';
 import haptics from '../../services/hapticsService';
 
@@ -87,6 +89,7 @@ export const GlobalTrendsCard: React.FC = () => {
 
     const trends = getGlobalDreamTrends(period);
     const regionalTrends = getRegionalTrends(period);
+    const countryTopDreams = getCountryTopDreams();
     const stats = getGlobalSleepStats(period);
     const prefs = getGlobalTrendsPrefs();
 
@@ -354,6 +357,30 @@ export const GlobalTrendsCard: React.FC = () => {
                     <p className="font-mono text-lg font-bold">{stats.avgQuality} / 5.0</p>
                 </div>
             </div>
+
+            {/* Top Dream by Country */}
+            {countryTopDreams && countryTopDreams.length > 0 && (
+                <div className="mt-5 pt-4 border-t border-indigo-500/30">
+                    <h3 className="text-sm font-semibold text-indigo-200 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Top Dream by Country
+                    </h3>
+                    <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-thin scrollbar-thumb-indigo-500/30">
+                        {countryTopDreams.slice(0, 8).map((item: CountryTopDream) => (
+                            <div
+                                key={item.countryCode}
+                                className="flex-shrink-0 bg-black/20 rounded-lg p-3 min-w-[140px] border border-indigo-500/20 hover:border-indigo-500/40 transition-colors"
+                            >
+                                <p className="text-xs text-indigo-300/70 mb-1 truncate">{item.country}</p>
+                                <p className="text-sm font-medium text-white truncate">{item.topDream}</p>
+                                <p className="text-xs text-indigo-400/60 mt-1">{item.dreamers.toLocaleString()} dreamers</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Location indicator */}
             {hasLocation && countryName && (

@@ -20,9 +20,17 @@ export interface GlobalStats {
     region?: string; // e.g., "California, US" or "Europe"
 }
 
+export interface CountryTopDream {
+    country: string;
+    countryCode: string; // ISO 3166-1 alpha-2
+    topDream: string;
+    dreamers: number;
+}
+
 export interface GlobalTrendsResponse {
     trends: GlobalTrend[];
     regionalTrends?: GlobalTrend[]; // Trends specific to user's region
+    countryTopDreams?: CountryTopDream[]; // Top dream per country
     stats: GlobalStats;
     regionalStats?: GlobalStats;
     cachedAt: string;
@@ -311,6 +319,7 @@ export const fetchGlobalTrends = async (period: TrendPeriod = 'week'): Promise<G
     const fallback: GlobalTrendsResponse = {
         trends: getMockTrends(period),
         stats: getMockStats(period),
+        countryTopDreams: getMockCountryTopDreams(),
         cachedAt: new Date().toISOString(),
         period,
     };
@@ -420,4 +429,28 @@ const getMockStats = (period: TrendPeriod): GlobalStats => {
         'all-time': { avgSleepTime: '7h 14m', avgQuality: 3.85, activeDreamers: 128500 },
     };
     return statsData[period];
+};
+
+// Top dream by country - In production, dynamically computed from aggregated dream themes per country
+const getMockCountryTopDreams = (): CountryTopDream[] => [
+    { country: 'United States', countryCode: 'US', topDream: 'Flying', dreamers: 42300 },
+    { country: 'Japan', countryCode: 'JP', topDream: 'Natural Disasters', dreamers: 18200 },
+    { country: 'Brazil', countryCode: 'BR', topDream: 'Water/Ocean', dreamers: 15800 },
+    { country: 'Germany', countryCode: 'DE', topDream: 'Being Chased', dreamers: 12400 },
+    { country: 'India', countryCode: 'IN', topDream: 'Family Members', dreamers: 28500 },
+    { country: 'United Kingdom', countryCode: 'GB', topDream: 'Work Anxiety', dreamers: 9800 },
+    { country: 'Australia', countryCode: 'AU', topDream: 'Animals/Wildlife', dreamers: 6200 },
+    { country: 'Mexico', countryCode: 'MX', topDream: 'Deceased Loved Ones', dreamers: 8900 },
+    { country: 'France', countryCode: 'FR', topDream: 'Romantic Partners', dreamers: 7600 },
+    { country: 'South Korea', countryCode: 'KR', topDream: 'Exam Stress', dreamers: 5400 },
+    { country: 'Canada', countryCode: 'CA', topDream: 'Nature/Outdoors', dreamers: 4800 },
+    { country: 'Italy', countryCode: 'IT', topDream: 'Food/Feasting', dreamers: 4200 },
+];
+
+/**
+ * Get top dreams by country
+ */
+export const getCountryTopDreams = (): CountryTopDream[] => {
+    const cached = getCachedTrends('week');
+    return cached?.countryTopDreams || getMockCountryTopDreams();
 };
