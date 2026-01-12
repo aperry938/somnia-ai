@@ -6,6 +6,7 @@ import { enqueueAction } from '../services/syncService';
 import { cacheDreamTitle } from '../services/geminiService';
 import { logger } from '../services/logger';
 import * as NativeAlarm from '../services/nativeAlarmService';
+import { getGlobalTrendsPrefs } from '../services/dreamTrendsService';
 
 /**
  * SECURITY FIX: Generate cryptographically secure random ID
@@ -598,6 +599,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             sleepEntryId = entryId;
         }
 
+        // Check global trends opt-in status for anonymous aggregation
+        const trendsPrefs = getGlobalTrendsPrefs();
+
         const newDream: Dream = {
             id: dreamId,
             timestamp: new Date().toISOString(),
@@ -610,6 +614,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             sleepAids: sleepData,
             sleepEntryId, // Link to the SleepEntry if created
             mood,
+            // Global Trends: include location metadata if user opted in
+            ...(trendsPrefs.optedIn && {
+                shareInGlobalTrends: true,
+                userRegion: trendsPrefs.location?.region,
+                userCountry: trendsPrefs.location?.country,
+            }),
         };
         setDreams(prev => [newDream, ...prev]);
         // Clear both session and pending data after dream is logged
@@ -621,6 +631,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     // Add a past dream with custom timestamp (for Chronicle manual logging)
     const addPastDream = (dreamText: string, sleepQuality: number | null, mood: DreamMood | undefined, timestamp: string): number => {
+        // Check global trends opt-in status for anonymous aggregation
+        const trendsPrefs = getGlobalTrendsPrefs();
+
         const newDream: Dream = {
             id: generateSecureId(),
             timestamp,
@@ -631,6 +644,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             aiAnalysis: null,
             chatHistory: [],
             mood,
+            // Global Trends: include location metadata if user opted in
+            ...(trendsPrefs.optedIn && {
+                shareInGlobalTrends: true,
+                userRegion: trendsPrefs.location?.region,
+                userCountry: trendsPrefs.location?.country,
+            }),
         };
         setDreams(prev => [newDream, ...prev]);
         enqueueAction('ADD_DREAM', newDream);
@@ -707,6 +726,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const entry = sleepEntries.find(e => e.id === sleepEntryId);
         if (!entry) return -1;
 
+        // Check global trends opt-in status for anonymous aggregation
+        const trendsPrefs = getGlobalTrendsPrefs();
+
         const newDream: Dream = {
             id: generateSecureId(),
             timestamp: new Date().toISOString(),
@@ -718,6 +740,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             chatHistory: [],
             mood,
             sleepEntryId,
+            // Global Trends: include location metadata if user opted in
+            ...(trendsPrefs.optedIn && {
+                shareInGlobalTrends: true,
+                userRegion: trendsPrefs.location?.region,
+                userCountry: trendsPrefs.location?.country,
+            }),
         };
         setDreams(prev => [newDream, ...prev]);
 

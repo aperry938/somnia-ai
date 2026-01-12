@@ -68,6 +68,10 @@ export interface Dream {
     mood?: DreamMood; // Emotional tone of the dream
     sleepEntryId?: number; // Link to parent sleep entry (optional for migration)
     embedding?: number[]; // Vector embedding for semantic similarity (Déjà Vu detection)
+    // Global Trends fields (for anonymous aggregation)
+    shareInGlobalTrends?: boolean; // Whether this dream is opted-in for global trends
+    userRegion?: string; // User's region for regional aggregation
+    userCountry?: string; // User's country for country-level trends
 }
 
 // Moods for tracking emotional patterns
