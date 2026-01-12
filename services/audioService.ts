@@ -1688,20 +1688,25 @@ export const stopSleepSound = (fadeDuration: number = 2) => {
     // Reset cleanup mutex after all operations complete
     setTimeout(() => {
         isCleaningUp = false;
-        // Clear interruption handling
-        if (interruptionCleanup) {
-            interruptionCleanup();
-            interruptionCleanup = null;
+
+        // Only clear state if no new sound has started in the meantime
+        // This prevents delayed cleanup from killing newly started sounds
+        if (!isSleepSoundPlaying()) {
+            // Clear interruption handling
+            if (interruptionCleanup) {
+                interruptionCleanup();
+                interruptionCleanup = null;
+            }
+            currentSleepSound = null;
+            wasPlayingBeforeInterruption = false;
+            // Only clear persistence if user explicitly stopped (not natural timer end)
+            // This allows the "ended" indicator to show restart options
+            if (!soundEndedNaturally) {
+                persistAcrossNavigation = false;
+            }
+            // Deactivate iOS audio session after audio stops (be a good citizen)
+            setAudioSessionActive(false);
         }
-        currentSleepSound = null;
-        wasPlayingBeforeInterruption = false;
-        // Only clear persistence if user explicitly stopped (not natural timer end)
-        // This allows the "ended" indicator to show restart options
-        if (!soundEndedNaturally) {
-            persistAcrossNavigation = false;
-        }
-        // Deactivate iOS audio session after audio stops (be a good citizen)
-        setAudioSessionActive(false);
     }, (fadeDuration * 1000) + 200);
 };
 
