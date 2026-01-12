@@ -8,9 +8,12 @@ const corsHeaders = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Support both formats: client sends actionId/actionType, legacy sends id/type
 interface SyncAction {
-    id: string;
-    type: 'ADD_DREAM' | 'UPDATE_DREAM' | 'DELETE_DREAM';
+    id?: string;
+    actionId?: string;
+    type?: 'ADD_DREAM' | 'UPDATE_DREAM' | 'DELETE_DREAM';
+    actionType?: 'ADD_DREAM' | 'UPDATE_DREAM' | 'DELETE_DREAM';
     payload: DreamPayload;
     timestamp: number;
 }
@@ -23,6 +26,7 @@ interface DreamPayload {
     title: string;
     tags?: string[];
     mood?: string;
+    sleepEntryId?: number; // Link to parent sleep entry
     shareInGlobalTrends?: boolean;
     userRegion?: string;
     userCountry?: string;
@@ -83,8 +87,11 @@ Deno.serve(async (req) => {
         const errors: string[] = [];
 
         for (const action of actions) {
+            // Support both field name formats
+            const actionType = action.type || action.actionType;
+
             try {
-                switch (action.type) {
+                switch (actionType) {
                     case 'ADD_DREAM':
                         await handleAddDream(supabase, userId, action.payload);
                         processed++;
@@ -98,10 +105,10 @@ Deno.serve(async (req) => {
                         processed++;
                         break;
                     default:
-                        errors.push(`Unknown action type: ${action.type}`);
+                        errors.push(`Unknown action type: ${actionType}`);
                 }
             } catch (err) {
-                errors.push(`Failed to process ${action.type}: ${(err as Error).message}`);
+                errors.push(`Failed to process ${actionType}: ${(err as Error).message}`);
             }
         }
 
@@ -140,6 +147,7 @@ async function handleAddDream(
         title: dream.title,
         tags: dream.tags || [],
         mood: dream.mood,
+        sleep_entry_id: dream.sleepEntryId || null,
         share_in_global_trends: dream.shareInGlobalTrends || false,
         user_region: dream.userRegion,
         user_country: dream.userCountry,
@@ -164,6 +172,7 @@ async function handleUpdateDream(
     if (dream.title !== undefined) updateData.title = dream.title;
     if (dream.tags !== undefined) updateData.tags = dream.tags;
     if (dream.mood !== undefined) updateData.mood = dream.mood;
+    if (dream.sleepEntryId !== undefined) updateData.sleep_entry_id = dream.sleepEntryId;
     if (dream.shareInGlobalTrends !== undefined) updateData.share_in_global_trends = dream.shareInGlobalTrends;
     if (dream.userRegion !== undefined) updateData.user_region = dream.userRegion;
     if (dream.userCountry !== undefined) updateData.user_country = dream.userCountry;

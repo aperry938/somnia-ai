@@ -21,11 +21,19 @@ interface GlobalStats {
     activeDreamers: number;
 }
 
+interface CountryTopDream {
+    country: string;
+    country_code: string;
+    top_dream: string;
+    dreamers: number;
+}
+
 interface GlobalTrendsResponse {
     success: boolean;
     data?: {
         trends: GlobalTrend[];
         stats: GlobalStats;
+        countryTopDreams?: { country: string; countryCode: string; topDream: string; dreamers: number }[];
         cachedAt: string;
         period: string;
     };
@@ -62,13 +70,14 @@ Deno.serve(async (req) => {
         const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
         const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-        // Call the aggregation function
-        const { data, error } = await supabase.rpc('get_global_trends', {
-            time_period: period
-        });
+        // Call the aggregation functions in parallel
+        const [trendsResult, countryDreamsResult] = await Promise.all([
+            supabase.rpc('get_global_trends', { time_period: period }),
+            supabase.rpc('get_country_top_dreams')
+        ]);
 
-        if (error) {
-            console.error('Database error:', error);
+        if (trendsResult.error) {
+            console.error('Database error:', trendsResult.error);
             return new Response(
                 JSON.stringify({
                     success: false,
@@ -81,6 +90,17 @@ Deno.serve(async (req) => {
             );
         }
 
+        // Transform country top dreams to camelCase for client
+        const countryTopDreams = (countryDreamsResult.data as CountryTopDream[] || []).map(d => ({
+            country: d.country,
+            countryCode: d.country_code,
+            topDream: d.top_dream,
+            dreamers: Number(d.dreamers)
+        }));
+
+        const data = trendsResult.data;
+        const error = trendsResult.error;
+
         // Transform and return data
         const row = data?.[0];
         if (!row) {
@@ -91,6 +111,7 @@ Deno.serve(async (req) => {
                     data: {
                         trends: getDefaultTrends(period),
                         stats: getDefaultStats(period),
+                        countryTopDreams: countryTopDreams.length > 0 ? countryTopDreams : getDefaultCountryTopDreams(),
                         cachedAt: new Date().toISOString(),
                         period
                     }
@@ -107,6 +128,7 @@ Deno.serve(async (req) => {
                 data: {
                     trends: row.trends || [],
                     stats: row.stats || getDefaultStats(period),
+                    countryTopDreams: countryTopDreams.length > 0 ? countryTopDreams : getDefaultCountryTopDreams(),
                     cachedAt: row.cached_at || new Date().toISOString(),
                     period
                 }
@@ -166,4 +188,22 @@ function getDefaultStats(period: string): GlobalStats {
         'all-time': { avgSleepTime: '7h 14m', avgQuality: 3.85, activeDreamers: 0 },
     };
     return defaultStats[period] || defaultStats['week'];
+}
+
+// Default country top dreams when database is empty
+function getDefaultCountryTopDreams(): { country: string; countryCode: string; topDream: string; dreamers: number }[] {
+    return [
+        { country: 'United States', countryCode: 'US', topDream: 'Flying', dreamers: 42300 },
+        { country: 'Japan', countryCode: 'JP', topDream: 'Natural Disasters', dreamers: 18200 },
+        { country: 'Brazil', countryCode: 'BR', topDream: 'Water/Ocean', dreamers: 15800 },
+        { country: 'Germany', countryCode: 'DE', topDream: 'Being Chased', dreamers: 12400 },
+        { country: 'India', countryCode: 'IN', topDream: 'Family Members', dreamers: 28500 },
+        { country: 'United Kingdom', countryCode: 'GB', topDream: 'Work Anxiety', dreamers: 9800 },
+        { country: 'Australia', countryCode: 'AU', topDream: 'Animals/Wildlife', dreamers: 6200 },
+        { country: 'Mexico', countryCode: 'MX', topDream: 'Deceased Loved Ones', dreamers: 8900 },
+        { country: 'France', countryCode: 'FR', topDream: 'Romantic Partners', dreamers: 7600 },
+        { country: 'South Korea', countryCode: 'KR', topDream: 'Exam Stress', dreamers: 5400 },
+        { country: 'Canada', countryCode: 'CA', topDream: 'Nature/Outdoors', dreamers: 4800 },
+        { country: 'Italy', countryCode: 'IT', topDream: 'Food/Feasting', dreamers: 4200 },
+    ];
 }

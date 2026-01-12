@@ -300,6 +300,7 @@ export const fetchGlobalTrends = async (period: TrendPeriod = 'week'): Promise<G
                     const result: GlobalTrendsResponse = {
                         trends: json.data.trends,
                         regionalTrends: json.data.regionalTrends,
+                        countryTopDreams: json.data.countryTopDreams,
                         stats: json.data.stats,
                         regionalStats: json.data.regionalStats,
                         cachedAt: json.data.cachedAt,
