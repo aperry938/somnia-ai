@@ -10,6 +10,49 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 // Lock to prevent concurrent queue processing
 let isProcessingQueue = false;
 
+/**
+ * Ensure we have a valid auth token before syncing.
+ * Tokens can expire during 8+ hour sleep sessions, causing data loss.
+ * This function refreshes the token if needed.
+ */
+async function ensureValidToken(): Promise<string | null> {
+    // Dynamic import to avoid circular dependencies
+    const { createClient } = await import('@supabase/supabase-js');
+
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+        return null; // No Supabase configured
+    }
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+
+        if (error || !session) {
+            // Try to refresh the session
+            logger.log('[SyncService] Session expired or missing, attempting refresh...');
+            const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+
+            if (refreshError || !refreshData.session) {
+                logger.warn('[SyncService] Token refresh failed, will retry later');
+                return null;
+            }
+
+            // Store the new token
+            localStorage.setItem('somnia_auth_token', refreshData.session.access_token);
+            logger.log('[SyncService] Token refreshed successfully');
+            return refreshData.session.access_token;
+        }
+
+        // Update stored token in case it was refreshed by Supabase
+        localStorage.setItem('somnia_auth_token', session.access_token);
+        return session.access_token;
+    } catch (e) {
+        logger.error('[SyncService] Error checking/refreshing token:', e);
+        return null;
+    }
+}
+
 export const getSyncQueue = (): SyncAction[] => {
     try {
         const item = localStorage.getItem(SYNC_QUEUE_KEY);
@@ -67,15 +110,12 @@ const fetchWithTimeout = async (url: string, options: RequestInit, timeoutMs: nu
 /**
  * Sync a single action to the backend
  */
-const syncActionToBackend = async (action: SyncAction): Promise<boolean> => {
+const syncActionToBackend = async (action: SyncAction, token: string | null): Promise<boolean> => {
     // Check if Supabase is configured
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
         // No backend configured - mark as synced (local-only mode)
         return true;
     }
-
-    // Get auth token if available
-    const token = localStorage.getItem('somnia_auth_token');
 
     try {
         const response = await fetchWithTimeout(
@@ -129,6 +169,14 @@ export const processSyncQueue = async (): Promise<{ success: number; failed: num
 
     if (pending.length === 0) return { success: 0, failed: 0 };
 
+    // Ensure we have a valid token before syncing (handles 8+ hour sleep expiry)
+    const token = await ensureValidToken();
+    if (!token && SUPABASE_URL && SUPABASE_ANON_KEY) {
+        // Token refresh failed but Supabase is configured - defer sync
+        logger.warn('[SyncService] No valid token for sync, will retry later');
+        return { success: 0, failed: 0 };
+    }
+
     isProcessingQueue = true;
 
     try {
@@ -145,7 +193,7 @@ export const processSyncQueue = async (): Promise<{ success: number; failed: num
             }
 
             try {
-                await syncActionToBackend(action);
+                await syncActionToBackend(action, token);
                 successCount++;
                 return { ...action, status: 'SYNCED' as const };
             } catch (e) {

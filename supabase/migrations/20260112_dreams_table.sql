@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS public.dreams (
     tags TEXT[] DEFAULT '{}',
     mood TEXT,
     sleep_entry_id BIGINT,
-    embedding vector(1536), -- For semantic similarity (Deja Vu)
+    embedding vector(768), -- For semantic similarity (Deja Vu) - Gemini text-embedding-004
     -- Global Trends fields
     share_in_global_trends BOOLEAN DEFAULT FALSE,
     user_region TEXT,

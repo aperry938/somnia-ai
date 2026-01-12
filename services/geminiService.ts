@@ -41,6 +41,42 @@ const checkOnline = (): void => {
     }
 };
 
+/**
+ * Retry wrapper with exponential backoff for rate-limited API calls.
+ * Handles 429 (Too Many Requests) errors from Gemini API.
+ */
+async function withRetry<T>(
+    fn: () => Promise<T>,
+    maxRetries = 3,
+    baseDelay = 1000
+): Promise<T> {
+    let lastError: Error = new Error('Unknown error');
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+            return await fn();
+        } catch (error) {
+            lastError = error as Error;
+            const errorMessage = lastError.message || '';
+
+            // Check if this is a rate limit error (429)
+            if (errorMessage.includes('429') || errorMessage.toLowerCase().includes('rate limit')) {
+                const delay = baseDelay * Math.pow(2, attempt);
+                logger.warn(`[Gemini] Rate limited, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                continue;
+            }
+
+            // For non-retryable errors, throw immediately
+            throw error;
+        }
+    }
+
+    // All retries exhausted
+    logger.error('[Gemini] Max retries exceeded for rate-limited request');
+    throw lastError;
+}
+
 let aiInstance: GoogleGenAI | null = null;
 
 // Cache for dream titles to prevent redundant API calls
@@ -119,7 +155,7 @@ export const analyzeDream = async (dreamText: string, sleepAids?: SleepAids, bio
     try {
         const ai = getAi();
         const prompt = createAnalysisPrompt(dreamText, personality, sleepAids, biometrics);
-        const response: GenerateContentResponse = await ai.models.generateContent({
+        const response: GenerateContentResponse = await withRetry(() => ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: [{ parts: [{ text: prompt }] }],
             config: {
@@ -195,7 +231,7 @@ export const analyzeDream = async (dreamText: string, sleepAids?: SleepAids, bio
                     required: ['title', 'analysis', 'integration', 'telemetry']
                 },
             },
-        });
+        }));
         const rawJson = response.text?.trim() ?? '';
         if (!rawJson) {
             throw new Error('AI returned empty response. Please try again.');
@@ -253,10 +289,10 @@ REQUIREMENTS:
 
 OUTPUT ONLY THE IMAGE PROMPT, nothing else.`;
 
-        const response = await ai.models.generateContent({
+        const response = await withRetry(() => ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: [{ parts: [{ text: prompt }] }],
-        });
+        }));
 
         const result = response.text?.trim() ?? '';
         if (!result) {
@@ -351,10 +387,10 @@ export const generateDreamTitle = async (dreamText: string): Promise<string> => 
 
 Return ONLY the title, nothing else. No quotes, no explanation.`;
 
-            const response = await ai.models.generateContent({
+            const response = await withRetry(() => ai.models.generateContent({
                 model: 'gemini-2.5-flash',
                 contents: [{ parts: [{ text: prompt }] }],
-            });
+            }));
 
             const title = response.text?.trim() || 'Untitled Dream';
 
@@ -406,10 +442,10 @@ export const getDreamChatResponse = async (dream: Dream, history: ChatMessage[])
     const chatHistory = [createDreamChatSystemPrompt(dream), ...cleanHistory];
     try {
         const ai = getAi();
-        const response: GenerateContentResponse = await ai.models.generateContent({
+        const response: GenerateContentResponse = await withRetry(() => ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: chatHistory,
-        });
+        }));
         return response.text ?? '';
     } catch (error) {
         logError(error instanceof Error ? error : new Error(String(error)), 'ai', { operation: 'getDreamChatResponse' });
@@ -433,7 +469,7 @@ export const synthesizeDreamThemes = async (dreams: Dream[]): Promise<DreamSynth
     try {
         const ai = getAi();
         const prompt = createSynthesisPrompt(dreams);
-        const response: GenerateContentResponse = await ai.models.generateContent({
+        const response: GenerateContentResponse = await withRetry(() => ai.models.generateContent({
             model: 'gemini-2.5-pro', // Pro model for complex multi-dream synthesis
             contents: [{ parts: [{ text: prompt }] }],
             config: {
@@ -456,7 +492,7 @@ export const synthesizeDreamThemes = async (dreams: Dream[]): Promise<DreamSynth
                     }
                 }
             }
-        });
+        }));
         const rawJson = response.text?.trim() ?? '';
         if (!rawJson) {
             throw new Error('AI returned empty response. Please try again.');
@@ -497,7 +533,7 @@ export const analyzeSleepHabits = async (dreams: Dream[]): Promise<SleepHabitAna
     try {
         const ai = getAi();
         const prompt = createHabitAnalysisPrompt(dreams);
-        const response: GenerateContentResponse = await ai.models.generateContent({
+        const response: GenerateContentResponse = await withRetry(() => ai.models.generateContent({
             model: 'gemini-2.5-pro', // Pro model for complex habit correlation analysis
             contents: [{ parts: [{ text: prompt }] }],
             config: {
@@ -523,7 +559,7 @@ export const analyzeSleepHabits = async (dreams: Dream[]): Promise<SleepHabitAna
                     }
                 }
             }
-        });
+        }));
         const rawJson = response.text?.trim() ?? '';
         if (!rawJson) {
             throw new Error('AI returned empty response. Please try again.');
@@ -716,7 +752,7 @@ export const analyzeDreamWithMemory = async (
         const basePrompt = createAnalysisPrompt(dreamText, personality, sleepAids, biometrics);
         const enhancedPrompt = basePrompt + contextString;
 
-        const response: GenerateContentResponse = await ai.models.generateContent({
+        const response: GenerateContentResponse = await withRetry(() => ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: [{ parts: [{ text: enhancedPrompt }] }],
             config: {
@@ -774,7 +810,7 @@ export const analyzeDreamWithMemory = async (
                     required: ['title', 'analysis', 'integration', 'telemetry']
                 }
             }
-        });
+        }));
 
         const rawJson = response.text?.trim() ?? '';
         if (!rawJson) throw new Error('AI returned empty response.');
