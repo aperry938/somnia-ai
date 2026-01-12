@@ -9,6 +9,7 @@ interface DreamCompareModalProps {
 export const DreamCompareModal: React.FC<DreamCompareModalProps> = ({ dreams, onClose }) => {
     const [leftDreamId, setLeftDreamId] = useState<number | null>(dreams[0]?.id || null);
     const [rightDreamId, setRightDreamId] = useState<number | null>(dreams[1]?.id || null);
+    const [isSelectOpen, setIsSelectOpen] = useState(false);
 
     // Handle Escape key to close modal
     useEffect(() => {
@@ -19,6 +20,13 @@ export const DreamCompareModal: React.FC<DreamCompareModalProps> = ({ dreams, on
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [onClose]);
 
+    // Safely close modal only if select is not being interacted with
+    const handleBackdropClick = () => {
+        if (!isSelectOpen) {
+            onClose();
+        }
+    };
+
     const leftDream = dreams.find(d => d.id === leftDreamId);
     const rightDream = dreams.find(d => d.id === rightDreamId);
 
@@ -26,10 +34,21 @@ export const DreamCompareModal: React.FC<DreamCompareModalProps> = ({ dreams, on
         <div className="flex-1 min-w-0">
             <select
                 value={dream?.id || ''}
-                onChange={(e) => onSelect(Number(e.target.value))}
+                onChange={(e) => {
+                    onSelect(Number(e.target.value));
+                    setIsSelectOpen(false);
+                }}
                 aria-label={`Select ${side} dream for comparison`}
+                onFocus={() => setIsSelectOpen(true)}
+                onBlur={() => {
+                    // Delay to allow click events to complete before enabling backdrop close
+                    setTimeout(() => setIsSelectOpen(false), 300);
+                }}
                 onPointerDown={(e) => e.stopPropagation()}
-                onTouchStart={(e) => e.stopPropagation()}
+                onTouchStart={(e) => {
+                    e.stopPropagation();
+                    setIsSelectOpen(true);
+                }}
                 onMouseDown={(e) => e.stopPropagation()}
                 className="w-full mb-4 p-3 min-h-[48px] text-base bg-white/50 dark:bg-black/30 border border-day-border dark:border-night-border rounded-lg focus:outline-none focus:ring-2 focus:ring-day-accent"
             >
@@ -94,7 +113,7 @@ export const DreamCompareModal: React.FC<DreamCompareModalProps> = ({ dreams, on
     const uniqueRight = [...rightTags].filter(t => !leftTags.has(t));
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="compare-modal-title">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={handleBackdropClick} role="dialog" aria-modal="true" aria-labelledby="compare-modal-title">
             <div
                 className="w-full max-w-4xl max-h-[90vh] bg-day-bg-end dark:bg-night-bg-end rounded-2xl shadow-2xl overflow-hidden animate-fadeIn"
                 onClick={e => e.stopPropagation()}
