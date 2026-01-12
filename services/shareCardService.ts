@@ -1,5 +1,6 @@
 import { Dream, DreamMood } from '../types';
 import { MOOD_LABELS } from '../constants/uiIcons';
+import { logger } from './logger';
 
 export type ShareCardFormat = 'square' | 'vertical';
 export type ShareCardTheme =
@@ -249,7 +250,7 @@ export async function shareCard(dataUrl: string, title: string): Promise<boolean
             return true;
         }
     } catch (error) {
-        console.error('Share failed:', error);
+        logger.error('Share failed:', error);
     }
     return false;
 }

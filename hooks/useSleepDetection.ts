@@ -1,6 +1,7 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { logger } from '../services/logger';
 
 const STORAGE_KEY = 'somnia_sleep_detection';
 const LAST_ACTIVITY_KEY = 'somnia_last_activity';
@@ -44,9 +45,9 @@ export const scheduleSleepDetectionNotification = async (hoursFromNow: number, s
             }]
         });
 
-        console.log('[SleepDetection] Scheduled notification for', notificationTime.toLocaleString());
+        logger.log('[SleepDetection] Scheduled notification for', notificationTime.toLocaleString());
     } catch (error) {
-        console.error('[SleepDetection] Failed to schedule notification:', error);
+        logger.error('[SleepDetection] Failed to schedule notification:', error);
     }
 };
 
@@ -58,9 +59,9 @@ export const cancelSleepDetectionNotification = async (): Promise<void> => {
 
     try {
         await LocalNotifications.cancel({ notifications: [{ id: SLEEP_DETECTION_NOTIFICATION_ID }] });
-        console.log('[SleepDetection] Cancelled notification');
+        logger.log('[SleepDetection] Cancelled notification');
     } catch (error) {
-        console.error('[SleepDetection] Failed to cancel notification:', error);
+        logger.error('[SleepDetection] Failed to cancel notification:', error);
     }
 };
 
@@ -74,7 +75,7 @@ export const requestSleepDetectionPermissions = async (): Promise<boolean> => {
         const result = await LocalNotifications.requestPermissions();
         return result.display === 'granted';
     } catch (error) {
-        console.error('[SleepDetection] Failed to request permissions:', error);
+        logger.error('[SleepDetection] Failed to request permissions:', error);
         return false;
     }
 };
@@ -163,7 +164,7 @@ export const useSleepDetection = (onWakePrompt: (soundId: string) => void) => {
             LocalNotifications.addListener('localNotificationActionPerformed', (notification) => {
                 if (notification.notification.id === SLEEP_DETECTION_NOTIFICATION_ID) {
                     const soundId = notification.notification.extra?.soundId ?? 'somnia';
-                    console.log('[SleepDetection] Notification tapped, triggering wake prompt with sound:', soundId);
+                    logger.log('[SleepDetection] Notification tapped, triggering wake prompt with sound:', soundId);
                     onWakePrompt(soundId);
                 }
             }).then(listener => {
