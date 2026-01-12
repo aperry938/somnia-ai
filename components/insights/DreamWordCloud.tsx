@@ -5,21 +5,62 @@ interface WordCloudProps {
     dreams: Dream[];
 }
 
-// Common words to exclude from the cloud
+// Common words to exclude from the cloud - expanded for dream narratives
 const STOP_WORDS = new Set([
-    'i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'you', 'your', 'he', 'him', 'his',
-    'she', 'her', 'hers', 'it', 'its', 'they', 'them', 'their', 'what', 'which', 'who',
-    'this', 'that', 'these', 'those', 'am', 'is', 'are', 'was', 'were', 'be', 'been',
-    'being', 'have', 'has', 'had', 'having', 'do', 'does', 'did', 'doing', 'a', 'an',
-    'the', 'and', 'but', 'if', 'or', 'because', 'as', 'until', 'while', 'of', 'at',
-    'by', 'for', 'with', 'about', 'against', 'between', 'into', 'through', 'during',
+    // Pronouns and possessives
+    'i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', 'your', 'yours',
+    'yourself', 'yourselves', 'he', 'him', 'his', 'himself', 'she', 'her', 'hers', 'herself',
+    'it', 'its', 'itself', 'they', 'them', 'their', 'theirs', 'themselves', 'what', 'which',
+    'who', 'whom', 'whose', 'this', 'that', 'these', 'those',
+
+    // Articles, conjunctions, prepositions
+    'a', 'an', 'the', 'and', 'but', 'if', 'or', 'because', 'as', 'until', 'while', 'of',
+    'at', 'by', 'for', 'with', 'about', 'against', 'between', 'into', 'through', 'during',
     'before', 'after', 'above', 'below', 'to', 'from', 'up', 'down', 'in', 'out', 'on',
     'off', 'over', 'under', 'again', 'further', 'then', 'once', 'here', 'there', 'when',
-    'where', 'why', 'how', 'all', 'each', 'few', 'more', 'most', 'other', 'some', 'such',
-    'no', 'nor', 'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 's', 't',
-    'can', 'will', 'just', 'don', 'should', 'now', 'could', 'would', 'really', 'like',
-    'know', 'get', 'got', 'see', 'saw', 'felt', 'feel', 'went', 'go', 'going', 'back',
-    'one', 'two', 'even', 'something', 'someone', 'around', 'way', 'still', 'also'
+    'where', 'why', 'how', 'both', 'each', 'few', 'more', 'most', 'other', 'some', 'such',
+    'no', 'nor', 'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 'any', 'every',
+
+    // Common auxiliary/modal verbs
+    'am', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'having',
+    'do', 'does', 'did', 'doing', 'can', 'will', 'would', 'could', 'should', 'may', 'might',
+    'must', 'shall',
+
+    // Common narrative verbs (appear frequently in dream descriptions)
+    'went', 'go', 'going', 'gone', 'come', 'came', 'coming', 'get', 'got', 'getting',
+    'make', 'made', 'making', 'take', 'took', 'taking', 'taken', 'give', 'gave', 'giving',
+    'see', 'saw', 'seen', 'seeing', 'look', 'looked', 'looking', 'seem', 'seemed', 'seeming',
+    'feel', 'felt', 'feeling', 'think', 'thought', 'thinking', 'know', 'knew', 'knowing',
+    'want', 'wanted', 'wanting', 'need', 'needed', 'needing', 'try', 'tried', 'trying',
+    'start', 'started', 'starting', 'begin', 'began', 'beginning', 'keep', 'kept', 'keeping',
+    'turn', 'turned', 'turning', 'move', 'moved', 'moving', 'walk', 'walked', 'walking',
+    'run', 'ran', 'running', 'stand', 'stood', 'standing', 'sit', 'sat', 'sitting',
+    'say', 'said', 'saying', 'tell', 'told', 'telling', 'ask', 'asked', 'asking',
+    'call', 'called', 'calling', 'put', 'putting', 'set', 'setting', 'let', 'letting',
+    'leave', 'left', 'leaving', 'find', 'found', 'finding', 'become', 'became', 'becoming',
+    'happen', 'happened', 'happening', 'appear', 'appeared', 'appearing', 'change', 'changed',
+    'notice', 'noticed', 'noticing', 'realize', 'realized', 'realizing', 'remember', 'remembered',
+    'decide', 'decided', 'hear', 'heard', 'hearing', 'stop', 'stopped', 'stopping',
+    'hold', 'held', 'holding', 'bring', 'brought', 'reach', 'reached', 'open', 'opened',
+    'close', 'closed', 'pull', 'pulled', 'push', 'pushed', 'woke', 'wake', 'waking',
+
+    // Common filler/abstract words
+    'just', 'really', 'like', 'back', 'still', 'also', 'even', 'much', 'many', 'more',
+    'less', 'well', 'always', 'never', 'sometimes', 'often', 'soon', 'later', 'finally',
+    'suddenly', 'slowly', 'quickly', 'actually', 'probably', 'maybe', 'almost', 'already',
+    'completely', 'totally', 'entirely', 'able', 'away', 'else', 'enough', 'around',
+
+    // Generic nouns that don't add meaning
+    'thing', 'things', 'something', 'anything', 'nothing', 'everything', 'someone', 'anyone',
+    'everyone', 'nobody', 'somebody', 'place', 'places', 'time', 'times', 'moment', 'point',
+    'part', 'parts', 'kind', 'kinds', 'sort', 'way', 'ways', 'lot', 'lots', 'bit',
+
+    // Numbers
+    'one', 'two', 'three', 'four', 'five', 'first', 'second', 'last', 'next',
+
+    // Contractions (after apostrophe removal these remain)
+    's', 't', 'd', 'll', 've', 're', 'don', 'didn', 'doesn', 'won', 'wouldn', 'couldn',
+    'shouldn', 'isn', 'aren', 'wasn', 'weren', 'hasn', 'haven', 'hadn'
 ]);
 
 /**
