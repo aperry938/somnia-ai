@@ -225,7 +225,7 @@ function generateWeeklyWrap(
     // Second row
     const row2Y = startY + cardHeight + padding * 0.5;
     drawStatCard(ctx, padding, row2Y, cardWidth, cardHeight,
-        `${analytics.currentStreak}🔥`, 'Day Streak', isVertical);
+        `${analytics.currentStreak}`, 'Day Streak', isVertical);
 
     drawStatCard(ctx, padding * 2 + cardWidth, row2Y, cardWidth, cardHeight,
         `Lvl ${analytics.level}`, analytics.levelTitle, isVertical);
