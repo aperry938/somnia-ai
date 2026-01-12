@@ -98,12 +98,24 @@ export const DreamWordCloud: React.FC<WordCloudProps> = ({ dreams }) => {
         const minCount = sorted[sorted.length - 1]?.[1] ?? 0;
         const range = maxCount - minCount || 1;
 
-        return sorted.map(([word, count]) => ({
-            word,
-            count,
-            size: 12 + ((count - minCount) / range) * 16, // 12px to 28px
-            opacity: 0.5 + ((count - minCount) / range) * 0.5, // 50% to 100%
-        }));
+        // Map words with dramatically varying sizes
+        const mapped = sorted.map(([word, count]) => {
+            const normalized = (count - minCount) / range;
+            return {
+                word,
+                count,
+                // Use exponential scaling for more dramatic size differences (11px to 42px)
+                size: 11 + Math.pow(normalized, 0.7) * 31,
+                opacity: 0.45 + normalized * 0.55,
+            };
+        });
+
+        // Shuffle deterministically based on word content for stable layout
+        return mapped.sort((a, b) => {
+            const hashA = a.word.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+            const hashB = b.word.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+            return (hashA % 7) - (hashB % 7);
+        });
     }, [dreams]);
 
     if (dreams.length < 3 || words.length === 0) {
@@ -119,12 +131,12 @@ export const DreamWordCloud: React.FC<WordCloudProps> = ({ dreams }) => {
                 Dream Vocabulary
             </h3>
 
-            <div className="flex flex-wrap gap-2 justify-center items-center min-h-[80px]" role="img" aria-label={`Word cloud showing top ${words.length} dream vocabulary words. Most common: ${words.slice(0, 5).map(w => w.word).join(', ')}`}>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 justify-center items-baseline min-h-[100px] py-2" role="img" aria-label={`Word cloud showing top ${words.length} dream vocabulary words. Most common: ${words.slice(0, 5).map(w => w.word).join(', ')}`}>
                 {words.map(({ word, count, size, opacity }) => (
                     <span
                         key={word}
                         style={{ fontSize: `${size}px`, opacity }}
-                        className="text-day-accent dark:text-night-accent hover:opacity-100 cursor-default transition-opacity"
+                        className="text-day-accent dark:text-night-accent hover:opacity-100 cursor-default transition-opacity leading-tight"
                         title={`"${word}" appears ${count} time${count !== 1 ? 's' : ''}`}
                         aria-hidden="true"
                     >
@@ -134,7 +146,7 @@ export const DreamWordCloud: React.FC<WordCloudProps> = ({ dreams }) => {
             </div>
 
             <p className="text-xs text-day-text-secondary dark:text-night-text-secondary text-center mt-3">
-                Top {words.length} words across {dreams.length} dreams
+                Larger words appear more often across {dreams.length} dreams
             </p>
         </div>
     );
