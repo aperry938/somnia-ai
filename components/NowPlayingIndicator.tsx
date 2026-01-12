@@ -13,6 +13,7 @@ import {
 } from '../services/audioService';
 import { useAppContext } from '../contexts/AppContext';
 import haptics from '../services/hapticsService';
+import { logger } from '../services/logger';
 
 interface NowPlayingIndicatorProps {
     onNavigateToSleep?: () => void;
@@ -115,10 +116,10 @@ export const NowPlayingIndicator: React.FC<NowPlayingIndicatorProps> = ({ onNavi
                 setShowControls(false);
             } else {
                 // Failed to extend - keep persistence but stay in current state
-                console.warn('[NowPlayingIndicator] Failed to extend sound');
+                logger.warn('[NowPlayingIndicator] Failed to extend sound');
             }
         } catch (error) {
-            console.error('[NowPlayingIndicator] Error extending sound:', error);
+            logger.error('[NowPlayingIndicator] Error extending sound:', error);
             // On error, revert to checking actual state
         } finally {
             setIsExtending(false);

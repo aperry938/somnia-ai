@@ -10,6 +10,7 @@ import {
     getThemeForMood
 } from '../../services/shareCardService';
 import haptics from '../../services/hapticsService';
+import { logger } from '../../services/logger';
 
 interface ShareDreamModalProps {
     dream: Dream;
@@ -76,7 +77,7 @@ export const ShareDreamModal: React.FC<ShareDreamModalProps> = ({ dream, isOpen,
                 const url = await generateShareCard({ dream, format, theme, contentType });
                 setPreviewUrl(url);
             } catch (error) {
-                console.error('Failed to generate preview:', error);
+                logger.error('Failed to generate preview:', error);
             }
             setIsGenerating(false);
         };
