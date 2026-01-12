@@ -408,7 +408,11 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                                 onAction={handleSynthesizeDreams}
                                 isLoading={isDreamSynthLoading}
                                 isDisabled={!userIsPremium || dreams.length < 3 || !canUseDreamSynth()}
-                                statusText={dreams.length < 3 ? "Requires at least 3 logged dreams" : undefined}
+                                statusText={
+                                    dreams.length < 3
+                                        ? "Requires at least 3 logged dreams"
+                                        : "Available once per week after logging 3 new dreams"
+                                }
                             >
                                 {dreamSynthesis && (
                                     <div className="space-y-4 pt-2 animate-fadeIn bg-white/5 rounded-xl p-4">
@@ -471,7 +475,11 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                                 onAction={handleAnalyzeHabits}
                                 isLoading={isHabitLoading}
                                 isDisabled={!userIsPremium || dreams.filter(d => d.sleepQuality).length < 3 || !canUseHabitAnalysis()}
-                                statusText={dreams.filter(d => d.sleepQuality).length < 3 ? "Requires at least 3 nights with sleep quality ratings" : undefined}
+                                statusText={
+                                    dreams.filter(d => d.sleepQuality).length < 3
+                                        ? "Requires at least 3 nights with sleep quality ratings"
+                                        : "Available once per week after logging 3 new entries"
+                                }
                             >
                                 {habitAnalysis && (
                                     <div className="space-y-4 pt-2 animate-fadeIn bg-white/5 rounded-xl p-4">
