@@ -74,7 +74,7 @@ export const SwipeableBottomSheet: React.FC<SwipeableBottomSheetProps> = ({
 
             {/* Sheet */}
             <motion.div
-                className={`relative w-full max-w-lg bg-day-card-bg dark:bg-night-card-bg rounded-t-2xl overflow-hidden ${className}`}
+                className={`relative w-full max-w-lg bg-white/95 dark:bg-slate-800/95 rounded-t-2xl overflow-hidden ${className}`}
                 style={{
                     y,
                     height: sheetHeight,

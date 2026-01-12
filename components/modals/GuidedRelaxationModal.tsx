@@ -316,7 +316,7 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
 
     return (
         <motion.div
-            className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 z-50"
+            className="fixed inset-0 bg-day-bg-start/70 dark:bg-night-bg-start/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 z-50"
             onClick={endSession}
             role="dialog"
             aria-modal="true"
@@ -324,10 +324,9 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            style={{ opacity: backdropOpacity }}
         >
             <motion.div
-                className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-t-2xl sm:rounded-2xl p-6 w-full max-w-sm text-center"
+                className="bg-white/95 dark:bg-slate-800/95 border border-day-border dark:border-night-border rounded-t-2xl sm:rounded-2xl p-6 w-full max-w-sm text-center"
                 onClick={(e) => e.stopPropagation()}
                 style={{ y }}
                 initial={{ y: '100%' }}
