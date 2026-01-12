@@ -241,7 +241,7 @@ export const GlobalTrendsCard: React.FC = () => {
                         onClick={() => setPeriod(p)}
                         aria-pressed={period === p}
                         aria-label={`Show ${periodLabels[p]} trends`}
-                        className={`flex-1 px-2 py-2 min-h-[40px] text-xs font-medium rounded-md transition-all flex items-center justify-center ${
+                        className={`flex-1 px-2 py-2 min-h-[44px] text-xs font-medium rounded-md transition-all flex items-center justify-center ${
                             period === p
                                 ? 'bg-indigo-500 text-white shadow-lg'
                                 : 'text-indigo-200 hover:bg-indigo-500/30'
@@ -258,7 +258,7 @@ export const GlobalTrendsCard: React.FC = () => {
                     <button
                         onClick={() => setShowRegional(false)}
                         aria-pressed={!showRegional}
-                        className={`flex-1 px-3 py-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1 ${
+                        className={`flex-1 px-3 py-2 min-h-[44px] text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1 ${
                             !showRegional
                                 ? 'bg-purple-500 text-white shadow-lg'
                                 : 'text-purple-200 hover:bg-purple-500/30'
@@ -272,7 +272,7 @@ export const GlobalTrendsCard: React.FC = () => {
                     <button
                         onClick={() => setShowRegional(true)}
                         aria-pressed={showRegional}
-                        className={`flex-1 px-3 py-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1 ${
+                        className={`flex-1 px-3 py-2 min-h-[44px] text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1 ${
                             showRegional
                                 ? 'bg-purple-500 text-white shadow-lg'
                                 : 'text-purple-200 hover:bg-purple-500/30'
