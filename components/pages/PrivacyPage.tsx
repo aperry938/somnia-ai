@@ -59,15 +59,6 @@ export const PrivacyPage: React.FC<PrivacyPageProps> = ({ onBack }) => {
                     </p>
                 </section>
 
-                <section>
-                    <h2 className="font-serif text-2xl text-day-text-primary dark:text-night-text-primary mb-3">Contact</h2>
-                    <p>
-                        Questions? Email us at{' '}
-                        <a href="mailto:privacy@somnia.ai" className="text-day-accent dark:text-night-accent hover:underline">
-                            privacy@somnia.ai
-                        </a>
-                    </p>
-                </section>
             </div>
         </div>
     );

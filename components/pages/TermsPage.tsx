@@ -122,15 +122,6 @@ export const TermsPage: React.FC<TermsPageProps> = ({ onBack }) => {
                     </p>
                 </section>
 
-                <section>
-                    <h2 className="font-serif text-2xl text-day-text-primary dark:text-night-text-primary mb-3">Contact</h2>
-                    <p>
-                        Questions about these terms? Email us at{' '}
-                        <a href="mailto:legal@somnia.ai" className="text-day-accent dark:text-night-accent hover:underline">
-                            legal@somnia.ai
-                        </a>
-                    </p>
-                </section>
             </div>
         </div>
     );
