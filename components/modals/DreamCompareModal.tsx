@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Dream } from '../../types';
 
 interface DreamCompareModalProps {
@@ -105,12 +105,16 @@ export const DreamCompareModal: React.FC<DreamCompareModalProps> = ({ dreams, on
         </div>
     );
 
-    // Find shared and unique tags
-    const leftTags = new Set(leftDream?.tags || []);
-    const rightTags = new Set(rightDream?.tags || []);
-    const sharedTags = [...leftTags].filter(t => rightTags.has(t));
-    const uniqueLeft = [...leftTags].filter(t => !rightTags.has(t));
-    const uniqueRight = [...rightTags].filter(t => !leftTags.has(t));
+    // Find shared and unique tags - memoized to avoid recalculation on every render
+    const { sharedTags, uniqueLeft, uniqueRight } = useMemo(() => {
+        const leftTags = new Set(leftDream?.tags || []);
+        const rightTags = new Set(rightDream?.tags || []);
+        return {
+            sharedTags: [...leftTags].filter(t => rightTags.has(t)),
+            uniqueLeft: [...leftTags].filter(t => !rightTags.has(t)),
+            uniqueRight: [...rightTags].filter(t => !leftTags.has(t)),
+        };
+    }, [leftDream?.tags, rightDream?.tags]);
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={handleBackdropClick} role="dialog" aria-modal="true" aria-labelledby="compare-modal-title">

@@ -21,6 +21,14 @@ const LEVEL_DESCRIPTIONS: Record<number, string> = {
     10: 'Complete synthesis of mind',
 };
 
+// Pre-computed level data - static so defined outside component
+const LEVELS_DATA = Object.entries(LEVEL_TITLES).map(([level, title]) => ({
+    level: parseInt(level),
+    title,
+    description: LEVEL_DESCRIPTIONS[parseInt(level)],
+    dreamsRequired: getDreamsForLevel(parseInt(level)),
+}));
+
 export const LevelGuideModal: React.FC<LevelGuideModalProps> = ({ isOpen, onClose, currentLevel, totalDreams }) => {
     // Handle escape key to close modal
     useEffect(() => {
@@ -36,12 +44,7 @@ export const LevelGuideModal: React.FC<LevelGuideModalProps> = ({ isOpen, onClos
 
     if (!isOpen) return null;
 
-    const levels = Object.entries(LEVEL_TITLES).map(([level, title]) => ({
-        level: parseInt(level),
-        title,
-        description: LEVEL_DESCRIPTIONS[parseInt(level)],
-        dreamsRequired: getDreamsForLevel(parseInt(level)),
-    }));
+    const levels = LEVELS_DATA;
 
     return (
         <div

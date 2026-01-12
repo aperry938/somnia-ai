@@ -130,7 +130,7 @@ export const ShareDreamModal: React.FC<ShareDreamModalProps> = ({ dream, isOpen,
                     <h2 className="font-serif text-xl">Share Dream</h2>
                     <button
                         onClick={onClose}
-                        className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-white/10"
+                        className="w-11 h-11 min-h-[44px] min-w-[44px] rounded-full flex items-center justify-center hover:bg-white/10"
                         aria-label="Close"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
