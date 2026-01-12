@@ -7,6 +7,7 @@ import {
     requestSleepDetectionPermissions
 } from '../../hooks/useSleepDetection';
 import { Capacitor } from '@capacitor/core';
+import { logger } from '../../services/logger';
 
 const STORAGE_KEY = 'somnia_sleep_detection';
 
@@ -89,7 +90,7 @@ export const SleepDetectionSettingsCard: React.FC = () => {
                 showToast('Sleep Detection disabled');
             }
         } catch (error) {
-            console.error('[SleepDetection] Toggle error:', error);
+            logger.error('[SleepDetection] Toggle error:', error);
             showToast('Failed to update Sleep Detection');
         } finally {
             setIsScheduling(false);
