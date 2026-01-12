@@ -50,7 +50,7 @@ export const GlobalTrendsCard: React.FC = () => {
     };
 
     const displayTrends = showRegional && regionalTrends ? regionalTrends : trends;
-    const regionName = prefs.location?.region;
+    const countryName = prefs.location?.country;
 
     // Show opt-in prompt if user hasn't opted in
     if (!isOptedIn) {
@@ -111,7 +111,7 @@ export const GlobalTrendsCard: React.FC = () => {
                             <span className="text-sm font-medium text-indigo-100">Include my location</span>
                         </div>
                         <p className="text-xs text-indigo-200/60 mt-1">
-                            See regional trends and what dreamers near you are experiencing. Your exact location is never shared.
+                            See trends from dreamers in your country. Your exact location is never shared.
                         </p>
                     </div>
                 </label>
@@ -212,7 +212,7 @@ export const GlobalTrendsCard: React.FC = () => {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
-                        {regionName || 'Regional'}
+                        {countryName || 'Country'}
                     </button>
                 </div>
             )}
@@ -224,7 +224,7 @@ export const GlobalTrendsCard: React.FC = () => {
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                             </svg>
-                            Trending in {regionName || 'Your Area'}
+                            Trending in {countryName || 'Your Country'}
                         </>
                     ) : (
                         'Trending Themes'
@@ -257,26 +257,26 @@ export const GlobalTrendsCard: React.FC = () => {
             <div className="mt-6 pt-4 border-t border-indigo-500/30 grid grid-cols-2 gap-4 text-center">
                 <div>
                     <p className="text-xs text-indigo-300">
-                        {showRegional ? 'Regional' : 'Global'} Avg Sleep
+                        {showRegional ? countryName || 'Country' : 'Global'} Avg Sleep
                     </p>
                     <p className="font-mono text-lg font-bold">{stats.avgSleepTime}</p>
                 </div>
                 <div>
                     <p className="text-xs text-indigo-300">
-                        {showRegional ? 'Regional' : 'Global'} Avg Quality
+                        {showRegional ? countryName || 'Country' : 'Global'} Avg Quality
                     </p>
                     <p className="font-mono text-lg font-bold">{stats.avgQuality} / 5.0</p>
                 </div>
             </div>
 
             {/* Location indicator */}
-            {hasLocation && regionName && (
+            {hasLocation && countryName && (
                 <div className="mt-3 text-center">
                     <span className="text-xs text-indigo-300/60 flex items-center justify-center gap-1">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                         </svg>
-                        Connected from {regionName}
+                        Connected from {countryName}
                     </span>
                 </div>
             )}
