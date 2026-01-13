@@ -993,7 +993,7 @@ export const AlarmsPage: React.FC<{ timeString: string, dateString: string, onNa
     return (
         <>
             <div className="flex flex-col h-full">
-                <header className="text-center mb-6 pt-16">
+                <header className="text-center mb-6">
                     <h1 className="font-serif text-6xl md:text-8xl font-bold tracking-tight">{timeString}</h1>
                     <p className="text-md mt-2 tracking-wide">{dateString}</p>
                     <div className="mt-10">
@@ -1007,7 +1007,7 @@ export const AlarmsPage: React.FC<{ timeString: string, dateString: string, onNa
                     onOpenFullGateway={handleConfigureSleepGateway}
                 />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto w-full">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto w-full pb-4">
                     {alarms.length > 0 ? (
                         alarms.map(alarm => <AlarmItem key={alarm.id} alarm={alarm} onEdit={openModal} />)
                     ) : (
