@@ -22,22 +22,22 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, setCurrentPag
     };
 
     const navItems = [
-        { page: 'alarms' as Page, label: 'Alarms', icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> },
-        { page: 'sleep' as Page, label: 'Sleep', icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg> },
-        { page: 'chronicle' as Page, label: 'Chronicle', icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>, badge: unreadCount > 0 ? unreadCount : undefined },
-        { page: 'insights' as Page, label: 'Insights', icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>, isPro: !userIsPremium },
-        { page: 'profile' as Page, label: 'Profile', icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg> },
+        { page: 'alarms' as Page, label: 'Alarms', icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> },
+        { page: 'sleep' as Page, label: 'Sleep', icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg> },
+        { page: 'chronicle' as Page, label: 'Chronicle', icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>, badge: unreadCount > 0 ? unreadCount : undefined },
+        { page: 'insights' as Page, label: 'Insights', icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>, isPro: !userIsPremium },
+        { page: 'profile' as Page, label: 'Profile', icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg> },
     ];
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center px-2 pb-[calc(0.25rem+var(--safe-area-inset-bottom))] bg-day-card-bg/95 dark:bg-night-card-bg/95 backdrop-blur-lg border-t border-day-border dark:border-night-border" aria-label="Main navigation">
+        <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center px-2 pt-2 pb-[calc(var(--safe-area-inset-bottom)*0.5)] bg-day-card-bg/95 dark:bg-night-card-bg/95 backdrop-blur-lg border-t border-day-border dark:border-night-border" aria-label="Main navigation">
             {navItems.map(item => (
                 <button
                     key={item.page}
                     onClick={() => handleNavClick(item.page)}
                     aria-label={`${item.label}${item.badge ? `, ${item.badge} new items` : ''}${item.isPro ? ' (Premium)' : ''}`}
                     aria-current={currentPage === item.page ? 'page' : undefined}
-                    className={`flex flex-col items-center justify-center flex-1 py-2 min-h-[52px] rounded-lg transition-colors duration-300 relative ${currentPage === item.page
+                    className={`flex flex-col items-center justify-end flex-1 min-h-[40px] rounded-lg transition-colors duration-300 relative ${currentPage === item.page
                         ? 'text-day-accent dark:text-night-accent'
                         : 'text-day-text-secondary dark:text-night-text-secondary'
                         }`}
@@ -58,7 +58,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, setCurrentPag
                             </span>
                         )}
                     </div>
-                    <span className={`text-xs mt-1 ${currentPage === item.page ? 'font-medium' : ''}`} aria-hidden="true">
+                    <span className={`text-sm mt-0.5 ${currentPage === item.page ? 'font-medium' : ''}`} aria-hidden="true">
                         {item.label}
                     </span>
                 </button>

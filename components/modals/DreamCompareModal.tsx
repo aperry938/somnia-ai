@@ -30,80 +30,112 @@ export const DreamCompareModal: React.FC<DreamCompareModalProps> = ({ dreams, on
     const leftDream = dreams.find(d => d.id === leftDreamId);
     const rightDream = dreams.find(d => d.id === rightDreamId);
 
-    const DreamCard: React.FC<{ dream: Dream | undefined; side: 'left' | 'right'; onSelect: (id: number) => void }> = ({ dream, side, onSelect }) => (
-        <div className="flex-1 min-w-0">
-            <select
-                value={dream?.id || ''}
-                onChange={(e) => {
-                    onSelect(Number(e.target.value));
-                    setIsSelectOpen(false);
-                }}
-                aria-label={`Select ${side} dream for comparison`}
-                onFocus={() => setIsSelectOpen(true)}
-                onBlur={() => {
-                    // Delay to allow click events to complete before enabling backdrop close
-                    setTimeout(() => setIsSelectOpen(false), 300);
-                }}
-                onPointerDown={(e) => e.stopPropagation()}
-                onTouchStart={(e) => {
-                    e.stopPropagation();
-                    setIsSelectOpen(true);
-                }}
-                onMouseDown={(e) => e.stopPropagation()}
-                className="w-full mb-4 p-3 min-h-[48px] text-base bg-white/50 dark:bg-black/30 border border-day-border dark:border-night-border rounded-lg focus:outline-none focus:ring-2 focus:ring-day-accent"
-            >
-                {dreams.map(d => (
-                    <option key={d.id} value={d.id}>
-                        {new Date(d.timestamp).toLocaleDateString()} - {d.title || 'Untitled'}
-                    </option>
-                ))}
-            </select>
+    const DreamCard: React.FC<{ dream: Dream | undefined; side: 'left' | 'right'; onSelect: (id: number) => void }> = ({ dream, side, onSelect }) => {
+        // Use a ref to track if this specific select is currently open/active
+        const selectRef = React.useRef<HTMLSelectElement>(null);
+        const isInteractingRef = React.useRef(false);
 
-            {dream && (
-                <div className="space-y-3">
-                    {dream.imageUrl && (
-                        <img src={dream.imageUrl} alt={dream.title} loading="lazy" className="w-full h-32 object-cover rounded-lg" />
-                    )}
-                    <h3 className="font-serif text-lg font-bold truncate">{dream.title || 'Untitled'}</h3>
-                    <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">
-                        {new Date(dream.timestamp).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
-                    </p>
-                    {dream.sleepQuality && (
-                        <div className="flex items-center gap-1 text-sm">
-                            <span>Quality:</span>
-                            <div className="flex" role="img" aria-label={`${dream.sleepQuality} out of 5 stars`}>
-                                {[1, 2, 3, 4, 5].map(i => (
-                                    <svg key={i} xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 ${i <= dream.sleepQuality! ? 'text-yellow-500' : 'text-gray-300 dark:text-gray-600'}`} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
-                                    </svg>
+        return (
+            <div className="flex-1 min-w-0">
+                <select
+                    ref={selectRef}
+                    value={dream?.id || ''}
+                    onChange={(e) => {
+                        onSelect(Number(e.target.value));
+                        isInteractingRef.current = false;
+                        setIsSelectOpen(false);
+                    }}
+                    aria-label={`Select ${side} dream for comparison`}
+                    onFocus={() => {
+                        isInteractingRef.current = true;
+                        setIsSelectOpen(true);
+                    }}
+                    onBlur={() => {
+                        // Longer delay for iOS native picker to fully close
+                        setTimeout(() => {
+                            isInteractingRef.current = false;
+                            setIsSelectOpen(false);
+                        }, 500);
+                    }}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        isInteractingRef.current = true;
+                        setIsSelectOpen(true);
+                    }}
+                    onPointerDown={(e) => {
+                        e.stopPropagation();
+                        isInteractingRef.current = true;
+                        setIsSelectOpen(true);
+                    }}
+                    onTouchStart={(e) => {
+                        e.stopPropagation();
+                        isInteractingRef.current = true;
+                        setIsSelectOpen(true);
+                    }}
+                    onTouchEnd={(e) => {
+                        e.stopPropagation();
+                    }}
+                    onMouseDown={(e) => {
+                        e.stopPropagation();
+                        isInteractingRef.current = true;
+                        setIsSelectOpen(true);
+                    }}
+                    className="w-full mb-4 p-3 min-h-[48px] text-base bg-white/50 dark:bg-black/30 border border-day-border dark:border-night-border rounded-lg focus:outline-none focus:ring-2 focus:ring-day-accent appearance-none cursor-pointer"
+                    style={{ WebkitAppearance: 'menulist' }}
+                >
+                    {dreams.map(d => (
+                        <option key={d.id} value={d.id}>
+                            {new Date(d.timestamp).toLocaleDateString()} - {d.title || 'Untitled'}
+                        </option>
+                    ))}
+                </select>
+
+                {dream && (
+                    <div className="space-y-3">
+                        {dream.imageUrl && (
+                            <img src={dream.imageUrl} alt={dream.title} loading="lazy" className="w-full h-32 object-cover rounded-lg" />
+                        )}
+                        <h3 className="font-serif text-lg font-bold truncate">{dream.title || 'Untitled'}</h3>
+                        <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">
+                            {new Date(dream.timestamp).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
+                        </p>
+                        {dream.sleepQuality && (
+                            <div className="flex items-center gap-1 text-sm">
+                                <span>Quality:</span>
+                                <div className="flex" role="img" aria-label={`${dream.sleepQuality} out of 5 stars`}>
+                                    {[1, 2, 3, 4, 5].map(i => (
+                                        <svg key={i} xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 ${i <= dream.sleepQuality! ? 'text-yellow-500' : 'text-gray-300 dark:text-gray-600'}`} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+                                        </svg>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        <p className="text-sm line-clamp-4">{dream.dreamText}</p>
+                        {dream.tags && dream.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                                {dream.tags.map(tag => (
+                                    <span key={tag} className="text-xs px-2 py-0.5 bg-day-accent/10 dark:bg-night-accent/10 text-day-accent dark:text-night-accent rounded-full">
+                                        #{tag}
+                                    </span>
                                 ))}
                             </div>
-                        </div>
-                    )}
-                    <p className="text-sm line-clamp-4">{dream.dreamText}</p>
-                    {dream.tags && dream.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                            {dream.tags.map(tag => (
-                                <span key={tag} className="text-xs px-2 py-0.5 bg-day-accent/10 dark:bg-night-accent/10 text-day-accent dark:text-night-accent rounded-full">
-                                    #{tag}
-                                </span>
-                            ))}
-                        </div>
-                    )}
-                    {dream.aiAnalysis && (
-                        <div className="mt-3 pt-3 border-t border-day-border dark:border-night-border">
-                            <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mb-1">AI Insights:</p>
-                            <ul className="text-xs space-y-1">
-                                {dream.aiAnalysis.analysis.slice(0, 2).map((a, i) => (
-                                    <li key={i} className="truncate">• {a.title}</li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
-                </div>
-            )}
-        </div>
-    );
+                        )}
+                        {dream.aiAnalysis && (
+                            <div className="mt-3 pt-3 border-t border-day-border dark:border-night-border">
+                                <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mb-1">AI Insights:</p>
+                                <ul className="text-xs space-y-1">
+                                    {dream.aiAnalysis.analysis.slice(0, 2).map((a, i) => (
+                                        <li key={i} className="truncate">• {a.title}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+        );
+    };
 
     // Find shared and unique tags - memoized to avoid recalculation on every render
     const { sharedTags, uniqueLeft, uniqueRight } = useMemo(() => {
