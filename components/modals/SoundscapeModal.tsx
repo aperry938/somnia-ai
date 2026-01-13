@@ -533,6 +533,13 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                             />
                         </div>
 
+                        {/* Regulatory disclaimer for binaural beats */}
+                        {(sound.type === 'binaural' || sound.type === 'ramp') && (
+                            <p className="mt-3 text-xs text-center text-day-text-secondary dark:text-night-text-secondary opacity-70">
+                                Audio frequencies are for relaxation and entertainment only. Not intended to diagnose, treat, or cure any condition.
+                            </p>
+                        )}
+
                         {/* Preview Toggle Button */}
                         <button
                             onClick={togglePreview}
