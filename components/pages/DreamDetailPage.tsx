@@ -602,6 +602,9 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                     )}
                     {analysisState === 'success' && dream.aiAnalysis && (
                         <div className="space-y-2">
+                            <p className="text-xs italic text-day-text-secondary dark:text-night-text-secondary mb-2">
+                                AI-generated interpretation for reflection purposes only. Not psychological or medical advice.
+                            </p>
                             {dream.aiAnalysis.analysis.map((item, i) => (
                                 <AccordionItem key={i} title={item.title} content={item.content} isOpenDefault={i === 0} />
                             ))}
