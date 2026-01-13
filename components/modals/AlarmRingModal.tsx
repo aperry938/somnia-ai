@@ -502,52 +502,49 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                     <div className="animate-fadeIn">
                         <div className="bg-white/10 backdrop-blur rounded-2xl p-5 mb-4 border border-white/10">
                             <p className="text-white/50 text-xs mb-2 uppercase tracking-wider">Before it fades...</p>
-                            <p className="text-white/80 text-sm italic mb-5">"{currentPrompt}"</p>
+                            <p className="text-white/80 text-sm italic mb-4">"{currentPrompt}"</p>
 
-                            {/* Voice Recording */}
-                            {isSupported && (
-                                <div className="mb-4">
-                                    <button
-                                        onClick={toggleVoice}
-                                        aria-label={isListening ? "Stop recording" : "Start recording your dream"}
-                                        aria-pressed={isListening}
-                                        className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto transition-all ${isListening
-                                            ? 'bg-red-500 animate-pulse scale-110 shadow-lg shadow-red-500/30'
-                                            : 'bg-white/20 hover:bg-white/30 hover:scale-105'
-                                            }`}
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                                        </svg>
-                                    </button>
-                                    <p className="text-white/50 text-xs mt-2">
-                                        {isListening ? 'Listening...' : 'Tap to speak your dream'}
-                                    </p>
-                                </div>
-                            )}
-
-                            {/* Text input */}
-                            {(showInput || quickNote || !isSupported) && (
-                                <textarea
-                                    value={quickNote}
-                                    onChange={(e) => setQuickNote(e.target.value)}
-                                    placeholder="Key words, images, feelings..."
-                                    aria-label="Quick dream notes"
-                                    className="w-full p-3 min-h-[48px] text-base bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 resize-none focus:outline-none focus:border-white/40 mb-4"
-                                    rows={3}
-                                    autoFocus={!isSupported}
-                                />
-                            )}
-
-                            {/* Type instead link */}
-                            {!showInput && !quickNote && isSupported && (
+                            {/* Prominent Voice Recording Button - Always visible */}
+                            <div className="mb-4 text-center">
                                 <button
-                                    onClick={() => setShowInput(true)}
-                                    className="text-white/40 text-xs underline mb-4 block mx-auto py-2 min-h-[44px] px-4"
+                                    onClick={isSupported ? toggleVoice : undefined}
+                                    aria-label={isListening ? "Stop recording" : "Start recording your dream"}
+                                    aria-pressed={isListening}
+                                    disabled={!isSupported}
+                                    className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto transition-all ${isListening
+                                        ? 'bg-red-500 scale-110 shadow-lg shadow-red-500/50'
+                                        : isSupported
+                                            ? 'bg-gradient-to-br from-indigo-500 to-purple-600 hover:scale-105 shadow-lg shadow-purple-500/30'
+                                            : 'bg-white/10 opacity-50 cursor-not-allowed'
+                                        }`}
                                 >
-                                    Or type instead
+                                    <svg xmlns="http://www.w3.org/2000/svg" className={`h-10 w-10 text-white ${isListening ? 'animate-pulse' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                                    </svg>
                                 </button>
-                            )}
+                                <p className={`text-sm mt-3 ${isListening ? 'text-red-400' : 'text-white/70'}`}>
+                                    {isListening ? (
+                                        <span className="flex items-center justify-center gap-2">
+                                            <span className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></span>
+                                            Recording... tap to stop
+                                        </span>
+                                    ) : isSupported ? (
+                                        'Tap to speak your dream'
+                                    ) : (
+                                        'Voice not available - type below'
+                                    )}
+                                </p>
+                            </div>
+
+                            {/* Text input - always available as fallback */}
+                            <textarea
+                                value={quickNote}
+                                onChange={(e) => setQuickNote(e.target.value)}
+                                placeholder="Key words, images, feelings..."
+                                aria-label="Quick dream notes"
+                                className="w-full p-3 min-h-[48px] text-base bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 resize-none focus:outline-none focus:border-white/40 mb-4"
+                                rows={3}
+                            />
 
                             {/* Record Dream Button */}
                             <button

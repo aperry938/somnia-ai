@@ -191,27 +191,48 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                         <div className="w-10 h-1 rounded-full bg-white/30" />
                     </div>
                     <h2 id="dream-scribe-title" className="font-serif text-2xl text-center mb-4">The Dream Scribe</h2>
-                    <div className="relative">
-                        <textarea
-                            value={displayText}
-                            onChange={(e) => setDreamText(e.target.value)}
-                            className="w-full h-40 p-4 pr-12 text-base bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-purple-400 focus:outline-none transition-all custom-scrollbar text-white placeholder-white/50"
-                            placeholder="Speak or write your dream here..."
-                            aria-label="Dream description"
-                            disabled={isListening}
-                        ></textarea>
-                        {isSupported && (
-                            <button onClick={isListening ? stopListening : startListening} aria-label={isListening ? "Stop recording" : "Start voice recording"} aria-pressed={isListening} className={`absolute top-2 right-2 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full transition-colors ${isListening ? 'text-red-400 bg-red-400/20' : 'text-white/80 hover:text-white hover:bg-white/10'}`}>
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
-                            </button>
-                        )}
+
+                    {/* Prominent Voice Recording Button */}
+                    <div className="mb-4 text-center">
+                        <button
+                            onClick={isSupported ? (isListening ? stopListening : startListening) : undefined}
+                            aria-label={isListening ? "Stop recording" : "Start voice recording"}
+                            aria-pressed={isListening}
+                            disabled={!isSupported}
+                            className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto transition-all ${isListening
+                                ? 'bg-red-500 scale-110 shadow-lg shadow-red-500/50'
+                                : isSupported
+                                    ? 'bg-gradient-to-br from-indigo-500 to-purple-600 hover:scale-105 shadow-lg shadow-purple-500/30'
+                                    : 'bg-white/10 opacity-50 cursor-not-allowed'
+                                }`}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className={`h-8 w-8 text-white ${isListening ? 'animate-pulse' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                            </svg>
+                        </button>
+                        <p className={`text-sm mt-2 ${isListening ? 'text-red-400' : 'text-white/60'}`}>
+                            {isListening ? (
+                                <span className="flex items-center justify-center gap-2">
+                                    <span className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></span>
+                                    Recording... tap to stop
+                                </span>
+                            ) : isSupported ? (
+                                'Tap to speak your dream'
+                            ) : (
+                                'Voice not available'
+                            )}
+                        </p>
                     </div>
-                    {isListening && (
-                        <div className="flex items-center justify-center gap-2 text-sm text-red-400 mt-2">
-                            <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
-                            <span>Recording...</span>
-                        </div>
-                    )}
+
+                    {/* Text area for typing/displaying transcription */}
+                    <textarea
+                        value={displayText}
+                        onChange={(e) => setDreamText(e.target.value)}
+                        className="w-full h-32 p-4 text-base bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-purple-400 focus:outline-none transition-all custom-scrollbar text-white placeholder-white/50"
+                        placeholder="Speak or write your dream here..."
+                        aria-label="Dream description"
+                        disabled={isListening}
+                    ></textarea>
 
                     {/* Validation Error */}
                     {validationError && (
