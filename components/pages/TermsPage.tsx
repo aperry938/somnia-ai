@@ -6,11 +6,11 @@ interface TermsPageProps {
 
 export const TermsPage: React.FC<TermsPageProps> = ({ onBack }) => {
     return (
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-2xl mx-auto pb-8">
             <button
                 onClick={onBack}
                 aria-label="Go back"
-                className="text-day-accent dark:text-night-accent mb-6 min-h-[44px] flex items-center gap-2 hover:opacity-80 transition-opacity"
+                className="text-day-accent dark:text-night-accent mb-4 min-h-[44px] flex items-center gap-2 hover:opacity-80 transition-opacity"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -18,7 +18,7 @@ export const TermsPage: React.FC<TermsPageProps> = ({ onBack }) => {
                 Back
             </button>
 
-            <h1 className="font-serif text-4xl mb-8">Terms of Service</h1>
+            <h1 className="font-serif text-4xl mb-6">Terms of Service</h1>
 
             <div className="prose dark:prose-invert max-w-none space-y-6 text-day-text-secondary dark:text-night-text-secondary">
                 <p className="text-lg">

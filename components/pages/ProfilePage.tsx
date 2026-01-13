@@ -638,21 +638,21 @@ const LegalCard: React.FC<{ onNavigateTo?: (page: 'privacy' | 'terms') => void }
             <div className="flex gap-3">
                 <button
                     onClick={() => onNavigateTo?.('privacy')}
-                    className="flex-1 py-3 min-h-[48px] border border-day-border dark:border-night-border rounded-lg text-day-text-secondary dark:text-night-text-secondary font-medium flex items-center justify-center gap-2 hover:bg-white/10 dark:hover:bg-black/10 transition-colors"
+                    className="flex-1 py-3 min-h-[48px] border border-day-border dark:border-night-border rounded-lg text-day-text-secondary dark:text-night-text-secondary font-medium flex flex-col items-center justify-center gap-1 hover:bg-white/10 dark:hover:bg-black/10 transition-colors"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                     </svg>
-                    Privacy Policy
+                    <span className="text-sm">Privacy Policy</span>
                 </button>
                 <button
                     onClick={() => onNavigateTo?.('terms')}
-                    className="flex-1 py-3 min-h-[48px] border border-day-border dark:border-night-border rounded-lg text-day-text-secondary dark:text-night-text-secondary font-medium flex items-center justify-center gap-2 hover:bg-white/10 dark:hover:bg-black/10 transition-colors"
+                    className="flex-1 py-3 min-h-[48px] border border-day-border dark:border-night-border rounded-lg text-day-text-secondary dark:text-night-text-secondary font-medium flex flex-col items-center justify-center gap-1 hover:bg-white/10 dark:hover:bg-black/10 transition-colors"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                    Terms of Service
+                    <span className="text-sm">Terms of Service</span>
                 </button>
             </div>
         </div>
