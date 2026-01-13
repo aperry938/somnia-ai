@@ -101,14 +101,17 @@ export const useSpeechRecognition = (onFinalTranscript: (transcript: string) => 
         onFinalTranscriptRef.current = onFinalTranscript;
     }, [onFinalTranscript]);
 
-    // Check support on mount
+    // Check support on mount - for native, always mark as supported if API exists
+    // Permission will be requested when user taps the mic button
     useEffect(() => {
         const checkSupport = async () => {
             if (isNative) {
                 try {
                     const result = await CapacitorSpeechRecognition.available();
+                    // On native, mark as supported if API is available
+                    // Permission will be requested on first use
                     setIsSupported(result.available);
-                    logger.log('[SpeechRecognition] Native support:', result.available);
+                    logger.log('[SpeechRecognition] Native API available:', result.available);
                 } catch (error) {
                     logger.error('[SpeechRecognition] Native check failed:', error);
                     setIsSupported(false);
@@ -182,8 +185,8 @@ export const useSpeechRecognition = (onFinalTranscript: (transcript: string) => 
             // Request permissions first
             const permResult = await CapacitorSpeechRecognition.requestPermissions();
             if (permResult.speechRecognition !== 'granted') {
-                logger.error('[SpeechRecognition] Permission denied');
-                setIsSupported(false);
+                logger.warn('[SpeechRecognition] Permission denied - user can try again or enable in Settings');
+                // Don't disable - let user try again or show settings prompt
                 return;
             }
 

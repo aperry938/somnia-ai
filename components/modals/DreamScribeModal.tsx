@@ -174,7 +174,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                 transition={{ duration: 0.2 }}
             >
                 <motion.div
-                    className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-t-2xl sm:rounded-2xl p-6 pb-[calc(1.5rem+var(--safe-area-inset-bottom))] sm:pb-6 w-full max-w-lg max-h-[90vh] overflow-y-auto text-white"
+                    className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-t-2xl sm:rounded-2xl p-6 w-full max-w-lg max-h-[85vh] overflow-y-auto text-white"
                     onClick={(e) => e.stopPropagation()}
                     style={{ y }}
                     initial={{ y: '100%' }}
@@ -193,33 +193,28 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                     <h2 id="dream-scribe-title" className="font-serif text-2xl text-center mb-4">The Dream Scribe</h2>
 
                     {/* Prominent Voice Recording Button */}
-                    <div className="mb-4 text-center">
+                    <div className="mb-3 text-center">
                         <button
-                            onClick={isSupported ? (isListening ? stopListening : startListening) : undefined}
+                            onClick={isListening ? stopListening : startListening}
                             aria-label={isListening ? "Stop recording" : "Start voice recording"}
                             aria-pressed={isListening}
-                            disabled={!isSupported}
-                            className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto transition-all ${isListening
+                            className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto transition-all ${isListening
                                 ? 'bg-red-500 scale-110 shadow-lg shadow-red-500/50'
-                                : isSupported
-                                    ? 'bg-gradient-to-br from-indigo-500 to-purple-600 hover:scale-105 shadow-lg shadow-purple-500/30'
-                                    : 'bg-white/10 opacity-50 cursor-not-allowed'
+                                : 'bg-gradient-to-br from-indigo-500 to-purple-600 hover:scale-105 shadow-lg shadow-purple-500/30'
                                 }`}
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" className={`h-8 w-8 text-white ${isListening ? 'animate-pulse' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg xmlns="http://www.w3.org/2000/svg" className={`h-7 w-7 text-white ${isListening ? 'animate-pulse' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                             </svg>
                         </button>
-                        <p className={`text-sm mt-2 ${isListening ? 'text-red-400' : 'text-white/60'}`}>
+                        <p className={`text-xs mt-1.5 ${isListening ? 'text-red-400' : 'text-white/50'}`}>
                             {isListening ? (
-                                <span className="flex items-center justify-center gap-2">
-                                    <span className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></span>
-                                    Recording... tap to stop
+                                <span className="flex items-center justify-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse"></span>
+                                    Recording...
                                 </span>
-                            ) : isSupported ? (
-                                'Tap to speak your dream'
                             ) : (
-                                'Voice not available'
+                                'Tap to speak'
                             )}
                         </p>
                     </div>
