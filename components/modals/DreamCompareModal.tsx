@@ -149,9 +149,9 @@ export const DreamCompareModal: React.FC<DreamCompareModalProps> = ({ dreams, on
     }, [leftDream?.tags, rightDream?.tags]);
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={handleBackdropClick} role="dialog" aria-modal="true" aria-labelledby="compare-modal-title">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4 pt-4 pb-[calc(1rem+var(--safe-area-inset-bottom))]" onClick={handleBackdropClick} role="dialog" aria-modal="true" aria-labelledby="compare-modal-title">
             <div
-                className="w-full max-w-4xl max-h-[90vh] bg-day-bg-end dark:bg-night-bg-end rounded-2xl shadow-2xl overflow-hidden animate-fadeIn"
+                className="w-full max-w-4xl max-h-[calc(90vh-var(--safe-area-inset-bottom))] bg-day-bg-end dark:bg-night-bg-end rounded-2xl shadow-2xl overflow-hidden animate-fadeIn"
                 onClick={e => e.stopPropagation()}
             >
                 <div className="p-4 border-b border-day-border dark:border-night-border flex justify-between items-center">

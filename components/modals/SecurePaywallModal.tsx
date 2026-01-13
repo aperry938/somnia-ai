@@ -140,14 +140,14 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
 
     return (
         <div
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn"
+            className="fixed inset-0 z-[100] flex items-center justify-center px-4 pt-4 pb-[calc(1rem+var(--safe-area-inset-bottom))] bg-black/60 backdrop-blur-sm animate-fadeIn"
             onClick={onClose}
             role="dialog"
             aria-modal="true"
             aria-labelledby="paywall-title"
         >
             <div
-                className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+                className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl max-w-md w-full max-h-[calc(90vh-var(--safe-area-inset-bottom))] overflow-y-auto shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}

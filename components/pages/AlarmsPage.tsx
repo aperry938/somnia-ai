@@ -173,7 +173,7 @@ const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = Re
 
             {/* Delete Confirmation Popup */}
             {showDeleteConfirm && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => setShowDeleteConfirm(false)}>
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center px-4 pt-4 pb-[calc(1rem+var(--safe-area-inset-bottom))] z-50" onClick={() => setShowDeleteConfirm(false)}>
                     <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-xs animate-fadeIn" onClick={(e) => e.stopPropagation()}>
                         <h3 className="font-serif text-lg text-center mb-2">Delete Alarm?</h3>
                         <p className="text-sm text-center text-day-text-secondary dark:text-night-text-secondary mb-4">
@@ -523,8 +523,8 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
     // Show saved confirmation - only offer Sleep Gateway for sleep alarms
     if (showSavedConfirmation) {
         return (
-            <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={handleDismissConfirmation} role="dialog" aria-modal="true" aria-labelledby="alarm-saved-title">
-                <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-sm animate-fadeIn text-center" onClick={(e) => e.stopPropagation()}>
+            <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center px-4 pt-4 pb-[calc(1rem+var(--safe-area-inset-bottom))] z-50" onClick={handleDismissConfirmation} role="dialog" aria-modal="true" aria-labelledby="alarm-saved-title">
+                <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-sm animate-fadeIn text-center max-h-[calc(90vh-var(--safe-area-inset-bottom))] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                     {/* Success checkmark */}
                     <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center" aria-hidden="true">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -572,8 +572,8 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
     }
 
     return (
-        <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={() => { stopAlarmPreview(); onClose(); }} role="dialog" aria-modal="true" aria-labelledby="alarm-modal-title">
-            <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-sm animate-fadeIn max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center px-4 pt-4 pb-[calc(1rem+var(--safe-area-inset-bottom))] z-50" onClick={() => { stopAlarmPreview(); onClose(); }} role="dialog" aria-modal="true" aria-labelledby="alarm-modal-title">
+            <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-sm animate-fadeIn max-h-[calc(90vh-var(--safe-area-inset-bottom))] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                 <h2 id="alarm-modal-title" className="font-serif text-2xl text-center mb-6">{alarmToEdit ? "Edit Alarm" : "Set Alarm"}</h2>
                 <DrumTimePicker initialTime={time} onChange={setTime} />
 
