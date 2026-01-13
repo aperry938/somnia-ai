@@ -370,6 +370,10 @@ const App: React.FC = () => {
     const handleSkipAuth = useCallback(() => {
         localStorage.setItem('somnia_skipped_auth', 'true');
         setHasSkippedAuth(true);
+        // Reset scroll position to prevent extra space from persisting
+        window.scrollTo(0, 0);
+        document.body.scrollTop = 0;
+        document.documentElement.scrollTop = 0;
     }, []);
 
     // Show onboarding for first-time users

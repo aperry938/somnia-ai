@@ -82,7 +82,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSkip }) => {
 
     if (!isConfigured) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-b from-day-bg-start to-day-bg-end dark:from-night-bg-start dark:to-night-bg-end">
+            <div className="h-[100dvh] flex flex-col items-center justify-center p-6 pb-safe bg-gradient-to-b from-day-bg-start to-day-bg-end dark:from-night-bg-start dark:to-night-bg-end overflow-y-auto overscroll-none">
                 <div className="max-w-md w-full text-center">
                     <div className="w-20 h-20 mx-auto mb-6 rounded-full overflow-hidden flex items-center justify-center">
                         <img src="/logo.png" alt="Somnia" className="w-full h-full object-cover" />
@@ -105,7 +105,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSkip }) => {
     }
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-b from-day-bg-start to-day-bg-end dark:from-night-bg-start dark:to-night-bg-end">
+        <div className="h-[100dvh] flex flex-col items-center justify-center p-6 pb-safe bg-gradient-to-b from-day-bg-start to-day-bg-end dark:from-night-bg-start dark:to-night-bg-end overflow-y-auto overscroll-none">
             <div className="max-w-md w-full">
                 {/* Logo */}
                 <div className="text-center mb-12">
