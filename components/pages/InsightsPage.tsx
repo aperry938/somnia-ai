@@ -331,7 +331,7 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                         )}
 
                         {/* Compare Dreams */}
-                        {dreams.length >= 2 && (
+                        {displayDreams.length >= 2 && (
                             <button
                                 onClick={() => setIsCompareOpen(true)}
                                 className="w-full py-3 bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-medium rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
@@ -551,7 +551,7 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                 )}
             </div>
 
-            {isCompareOpen && <DreamCompareModal dreams={dreams} onClose={() => setIsCompareOpen(false)} />}
+            {isCompareOpen && <DreamCompareModal dreams={displayDreams} onClose={() => setIsCompareOpen(false)} />}
 
             {/* Share Analytics Modal */}
             <ShareAnalyticsModal
