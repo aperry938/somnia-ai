@@ -39,7 +39,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         <ToastContext.Provider value={{ showToast }}>
             {children}
             {/* Toast Container */}
-            <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none" aria-live="polite" aria-atomic="true">
+            <div className="fixed bottom-[calc(5rem+var(--safe-area-inset-bottom))] left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none" aria-live="polite" aria-atomic="true">
                 {toasts.map(toast => (
                     <div
                         key={toast.id}

@@ -424,7 +424,7 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
             {/* Floating Action Button */}
             <button
                 onClick={() => setIsAddSleepModalOpen(true)}
-                className="fixed bottom-24 right-6 w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center z-40"
+                className="fixed bottom-[calc(6rem+var(--safe-area-inset-bottom))] right-6 w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center z-40"
                 title="Log sleep"
                 aria-label="Log sleep"
             >

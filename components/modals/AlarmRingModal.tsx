@@ -469,8 +469,8 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                         </div>
 
                         {/* Swipe hint */}
-                        <div className="w-full flex justify-center mt-4">
-                            <p className="text-white/40 text-sm animate-pulse whitespace-nowrap">
+                        <div className="w-full flex justify-center mt-4 px-4">
+                            <p className="text-white/40 text-sm animate-pulse text-center">
                                 ← Swipe left to snooze · Swipe right to wake →
                             </p>
                         </div>

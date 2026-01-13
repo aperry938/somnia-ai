@@ -42,7 +42,7 @@ export const DevModeToggle: React.FC = () => {
     };
 
     return (
-        <div className="fixed bottom-20 left-4 z-50">
+        <div className="fixed bottom-[calc(5rem+var(--safe-area-inset-bottom))] left-4 z-50">
             {/* Dev Mode Activation Button (always visible) */}
             <button
                 onClick={toggleDevMode}

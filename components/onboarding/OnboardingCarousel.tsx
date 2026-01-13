@@ -11,7 +11,7 @@ const slides = [
         title: 'Rest Better. Live Better.',
         description: 'Your complete sleep wellness ecosystem. Designed for deeper rest and clearer mornings. Where science meets the art of restful sleep.',
         icon: (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-24 w-24 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
             </svg>
         ),
@@ -21,7 +21,7 @@ const slides = [
         title: 'AI-Powered Dream Analysis',
         description: 'Get personalized insights into your dreams using AI. Explore patterns, symbols, and themes—grounded in psychology, helping you make sense of your dreams.',
         icon: (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-24 w-24 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
             </svg>
         ),
@@ -32,7 +32,7 @@ const slides = [
         title: 'Science-Backed Sleep Tools',
         description: 'Binaural beats, guided breathwork, and soundscapes all synthesized in real-time to prepare your mind for deep, restorative rest.',
         icon: (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-24 w-24 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
             </svg>
         ),
@@ -43,7 +43,7 @@ const slides = [
         title: 'Ready to Begin?',
         description: 'Set your alarm, optimize your rest, and track your progress. Better sleep habits begin tonight.',
         icon: (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-24 w-24 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
         ),

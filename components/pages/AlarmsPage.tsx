@@ -4,6 +4,7 @@ import { Alarm, AlarmPurpose } from '../../types';
 import { DailyBriefingWidget } from '../widgets/DailyBriefingWidget';
 import { toggleAlarmPreview, stopAlarmPreview, isPreviewPlaying as _isPreviewPlaying } from '../../services/audioService';
 import { isPremium } from '../../services/secureSubscriptionService';
+import { requestPermissions as requestAlarmPermissions } from '../../services/nativeAlarmService';
 import haptics from '../../services/hapticsService';
 
 // Helper to format alarm repetition text
@@ -473,7 +474,7 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
         return () => stopAlarmPreview();
     }, []);
 
-    const handleSave = () => {
+    const handleSave = async () => {
         stopAlarmPreview();
 
         // Finalize days based on frequency
@@ -486,6 +487,8 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
             updateAlarm(alarmToEdit.id, time, false, finalDays, selectedSound, purpose, label || undefined);
             alarmId = alarmToEdit.id;
         } else {
+            // Request notification permissions when creating first alarm
+            await requestAlarmPermissions();
             alarmId = addAlarm(time, false, finalDays, selectedSound, purpose, label || undefined);
         }
 
@@ -1012,7 +1015,7 @@ export const AlarmsPage: React.FC<{ timeString: string, dateString: string, onNa
                     )}
                 </div>
             </div>
-            <button onClick={() => openModal()} aria-label="Add new alarm" className="fixed bottom-24 right-6 bg-day-accent dark:bg-night-accent text-white rounded-full p-4 shadow-lg shadow-indigo-500/30 hover:bg-indigo-600 dark:hover:bg-indigo-500 transition-colors">
+            <button onClick={() => openModal()} aria-label="Add new alarm" className="fixed bottom-[calc(6rem+var(--safe-area-inset-bottom))] right-6 bg-day-accent dark:bg-night-accent text-white rounded-full p-4 shadow-lg shadow-indigo-500/30 hover:bg-indigo-600 dark:hover:bg-indigo-500 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
             </button>
             {isModalOpen && <AlarmModal alarmToEdit={alarmToEdit} onClose={closeModal} onConfigureSleepGateway={handleConfigureSleepGateway} />}

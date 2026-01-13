@@ -115,11 +115,10 @@ const App: React.FC = () => {
         // Initialize subscription service (RevenueCat)
         initializeSubscriptions();
 
-        // Initialize native alarms (iOS/Android)
+        // Initialize native alarms (iOS/Android) - permissions are requested on first alarm creation
         const initNativeAlarms = async () => {
-            const { isNative, requestPermissions, registerAlarmActions, initializeAlarmListeners } = await import('./services/nativeAlarmService');
+            const { isNative, registerAlarmActions, initializeAlarmListeners } = await import('./services/nativeAlarmService');
             if (isNative) {
-                await requestPermissions();
                 await registerAlarmActions();
                 initializeAlarmListeners(
                     (alarmId) => logger.log('[Native] Alarm received:', alarmId),
@@ -405,7 +404,7 @@ const App: React.FC = () => {
         <NavigationProvider onNavigate={handleGlobalNavigate}>
             <div className="flex flex-col h-[100dvh] overflow-hidden bg-gradient-to-b from-day-bg-start to-day-bg-end dark:from-night-bg-start dark:to-night-bg-end text-day-text-primary dark:text-night-text-primary transition-colors duration-500">
                 <a href="#main-content" className="skip-link">Skip to main content</a>
-                <main ref={mainScrollRef} id="main-content" className="flex-grow overflow-y-auto custom-scrollbar p-4 md:p-6 pb-14">
+                <main ref={mainScrollRef} id="main-content" className="flex-grow overflow-y-auto custom-scrollbar p-4 md:p-6 pb-[calc(5rem+var(--safe-area-inset-bottom))]">
                     <AnimatePresence mode="wait">
                         {renderPage()}
                     </AnimatePresence>
