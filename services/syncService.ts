@@ -1,7 +1,8 @@
-import { SyncAction, SyncActionType } from '../types';
+import { SyncAction, SyncActionType, Dream } from '../types';
 import { logger } from './logger';
 
 const SYNC_QUEUE_KEY = 'somnia_sync_queue';
+const DREAMS_KEY = 'somnia_dreams';
 const MAX_RETRIES = 3;
 const FETCH_TIMEOUT_MS = 10000; // 10 second timeout to prevent hanging
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
@@ -9,6 +10,28 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 // Lock to prevent concurrent queue processing
 let isProcessingQueue = false;
+
+// Conflict response from server
+interface ConflictResponse {
+    conflict: true;
+    serverVersion: {
+        id: number;
+        updated_at: string;
+        dream_text: string;
+        title: string;
+        sleep_quality: number | null;
+        tags: string[];
+        mood: string | null;
+    };
+    message: string;
+}
+
+// Event for notifying UI about sync conflicts
+export const emitSyncConflictResolved = (dreamId: number, resolution: 'server' | 'client') => {
+    window.dispatchEvent(new CustomEvent('syncConflictResolved', {
+        detail: { dreamId, resolution }
+    }));
+};
 
 /**
  * Ensure we have a valid auth token before syncing.
@@ -108,13 +131,58 @@ const fetchWithTimeout = async (url: string, options: RequestInit, timeoutMs: nu
 };
 
 /**
- * Sync a single action to the backend
+ * Handle sync conflict by updating local dream with server version
  */
-const syncActionToBackend = async (action: SyncAction, token: string | null): Promise<boolean> => {
+const handleSyncConflict = (conflictData: ConflictResponse, action: SyncAction): void => {
+    const { serverVersion } = conflictData;
+    const dreamId = serverVersion.id;
+
+    logger.log(`[SyncService] Conflict detected for dream ${dreamId}, server version is newer`);
+
+    try {
+        // Load current dreams from localStorage
+        const dreamsJson = localStorage.getItem(DREAMS_KEY);
+        if (!dreamsJson) return;
+
+        const dreams: Dream[] = JSON.parse(dreamsJson);
+        const dreamIndex = dreams.findIndex(d => d.id === dreamId);
+
+        if (dreamIndex === -1) {
+            logger.warn(`[SyncService] Dream ${dreamId} not found in local storage during conflict resolution`);
+            return;
+        }
+
+        // Update local dream with server version
+        const updatedDream: Dream = {
+            ...dreams[dreamIndex],
+            dreamText: serverVersion.dream_text,
+            title: serverVersion.title,
+            sleepQuality: serverVersion.sleep_quality,
+            tags: serverVersion.tags,
+            mood: serverVersion.mood as Dream['mood'],
+        };
+
+        dreams[dreamIndex] = updatedDream;
+        localStorage.setItem(DREAMS_KEY, JSON.stringify(dreams));
+
+        // Notify UI that conflict was resolved with server version
+        emitSyncConflictResolved(dreamId, 'server');
+
+        logger.log(`[SyncService] Conflict resolved: updated local dream ${dreamId} with server version`);
+    } catch (e) {
+        logger.error('[SyncService] Error handling sync conflict:', e);
+    }
+};
+
+/**
+ * Sync a single action to the backend
+ * Returns: 'success' | 'conflict_resolved' | 'error'
+ */
+const syncActionToBackend = async (action: SyncAction, token: string | null): Promise<'success' | 'conflict_resolved' | 'error'> => {
     // Check if Supabase is configured
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
         // No backend configured - mark as synced (local-only mode)
-        return true;
+        return 'success';
     }
 
     try {
@@ -137,12 +205,27 @@ const syncActionToBackend = async (action: SyncAction, token: string | null): Pr
             FETCH_TIMEOUT_MS
         );
 
+        // Handle 409 Conflict - server has newer version
+        if (response.status === 409) {
+            try {
+                const conflictData: ConflictResponse = await response.json();
+                if (conflictData.conflict) {
+                    handleSyncConflict(conflictData, action);
+                    // Mark as resolved - don't retry, local was updated with server version
+                    return 'conflict_resolved';
+                }
+            } catch (parseError) {
+                logger.error('[SyncService] Failed to parse 409 conflict response:', parseError);
+            }
+            throw new Error('Sync conflict: server has newer version');
+        }
+
         if (!response.ok) {
             const error = await response.text();
             throw new Error(`Sync failed: ${response.status} - ${error}`);
         }
 
-        return true;
+        return 'success';
     } catch (error) {
         // Re-throw with more context for debugging
         if (error instanceof Error) {
@@ -158,23 +241,23 @@ const syncActionToBackend = async (action: SyncAction, token: string | null): Pr
     }
 };
 
-export const processSyncQueue = async (): Promise<{ success: number; failed: number }> => {
+export const processSyncQueue = async (): Promise<{ success: number; failed: number; conflictsResolved: number }> => {
     // Prevent concurrent queue processing which can cause UI blocking
     if (isProcessingQueue) {
-        return { success: 0, failed: 0 };
+        return { success: 0, failed: 0, conflictsResolved: 0 };
     }
 
     const queue = getSyncQueue();
     const pending = queue.filter(a => a.status === 'PENDING' && a.retryCount < MAX_RETRIES);
 
-    if (pending.length === 0) return { success: 0, failed: 0 };
+    if (pending.length === 0) return { success: 0, failed: 0, conflictsResolved: 0 };
 
     // Ensure we have a valid token before syncing (handles 8+ hour sleep expiry)
     const token = await ensureValidToken();
     if (!token && SUPABASE_URL && SUPABASE_ANON_KEY) {
         // Token refresh failed but Supabase is configured - defer sync
         logger.warn('[SyncService] No valid token for sync, will retry later');
-        return { success: 0, failed: 0 };
+        return { success: 0, failed: 0, conflictsResolved: 0 };
     }
 
     isProcessingQueue = true;
@@ -182,6 +265,7 @@ export const processSyncQueue = async (): Promise<{ success: number; failed: num
     try {
         let successCount = 0;
         let failCount = 0;
+        let conflictsResolved = 0;
 
         const updatedQueue = await Promise.all(queue.map(async (action) => {
             if (action.status !== 'PENDING' || action.retryCount >= MAX_RETRIES) {
@@ -193,7 +277,12 @@ export const processSyncQueue = async (): Promise<{ success: number; failed: num
             }
 
             try {
-                await syncActionToBackend(action, token);
+                const result = await syncActionToBackend(action, token);
+                if (result === 'conflict_resolved') {
+                    // Server had newer version, local was updated
+                    conflictsResolved++;
+                    return { ...action, status: 'SYNCED' as const };
+                }
                 successCount++;
                 return { ...action, status: 'SYNCED' as const };
             } catch (e) {
@@ -210,7 +299,7 @@ export const processSyncQueue = async (): Promise<{ success: number; failed: num
 
         saveSyncQueue([...nonSynced, ...recentSynced]);
 
-        return { success: successCount, failed: failCount };
+        return { success: successCount, failed: failCount, conflictsResolved };
     } finally {
         isProcessingQueue = false;
     }

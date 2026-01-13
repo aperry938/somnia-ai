@@ -38,6 +38,20 @@ interface SyncResponse {
     errors?: string[];
 }
 
+interface ConflictResponse {
+    conflict: true;
+    serverVersion: {
+        id: number;
+        updated_at: string;
+        dream_text: string;
+        title: string;
+        sleep_quality: number | null;
+        tags: string[];
+        mood: string | null;
+    };
+    message: string;
+}
+
 Deno.serve(async (req) => {
     // Handle CORS preflight
     if (req.method === 'OPTIONS') {
@@ -96,10 +110,23 @@ Deno.serve(async (req) => {
                         await handleAddDream(supabase, userId, action.payload);
                         processed++;
                         break;
-                    case 'UPDATE_DREAM':
-                        await handleUpdateDream(supabase, userId, action.payload);
+                    case 'UPDATE_DREAM': {
+                        const result = await handleUpdateDream(supabase, userId, action.payload, action.timestamp);
+                        if ('conflict' in result && result.conflict) {
+                            // Return 409 Conflict with server version
+                            const conflictResponse: ConflictResponse = {
+                                conflict: true,
+                                serverVersion: result.serverVersion,
+                                message: 'Server has a newer version of this dream. Please review and retry.',
+                            };
+                            return new Response(
+                                JSON.stringify(conflictResponse),
+                                { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                            );
+                        }
                         processed++;
                         break;
+                    }
                     case 'DELETE_DREAM':
                         await handleDeleteDream(supabase, userId, action.payload.id);
                         processed++;
@@ -159,12 +186,46 @@ async function handleAddDream(
     }
 }
 
-// Update an existing dream
+// Update an existing dream with conflict detection
 async function handleUpdateDream(
     supabase: ReturnType<typeof createClient>,
     userId: string,
-    dream: Partial<DreamPayload> & { id: number }
-) {
+    dream: Partial<DreamPayload> & { id: number },
+    clientTimestamp: number
+): Promise<{ success: true } | { conflict: true; serverVersion: ConflictResponse['serverVersion'] }> {
+    // First, fetch the current server version to check for conflicts
+    const { data: serverDream, error: fetchError } = await supabase
+        .from('dreams')
+        .select('id, updated_at, dream_text, title, sleep_quality, tags, mood')
+        .eq('id', dream.id)
+        .eq('user_id', userId)
+        .single();
+
+    if (fetchError) {
+        // Dream doesn't exist on server - could be a race condition, let it fail gracefully
+        console.error('Fetch dream for conflict check error:', fetchError);
+        throw new Error(fetchError.message);
+    }
+
+    // Conflict detection: if server version is newer than client's timestamp
+    const serverUpdatedAt = new Date(serverDream.updated_at).getTime();
+    if (serverUpdatedAt > clientTimestamp) {
+        // Server has newer version - return conflict with server data
+        return {
+            conflict: true,
+            serverVersion: {
+                id: serverDream.id,
+                updated_at: serverDream.updated_at,
+                dream_text: serverDream.dream_text,
+                title: serverDream.title,
+                sleep_quality: serverDream.sleep_quality,
+                tags: serverDream.tags || [],
+                mood: serverDream.mood,
+            }
+        };
+    }
+
+    // No conflict - proceed with update
     const updateData: Record<string, unknown> = {};
 
     if (dream.dreamText !== undefined) updateData.dream_text = dream.dreamText;
@@ -187,6 +248,8 @@ async function handleUpdateDream(
         console.error('Update dream error:', error);
         throw new Error(error.message);
     }
+
+    return { success: true };
 }
 
 // Delete a dream

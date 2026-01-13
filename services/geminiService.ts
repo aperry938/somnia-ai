@@ -723,13 +723,27 @@ export const analyzeDreamWithMemory = async (
     // 2. Find similar past dreams (RAG retrieval)
     const similarDreams = findSimilarDreams(embedding, pastDreams, 0.70, 3);
 
-    // 3. Build context string from similar dreams
+    // 3. Build context string from similar dreams with poetic synthesis instructions
     let contextString = '';
     if (similarDreams.length > 0) {
-        contextString = `\n\n[DREAM MEMORY CONTEXT]\nThe dreamer has experienced similar dreams in the past:\n${similarDreams.map((d, i) =>
-            `${i + 1}. "${d.title}" (${new Date(d.timestamp).toLocaleDateString()}, ${Math.round(d.similarity * 100)}% similar): ${d.dreamText.slice(0, 200)}...`
-        ).join('\n')
-            }\n\nConnect the current dream to these patterns. Note any evolution in recurring themes or symbols.`;
+        const daysSinceFirst = Math.round(
+            (Date.now() - new Date(similarDreams[0].timestamp).getTime()) / (1000 * 60 * 60 * 24)
+        );
+        contextString = `\n\n[DREAM MEMORY CONTEXT - DÉJÀ VU SYNTHESIS]
+The dreamer has experienced similar dreams in the past:
+${similarDreams.map((d, i) =>
+            `${i + 1}. "${d.title}" (${daysSinceFirst} days ago): ${d.dreamText.slice(0, 200)}...`
+        ).join('\n')}
+
+IMPORTANT - For each past dream connection, generate a POETIC SYNTHESIS, not just a similarity description.
+Instead of: "85% similar to Ocean Journey"
+Write: "You're returning to the Ocean. But this time, you're not afraid."
+
+The synthesis should:
+1. Name the recurring element/theme in second person ("You're...")
+2. Note any evolution or change between dreams
+3. Be 1-2 sentences, evocative and meaningful
+4. Feel like a revelation, not a statistic`;
     }
 
     // 4. Check rate limit and credits
@@ -797,13 +811,18 @@ export const analyzeDreamWithMemory = async (
                         },
                         dreamConnections: {
                             type: Type.ARRAY,
-                            description: "If similar past dreams were provided, explain the connections",
+                            description: "If similar past dreams were provided, generate poetic synthesis for each connection",
                             items: {
                                 type: Type.OBJECT,
                                 properties: {
-                                    pastDreamTitle: { type: Type.STRING },
-                                    connection: { type: Type.STRING }
-                                }
+                                    pastDreamTitle: { type: Type.STRING, description: "Title of the past dream" },
+                                    daysAgo: { type: Type.NUMBER, description: "How many days ago the past dream occurred" },
+                                    synthesis: {
+                                        type: Type.STRING,
+                                        description: "A poetic 1-2 sentence narrative synthesis in second person. Example: 'You're returning to the Ocean. But this time, you're not afraid.' NOT a percentage or technical description."
+                                    }
+                                },
+                                required: ['pastDreamTitle', 'synthesis']
                             }
                         }
                     },
@@ -815,7 +834,13 @@ export const analyzeDreamWithMemory = async (
         const rawJson = response.text?.trim() ?? '';
         if (!rawJson) throw new Error('AI returned empty response.');
 
-        const result = JSON.parse(rawJson) as DreamAnalysis & { dreamConnections?: Array<{ pastDreamTitle: string; connection: string }> };
+        const result = JSON.parse(rawJson) as DreamAnalysis & {
+            dreamConnections?: Array<{
+                pastDreamTitle: string;
+                daysAgo?: number;
+                synthesis: string;
+            }>
+        };
 
         // Consume credit after success
         consumeAiCredit();
