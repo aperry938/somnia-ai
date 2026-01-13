@@ -144,14 +144,33 @@ export async function generateShareCard(options: ShareCardOptions): Promise<stri
     canvas.height = height;
     const ctx = canvas.getContext('2d')!;
 
-    // Try to load template image, fallback to gradient
-    const templatePath = `/share-templates/dream-card-${theme}${format === 'vertical' ? '-vertical' : ''}.png`;
+    let backgroundLoaded = false;
 
-    try {
-        const img = await loadImage(templatePath);
-        ctx.drawImage(img, 0, 0, width, height);
-    } catch {
-        // Fallback gradient
+    // Priority 1: User's attached dream visualization image
+    if (dream.imageUrl) {
+        try {
+            const userImg = await loadImage(dream.imageUrl);
+            drawImageCover(ctx, userImg, width, height);
+            backgroundLoaded = true;
+        } catch {
+            // Image failed to load, continue to fallbacks
+        }
+    }
+
+    // Priority 2: Theme template image
+    if (!backgroundLoaded) {
+        const templatePath = `/share-templates/dream-card-${theme}${format === 'vertical' ? '-vertical' : ''}.png`;
+        try {
+            const img = await loadImage(templatePath);
+            ctx.drawImage(img, 0, 0, width, height);
+            backgroundLoaded = true;
+        } catch {
+            // Template not found, use gradient fallback
+        }
+    }
+
+    // Priority 3: Gradient fallback
+    if (!backgroundLoaded) {
         const gradient = ctx.createLinearGradient(0, 0, width, height);
         const colors = FALLBACK_GRADIENTS[theme];
         gradient.addColorStop(0, colors[0]);
@@ -212,6 +231,36 @@ export async function generateShareCard(options: ShareCardOptions): Promise<stri
     ctx.fillText('somnia.ai', width / 2, height - (isVertical ? 60 : 40));
 
     return canvas.toDataURL('image/png');
+}
+
+// Draw image covering the canvas (like CSS background-size: cover)
+function drawImageCover(
+    ctx: CanvasRenderingContext2D,
+    img: HTMLImageElement,
+    canvasWidth: number,
+    canvasHeight: number
+): void {
+    const imgRatio = img.width / img.height;
+    const canvasRatio = canvasWidth / canvasHeight;
+
+    let drawWidth: number;
+    let drawHeight: number;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    if (imgRatio > canvasRatio) {
+        // Image is wider - crop sides
+        drawHeight = canvasHeight;
+        drawWidth = img.width * (canvasHeight / img.height);
+        offsetX = (canvasWidth - drawWidth) / 2;
+    } else {
+        // Image is taller - crop top/bottom
+        drawWidth = canvasWidth;
+        drawHeight = img.height * (canvasWidth / img.width);
+        offsetY = (canvasHeight - drawHeight) / 2;
+    }
+
+    ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
 }
 
 // Load image helper

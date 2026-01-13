@@ -116,7 +116,7 @@ const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = Re
                         </span>
                     </div>
                     <div
-                        className="relative inline-flex items-center w-11 min-h-[44px] align-middle select-none"
+                        className="relative inline-flex items-center w-11 h-6 min-h-[44px] select-none"
                         onClick={handleToggle}
                         role="switch"
                         aria-checked={alarm.isActive}
@@ -124,16 +124,13 @@ const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = Re
                         tabIndex={0}
                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleToggle(e as unknown as React.MouseEvent); } }}
                     >
-                        <input
-                            type="checkbox"
-                            id={id}
-                            className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
-                            checked={alarm.isActive}
-                            readOnly
-                            aria-hidden="true"
-                            tabIndex={-1}
+                        {/* Track */}
+                        <div className={`w-11 h-6 rounded-full transition-colors ${alarm.isActive ? 'bg-day-accent dark:bg-night-accent' : 'bg-gray-300 dark:bg-gray-700'}`} />
+                        {/* Knob */}
+                        <div
+                            className={`absolute w-5 h-5 bg-white rounded-full shadow-md transition-transform ${alarm.isActive ? 'translate-x-[22px]' : 'translate-x-[2px]'}`}
+                            style={{ top: '50%', transform: `translateY(-50%) ${alarm.isActive ? 'translateX(22px)' : 'translateX(2px)'}` }}
                         />
-                        <label htmlFor={id} className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 dark:bg-gray-700 cursor-pointer transition-colors" aria-hidden="true"></label>
                     </div>
                 </div>
                 <div className="flex items-end justify-between relative z-10 mt-auto">
@@ -1019,27 +1016,7 @@ export const AlarmsPage: React.FC<{ timeString: string, dateString: string, onNa
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
             </button>
             {isModalOpen && <AlarmModal alarmToEdit={alarmToEdit} onClose={closeModal} onConfigureSleepGateway={handleConfigureSleepGateway} />}
-            {/* Styles for toggle switch */}
-            <style>{`
-                .toggle-checkbox {
-                    left: 2px;
-                    top: 0;
-                    transition: transform 0.2s ease-in-out;
-                }
-                .toggle-checkbox:checked {
-                    transform: translateX(1.25rem);
-                    border-color: #6366F1;
-                }
-                .dark .toggle-checkbox:checked {
-                    border-color: #818CF8;
-                }
-                .toggle-checkbox:checked + .toggle-label {
-                    background-color: #6366F1;
-                }
-                .dark .toggle-checkbox:checked + .toggle-label {
-                    background-color: #818CF8;
-                }
-            `}</style>
+            {/* Styles moved inline - toggle-checkbox/label no longer used */}
         </>
     );
 };

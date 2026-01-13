@@ -116,17 +116,23 @@ export const SleepDetectionSettingsCard: React.FC = () => {
                         </span>
                     )}
                 </div>
-                <label className={`relative inline-flex items-center min-h-[44px] ${userIsPremium && !isScheduling ? 'cursor-pointer' : 'cursor-not-allowed'}`}>
-                    <input
-                        type="checkbox"
-                        checked={userIsPremium && settings.enabled}
-                        onChange={(e) => handleToggle(e.target.checked)}
-                        disabled={!userIsPremium || isScheduling}
-                        aria-label="Enable sleep detection"
-                        className="sr-only peer"
+                <div
+                    className={`relative w-11 h-6 min-h-[44px] flex items-center ${userIsPremium && !isScheduling ? 'cursor-pointer' : 'cursor-not-allowed'}`}
+                    onClick={() => userIsPremium && !isScheduling && handleToggle(!settings.enabled)}
+                    role="switch"
+                    aria-checked={userIsPremium && settings.enabled}
+                    aria-label="Enable sleep detection"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && userIsPremium && !isScheduling) { e.preventDefault(); handleToggle(!settings.enabled); } }}
+                >
+                    {/* Track */}
+                    <div className={`w-11 h-6 rounded-full transition-colors ${userIsPremium && settings.enabled ? 'bg-day-accent dark:bg-night-accent' : 'bg-gray-200 dark:bg-gray-700'} ${!userIsPremium || isScheduling ? 'opacity-50' : ''}`} />
+                    {/* Knob */}
+                    <div
+                        className={`absolute w-5 h-5 bg-white rounded-full shadow-md transition-transform ${!userIsPremium || isScheduling ? 'opacity-75' : ''}`}
+                        style={{ top: '50%', transform: `translateY(-50%) translateX(${userIsPremium && settings.enabled ? '22px' : '2px'})` }}
                     />
-                    <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-day-accent dark:peer-checked:bg-night-accent ${!userIsPremium || isScheduling ? 'opacity-50' : ''}`}></div>
-                </label>
+                </div>
             </div>
 
             {userIsPremium && settings.enabled && (
