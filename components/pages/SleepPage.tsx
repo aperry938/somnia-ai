@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { GUIDED_RELAXATIONS, SLEEP_CHECKLIST_ITEMS, SOUNDSCAPES } from '../../constants';
 import { GuidedRelaxation, Soundscape, SleepAids } from '../../types';
 import { SoundscapeModal } from '../modals/SoundscapeModal';
@@ -6,6 +6,7 @@ import { GuidedRelaxationModal } from '../modals/GuidedRelaxationModal';
 import { HardwareSyncModal } from '../modals/HardwareSyncModal';
 import { TechniqueInfoModal } from '../modals/TechniqueInfoModal';
 import { RealityCheckInfoModal } from '../modals/RealityCheckInfoModal';
+import { DreamScribeModal } from '../modals/DreamScribeModal';
 
 import { useAppContext } from '../../contexts/AppContext';
 import { stopSleepSound, stopSleepSoundIfNotPersisting, setSleepSoundPersist } from '../../services/audioService';
@@ -56,6 +57,51 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
     const [selectedTechnique, setSelectedTechnique] = useState<LucidDreamTechnique | null>(null);
     const [showRealityCheckModal, setShowRealityCheckModal] = useState(false);
     const [lucidExpanded, setLucidExpanded] = useState(false);
+    const [showQuickDream, setShowQuickDream] = useState(false);
+    const [longPressProgress, setLongPressProgress] = useState(0);
+
+    // Long-press for quick dream recording
+    const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const isLongPressingRef = useRef(false);
+
+    const LONG_PRESS_DURATION = 800; // ms to trigger quick dream
+
+    const handleLongPressStart = useCallback(() => {
+        isLongPressingRef.current = true;
+        setLongPressProgress(0);
+
+        // Start progress animation
+        const startTime = Date.now();
+        progressIntervalRef.current = setInterval(() => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min((elapsed / LONG_PRESS_DURATION) * 100, 100);
+            setLongPressProgress(progress);
+        }, 16);
+
+        // Trigger after duration
+        longPressTimerRef.current = setTimeout(() => {
+            if (isLongPressingRef.current) {
+                haptics.success();
+                setShowQuickDream(true);
+                setLongPressProgress(0);
+            }
+            if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+        }, LONG_PRESS_DURATION);
+    }, []);
+
+    const handleLongPressEnd = useCallback(() => {
+        isLongPressingRef.current = false;
+        setLongPressProgress(0);
+        if (longPressTimerRef.current) {
+            clearTimeout(longPressTimerRef.current);
+            longPressTimerRef.current = null;
+        }
+        if (progressIntervalRef.current) {
+            clearInterval(progressIntervalRef.current);
+            progressIntervalRef.current = null;
+        }
+    }, []);
 
     // Wake Window Hook
     const { isSupported: motionSupported, movementLog } = useWakeWindow(isSleeping);
@@ -303,10 +349,44 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
 
             {
                 isSleeping ? (
-                    <div className="max-w-2xl mx-auto space-y-6 bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border rounded-xl text-center p-8 animate-fadeIn">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-day-accent dark:text-night-accent mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
-                        <h2 className="font-serif text-2xl text-day-accent dark:text-night-accent">Sweet Dreams</h2>
-                        <p className="text-day-text-secondary dark:text-night-text-secondary">Your sleep settings are logged. Rest well.</p>
+                    <div
+                        className="max-w-2xl mx-auto space-y-6 bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border rounded-xl text-center p-8 animate-fadeIn relative overflow-hidden"
+                        onTouchStart={handleLongPressStart}
+                        onTouchEnd={handleLongPressEnd}
+                        onTouchCancel={handleLongPressEnd}
+                        onMouseDown={handleLongPressStart}
+                        onMouseUp={handleLongPressEnd}
+                        onMouseLeave={handleLongPressEnd}
+                    >
+                        {/* Long-press progress indicator */}
+                        {longPressProgress > 0 && (
+                            <div
+                                className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-indigo-500/20 transition-all"
+                                style={{ width: `${longPressProgress}%` }}
+                            />
+                        )}
+
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-day-accent dark:text-night-accent mx-auto relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                        <h2 className="font-serif text-2xl text-day-accent dark:text-night-accent relative z-10">Sweet Dreams</h2>
+                        <p className="text-day-text-secondary dark:text-night-text-secondary relative z-10">Your sleep settings are logged. Rest well.</p>
+
+                        {/* Quick Dream Recording Button */}
+                        <button
+                            onClick={() => {
+                                haptics.medium();
+                                setShowQuickDream(true);
+                            }}
+                            className="relative z-10 w-full py-4 bg-gradient-to-r from-purple-500/30 to-indigo-500/30 hover:from-purple-500/50 hover:to-indigo-500/50 border border-purple-500/40 rounded-xl flex items-center justify-center gap-3 transition-all group"
+                            aria-label="Quick dream recording"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-purple-400 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                            </svg>
+                            <span className="text-purple-300 font-medium">Record a Dream</span>
+                        </button>
+                        <p className="text-xs text-day-text-secondary/60 dark:text-night-text-secondary/60 relative z-10">
+                            Tap button or long-press anywhere to quickly capture your dream
+                        </p>
 
                         {/* Now Playing - show if soundscape is active */}
                         {playingSoundId && selectedSound && (
@@ -764,6 +844,14 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                 onClose={() => setShowRealityCheckModal(false)}
             />
 
+            {/* Quick Dream Recording Modal */}
+            {showQuickDream && (
+                <DreamScribeModal
+                    onClose={() => setShowQuickDream(false)}
+                    existingDream={null}
+                    isFromAlarm={false}
+                />
+            )}
         </>
     );
 };
