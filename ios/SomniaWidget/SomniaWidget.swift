@@ -1,18 +1,24 @@
 /**
- * SomniaWidget - iOS WidgetKit Widget for lock screen and home screen
+ * SomniaWidget - iOS WidgetKit Widgets for lock screen and home screen
  *
- * Displays next alarm time, sleep stats, and quick access to the app.
+ * Widgets included:
+ * 1. SomniaWidget - Displays next alarm time, sleep stats
+ * 2. DreamRecordWidget - Quick action to record dreams from lock screen
+ *
  * Supports iOS 16+ lock screen widgets and home screen widgets.
+ * iOS 17+ supports interactive widgets with App Intents.
  *
  * SETUP REQUIRED:
  * 1. In Xcode, add a Widget Extension target named "SomniaWidget"
  * 2. Add App Group "group.ai.somnia.app" to both main app and widget targets
  * 3. Enable WidgetKit capability
+ * 4. For iOS 17+ interactive: Enable App Intents capability
  */
 
 import WidgetKit
 import SwiftUI
 import Intents
+import AppIntents
 
 // MARK: - Widget Data
 
@@ -293,10 +299,9 @@ struct StatRow: View {
     }
 }
 
-// MARK: - Widget Configuration
+// MARK: - Main Widget Configuration
 
-@main
-struct SomniaWidget: Widget {
+struct SomniaAlarmWidget: Widget {
     let kind: String = "SomniaWidget"
 
     var body: some WidgetConfiguration {
@@ -312,6 +317,174 @@ struct SomniaWidget: Widget {
             .accessoryRectangular,
             .accessoryInline
         ])
+    }
+}
+
+// MARK: - Dream Recording Widget
+
+/// Entry for dream recording widget
+struct DreamRecordEntry: TimelineEntry {
+    let date: Date
+    let isSleepTracking: Bool
+}
+
+/// Provider for dream recording widget
+struct DreamRecordProvider: TimelineProvider {
+    private let appGroupID = "group.ai.somnia.app"
+
+    func placeholder(in context: Context) -> DreamRecordEntry {
+        DreamRecordEntry(date: Date(), isSleepTracking: false)
+    }
+
+    func getSnapshot(in context: Context, completion: @escaping (DreamRecordEntry) -> ()) {
+        let entry = loadData()
+        completion(entry)
+    }
+
+    func getTimeline(in context: Context, completion: @escaping (Timeline<DreamRecordEntry>) -> ()) {
+        let entry = loadData()
+        let timeline = Timeline(entries: [entry], policy: .never)
+        completion(timeline)
+    }
+
+    private func loadData() -> DreamRecordEntry {
+        let userDefaults = UserDefaults(suiteName: appGroupID)
+        let isSleepTracking = userDefaults?.bool(forKey: "isSleepTracking") ?? false
+        return DreamRecordEntry(date: Date(), isSleepTracking: isSleepTracking)
+    }
+}
+
+/// Dream recording widget view for lock screen
+struct DreamRecordWidgetView: View {
+    var entry: DreamRecordProvider.Entry
+    @Environment(\.widgetFamily) var family
+
+    var body: some View {
+        switch family {
+        case .accessoryCircular:
+            DreamRecordCircularView(entry: entry)
+        case .accessoryRectangular:
+            DreamRecordRectangularView(entry: entry)
+        case .systemSmall:
+            DreamRecordSmallView(entry: entry)
+        default:
+            DreamRecordCircularView(entry: entry)
+        }
+    }
+}
+
+/// Circular lock screen widget - tap to record
+struct DreamRecordCircularView: View {
+    let entry: DreamRecordEntry
+
+    var body: some View {
+        ZStack {
+            AccessoryWidgetBackground()
+            VStack(spacing: 2) {
+                Image(systemName: "mic.fill")
+                    .font(.system(size: 16))
+                    .foregroundColor(entry.isSleepTracking ? .green : .purple)
+                Text("Dream")
+                    .font(.system(size: 9, weight: .medium))
+            }
+        }
+        .widgetURL(URL(string: "somnia://journal/new"))
+    }
+}
+
+/// Rectangular lock screen widget - more detail
+struct DreamRecordRectangularView: View {
+    let entry: DreamRecordEntry
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "mic.circle.fill")
+                .font(.system(size: 28))
+                .foregroundColor(entry.isSleepTracking ? .green : .purple)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Record Dream")
+                    .font(.system(size: 14, weight: .semibold))
+                Text(entry.isSleepTracking ? "Sleep tracking active" : "Tap to capture")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .widgetURL(URL(string: "somnia://journal/new"))
+    }
+}
+
+/// Small home screen widget - prominent tap target
+struct DreamRecordSmallView: View {
+    let entry: DreamRecordEntry
+
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(red: 0.16, green: 0.1, blue: 0.22),
+                    Color(red: 0.22, green: 0.12, blue: 0.30)
+                ]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            VStack(spacing: 12) {
+                Image(systemName: "mic.fill")
+                    .font(.system(size: 36))
+                    .foregroundColor(entry.isSleepTracking ? .green : .purple)
+
+                Text("Record Dream")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.white)
+
+                Text("Tap to capture")
+                    .font(.system(size: 12))
+                    .foregroundColor(.white.opacity(0.7))
+
+                if entry.isSleepTracking {
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(Color.green)
+                            .frame(width: 6, height: 6)
+                        Text("Sleep active")
+                            .font(.system(size: 10))
+                            .foregroundColor(.green)
+                    }
+                }
+            }
+            .padding()
+        }
+        .widgetURL(URL(string: "somnia://journal/new"))
+    }
+}
+
+/// Dream Recording Widget configuration
+struct DreamRecordWidget: Widget {
+    let kind: String = "DreamRecordWidget"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: DreamRecordProvider()) { entry in
+            DreamRecordWidgetView(entry: entry)
+        }
+        .configurationDisplayName("Quick Dream Record")
+        .description("Tap to instantly record a dream when you wake up")
+        .supportedFamilies([
+            .systemSmall,
+            .accessoryCircular,
+            .accessoryRectangular
+        ])
+    }
+}
+
+// MARK: - Widget Bundle
+
+@main
+struct SomniaWidgetBundle: WidgetBundle {
+    var body: some Widget {
+        SomniaAlarmWidget()
+        DreamRecordWidget()
     }
 }
 

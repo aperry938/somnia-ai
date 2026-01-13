@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pulsing indicator for sleep tracking active state -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+
+    <solid android:color="#7DD87D" />
+
+    <size
+        android:width="8dp"
+        android:height="8dp" />
+</shape>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Background for Dream Recording Widget - Purple gradient with rounded corners -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <gradient
+        android:startColor="#1A1025"
+        android:centerColor="#251538"
+        android:endColor="#1A1025"
+        android:angle="135" />
+
+    <corners android:radius="20dp" />
+
+    <stroke
+        android:width="1dp"
+        android:color="#4B3A6B" />
+</shape>

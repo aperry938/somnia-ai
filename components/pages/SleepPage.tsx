@@ -16,9 +16,11 @@ import { WakeWindowViz } from '../WakeWindowViz';
 import { PremiumBadge } from '../shared/PremiumBadge';
 import { isPremium } from '../../services/secureSubscriptionService';
 import { SleepDetectionSettingsCard } from '../settings/SleepDetectionSettingsCard';
+import { LockScreenWidgetSettingsCard } from '../settings/LockScreenWidgetSettingsCard';
 import haptics from '../../services/hapticsService';
 import { sanitizeTextLive, INPUT_LIMITS } from '../../services/validationService';
 import { useToast } from '../shared/Toast';
+import { updateSleepTrackingState } from '../../services/widgetService';
 
 const DAY_RATING_LABELS = ['Terrible', 'Poor', 'Okay', 'Good', 'Great'];
 
@@ -156,6 +158,8 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
         // Transition to sleeping state but DON'T stop the sound
         // The sound will continue playing in the background
         setIsSleeping(true);
+        // Update widget to show sleep tracking is active
+        updateSleepTrackingState(true);
         // Close the modal (it will close itself, but clear the state)
         setActiveModal(null);
         // Don't clear selectedSound - we might want to show it in the sleeping view
@@ -194,6 +198,8 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
         setPendingSleepData(sleepData);
 
         setIsSleeping(true);
+        // Update widget to show sleep tracking is active
+        updateSleepTrackingState(true);
     };
 
     // Format alarm time for display
@@ -431,6 +437,8 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                         showToast('Session started - data will be logged when you wake');
                                     }
                                     setIsSleeping(false);
+                                    // Update widget to show sleep tracking ended
+                                    updateSleepTrackingState(false);
                                     // Navigate back to alarms/main page
                                     if (onNavigateToAlarms) onNavigateToAlarms();
                                 }}
@@ -660,6 +668,9 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
 
                         {/* Sleep Detection Settings */}
                         <SleepDetectionSettingsCard />
+
+                        {/* Lock Screen Widget Setup */}
+                        <LockScreenWidgetSettingsCard />
 
                         {/* Lucid Dreaming - Collapsible Card */}
                         <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-xl p-4 mt-4">

@@ -9,6 +9,14 @@
     <string name="widget_description">View your next alarm, sleep stats, and quick actions</string>
     <string name="widget_name">Somnia Sleep</string>
 
+    <!-- Dream Recording Widget strings -->
+    <string name="dream_widget_name">Quick Dream Record</string>
+    <string name="dream_widget_description">Tap to instantly record a dream from your lock screen or home screen</string>
+    <string name="dream_widget_title">Record Dream</string>
+    <string name="dream_widget_hint">Tap to capture your dream</string>
+    <string name="dream_widget_record">Record a dream</string>
+    <string name="dream_widget_sleep_active">Sleep tracking active</string>
+
     <!-- App shortcut strings -->
     <string name="shortcut_set_alarm">Set Alarm</string>
     <string name="shortcut_set_alarm_long">Set a wake-up alarm</string>

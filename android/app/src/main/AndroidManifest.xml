@@ -116,6 +116,21 @@
                 android:resource="@xml/widget_info" />
         </receiver>
 
+        <!-- Quick Dream Recording Widget (Lock Screen + Home Screen) -->
+        <receiver
+            android:name=".DreamRecordWidgetProvider"
+            android:exported="true"
+            android:label="@string/dream_widget_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="ai.somnia.app.ACTION_UPDATE_DREAM_WIDGET" />
+                <action android:name="ai.somnia.app.ACTION_RECORD_DREAM" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_dream_info" />
+        </receiver>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

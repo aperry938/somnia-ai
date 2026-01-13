@@ -26,6 +26,14 @@ interface WidgetPluginInterface {
         streak?: number;
     }): Promise<void>;
 
+    /** Update sleep tracking state for dream recording widget */
+    updateSleepTrackingState(options: {
+        isSleepTracking: boolean;
+    }): Promise<void>;
+
+    /** Refresh dream recording widget specifically */
+    refreshDreamWidget(): Promise<void>;
+
     refresh(): Promise<void>;
     isSupported(): Promise<{ supported: boolean }>;
 }
@@ -185,4 +193,45 @@ export async function initializeWidget(data: WidgetData): Promise<void> {
 
     await updateWidget(data);
     logger.log('[Widget] Initialized');
+}
+
+/**
+ * Update sleep tracking state for the dream recording widget
+ * Call this when user starts/stops sleep tracking
+ *
+ * This updates the lock screen widget to show whether sleep is being tracked,
+ * giving users visual feedback that the app is monitoring their sleep.
+ *
+ * @param isSleepTracking - Whether sleep tracking is currently active
+ */
+export async function updateSleepTrackingState(isSleepTracking: boolean): Promise<void> {
+    if (!isNative || !WidgetPlugin) {
+        logger.log('[Widget] Not in native environment, skipping sleep tracking state update');
+        return;
+    }
+
+    try {
+        await WidgetPlugin.updateSleepTrackingState({ isSleepTracking });
+        logger.log('[Widget] Sleep tracking state updated:', isSleepTracking);
+    } catch (error) {
+        // Gracefully handle if method not implemented on older native builds
+        logger.warn('[Widget] Sleep tracking state update not supported:', error);
+    }
+}
+
+/**
+ * Refresh only the dream recording widget
+ * Useful after user enables/disables sleep tracking features
+ */
+export async function refreshDreamWidget(): Promise<void> {
+    if (!isNative || !WidgetPlugin) return;
+
+    try {
+        await WidgetPlugin.refreshDreamWidget();
+        logger.log('[Widget] Dream widget refresh requested');
+    } catch (error) {
+        // Fallback to general refresh
+        logger.warn('[Widget] Dream widget refresh not supported, using general refresh');
+        await refreshWidgets();
+    }
 }
