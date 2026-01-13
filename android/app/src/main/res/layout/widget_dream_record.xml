@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Quick Dream Recording Widget - Designed for lock screen use
+    Large, high-contrast tap target for groggy users waking from sleep
+    Single tap opens the app directly to voice dream recording
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/dream_widget_container"
+    android:background="@drawable/widget_dream_background"
+    android:padding="8dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="16dp">
+
+        <!-- Microphone icon - large and prominent -->
+        <ImageView
+            android:id="@+id/dream_widget_icon"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:src="@android:drawable/ic_btn_speak_now"
+            android:contentDescription="@string/dream_widget_record"
+            android:tint="#E0B0FF"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Primary action text -->
+        <TextView
+            android:id="@+id/dream_widget_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/dream_widget_title"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:gravity="center" />
+
+        <!-- Hint text -->
+        <TextView
+            android:id="@+id/dream_widget_hint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/dream_widget_hint"
+            android:textColor="#B8B8FF"
+            android:textSize="12sp"
+            android:gravity="center"
+            android:layout_marginTop="4dp" />
+
+        <!-- Sleep mode indicator (shown when tracking) -->
+        <LinearLayout
+            android:id="@+id/dream_widget_sleep_indicator"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="12dp"
+            android:visibility="gone">
+
+            <View
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:background="@drawable/widget_pulse_indicator" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/dream_widget_sleep_active"
+                android:textColor="#7DD87D"
+                android:textSize="11sp"
+                android:layout_marginStart="6dp" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+</FrameLayout>

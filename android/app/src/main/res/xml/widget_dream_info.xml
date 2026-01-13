@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Dream Recording Widget Configuration
+    Optimized for lock screen placement (Android 12+)
+    Small size for quick access without cluttering the screen
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="110dp"
+    android:minHeight="110dp"
+    android:targetCellWidth="2"
+    android:targetCellHeight="2"
+    android:minResizeWidth="80dp"
+    android:minResizeHeight="80dp"
+    android:maxResizeWidth="180dp"
+    android:maxResizeHeight="180dp"
+    android:updatePeriodMillis="0"
+    android:initialLayout="@layout/widget_dream_record"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen|keyguard"
+    android:previewImage="@mipmap/ic_launcher"
+    android:description="@string/dream_widget_description"
+    android:widgetFeatures="reconfigurable" />

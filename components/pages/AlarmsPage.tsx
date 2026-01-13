@@ -1004,7 +1004,9 @@ export const AlarmsPage: React.FC<{ timeString: string, dateString: string, onNa
                     onOpenFullGateway={handleConfigureSleepGateway}
                 />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto w-full pb-4">
+
+                {/* pb-32 provides space for floating action button */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto w-full pb-32">
                     {alarms.length > 0 ? (
                         alarms.map(alarm => <AlarmItem key={alarm.id} alarm={alarm} onEdit={openModal} />)
                     ) : (
