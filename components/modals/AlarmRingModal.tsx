@@ -468,12 +468,23 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                             </button>
                         </div>
 
-                        {/* Swipe hint */}
-                        <div className="w-full mt-4 px-4">
-                            <p className="text-white/40 text-sm animate-pulse text-center leading-relaxed">
-                                ← Swipe left to snooze<br />
-                                Swipe right to wake →
-                            </p>
+                        {/* Swipe hint - icon based for visibility */}
+                        <div className="w-full mt-6 px-2">
+                            <div className="flex items-center justify-center gap-4 text-white/40 text-xs">
+                                <div className="flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                    </svg>
+                                    <span>Snooze</span>
+                                </div>
+                                <div className="w-px h-4 bg-white/20" />
+                                <div className="flex items-center gap-1">
+                                    <span>Wake</span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
