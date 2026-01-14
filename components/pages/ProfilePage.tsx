@@ -379,13 +379,15 @@ const NotificationsCard: React.FC = () => {
                             role="switch"
                             aria-checked={settings[item.key]}
                             aria-label={`Toggle ${item.label}`}
-                            className={`relative w-12 h-7 min-h-[44px] rounded-full transition-colors duration-200 ${settings[item.key]
+                            className="relative flex items-center justify-center min-h-[44px] min-w-[48px]"
+                        >
+                            <span className={`relative w-12 h-7 rounded-full transition-colors duration-200 ${settings[item.key]
                                 ? 'bg-day-accent dark:bg-night-accent'
                                 : 'bg-gray-300 dark:bg-gray-600'
-                                }`}
-                        >
-                            <span className={`absolute top-1 left-1 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-200 ${settings[item.key] ? 'translate-x-5' : 'translate-x-0'
-                                }`} />
+                                }`}>
+                                <span className={`absolute top-1 left-1 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-200 ${settings[item.key] ? 'translate-x-5' : 'translate-x-0'
+                                    }`} />
+                            </span>
                         </button>
                     </div>
                 ))}
