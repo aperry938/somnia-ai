@@ -119,7 +119,7 @@ export const ShareDreamModal: React.FC<ShareDreamModalProps> = ({ dream, isOpen,
 
     if (!isOpen) return null;
 
-    const hasAiInsight = !!dream.aiAnalysis?.interpretation;
+    const hasAiInsight = !!dream.aiAnalysis?.integration;
 
     return (
         <motion.div

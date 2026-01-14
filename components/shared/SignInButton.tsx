@@ -13,7 +13,7 @@ interface TopRightButtonProps {
 
 export const SignInButton: React.FC<TopRightButtonProps> = ({ onNavigateToProfile }) => {
     const { isAuthenticated, isConfigured } = useAuth();
-    const { navigate } = useNavigation();
+    const { navigateTo } = useNavigation();
 
     // For unauthenticated users: Show Sign In button
     if (!isAuthenticated) {
@@ -47,8 +47,8 @@ export const SignInButton: React.FC<TopRightButtonProps> = ({ onNavigateToProfil
     const handleProfileClick = () => {
         if (onNavigateToProfile) {
             onNavigateToProfile();
-        } else {
-            navigate('profile');
+        } else if (navigateTo) {
+            navigateTo('profile');
         }
     };
 
