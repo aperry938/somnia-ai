@@ -108,7 +108,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
     // Wake Window Hook
     const { isSupported: motionSupported, movementLog } = useWakeWindow(isSleeping);
 
-    const { setActiveSleepAid, activeSleepAids, setPendingSleepData, dreams, volume, activeSleepSession, updateSleepSessionData, startSleepSession, alarms, addSleepEntry, clearSleepSession, createSleepEntryForSession } = useAppContext();
+    const { setActiveSleepAid, activeSleepAids, setPendingSleepData, dreams, volume, activeSleepSession, updateSleepSessionData, startSleepSession, alarms, addDream, createSleepEntryForSession } = useAppContext();
     const { showToast } = useToast();
 
     // Initialize session data from existing session if present (runs once on mount)
@@ -858,9 +858,11 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
             {/* Quick Dream Recording Modal */}
             {showQuickDream && (
                 <DreamScribeModal
+                    onSave={(dreamText, sleepQuality, mood) => {
+                        addDream(dreamText, sleepQuality, mood);
+                        setShowQuickDream(false);
+                    }}
                     onClose={() => setShowQuickDream(false)}
-                    existingDream={null}
-                    isFromAlarm={false}
                 />
             )}
         </>
