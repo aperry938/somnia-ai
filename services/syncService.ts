@@ -39,14 +39,16 @@ export const emitSyncConflictResolved = (dreamId: number, resolution: 'server' |
  * This function refreshes the token if needed.
  */
 async function ensureValidToken(): Promise<string | null> {
-    // Dynamic import to avoid circular dependencies
-    const { createClient } = await import('@supabase/supabase-js');
-
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
         return null; // No Supabase configured
     }
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Dynamic import to avoid circular dependencies, reuse singleton from authService
+    const { supabase } = await import('./authService');
+
+    if (!supabase) {
+        return null; // Supabase not configured
+    }
 
     try {
         const { data: { session }, error } = await supabase.auth.getSession();

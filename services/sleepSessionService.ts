@@ -30,7 +30,7 @@ const ACTIVE_SESSION_KEY = 'somnia_active_sleep_session';
 const COMPLETED_SESSIONS_KEY = 'somnia_completed_sleep_sessions';
 
 // Generate unique ID
-const generateId = (): string => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+const generateId = (): string => `session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
 /**
  * Start a new sleep session
