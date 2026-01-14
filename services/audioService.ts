@@ -1185,12 +1185,12 @@ const createBinauralNode = (context: AudioContext, baseFreq: number, diff: numbe
     oscLeft.frequency.value = baseFreq - diff / 2;
     oscRight.frequency.value = baseFreq + diff / 2;
 
-    // Binaural beats should be subtle (~-25dB ≈ 0.056 linear gain)
-    // Slightly louder than pure -25dB for the low 110 Hz carrier
+    // Binaural beats volume - audible but not overwhelming
+    // (0.35 provides clear presence while master gain controls overall level)
     const gainLeft = context.createGain();
     const gainRight = context.createGain();
-    gainLeft.gain.value = 0.08;  // Subtle but perceptible binaural mix
-    gainRight.gain.value = 0.08;
+    gainLeft.gain.value = 0.35;
+    gainRight.gain.value = 0.35;
 
     oscLeft.connect(gainLeft);
     oscRight.connect(gainRight);
@@ -1287,11 +1287,11 @@ const createSleepRampNode = (
 
     // After ramp: Hold at 1.5Hz indefinitely (no further changes needed - audio API holds last value)
 
-    // Subtle binaural gain (same as regular binaural beats)
+    // Audible binaural gain (matches regular binaural beats)
     const gainLeft = context.createGain();
     const gainRight = context.createGain();
-    gainLeft.gain.setValueAtTime(0.08, now);
-    gainRight.gain.setValueAtTime(0.08, now);
+    gainLeft.gain.setValueAtTime(0.35, now);
+    gainRight.gain.setValueAtTime(0.35, now);
 
     oscLeft.connect(gainLeft);
     oscRight.connect(gainRight);

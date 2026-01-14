@@ -146,7 +146,6 @@ const App: React.FC = () => {
                 case '2': setCurrentPage('sleep'); break;
                 case '3': setCurrentPage('chronicle'); break;
                 case '4': setCurrentPage('insights'); break;
-                case '5': setCurrentPage('profile'); break;
             }
         };
         window.addEventListener('keydown', handleKeyNav);
@@ -438,7 +437,7 @@ const App: React.FC = () => {
                 <OfflineIndicator />
                 <NowPlayingIndicator onNavigateToSleep={navigateToSleep} />
                 <ThemeToggle />
-                <SignInButton />
+                <SignInButton onNavigateToProfile={() => setCurrentPage('profile')} />
                 {/* DevModeToggle only rendered in development - SECURITY FIX */}
                 {import.meta.env.DEV && <DevModeToggle />}
             </div>

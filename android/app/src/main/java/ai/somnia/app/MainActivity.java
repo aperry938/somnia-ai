@@ -8,7 +8,6 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         // Register custom Capacitor plugins before calling super
         registerPlugin(NativeAlarmPlugin.class);
-        registerPlugin(HealthConnectPlugin.class);
         registerPlugin(WidgetPlugin.class);
         registerPlugin(BatteryOptimizationPlugin.class);
 

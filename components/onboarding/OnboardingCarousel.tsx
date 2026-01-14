@@ -72,8 +72,8 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({ onComple
                 // Find the soundscape for this slide
                 const soundscape = SOUNDSCAPES.find(s => s.id === currentSoundscapeId);
                 if (soundscape) {
-                    // Play at 40% volume for audible preview, 0 = infinite duration (until stopped)
-                    playSleepSound(soundscape, 0, 0.4);
+                    // Play at maximum volume for carousel preview, 0 = infinite duration (until stopped)
+                    playSleepSound(soundscape, 0, 1.0);
                 }
             }, 300);
 
@@ -113,7 +113,7 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({ onComple
     if (!slide) return null;
 
     return (
-        <div className="fixed inset-0 z-50 bg-gradient-to-b from-day-bg-start to-day-bg-end dark:from-night-bg-start dark:to-night-bg-end flex flex-col items-center justify-center p-6">
+        <div className="fixed inset-0 z-50 bg-gradient-to-b from-day-bg-start to-day-bg-end dark:from-night-bg-start dark:to-night-bg-end flex flex-col items-center justify-center p-6 pt-[calc(1.5rem+var(--safe-area-inset-top))] pb-[calc(1.5rem+var(--safe-area-inset-bottom))]">
             {/* Skip button */}
             {!slide.isFinal && (
                 <button

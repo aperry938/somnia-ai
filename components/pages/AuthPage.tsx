@@ -82,7 +82,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSkip }) => {
 
     if (!isConfigured) {
         return (
-            <div className="h-[100dvh] flex flex-col items-center justify-center p-6 pb-safe bg-gradient-to-b from-day-bg-start to-day-bg-end dark:from-night-bg-start dark:to-night-bg-end overflow-y-auto overscroll-none">
+            <div className="h-[100dvh] flex flex-col items-center justify-center p-6 pt-[calc(1.5rem+var(--safe-area-inset-top))] pb-[calc(1.5rem+var(--safe-area-inset-bottom))] bg-gradient-to-b from-day-bg-start to-day-bg-end dark:from-night-bg-start dark:to-night-bg-end overflow-y-auto overscroll-none">
                 <div className="max-w-md w-full text-center">
                     <div className="w-20 h-20 mx-auto mb-6 rounded-full overflow-hidden flex items-center justify-center">
                         <img src="/logo.png" alt="Somnia" className="w-full h-full object-cover" />
@@ -105,15 +105,15 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSkip }) => {
     }
 
     return (
-        <div className="h-[100dvh] flex flex-col items-center justify-center p-6 pb-safe bg-gradient-to-b from-day-bg-start to-day-bg-end dark:from-night-bg-start dark:to-night-bg-end overflow-y-auto overscroll-none">
-            <div className="max-w-md w-full">
+        <div className="min-h-[100dvh] flex flex-col items-center p-6 pt-[calc(1.5rem+var(--safe-area-inset-top))] pb-[calc(2rem+var(--safe-area-inset-bottom))] bg-gradient-to-b from-day-bg-start to-day-bg-end dark:from-night-bg-start dark:to-night-bg-end overflow-y-auto overscroll-none">
+            <div className="max-w-md w-full flex-1 flex flex-col justify-center">
                 {/* Logo */}
-                <div className="text-center mb-12">
-                    <div className="w-28 h-28 mx-auto mb-4 rounded-full overflow-hidden flex items-center justify-center">
+                <div className="text-center mb-8">
+                    <div className="w-24 h-24 mx-auto mb-3 rounded-full overflow-hidden flex items-center justify-center">
                         <img src="/logo.png" alt="Somnia" className="w-full h-full object-cover" />
                     </div>
-                    <h1 className="font-serif text-7xl mb-2 text-day-text-primary dark:text-night-text-primary">Somnia</h1>
-                    <p className="text-day-text-secondary dark:text-night-text-secondary">
+                    <h1 className="font-serif text-5xl mb-2 text-day-text-primary dark:text-night-text-primary">Somnia</h1>
+                    <p className="text-day-text-secondary dark:text-night-text-secondary text-sm">
                         {mode === 'signup' && 'Start your wellness journey'}
                         {mode === 'reset' && 'Reset your password'}
                     </p>
@@ -124,7 +124,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSkip }) => {
                     <form onSubmit={handleSubmit} className="space-y-4">
                         {/* Email */}
                         <div>
-                            <label className="text-sm font-medium block mb-1.5">Email</label>
+                            <label className="text-sm font-medium block mb-1.5 text-day-text-primary dark:text-night-text-primary">Email</label>
                             <input
                                 type="email"
                                 value={email}
@@ -138,7 +138,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSkip }) => {
                         {/* Password */}
                         {mode !== 'reset' && (
                             <div>
-                                <label className="text-sm font-medium block mb-1.5">Password</label>
+                                <label className="text-sm font-medium block mb-1.5 text-day-text-primary dark:text-night-text-primary">Password</label>
                                 <input
                                     type="password"
                                     value={password}
@@ -154,7 +154,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSkip }) => {
                         {/* Confirm Password (Signup only) */}
                         {mode === 'signup' && (
                             <div>
-                                <label className="text-sm font-medium block mb-1.5">Confirm Password</label>
+                                <label className="text-sm font-medium block mb-1.5 text-day-text-primary dark:text-night-text-primary">Confirm Password</label>
                                 <input
                                     type="password"
                                     value={confirmPassword}
