@@ -118,7 +118,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setSession(result.session || null);
 
             // Link user to RevenueCat for cross-device subscription sync
-            await linkUser(result.user.id);
+            // Wrapped in try/catch to prevent sign-in failure if RevenueCat fails
+            try {
+                await linkUser(result.user.id);
+            } catch (e) {
+                logger.warn('Failed to link user to RevenueCat:', e);
+            }
 
             // Verify subscription after login
             if (result.session?.access_token) {
@@ -133,7 +138,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setUser(null);
         setSession(null);
         // Unlink from RevenueCat and clear subscription cache
-        await unlinkUser();
+        // Wrapped in try/catch to prevent sign-out failure if RevenueCat fails
+        try {
+            await unlinkUser();
+        } catch (e) {
+            logger.warn('Failed to unlink user from RevenueCat:', e);
+        }
         clearSubscriptionCache();
         localStorage.removeItem('somnia_user_email');
     }, []);

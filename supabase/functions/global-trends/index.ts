@@ -99,7 +99,6 @@ Deno.serve(async (req) => {
         }));
 
         const data = trendsResult.data;
-        const error = trendsResult.error;
 
         // Transform and return data
         const row = data?.[0];
