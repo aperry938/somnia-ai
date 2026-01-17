@@ -60,6 +60,11 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
     const [showRealityCheckModal, setShowRealityCheckModal] = useState(false);
     const [lucidExpanded, setLucidExpanded] = useState(false);
     const [showQuickDream, setShowQuickDream] = useState(false);
+
+    // Collapsible section states
+    const [soundscapesExpanded, setSoundscapesExpanded] = useState(true);
+    const [relaxationExpanded, setRelaxationExpanded] = useState(false);
+    const [preparationExpanded, setPreparationExpanded] = useState(false);
     const [longPressProgress, setLongPressProgress] = useState(0);
 
     // Long-press for quick dream recording
@@ -560,27 +565,50 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                             </div>
                         </div>
 
-                        <div>
-                            <div className="flex items-center justify-center gap-4 my-6">
-                                <h2 className="font-serif text-2xl text-center">Soundscapes</h2>
-                                {isPremium() && (
-                                    <button
-                                        onClick={() => {
-                                            haptics.light();
-                                            const randomIndex = Math.floor(Math.random() * SOUNDSCAPES.length);
-                                            const randomSound = SOUNDSCAPES[randomIndex];
-                                            if (randomSound) openSoundscapeModal(randomSound);
-                                        }}
-                                        className="px-4 py-2 min-h-[44px] text-sm bg-day-accent/10 dark:bg-night-accent/10 text-day-accent dark:text-night-accent rounded-full hover:bg-day-accent/20 dark:hover:bg-night-accent/20 transition-colors flex items-center gap-1"
+                        {/* Soundscapes - Collapsible */}
+                        <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-xl p-4">
+                            <button
+                                onClick={() => setSoundscapesExpanded(!soundscapesExpanded)}
+                                aria-expanded={soundscapesExpanded}
+                                className="w-full flex items-center justify-between min-h-[56px] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-day-accent dark:focus:ring-night-accent rounded-lg"
+                            >
+                                <div>
+                                    <h2 className="font-serif text-xl text-left">Soundscapes</h2>
+                                    <p className="text-xs text-day-text-secondary dark:text-night-text-secondary text-left">
+                                        {SOUNDSCAPES.length} ambient sounds for better sleep
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    {isPremium() && soundscapesExpanded && (
+                                        <span
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                haptics.light();
+                                                const randomIndex = Math.floor(Math.random() * SOUNDSCAPES.length);
+                                                const randomSound = SOUNDSCAPES[randomIndex];
+                                                if (randomSound) openSoundscapeModal(randomSound);
+                                            }}
+                                            className="px-3 py-1 text-xs bg-day-accent/10 dark:bg-night-accent/10 text-day-accent dark:text-night-accent rounded-full hover:bg-day-accent/20 dark:hover:bg-night-accent/20 transition-colors flex items-center gap-1"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                            </svg>
+                                            Surprise Me
+                                        </span>
+                                    )}
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        className={`h-5 w-5 text-day-text-secondary dark:text-night-text-secondary transition-transform ${soundscapesExpanded ? 'rotate-180' : ''}`}
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
                                     >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                        </svg>
-                                        Surprise Me
-                                    </button>
-                                )}
-                            </div>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </div>
+                            </button>
+                            {soundscapesExpanded && (
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4 animate-fadeIn">
                                 {SOUNDSCAPES.map(sound => {
                                     const showProBadge = sound.isPremium && !isPremium();
                                     const cardClasses = `sound-card bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border p-4 rounded-xl text-center cursor-pointer transition-all hover:border-day-accent dark:hover:border-night-accent h-[120px] flex flex-col justify-center relative ${playingSoundId === sound.id ? 'border-day-accent dark:border-night-accent shadow-lg' : 'border-day-border dark:border-night-border'}`;
@@ -619,11 +647,34 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                     );
                                 })}
                             </div>
+                            )}
                         </div>
 
-                        <div>
-                            <h2 className="font-serif text-2xl text-center my-8">Guided Relaxation</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Guided Relaxation - Collapsible */}
+                        <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-xl p-4">
+                            <button
+                                onClick={() => setRelaxationExpanded(!relaxationExpanded)}
+                                aria-expanded={relaxationExpanded}
+                                className="w-full flex items-center justify-between min-h-[56px] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-day-accent dark:focus:ring-night-accent rounded-lg"
+                            >
+                                <div>
+                                    <h2 className="font-serif text-xl text-left">Guided Relaxation</h2>
+                                    <p className="text-xs text-day-text-secondary dark:text-night-text-secondary text-left">
+                                        {GUIDED_RELAXATIONS.length} breathing exercises
+                                    </p>
+                                </div>
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className={`h-5 w-5 text-day-text-secondary dark:text-night-text-secondary transition-transform ${relaxationExpanded ? 'rotate-180' : ''}`}
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            {relaxationExpanded && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 animate-fadeIn">
                                 {GUIDED_RELAXATIONS.map(item => {
                                     // Only show PRO badge for items that are actually premium
                                     const showProBadge = item.isPremium && !isPremium();
@@ -631,7 +682,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                     if (showProBadge) {
                                         return (
                                             <PremiumBadge key={item.id} feature="breathing" className="w-full" hideBadge>
-                                                <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-4 rounded-xl cursor-pointer transition-all hover:border-day-accent dark:hover:border-night-accent relative">
+                                                <div className="bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border p-4 rounded-xl cursor-pointer transition-all hover:border-day-accent dark:hover:border-night-accent relative">
                                                     {/* PRO badge */}
                                                     <span className="absolute top-2 right-2 inline-flex items-center gap-0.5 text-[10px] bg-gradient-to-r from-amber-500 to-orange-500 text-white px-1.5 py-0.5 rounded-full font-medium">
                                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 20 20">
@@ -657,7 +708,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                             onClick={() => openRelaxationModal(item)}
                                             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openRelaxationModal(item); } }}
                                             aria-label={`Open ${item.name} relaxation exercise`}
-                                            className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-4 rounded-xl cursor-pointer transition-all hover:border-day-accent dark:hover:border-night-accent focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent"
+                                            className="bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border p-4 rounded-xl cursor-pointer transition-all hover:border-day-accent dark:hover:border-night-accent focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent"
                                         >
                                             <div className="flex flex-col items-center text-center">
                                                 <div className="text-day-accent dark:text-night-accent w-12 h-12 flex items-center justify-center">{item.icon}</div>
@@ -668,18 +719,42 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                     );
                                 })}
                             </div>
+                            )}
                         </div>
 
-                        <div>
-                            <h2 className="font-serif text-2xl text-center my-8">Sleep Preparation</h2>
-                            <div id="sleep-checklist" className="space-y-3">
+                        {/* Sleep Preparation - Collapsible */}
+                        <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-xl p-4">
+                            <button
+                                onClick={() => setPreparationExpanded(!preparationExpanded)}
+                                aria-expanded={preparationExpanded}
+                                className="w-full flex items-center justify-between min-h-[56px] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-day-accent dark:focus:ring-night-accent rounded-lg"
+                            >
+                                <div>
+                                    <h2 className="font-serif text-xl text-left">Sleep Preparation</h2>
+                                    <p className="text-xs text-day-text-secondary dark:text-night-text-secondary text-left">
+                                        {SLEEP_CHECKLIST_ITEMS.length} pre-sleep checklist items
+                                    </p>
+                                </div>
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className={`h-5 w-5 text-day-text-secondary dark:text-night-text-secondary transition-transform ${preparationExpanded ? 'rotate-180' : ''}`}
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            {preparationExpanded && (
+                            <div id="sleep-checklist" className="space-y-3 mt-4 animate-fadeIn">
                                 {SLEEP_CHECKLIST_ITEMS.map(item => (
-                                    <label key={item.key} htmlFor={`check-${item.key}`} className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-4 min-h-[52px] rounded-lg flex items-center cursor-pointer">
+                                    <label key={item.key} htmlFor={`check-${item.key}`} className="bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border p-4 min-h-[52px] rounded-lg flex items-center cursor-pointer">
                                         <input type="checkbox" id={`check-${item.key}`} data-key={item.key} className="h-5 w-5 rounded text-day-accent focus:ring-day-accent border-gray-300 bg-transparent" />
                                         <span className="ml-3 text-sm">{item.text}</span>
                                     </label>
                                 ))}
                             </div>
+                            )}
                         </div>
 
                         {/* Premium Sleep Analytics Upsell - only for non-premium users */}
