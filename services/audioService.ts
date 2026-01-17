@@ -67,8 +67,8 @@ const ALARM_CONFIGS: Record<string, AlarmConfig> = {
         type: 'sine',
         startFreq: 180,
         endFreq: 500,
-        startGain: 0.015,
-        endGain: 1.0,
+        startGain: 0.08,      // 5x louder start (was 0.015)
+        endGain: 1.0,         // Maximum volume
         rampDuration: 60,
         pattern: 'continuous'
     },
@@ -76,17 +76,17 @@ const ALARM_CONFIGS: Record<string, AlarmConfig> = {
         type: 'sine',
         startFreq: 300,
         endFreq: 800,
-        startGain: 0.001,
-        endGain: 0.5,
-        rampDuration: 30,
+        startGain: 0.08,      // 5x+ louder start (was 0.001)
+        endGain: 1.0,         // Maximum volume (was 0.5)
+        rampDuration: 60,     // Full 60s crescendo (was 30)
         pattern: 'continuous'
     },
     gentle: {
         type: 'sine',
         startFreq: 220,
         endFreq: 220,
-        startGain: 0.05,
-        endGain: 1.0,
+        startGain: 0.25,      // 5x louder start (was 0.05)
+        endGain: 1.0,         // Maximum volume
         rampDuration: 60,
         pattern: 'pulse',
         pulseInterval: 2
@@ -95,26 +95,26 @@ const ALARM_CONFIGS: Record<string, AlarmConfig> = {
         type: 'triangle',
         startFreq: 523,
         endFreq: 784,
-        startGain: 0.0001,
-        endGain: 0.25,
-        rampDuration: 30,
+        startGain: 0.08,      // 5x+ louder start (was 0.0001)
+        endGain: 1.0,         // Maximum volume (was 0.25)
+        rampDuration: 60,     // Full 60s crescendo (was 30)
         pattern: 'continuous'
     },
     nature: {
         type: 'sine',
         startFreq: 800,
         endFreq: 1200,
-        startGain: 0.0001,
-        endGain: 0.3,
-        rampDuration: 30,
+        startGain: 0.08,      // 5x+ louder start (was 0.0001)
+        endGain: 1.0,         // Maximum volume (was 0.3)
+        rampDuration: 60,     // Full 60s crescendo (was 30)
         pattern: 'continuous'
     },
     classic: {
         type: 'square',
         startFreq: 880,
         endFreq: 880,
-        startGain: 0.05,
-        endGain: 0.9,
+        startGain: 0.25,      // 5x louder start (was 0.05)
+        endGain: 1.0,         // Maximum volume (was 0.9)
         rampDuration: 60,
         pattern: 'beep',
         pulseInterval: 1
@@ -465,14 +465,14 @@ const playPrismAlarm = () => {
 
     const now = context.currentTime;
 
-    // Master volume crescendo over 60s to full volume, then sustain
-    proceduralGainNode.gain.setValueAtTime(0.2, now);
+    // Master volume crescendo over 60s to MAXIMUM volume - 5x louder start
+    proceduralGainNode.gain.setValueAtTime(0.5, now);  // Start at 50% (was 20%)
     proceduralGainNode.gain.linearRampToValueAtTime(1.0, now + WAKE_DURATION);
 
     const baseOsc = context.createOscillator();
     const baseGain = context.createGain();
     baseOsc.type = 'sine';
-    baseGain.gain.setValueAtTime(0.4, now);
+    baseGain.gain.setValueAtTime(0.6, now);  // Louder chimes (was 0.4)
     baseOsc.connect(baseGain);
     baseGain.connect(proceduralGainNode);
 
@@ -521,12 +521,12 @@ const playAetherAlarm = () => {
     osc.type = 'sawtooth';
     osc.frequency.setValueAtTime(110, now);
 
-    // CRESCENDO: Sweep frequency 110->220Hz and volume 0.05->0.9 over 60s
+    // CRESCENDO: Sweep frequency 110->220Hz and volume to MAXIMUM over 60s - 5x louder start
     osc.frequency.exponentialRampToValueAtTime(220, now + WAKE_DURATION);
-    proceduralGainNode.gain.setValueAtTime(0.05, now);
-    proceduralGainNode.gain.linearRampToValueAtTime(0.9, now + WAKE_DURATION);
+    proceduralGainNode.gain.setValueAtTime(0.25, now);  // Start at 25% (was 5%)
+    proceduralGainNode.gain.linearRampToValueAtTime(1.0, now + WAKE_DURATION);  // Max volume (was 0.9)
 
-    // SUSTAIN: After crescendo, continue at 220Hz and 0.9 volume indefinitely
+    // SUSTAIN: After crescendo, continue at 220Hz and MAXIMUM volume indefinitely
     // The oscillator keeps playing - no need to schedule more
 
     osc.connect(proceduralGainNode);
@@ -620,7 +620,7 @@ const playCyberDawnAlarmWrapper = () => {
     cleanupProceduralAlarm();
     cleanupPsychoacousticAlarm();
 
-    const handle = playCyberDawnAlarm(0.7);
+    const handle = playCyberDawnAlarm(1.0);  // Maximum volume for alarms
     psychoacousticAlarmStop = handle.stop;
     logger.log('[playCyberDawnAlarm] Started - FM synthesis birds awakening');
 };
@@ -636,7 +636,7 @@ const playSolarAlarmWrapper = () => {
     cleanupProceduralAlarm();
     cleanupPsychoacousticAlarm();
 
-    const handle = playSolarAlarm(0.7);
+    const handle = playSolarAlarm(1.0);  // Maximum volume for alarms
     psychoacousticAlarmStop = handle.stop;
     logger.log('[playSolarAlarm] Started - Harmonic blooming sunrise');
 };
