@@ -52,8 +52,9 @@ const ProfileInfoCard: React.FC = () => {
                 <div className="space-y-3">
                     {/* Display Name */}
                     <div>
-                        <label className="text-sm text-day-text-secondary dark:text-night-text-secondary">Display Name</label>
+                        <label htmlFor="profile-display-name" className="text-sm text-day-text-secondary dark:text-night-text-secondary">Display Name</label>
                         <input
+                            id="profile-display-name"
                             type="text"
                             name="displayName"
                             value={localBiometrics.displayName || ''}
@@ -64,8 +65,9 @@ const ProfileInfoCard: React.FC = () => {
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <label className="text-sm text-day-text-secondary dark:text-night-text-secondary">Age</label>
+                            <label htmlFor="profile-age" className="text-sm text-day-text-secondary dark:text-night-text-secondary">Age</label>
                             <input
+                                id="profile-age"
                                 type="number"
                                 name="age"
                                 value={localBiometrics.age || ''}
@@ -75,8 +77,9 @@ const ProfileInfoCard: React.FC = () => {
                             />
                         </div>
                         <div>
-                            <label className="text-sm text-day-text-secondary dark:text-night-text-secondary">Gender</label>
+                            <label htmlFor="profile-gender" className="text-sm text-day-text-secondary dark:text-night-text-secondary">Gender</label>
                             <select
+                                id="profile-gender"
                                 name="gender"
                                 value={localBiometrics.gender}
                                 onChange={handleChange}
@@ -92,8 +95,9 @@ const ProfileInfoCard: React.FC = () => {
                         </div>
                     </div>
                     <div>
-                        <label className="text-sm text-day-text-secondary dark:text-night-text-secondary">Occupation</label>
+                        <label htmlFor="profile-occupation" className="text-sm text-day-text-secondary dark:text-night-text-secondary">Occupation</label>
                         <input
+                            id="profile-occupation"
                             type="text"
                             name="occupation"
                             value={localBiometrics.occupation || ''}
@@ -104,8 +108,9 @@ const ProfileInfoCard: React.FC = () => {
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <label className="text-sm text-day-text-secondary dark:text-night-text-secondary">Sleep Goal (hours)</label>
+                            <label htmlFor="profile-sleep-goal" className="text-sm text-day-text-secondary dark:text-night-text-secondary">Sleep Goal (hours)</label>
                             <input
+                                id="profile-sleep-goal"
                                 type="number"
                                 name="sleepGoal"
                                 value={localBiometrics.sleepGoal || ''}
@@ -118,8 +123,9 @@ const ProfileInfoCard: React.FC = () => {
                             />
                         </div>
                         <div>
-                            <label className="text-sm text-day-text-secondary dark:text-night-text-secondary">Wake Goal</label>
+                            <label htmlFor="profile-wake-goal" className="text-sm text-day-text-secondary dark:text-night-text-secondary">Wake Goal</label>
                             <input
+                                id="profile-wake-goal"
                                 type="time"
                                 name="wakeGoal"
                                 value={localBiometrics.wakeGoal || ''}
@@ -129,8 +135,9 @@ const ProfileInfoCard: React.FC = () => {
                         </div>
                     </div>
                     <div>
-                        <label className="text-sm text-day-text-secondary dark:text-night-text-secondary">Avg. Sleep (current)</label>
+                        <label htmlFor="profile-avg-sleep" className="text-sm text-day-text-secondary dark:text-night-text-secondary">Avg. Sleep (current)</label>
                         <input
+                            id="profile-avg-sleep"
                             type="number"
                             name="avgSleep"
                             value={localBiometrics.avgSleep || ''}
