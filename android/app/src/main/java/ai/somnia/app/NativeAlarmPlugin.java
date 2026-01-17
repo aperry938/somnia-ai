@@ -256,6 +256,36 @@ public class NativeAlarmPlugin extends Plugin {
     }
 
     /**
+     * Get the currently ringing alarm (if any)
+     * Used by JavaScript to detect alarm state on app launch/resume
+     */
+    @PluginMethod
+    public void getRingingAlarm(PluginCall call) {
+        try {
+            Context context = getContext();
+            SharedPreferences prefs = context.getSharedPreferences("SomniaAlarms", Context.MODE_PRIVATE);
+
+            boolean isRinging = prefs.getBoolean("isRinging", false);
+
+            JSObject result = new JSObject();
+            result.put("isRinging", isRinging);
+
+            if (isRinging) {
+                result.put("alarmId", prefs.getString("ringingAlarmId", ""));
+                result.put("label", prefs.getString("ringingLabel", ""));
+                result.put("soundId", prefs.getString("ringingSoundId", "somnia"));
+            }
+
+            call.resolve(result);
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting ringing alarm", e);
+            JSObject result = new JSObject();
+            result.put("isRinging", false);
+            call.resolve(result);
+        }
+    }
+
+    /**
      * Check if app has exact alarm permission (Android 12+)
      */
     @PluginMethod

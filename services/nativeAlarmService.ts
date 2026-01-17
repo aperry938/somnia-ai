@@ -35,6 +35,12 @@ interface NativeAlarmPlugin {
     snoozeAlarm(options: { id: string; minutes?: number }): Promise<{ success: boolean }>;
     canScheduleExactAlarms(): Promise<{ canSchedule: boolean }>;
     openAlarmSettings(): Promise<{ success: boolean }>;
+    getRingingAlarm(): Promise<{
+        isRinging: boolean;
+        alarmId?: string;
+        label?: string;
+        soundId?: string;
+    }>;
 }
 
 // Register the native plugin (only available on Android)
@@ -454,5 +460,27 @@ export async function checkPermissions(): Promise<boolean> {
     } catch (error) {
         logger.error('[NativeAlarm] Permission check failed:', error);
         return false;
+    }
+}
+
+/**
+ * Get the currently ringing alarm from native side
+ * Used to detect alarm state on app launch/resume from lock screen
+ */
+export async function getRingingAlarm(): Promise<{
+    isRinging: boolean;
+    alarmId?: string;
+    label?: string;
+    soundId?: string;
+} | null> {
+    if (!isAndroid || !NativeAlarm) return null;
+
+    try {
+        const result = await NativeAlarm.getRingingAlarm();
+        logger.log('[NativeAlarm] getRingingAlarm result:', result);
+        return result;
+    } catch (error) {
+        logger.error('[NativeAlarm] Failed to get ringing alarm:', error);
+        return null;
     }
 }

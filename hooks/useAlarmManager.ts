@@ -4,7 +4,8 @@ import { Alarm, WakeData } from '../types';
 import { useClock } from './useClock';
 import { useAppContext } from '../contexts/AppContext';
 import { logger } from '../services/logger';
-import { stopAlarm as stopNativeAlarm } from '../services/nativeAlarmService';
+import { stopAlarm as stopNativeAlarm, getRingingAlarm } from '../services/nativeAlarmService';
+import { App as CapacitorApp } from '@capacitor/app';
 
 const SNOOZE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -48,6 +49,61 @@ export const useAlarmManager = () => {
             }
         };
     }, []);
+
+    // Check for native ringing alarm on mount and app resume (for lock screen scenarios)
+    useEffect(() => {
+        const checkNativeRingingAlarm = async () => {
+            // Don't check if already ringing or snoozed
+            if (ringingAlarm || isSnoozed) return;
+
+            const nativeAlarm = await getRingingAlarm();
+            if (nativeAlarm?.isRinging && nativeAlarm.alarmId) {
+                logger.log('[Alarm] Detected native ringing alarm:', nativeAlarm);
+
+                // Find the matching alarm in our list, or create a virtual one
+                const matchingAlarm = alarms.find(a => String(a.id) === nativeAlarm.alarmId);
+
+                if (matchingAlarm) {
+                    // Start tracking wake metrics
+                    if (ringStartTimeRef.current === null) {
+                        ringStartTimeRef.current = Date.now();
+                        snoozeCountRef.current = 0;
+                        alertnessBoostUsedRef.current = false;
+                    }
+                    setRingingAlarm(matchingAlarm);
+                } else {
+                    // Create a virtual alarm with the native data
+                    const virtualAlarm: Alarm = {
+                        id: parseInt(nativeAlarm.alarmId) || -2,
+                        time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+                        isActive: true,
+                        days: [],
+                        soundId: nativeAlarm.soundId || 'somnia',
+                        label: nativeAlarm.label,
+                        smartWake: false,
+                    };
+                    ringStartTimeRef.current = Date.now();
+                    snoozeCountRef.current = 0;
+                    alertnessBoostUsedRef.current = false;
+                    setRingingAlarm(virtualAlarm);
+                }
+            }
+        };
+
+        // Check on mount
+        checkNativeRingingAlarm();
+
+        // Check on app resume
+        const listener = CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+            if (isActive) {
+                checkNativeRingingAlarm();
+            }
+        });
+
+        return () => {
+            listener.then(l => l.remove());
+        };
+    }, [alarms, ringingAlarm, isSnoozed]);
 
     // Check for triggered alarms
     useEffect(() => {

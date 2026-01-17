@@ -79,6 +79,15 @@ public class AlarmService extends Service {
         Log.d(TAG, "Starting alarm: " + alarmId);
         isPlaying = true;
 
+        // Store ringing alarm state for JavaScript to read
+        SharedPreferences prefs = getSharedPreferences("SomniaAlarms", MODE_PRIVATE);
+        prefs.edit()
+            .putBoolean("isRinging", true)
+            .putString("ringingAlarmId", alarmId)
+            .putString("ringingLabel", label != null ? label : "")
+            .putString("ringingSoundId", soundId != null ? soundId : "somnia")
+            .apply();
+
         // Acquire wake lock
         if (!wakeLock.isHeld()) {
             wakeLock.acquire(5 * 60 * 1000L); // 5 minutes max
@@ -182,6 +191,15 @@ public class AlarmService extends Service {
     private void stopAlarm() {
         Log.d(TAG, "Stopping alarm");
         isPlaying = false;
+
+        // Clear ringing alarm state
+        SharedPreferences prefs = getSharedPreferences("SomniaAlarms", MODE_PRIVATE);
+        prefs.edit()
+            .putBoolean("isRinging", false)
+            .remove("ringingAlarmId")
+            .remove("ringingLabel")
+            .remove("ringingSoundId")
+            .apply();
 
         // Stop audio
         if (mediaPlayer != null) {
