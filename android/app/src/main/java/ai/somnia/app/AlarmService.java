@@ -212,11 +212,21 @@ public class AlarmService extends Service {
             mediaPlayer = null;
         }
 
-        // Stop vibration
-        if (vibrator != null) {
-            vibrator.cancel();
-            vibrator = null;
+        // Stop vibration - always get fresh reference and cancel
+        // This handles the case where service was recreated after being killed by the system
+        // The vibration pattern continues at the system level even if our process was killed
+        Vibrator vib = null;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            VibratorManager vibratorManager = (VibratorManager) getSystemService(Context.VIBRATOR_MANAGER_SERVICE);
+            vib = vibratorManager.getDefaultVibrator();
+        } else {
+            vib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         }
+        if (vib != null) {
+            vib.cancel();
+            Log.d(TAG, "Vibration cancelled");
+        }
+        vibrator = null;
 
         // Release wake lock
         if (wakeLock != null && wakeLock.isHeld()) {
