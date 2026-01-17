@@ -123,40 +123,10 @@ const clearAlarmNotification = async (): Promise<void> => {
 };
 
 /**
- * Schedule the actual alarm notification that fires at the alarm time
- */
-const scheduleAlarmTrigger = async (alarm: Alarm, nextDate: Date): Promise<void> => {
-    if (!isNative) return;
-
-    const alarmNotificationId = alarm.id + 1000; // Offset to avoid collision with status notification
-
-    try {
-        // Cancel any existing scheduled alarm for this alarm ID
-        await LocalNotifications.cancel({ notifications: [{ id: alarmNotificationId }] });
-
-        // Schedule the alarm notification
-        await LocalNotifications.schedule({
-            notifications: [{
-                id: alarmNotificationId,
-                title: alarm.label || 'Alarm',
-                body: 'Time to wake up!',
-                schedule: { at: nextDate },
-                sound: 'alarm.wav',
-                smallIcon: 'ic_stat_alarm',
-                largeIcon: 'ic_launcher',
-                actionTypeId: 'ALARM_ACTIONS',
-            }]
-        });
-
-        logger.log('[AlarmNotification] Alarm scheduled for:', nextDate.toISOString());
-    } catch (e) {
-        logger.warn('[AlarmNotification] Failed to schedule alarm:', e);
-    }
-};
-
-/**
- * Hook to manage alarm notifications using Capacitor Local Notifications
- * Shows a persistent notification when an alarm is set and schedules the actual alarm
+ * Hook to manage alarm status notifications using Capacitor Local Notifications
+ * Shows a persistent notification when an alarm is set (e.g., "Alarm Set - 7:00 AM")
+ * Note: The actual alarm trigger is handled by NativeAlarmPlugin via AppContext,
+ * which uses Android AlarmManager for reliable wake-up functionality.
  */
 export const useAlarmNotification = (alarms: Alarm[]) => {
     const lastNotificationRef = useRef<string | null>(null);
@@ -171,8 +141,9 @@ export const useAlarmNotification = (alarms: Alarm[]) => {
                 // Only update if changed
                 if (lastNotificationRef.current !== notificationKey) {
                     lastNotificationRef.current = notificationKey;
+                    // Only show status notification - the actual alarm trigger is handled
+                    // by NativeAlarmPlugin via AppContext (uses Android AlarmManager)
                     await showAlarmNotification(next.timeStr, next.alarm.label);
-                    await scheduleAlarmTrigger(next.alarm, next.nextDate);
                 }
             } else {
                 // No active alarms - clear notification
