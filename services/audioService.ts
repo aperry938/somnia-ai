@@ -939,9 +939,11 @@ export const stopAlarmPreview = () => {
  * (Standard uniform random is too harsh/spiky)
  */
 const createGaussianWhiteBuffer = (context: AudioContext): AudioBuffer => {
-    const bufferSize = context.sampleRate * NOISE_BUFFER_DURATION;
+    // Defensive check for valid sample rate (Android compatibility)
+    const sampleRate = context.sampleRate || 44100;
+    const bufferSize = Math.max(sampleRate * NOISE_BUFFER_DURATION, 1024);
     // STEREO buffer for decorrelation
-    const buffer = context.createBuffer(2, bufferSize, context.sampleRate);
+    const buffer = context.createBuffer(2, bufferSize, sampleRate);
 
     for (let channel = 0; channel < 2; channel++) {
         const data = buffer.getChannelData(channel);
@@ -963,9 +965,11 @@ const createGaussianWhiteBuffer = (context: AudioContext): AudioBuffer => {
  * Industry standard for smooth 1/f slope with ±0.05dB accuracy
  */
 const createPinkBuffer = (context: AudioContext): AudioBuffer => {
-    const bufferSize = context.sampleRate * NOISE_BUFFER_DURATION;
+    // Defensive check for valid sample rate (Android compatibility)
+    const sampleRate = context.sampleRate || 44100;
+    const bufferSize = Math.max(sampleRate * NOISE_BUFFER_DURATION, 1024);
     // STEREO buffer for decorrelation
-    const buffer = context.createBuffer(2, bufferSize, context.sampleRate);
+    const buffer = context.createBuffer(2, bufferSize, sampleRate);
 
     for (let channel = 0; channel < 2; channel++) {
         const data = buffer.getChannelData(channel);
@@ -1000,12 +1004,14 @@ const createPinkBuffer = (context: AudioContext): AudioBuffer => {
  * - Headroom-aware gain staging
  */
 const createBrownBuffer = (context: AudioContext): AudioBuffer => {
-    const bufferSize = context.sampleRate * NOISE_BUFFER_DURATION;
+    // Defensive check for valid sample rate (Android compatibility)
+    const sampleRate = context.sampleRate || 44100;
+    const bufferSize = Math.max(sampleRate * NOISE_BUFFER_DURATION, 1024);
     // STEREO buffer for decorrelation
-    const buffer = context.createBuffer(2, bufferSize, context.sampleRate);
+    const buffer = context.createBuffer(2, bufferSize, sampleRate);
 
     // Crossfade length for seamless looping (50ms)
-    const crossfadeLength = Math.floor(context.sampleRate * 0.05);
+    const crossfadeLength = Math.floor(sampleRate * 0.05);
 
     for (let channel = 0; channel < 2; channel++) {
         const data = buffer.getChannelData(channel);
@@ -1022,12 +1028,14 @@ const createBrownBuffer = (context: AudioContext): AudioBuffer => {
 
         // Crossfade the end into the beginning for seamless looping
         // This prevents clicks/pops at the loop boundary
-        for (let i = 0; i < crossfadeLength; i++) {
-            const fadeOut = 1 - (i / crossfadeLength); // 1 -> 0
-            const fadeIn = i / crossfadeLength;        // 0 -> 1
-            const endIdx = bufferSize - crossfadeLength + i;
-            // Blend the end samples with the beginning samples
-            data[endIdx] = data[endIdx] * fadeOut + data[i] * fadeIn;
+        if (crossfadeLength > 0 && bufferSize > crossfadeLength * 2) {
+            for (let i = 0; i < crossfadeLength; i++) {
+                const fadeOut = 1 - (i / crossfadeLength); // 1 -> 0
+                const fadeIn = i / crossfadeLength;        // 0 -> 1
+                const endIdx = bufferSize - crossfadeLength + i;
+                // Blend the end samples with the beginning samples
+                data[endIdx] = data[endIdx] * fadeOut + data[i] * fadeIn;
+            }
         }
     }
     return buffer;
@@ -1037,9 +1045,14 @@ const createBrownBuffer = (context: AudioContext): AudioBuffer => {
  * Creates a raw noise buffer (for backwards compatibility with mono synthesis chains)
  */
 const createRawNoiseBuffer = (context: AudioContext, type: 'white' | 'pink' | 'brown'): AudioBuffer => {
-    const bufferSize = context.sampleRate * 2;
-    const buffer = context.createBuffer(1, bufferSize, context.sampleRate);
+    // Defensive check for valid sample rate (Android compatibility)
+    const sampleRate = context.sampleRate || 44100;
+    const bufferSize = Math.max(sampleRate * 2, 1024); // Minimum 1024 samples
+    const buffer = context.createBuffer(1, bufferSize, sampleRate);
     const output = buffer.getChannelData(0);
+
+    // Crossfade length for seamless looping (50ms)
+    const crossfadeLength = Math.floor(sampleRate * 0.05);
 
     if (type === 'white') {
         // Gaussian white noise for synthesis chains
@@ -1066,14 +1079,16 @@ const createRawNoiseBuffer = (context: AudioContext, type: 'white' | 'pink' | 'b
     } else if (type === 'brown') {
         // Leaky integrator brown noise with soft saturation to prevent crackling
         let lastOut = 0.0;
-        const crossfadeLength = Math.floor(context.sampleRate * 0.05);
         for (let i = 0; i < bufferSize; i++) {
             const white = Math.random() * 2 - 1;
             lastOut = (lastOut + (0.02 * white)) / 1.02;
             // Soft saturation using tanh to prevent harsh clipping
             output[i] = Math.tanh(lastOut * 3.0);
         }
-        // Crossfade for seamless looping
+    }
+
+    // Apply crossfade to ALL noise types for seamless looping (Android compatibility)
+    if (crossfadeLength > 0 && bufferSize > crossfadeLength * 2) {
         for (let i = 0; i < crossfadeLength; i++) {
             const fadeOut = 1 - (i / crossfadeLength);
             const fadeIn = i / crossfadeLength;
