@@ -96,10 +96,19 @@ export const useSpeechRecognition = (onFinalTranscript: (transcript: string) => 
     const recognitionRef = useRef<SpeechRecognition | null>(null);
     const onFinalTranscriptRef = useRef(onFinalTranscript);
 
+    // Track if user wants to continue listening (for auto-restart on silence timeout)
+    const wantToListenRef = useRef(false);
+    const interimTranscriptRef = useRef('');
+
     // Keep callback ref updated
     useEffect(() => {
         onFinalTranscriptRef.current = onFinalTranscript;
     }, [onFinalTranscript]);
+
+    // Keep interim transcript ref in sync for use in callbacks
+    useEffect(() => {
+        interimTranscriptRef.current = interimTranscript;
+    }, [interimTranscript]);
 
     // Check support on mount - for native, always mark as supported if API exists
     // Permission will be requested when user taps the mic button
@@ -190,10 +199,43 @@ export const useSpeechRecognition = (onFinalTranscript: (transcript: string) => 
                 return;
             }
 
+            // Mark that user wants to listen (for auto-restart on silence timeout)
+            wantToListenRef.current = true;
+
             // Set up listener for partial results
             await CapacitorSpeechRecognition.addListener('partialResults', (data: { matches: string[] }) => {
                 if (data.matches && data.matches.length > 0) {
                     setInterimTranscript(data.matches[0] ?? '');
+                }
+            });
+
+            // Set up listener for when recognition stops (to auto-restart on silence timeout)
+            await CapacitorSpeechRecognition.addListener('listeningState', async (data: { status: string }) => {
+                logger.log('[SpeechRecognition] Listening state changed:', data.status);
+
+                if (data.status === 'stopped' && wantToListenRef.current) {
+                    // Recognition stopped (likely due to silence timeout)
+                    // Save any interim results before restarting
+                    const currentTranscript = interimTranscriptRef.current;
+                    if (currentTranscript) {
+                        onFinalTranscriptRef.current(currentTranscript);
+                        setInterimTranscript('');
+                    }
+
+                    // Auto-restart recognition
+                    logger.log('[SpeechRecognition] Auto-restarting after silence timeout');
+                    try {
+                        await CapacitorSpeechRecognition.start({
+                            language: 'en-US',
+                            maxResults: 5,
+                            partialResults: true,
+                            popup: false
+                        });
+                    } catch (restartError) {
+                        logger.error('[SpeechRecognition] Auto-restart failed:', restartError);
+                        wantToListenRef.current = false;
+                        setIsListening(false);
+                    }
                 }
             });
 
@@ -209,10 +251,14 @@ export const useSpeechRecognition = (onFinalTranscript: (transcript: string) => 
             logger.log('[SpeechRecognition] Native recognition started');
         } catch (error) {
             logger.error('[SpeechRecognition] Native start failed:', error);
+            wantToListenRef.current = false;
         }
     }, []);
 
     const stopNative = useCallback(async () => {
+        // Mark that user wants to stop (prevents auto-restart)
+        wantToListenRef.current = false;
+
         try {
             await CapacitorSpeechRecognition.stop();
             await CapacitorSpeechRecognition.removeAllListeners();
@@ -220,7 +266,7 @@ export const useSpeechRecognition = (onFinalTranscript: (transcript: string) => 
             setIsListening(false);
 
             // Use accumulated transcript from partial results listener
-            const finalTranscript = interimTranscript;
+            const finalTranscript = interimTranscriptRef.current;
             setInterimTranscript('');
 
             if (finalTranscript) {
@@ -232,7 +278,7 @@ export const useSpeechRecognition = (onFinalTranscript: (transcript: string) => 
             logger.error('[SpeechRecognition] Native stop failed:', error);
             setIsListening(false);
         }
-    }, [interimTranscript]);
+    }, []);
 
     // Web Speech start/stop functions
     const startWeb = useCallback(() => {
