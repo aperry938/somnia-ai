@@ -18,12 +18,13 @@ public class AlarmReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         Log.d(TAG, "Alarm received!");
 
-        // Acquire wake lock to ensure device stays awake during alarm
+        // Acquire wake lock to ensure device stays awake AND screen turns on during
+        // alarm
         PowerManager powerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+        @SuppressWarnings("deprecation")
         PowerManager.WakeLock wakeLock = powerManager.newWakeLock(
-            PowerManager.PARTIAL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP,
-            "somnia:alarmWakeLock"
-        );
+                PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE,
+                "somnia:alarmWakeLock");
         wakeLock.acquire(60000); // 60 seconds max
 
         try {
