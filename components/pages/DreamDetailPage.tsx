@@ -746,7 +746,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                                         </summary>
                                         <div className="mt-3 pl-4 text-xs text-purple-600/80 dark:text-purple-300/80 space-y-2">
                                             <p><span className="font-medium">1.</span> Pick an art style and generate your prompt above</p>
-                                            <p><span className="font-medium">2.</span> Copy and paste into ChatGPT, Midjourney, DALL·E, or Leonardo AI</p>
+                                            <p><span className="font-medium">2.</span> Copy and paste into ChatGPT, Midjourney, DALL·E, or Nano Banana</p>
                                             <p><span className="font-medium">3.</span> Upload a photo of yourself for personalized results</p>
                                             <p><span className="font-medium">4.</span> Save your creation below to keep it with this dream</p>
                                         </div>

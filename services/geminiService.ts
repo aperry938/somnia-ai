@@ -269,7 +269,7 @@ export const generateImagePrompt = async (dreamText: string, style: DreamArtStyl
         const ai = getAi();
         const styleInfo = DREAM_ART_STYLES[style];
 
-        const prompt = `You are a master prompt engineer for AI image generators like Midjourney, DALL-E, and Leonardo AI.
+        const prompt = `You are a master prompt engineer for AI image generators like Midjourney, DALL-E, and Nano Banana.
 
 Given this dream description, create a detailed image generation prompt (80-150 words) that would produce a stunning visualization.
 
