@@ -8,6 +8,7 @@ import React, { useState, useEffect } from 'react';
 import { ManualSleepActivity, SleepAids } from '../../types';
 import haptics from '../../services/hapticsService';
 import { useBackButton } from '../../hooks/useBackButton';
+import { sanitizeTextLive, INPUT_LIMITS } from '../../services/validationService';
 
 interface ManualSleepLogModalProps {
     onComplete: (sleepAids: SleepAids) => void;
@@ -269,10 +270,12 @@ export const ManualSleepLogModal: React.FC<ManualSleepLogModalProps> = ({ onComp
                         <p className="text-sm text-day-text-secondary dark:text-night-text-secondary mb-2">Notes (optional):</p>
                         <textarea
                             value={dayNotes}
-                            onChange={(e) => setDayNotes(e.target.value)}
+                            onChange={(e) => setDayNotes(sanitizeTextLive(e.target.value).slice(0, INPUT_LIMITS.notes))}
+                            maxLength={INPUT_LIMITS.notes}
                             placeholder="Anything notable about your day or evening..."
                             className="w-full p-3 min-h-[60px] bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-lg text-sm resize-none"
                             rows={2}
+                            aria-label="Day notes"
                         />
                     </div>
                 </div>
