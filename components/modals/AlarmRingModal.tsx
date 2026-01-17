@@ -186,7 +186,12 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
         setQuickNote(prev => (prev + ' ' + text).trim());
     }, []);
 
-    const { isListening, startListening, stopListening, isSupported } = useSpeechRecognition(handleFinalTranscript);
+    const { isListening, interimTranscript, startListening, stopListening, isSupported } = useSpeechRecognition(handleFinalTranscript);
+
+    // Combine saved text with live transcription for display
+    const displayText = isListening
+        ? (quickNote ? quickNote + ' ' : '') + interimTranscript
+        : quickNote;
 
     // Track mount state for cleanup
     const isMountedRef = React.useRef(true);
@@ -520,40 +525,50 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                             <p className="text-white/50 text-xs mb-2 uppercase tracking-wider">Before it fades...</p>
                             <p className="text-white/80 text-sm italic mb-4">"{currentPrompt}"</p>
 
-                            {/* Prominent Voice Recording Button - Always clickable to request permission */}
+                            {/* Voice Recording Button with visual feedback */}
                             <div className="mb-4 text-center">
                                 <button
                                     onClick={toggleVoice}
                                     aria-label={isListening ? "Stop recording" : "Start recording your dream"}
                                     aria-pressed={isListening}
-                                    className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto transition-all ${isListening
-                                        ? 'bg-red-500 scale-110 shadow-lg shadow-red-500/50'
+                                    className="relative w-20 h-20 mx-auto"
+                                >
+                                    {/* Pulsing rings when recording */}
+                                    {isListening && (
+                                        <>
+                                            <span className="absolute inset-0 rounded-full bg-red-500/30 animate-ping" />
+                                            <span className="absolute inset-[-8px] rounded-full border-2 border-red-400/50 animate-pulse" />
+                                        </>
+                                    )}
+                                    <span className={`relative w-full h-full rounded-full flex items-center justify-center transition-all ${isListening
+                                        ? 'bg-red-500 scale-100'
                                         : 'bg-gradient-to-br from-indigo-500 to-purple-600 hover:scale-105 shadow-lg shadow-purple-500/30'
                                         }`}
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className={`h-9 w-9 text-white ${isListening ? 'animate-pulse' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                                    </svg>
+                                    >
+                                        {isListening ? (
+                                            /* Stop icon (square) when recording */
+                                            <span className="w-6 h-6 bg-white rounded-sm" />
+                                        ) : (
+                                            /* Mic icon when not recording */
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-9 w-9 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                                            </svg>
+                                        )}
+                                    </span>
                                 </button>
-                                <p className={`text-sm mt-2 ${isListening ? 'text-red-400' : 'text-white/60'}`}>
-                                    {isListening ? (
-                                        <span className="flex items-center justify-center gap-2">
-                                            <span className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></span>
-                                            Recording... tap to stop
-                                        </span>
-                                    ) : (
-                                        'Tap to speak your dream'
-                                    )}
+                                <p className="text-white/50 text-xs mt-2">
+                                    {isListening ? '' : 'Tap to speak'}
                                 </p>
                             </div>
 
-                            {/* Text input - always available as fallback */}
+                            {/* Text display - shows live transcription when recording */}
                             <textarea
-                                value={quickNote}
+                                value={displayText}
                                 onChange={(e) => setQuickNote(e.target.value)}
-                                placeholder="Key words, images, feelings..."
+                                placeholder={isListening ? "Listening..." : "Key words, images, feelings..."}
                                 aria-label="Quick dream notes"
-                                className="w-full p-3 min-h-[48px] text-base bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 resize-none focus:outline-none focus:border-white/40 mb-4"
+                                readOnly={isListening}
+                                className={`w-full p-3 min-h-[48px] text-base bg-white/10 border rounded-xl text-white placeholder-white/40 resize-none focus:outline-none mb-4 ${isListening ? 'border-red-400/50' : 'border-white/20 focus:border-white/40'}`}
                                 rows={3}
                             />
 
