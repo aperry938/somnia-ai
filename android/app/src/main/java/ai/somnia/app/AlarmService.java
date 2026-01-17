@@ -6,6 +6,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.Intent;
 import android.media.AudioAttributes;
 import android.media.AudioManager;
@@ -44,14 +45,14 @@ public class AlarmService extends Service {
         // Acquire wake lock to keep CPU running
         PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
         wakeLock = powerManager.newWakeLock(
-            PowerManager.PARTIAL_WAKE_LOCK,
-            "somnia:alarmServiceWakeLock"
-        );
+                PowerManager.PARTIAL_WAKE_LOCK,
+                "somnia:alarmServiceWakeLock");
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (intent == null) return START_NOT_STICKY;
+        if (intent == null)
+            return START_NOT_STICKY;
 
         String action = intent.getAction();
 
@@ -74,7 +75,8 @@ public class AlarmService extends Service {
     }
 
     private void startAlarm(String alarmId, String soundId, String label, boolean shouldVibrate) {
-        if (isPlaying) return;
+        if (isPlaying)
+            return;
 
         Log.d(TAG, "Starting alarm: " + alarmId);
         isPlaying = true;
@@ -82,11 +84,11 @@ public class AlarmService extends Service {
         // Store ringing alarm state for JavaScript to read
         SharedPreferences prefs = getSharedPreferences("SomniaAlarms", MODE_PRIVATE);
         prefs.edit()
-            .putBoolean("isRinging", true)
-            .putString("ringingAlarmId", alarmId)
-            .putString("ringingLabel", label != null ? label : "")
-            .putString("ringingSoundId", soundId != null ? soundId : "somnia")
-            .apply();
+                .putBoolean("isRinging", true)
+                .putString("ringingAlarmId", alarmId)
+                .putString("ringingLabel", label != null ? label : "")
+                .putString("ringingSoundId", soundId != null ? soundId : "somnia")
+                .apply();
 
         // Acquire wake lock
         if (!wakeLock.isHeld()) {
@@ -113,34 +115,35 @@ public class AlarmService extends Service {
 
         // Keep this code for future use if we bundle audio files in res/raw/
         /*
-        try {
-            Uri alarmUri = getAlarmSoundUri(soundId);
-
-            mediaPlayer = new MediaPlayer();
-            mediaPlayer.setDataSource(this, alarmUri);
-
-            AudioAttributes audioAttributes = new AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_ALARM)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                .build();
-
-            mediaPlayer.setAudioAttributes(audioAttributes);
-            mediaPlayer.setLooping(true);
-
-            // Set volume to max for alarm stream
-            AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-            int maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM);
-            audioManager.setStreamVolume(AudioManager.STREAM_ALARM, maxVolume, 0);
-
-            mediaPlayer.prepare();
-            mediaPlayer.start();
-
-            Log.d(TAG, "Alarm sound playing: " + soundId);
-
-        } catch (Exception e) {
-            Log.e(TAG, "Error playing alarm sound", e);
-        }
-        */
+         * try {
+         * Uri alarmUri = getAlarmSoundUri(soundId);
+         * 
+         * mediaPlayer = new MediaPlayer();
+         * mediaPlayer.setDataSource(this, alarmUri);
+         * 
+         * AudioAttributes audioAttributes = new AudioAttributes.Builder()
+         * .setUsage(AudioAttributes.USAGE_ALARM)
+         * .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+         * .build();
+         * 
+         * mediaPlayer.setAudioAttributes(audioAttributes);
+         * mediaPlayer.setLooping(true);
+         * 
+         * // Set volume to max for alarm stream
+         * AudioManager audioManager = (AudioManager)
+         * getSystemService(Context.AUDIO_SERVICE);
+         * int maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM);
+         * audioManager.setStreamVolume(AudioManager.STREAM_ALARM, maxVolume, 0);
+         * 
+         * mediaPlayer.prepare();
+         * mediaPlayer.start();
+         * 
+         * Log.d(TAG, "Alarm sound playing: " + soundId);
+         * 
+         * } catch (Exception e) {
+         * Log.e(TAG, "Error playing alarm sound", e);
+         * }
+         */
     }
 
     /**
@@ -179,7 +182,7 @@ public class AlarmService extends Service {
         }
 
         // Vibration pattern: vibrate 1s, pause 0.5s, repeat
-        long[] pattern = {0, 1000, 500, 1000, 500};
+        long[] pattern = { 0, 1000, 500, 1000, 500 };
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             vibrator.vibrate(VibrationEffect.createWaveform(pattern, 0));
@@ -195,11 +198,11 @@ public class AlarmService extends Service {
         // Clear ringing alarm state
         SharedPreferences prefs = getSharedPreferences("SomniaAlarms", MODE_PRIVATE);
         prefs.edit()
-            .putBoolean("isRinging", false)
-            .remove("ringingAlarmId")
-            .remove("ringingLabel")
-            .remove("ringingSoundId")
-            .apply();
+                .putBoolean("isRinging", false)
+                .remove("ringingAlarmId")
+                .remove("ringingLabel")
+                .remove("ringingSoundId")
+                .apply();
 
         // Stop audio
         if (mediaPlayer != null) {
@@ -213,8 +216,10 @@ public class AlarmService extends Service {
         }
 
         // Stop vibration - always get fresh reference and cancel
-        // This handles the case where service was recreated after being killed by the system
-        // The vibration pattern continues at the system level even if our process was killed
+        // This handles the case where service was recreated after being killed by the
+        // system
+        // The vibration pattern continues at the system level even if our process was
+        // killed
         Vibrator vib = null;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             VibratorManager vibratorManager = (VibratorManager) getSystemService(Context.VIBRATOR_MANAGER_SERVICE);
@@ -252,50 +257,46 @@ public class AlarmService extends Service {
         Intent openIntent = new Intent(this, MainActivity.class);
         openIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent openPendingIntent = PendingIntent.getActivity(
-            this, 0, openIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
+                this, 0, openIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         // Dismiss action
         Intent dismissIntent = new Intent(this, AlarmService.class);
         dismissIntent.setAction("STOP_ALARM");
         PendingIntent dismissPendingIntent = PendingIntent.getService(
-            this, 1, dismissIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
+                this, 1, dismissIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         // Snooze action
         Intent snoozeIntent = new Intent(this, AlarmService.class);
         snoozeIntent.setAction("SNOOZE_ALARM");
         snoozeIntent.putExtra("alarmId", alarmId);
         PendingIntent snoozePendingIntent = PendingIntent.getService(
-            this, 2, snoozeIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
+                this, 2, snoozeIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         return new NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle(label != null ? label : "Alarm")
-            .setContentText("Time to wake up!")
-            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-            .setPriority(NotificationCompat.PRIORITY_MAX)
-            .setCategory(NotificationCompat.CATEGORY_ALARM)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setOngoing(true)
-            .setAutoCancel(false)
-            .setContentIntent(openPendingIntent)
-            .setFullScreenIntent(openPendingIntent, true)
-            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Dismiss", dismissPendingIntent)
-            .addAction(android.R.drawable.ic_popup_reminder, "Snooze", snoozePendingIntent)
-            .build();
+                .setContentTitle(label != null ? label : "Alarm")
+                .setContentText("Time to wake up!")
+                .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setOngoing(true)
+                .setAutoCancel(false)
+                .setContentIntent(openPendingIntent)
+                .setFullScreenIntent(openPendingIntent, true)
+                .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Dismiss", dismissPendingIntent)
+                .addAction(android.R.drawable.ic_popup_reminder, "Snooze", snoozePendingIntent)
+                .build();
     }
 
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
-                CHANNEL_ID,
-                "Somnia Alarms",
-                NotificationManager.IMPORTANCE_HIGH
-            );
+                    CHANNEL_ID,
+                    "Somnia Alarms",
+                    NotificationManager.IMPORTANCE_HIGH);
             channel.setDescription("Alarm notifications that wake you up");
             channel.enableVibration(true);
             channel.setBypassDnd(true);
