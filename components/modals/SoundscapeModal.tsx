@@ -5,6 +5,7 @@ import { Soundscape } from '../../types';
 import { playSleepSound, stopSleepSound, setLiveVolume, shouldPersistSleepSound, isSleepSoundPlaying } from '../../services/audioService';
 import { useAppContext } from '../../contexts/AppContext';
 import haptics from '../../services/hapticsService';
+import { useBackButton } from '../../hooks/useBackButton';
 
 // Placeholder types for disabled framer-motion
 type PanInfo = { offset: { y: number }; velocity: { y: number } };
@@ -344,6 +345,9 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
         }
         onClose();
     };
+
+    // Handle hardware back button (Android) - always active since modal only renders when open
+    useBackButton(true, handleClose);
 
     // Handle backdrop click - only close if not in playing state and modal has settled
     const handleBackdropClick = () => {

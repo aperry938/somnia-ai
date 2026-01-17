@@ -113,7 +113,7 @@ export const TelemetryScatterPlot: React.FC<TelemetryScatterPlotProps> = ({ drea
             <div className="flex flex-wrap gap-2 mb-4">
                 <button
                     onClick={() => setSelectedQuadrant(null)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                    className={`px-4 py-2 min-h-[44px] rounded-full text-xs font-medium transition-all ${
                         !selectedQuadrant
                             ? 'bg-day-accent dark:bg-night-accent text-white'
                             : 'bg-white/10 dark:bg-black/10 hover:bg-white/20 dark:hover:bg-black/20'
@@ -125,7 +125,7 @@ export const TelemetryScatterPlot: React.FC<TelemetryScatterPlotProps> = ({ drea
                     <button
                         key={quadrant}
                         onClick={() => setSelectedQuadrant(selectedQuadrant === quadrant ? null : quadrant)}
-                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                        className={`px-4 py-2 min-h-[44px] rounded-full text-xs font-medium transition-all ${
                             selectedQuadrant === quadrant
                                 ? 'bg-day-accent dark:bg-night-accent text-white'
                                 : 'bg-white/10 dark:bg-black/10 hover:bg-white/20 dark:hover:bg-black/20'

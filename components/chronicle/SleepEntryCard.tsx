@@ -421,7 +421,7 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
                             {!showDeleteConfirm ? (
                                 <button
                                     onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(true); }}
-                                    className="px-3 py-1.5 text-xs text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors flex items-center gap-1"
+                                    className="px-3 py-2 min-h-[44px] text-xs text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors flex items-center gap-1"
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -433,13 +433,13 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
                                     <span className="text-xs text-gray-500 mr-2">Delete this entry?</span>
                                     <button
                                         onClick={() => { onDeleteEntry(entry.id); }}
-                                        className="px-3 py-1.5 text-xs bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                                        className="px-4 py-2 min-h-[44px] text-xs bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
                                     >
                                         Delete
                                     </button>
                                     <button
                                         onClick={() => setShowDeleteConfirm(false)}
-                                        className="px-3 py-1.5 text-xs bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                                        className="px-4 py-2 min-h-[44px] text-xs bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                                     >
                                         Cancel
                                     </button>

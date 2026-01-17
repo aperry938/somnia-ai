@@ -5,6 +5,7 @@ import { playBreathSound } from '../../services/audioService';
 import { startResonanceBreathing, ResonanceBreathingState } from '../../services/psychoacousticService';
 import { useAppContext } from '../../contexts/AppContext';
 import haptics from '../../services/hapticsService';
+import { useBackButton } from '../../hooks/useBackButton';
 
 const CircleVisualizer = React.memo<{ animationClass: string; animKey: number; isAnimating: boolean }>(({ animationClass, animKey, isAnimating }) => (
     <div className="w-40 h-40 flex justify-center items-center">
@@ -286,6 +287,9 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
         setBreathPhase('idle');
         onClose();
     };
+
+    // Handle hardware back button (Android) - always active since modal only renders when open
+    useBackButton(true, endSession);
 
     // Format time as M:SS
     const formatTime = (seconds: number) => {

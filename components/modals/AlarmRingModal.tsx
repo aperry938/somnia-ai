@@ -451,7 +451,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                                                 stopAlarmSound();
                                                 setTimeout(() => playAlarmBySound(soundId), 100);
                                             }}
-                                            className="px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-300 text-xs font-mono rounded-lg border border-yellow-500/30 transition-all"
+                                            className="px-4 py-2 min-h-[44px] bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-300 text-xs font-mono rounded-lg border border-yellow-500/30 transition-all"
                                         >
                                             {soundId}
                                         </button>

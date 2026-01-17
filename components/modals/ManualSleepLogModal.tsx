@@ -7,6 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { ManualSleepActivity, SleepAids } from '../../types';
 import haptics from '../../services/hapticsService';
+import { useBackButton } from '../../hooks/useBackButton';
 
 interface ManualSleepLogModalProps {
     onComplete: (sleepAids: SleepAids) => void;
@@ -58,6 +59,9 @@ export const ManualSleepLogModal: React.FC<ManualSleepLogModalProps> = ({ onComp
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [onSkip]);
+
+    // Handle hardware back button (Android) - always active since modal only renders when open
+    useBackButton(true, onSkip);
 
     const addActivity = (preset: typeof PRESET_ACTIVITIES[0]) => {
         haptics.light();
