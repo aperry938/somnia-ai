@@ -100,9 +100,6 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, setCurrentPag
                     <span className={`text-xs mt-1 ${currentPage === item.page ? 'font-semibold' : ''}`} aria-hidden="true">
                         {item.label}
                     </span>
-                    {currentPage === item.page && (
-                        <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${styles.activeDot}`} />
-                    )}
                 </button>
             ))}
         </nav>
