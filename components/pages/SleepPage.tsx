@@ -608,45 +608,45 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                 </div>
                             </button>
                             {soundscapesExpanded && (
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4 animate-fadeIn">
-                                {SOUNDSCAPES.map(sound => {
-                                    const showProBadge = sound.isPremium && !isPremium();
-                                    const cardClasses = `sound-card bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border p-4 rounded-xl text-center cursor-pointer transition-all hover:border-day-accent dark:hover:border-night-accent h-[120px] flex flex-col justify-center relative ${playingSoundId === sound.id ? 'border-day-accent dark:border-night-accent shadow-lg' : 'border-day-border dark:border-night-border'}`;
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4 animate-fadeIn">
+                                    {SOUNDSCAPES.map(sound => {
+                                        const showProBadge = sound.isPremium && !isPremium();
+                                        const cardClasses = `sound-card bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border p-4 rounded-xl text-center cursor-pointer transition-all hover:border-day-accent dark:hover:border-night-accent h-[120px] flex flex-col justify-center relative ${playingSoundId === sound.id ? 'border-day-accent dark:border-night-accent shadow-lg' : 'border-day-border dark:border-night-border'}`;
 
-                                    if (showProBadge) {
+                                        if (showProBadge) {
+                                            return (
+                                                <PremiumBadge key={sound.id} feature="binaural_beats" className="h-[120px] w-full" hideBadge>
+                                                    <div className={`${cardClasses} text-gray-400 h-full`}>
+                                                        {/* PRO badge inside card */}
+                                                        <span className="absolute top-2 right-2 text-[10px] bg-gradient-to-r from-amber-500 to-orange-500 text-white px-1.5 py-0.5 rounded-full font-medium flex items-center gap-0.5">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 20 20">
+                                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                                            </svg>
+                                                            PRO
+                                                        </span>
+                                                        <div className="flex justify-center items-center h-12 w-12 mx-auto">{sound.icon}</div>
+                                                        <p className="mt-2 font-medium text-gray-500">{sound.name}</p>
+                                                    </div>
+                                                </PremiumBadge>
+                                            );
+                                        }
+
                                         return (
-                                            <PremiumBadge key={sound.id} feature="binaural_beats" className="h-[120px] w-full" hideBadge>
-                                                <div className={`${cardClasses} text-gray-400 h-full`}>
-                                                    {/* PRO badge inside card */}
-                                                    <span className="absolute top-2 right-2 text-[10px] bg-gradient-to-r from-amber-500 to-orange-500 text-white px-1.5 py-0.5 rounded-full font-medium flex items-center gap-0.5">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 20 20">
-                                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                        </svg>
-                                                        PRO
-                                                    </span>
-                                                    <div className="flex justify-center items-center h-12 w-12 mx-auto">{sound.icon}</div>
-                                                    <p className="mt-2 font-medium text-gray-500">{sound.name}</p>
-                                                </div>
-                                            </PremiumBadge>
+                                            <div
+                                                key={sound.id}
+                                                role="button"
+                                                tabIndex={0}
+                                                onClick={() => openSoundscapeModal(sound)}
+                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openSoundscapeModal(sound); } }}
+                                                aria-label={`Play ${sound.name} soundscape`}
+                                                className={`${cardClasses} text-day-accent dark:text-night-accent focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent`}
+                                            >
+                                                <div className="flex justify-center items-center h-12 w-12 mx-auto">{sound.icon}</div>
+                                                <p className="mt-2 font-medium text-day-text-primary dark:text-night-text-primary">{sound.name}</p>
+                                            </div>
                                         );
-                                    }
-
-                                    return (
-                                        <div
-                                            key={sound.id}
-                                            role="button"
-                                            tabIndex={0}
-                                            onClick={() => openSoundscapeModal(sound)}
-                                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openSoundscapeModal(sound); } }}
-                                            aria-label={`Play ${sound.name} soundscape`}
-                                            className={`${cardClasses} text-day-accent dark:text-night-accent focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent`}
-                                        >
-                                            <div className="flex justify-center items-center h-12 w-12 mx-auto">{sound.icon}</div>
-                                            <p className="mt-2 font-medium text-day-text-primary dark:text-night-text-primary">{sound.name}</p>
-                                        </div>
-                                    );
-                                })}
-                            </div>
+                                    })}
+                                </div>
                             )}
                         </div>
 
@@ -674,51 +674,51 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                 </svg>
                             </button>
                             {relaxationExpanded && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 animate-fadeIn">
-                                {GUIDED_RELAXATIONS.map(item => {
-                                    // Only show PRO badge for items that are actually premium
-                                    const showProBadge = item.isPremium && !isPremium();
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 animate-fadeIn">
+                                    {GUIDED_RELAXATIONS.map(item => {
+                                        // Only show PRO badge for items that are actually premium
+                                        const showProBadge = item.isPremium && !isPremium();
 
-                                    if (showProBadge) {
-                                        return (
-                                            <PremiumBadge key={item.id} feature="breathing" className="w-full" hideBadge>
-                                                <div className="bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border p-4 rounded-xl cursor-pointer transition-all hover:border-day-accent dark:hover:border-night-accent relative">
-                                                    {/* PRO badge */}
-                                                    <span className="absolute top-2 right-2 inline-flex items-center gap-0.5 text-[10px] bg-gradient-to-r from-amber-500 to-orange-500 text-white px-1.5 py-0.5 rounded-full font-medium">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 20 20">
-                                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                        </svg>
-                                                        PRO
-                                                    </span>
-                                                    <div className="flex flex-col items-center text-center">
-                                                        <div className="text-gray-400 dark:text-gray-500 w-12 h-12 flex items-center justify-center">{item.icon}</div>
-                                                        <h3 className="font-serif text-xl mt-2 text-gray-500">{item.name}</h3>
-                                                        <p className="text-sm text-gray-400 mt-1">{item.description}</p>
+                                        if (showProBadge) {
+                                            return (
+                                                <PremiumBadge key={item.id} feature="breathing" className="w-full" hideBadge>
+                                                    <div className="bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border p-4 rounded-xl cursor-pointer transition-all hover:border-day-accent dark:hover:border-night-accent relative">
+                                                        {/* PRO badge */}
+                                                        <span className="absolute top-2 right-2 inline-flex items-center gap-0.5 text-[10px] bg-gradient-to-r from-amber-500 to-orange-500 text-white px-1.5 py-0.5 rounded-full font-medium">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 20 20">
+                                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                                            </svg>
+                                                            PRO
+                                                        </span>
+                                                        <div className="flex flex-col items-center text-center">
+                                                            <div className="text-gray-400 dark:text-gray-500 w-12 h-12 flex items-center justify-center">{item.icon}</div>
+                                                            <h3 className="font-serif text-xl mt-2 text-gray-500">{item.name}</h3>
+                                                            <p className="text-sm text-gray-400 mt-1">{item.description}</p>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            </PremiumBadge>
-                                        );
-                                    }
+                                                </PremiumBadge>
+                                            );
+                                        }
 
-                                    return (
-                                        <div
-                                            key={item.id}
-                                            role="button"
-                                            tabIndex={0}
-                                            onClick={() => openRelaxationModal(item)}
-                                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openRelaxationModal(item); } }}
-                                            aria-label={`Open ${item.name} relaxation exercise`}
-                                            className="bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border p-4 rounded-xl cursor-pointer transition-all hover:border-day-accent dark:hover:border-night-accent focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent"
-                                        >
-                                            <div className="flex flex-col items-center text-center">
-                                                <div className="text-day-accent dark:text-night-accent w-12 h-12 flex items-center justify-center">{item.icon}</div>
-                                                <h3 className="font-serif text-xl mt-2 text-day-text-primary dark:text-night-text-primary">{item.name}</h3>
-                                                <p className="text-sm text-day-text-secondary dark:text-night-text-secondary mt-1">{item.description}</p>
+                                        return (
+                                            <div
+                                                key={item.id}
+                                                role="button"
+                                                tabIndex={0}
+                                                onClick={() => openRelaxationModal(item)}
+                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openRelaxationModal(item); } }}
+                                                aria-label={`Open ${item.name} relaxation exercise`}
+                                                className="bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border p-4 rounded-xl cursor-pointer transition-all hover:border-day-accent dark:hover:border-night-accent focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent"
+                                            >
+                                                <div className="flex flex-col items-center text-center">
+                                                    <div className="text-day-accent dark:text-night-accent w-12 h-12 flex items-center justify-center">{item.icon}</div>
+                                                    <h3 className="font-serif text-xl mt-2 text-day-text-primary dark:text-night-text-primary">{item.name}</h3>
+                                                    <p className="text-sm text-day-text-secondary dark:text-night-text-secondary mt-1">{item.description}</p>
+                                                </div>
                                             </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
+                                        );
+                                    })}
+                                </div>
                             )}
                         </div>
 
@@ -746,21 +746,21 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                 </svg>
                             </button>
                             {preparationExpanded && (
-                            <div id="sleep-checklist" className="space-y-3 mt-4 animate-fadeIn">
-                                {SLEEP_CHECKLIST_ITEMS.map(item => (
-                                    <label key={item.key} htmlFor={`check-${item.key}`} className="bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border p-4 min-h-[52px] rounded-lg flex items-center cursor-pointer">
-                                        <input type="checkbox" id={`check-${item.key}`} data-key={item.key} className="h-5 w-5 rounded text-day-accent focus:ring-day-accent border-gray-300 bg-transparent" />
-                                        <span className="ml-3 text-sm">{item.text}</span>
-                                    </label>
-                                ))}
-                            </div>
+                                <div id="sleep-checklist" className="space-y-3 mt-4 animate-fadeIn">
+                                    {SLEEP_CHECKLIST_ITEMS.map(item => (
+                                        <label key={item.key} htmlFor={`check-${item.key}`} className="bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border p-4 min-h-[52px] rounded-lg flex items-center cursor-pointer">
+                                            <input type="checkbox" id={`check-${item.key}`} data-key={item.key} className="h-5 w-5 rounded text-day-accent focus:ring-day-accent border-gray-300 bg-transparent" />
+                                            <span className="ml-3 text-sm">{item.text}</span>
+                                        </label>
+                                    ))}
+                                </div>
                             )}
                         </div>
 
                         {/* Premium Sleep Analytics Upsell - only for non-premium users */}
                         {!isPremium() && (
                             <PremiumBadge feature="sleep_habits" className="w-full" hideBadge>
-                                <div className="bg-gradient-to-r from-indigo-900/30 to-purple-900/30 border border-indigo-500/30 p-5 rounded-xl cursor-pointer hover:border-indigo-400/50 transition-colors">
+                                <div className="bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 border border-indigo-300 dark:border-indigo-500/30 p-5 rounded-xl cursor-pointer hover:border-indigo-400 dark:hover:border-indigo-400/50 transition-colors">
                                     <div className="flex items-center gap-4">
                                         <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0">
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -768,20 +768,20 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                             </svg>
                                         </div>
                                         <div className="flex-grow">
-                                            <div className="flex items-center gap-2">
-                                                <h3 className="font-serif text-lg text-indigo-200">Sleep Analytics</h3>
-                                                <span className="inline-flex items-center gap-0.5 text-[10px] bg-gradient-to-r from-amber-500 to-orange-500 text-white px-1.5 py-0.5 rounded-full font-medium">
+                                            <div className="flex flex-col gap-1">
+                                                <h3 className="font-serif text-lg text-indigo-700 dark:text-indigo-200">Sleep Analytics</h3>
+                                                <span className="inline-flex items-center gap-0.5 text-[10px] bg-gradient-to-r from-amber-500 to-orange-500 text-white px-1.5 py-0.5 rounded-full font-medium w-fit">
                                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5" viewBox="0 0 20 20" fill="currentColor">
                                                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                                                     </svg>
                                                     PRO
                                                 </span>
                                             </div>
-                                            <p className="text-sm text-indigo-300/80 mt-1">
+                                            <p className="text-sm text-indigo-600 dark:text-indigo-300/80 mt-1">
                                                 Discover what habits improve your sleep quality with AI-powered pattern analysis
                                             </p>
                                         </div>
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-500 dark:text-indigo-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                         </svg>
                                     </div>
