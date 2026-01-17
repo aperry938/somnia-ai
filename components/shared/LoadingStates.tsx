@@ -101,10 +101,11 @@ export const SkeletonChart: React.FC = () => (
 export const PageLoading: React.FC<{ message?: string }> = ({ message = 'Loading...' }) => (
     <div className="fixed inset-0 bg-day-bg-start/80 dark:bg-night-bg-start/80 backdrop-blur-sm flex items-center justify-center z-50" role="status" aria-live="polite">
         <div className="text-center">
-            <svg className="animate-spin h-10 w-10 text-day-accent dark:text-night-accent mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-            </svg>
+            <img
+                src="/logo.png"
+                alt="Somnia"
+                className="w-20 h-20 mx-auto mb-4 animate-pulse drop-shadow-[0_0_15px_rgba(139,92,246,0.5)]"
+            />
             <p className="text-day-text-secondary dark:text-night-text-secondary">{message}</p>
         </div>
     </div>
