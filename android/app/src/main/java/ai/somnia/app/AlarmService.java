@@ -98,6 +98,12 @@ public class AlarmService extends Service {
     }
 
     private void playAlarmSound(String soundId) {
+        // Skip native audio - the app's JavaScript/Web Audio handles alarm sounds
+        // This prevents the system alarm from playing over the Somnia sounds
+        Log.d(TAG, "Skipping native audio playback - JavaScript handles alarm sound: " + soundId);
+
+        // Keep this code for future use if we bundle audio files in res/raw/
+        /*
         try {
             Uri alarmUri = getAlarmSoundUri(soundId);
 
@@ -125,6 +131,7 @@ public class AlarmService extends Service {
         } catch (Exception e) {
             Log.e(TAG, "Error playing alarm sound", e);
         }
+        */
     }
 
     /**
