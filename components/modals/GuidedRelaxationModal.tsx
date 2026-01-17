@@ -4,6 +4,7 @@ import { GuidedRelaxation } from '../../types';
 import { playBreathSound } from '../../services/audioService';
 import { startResonanceBreathing, ResonanceBreathingState } from '../../services/psychoacousticService';
 import { useAppContext } from '../../contexts/AppContext';
+import { useToast } from '../../contexts/ToastContext';
 import haptics from '../../services/hapticsService';
 import { useBackButton } from '../../hooks/useBackButton';
 
@@ -139,6 +140,7 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
     const [totalTimeRemaining, setTotalTimeRemaining] = useState(0); // seconds
     const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
     const { setActiveSleepAid, logBreathingActivity, ensureSleepSession } = useAppContext();
+    const { showToast } = useToast();
 
     const DURATION_PRESETS = [2, 5, 10]; // minutes
 
@@ -196,7 +198,12 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
 
         // 2. Play Sound and Haptic
         if (currentStep.sound) {
-            playBreathSound(currentStep.sound, currentStep.duration / 1000);
+            try {
+                playBreathSound(currentStep.sound, currentStep.duration / 1000);
+            } catch (error) {
+                console.error('Failed to play breath sound:', error);
+                // Don't show toast for breath sounds as they're frequent - just log silently
+            }
         }
         if (currentStep.vibrate) {
             triggerHaptic(currentStep.vibrate);
@@ -226,7 +233,13 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
             const readyTimer = setTimeout(() => {
                 // Start resonance breathing audio for resonance_chamber
                 if (relaxation.id === 'resonance_chamber') {
-                    resonanceRef.current = startResonanceBreathing(0.5);
+                    try {
+                        resonanceRef.current = startResonanceBreathing(0.5);
+                    } catch (error) {
+                        console.error('Failed to start resonance breathing audio:', error);
+                        showToast('Audio playback failed. Session will continue without sound.', 'warning');
+                        haptics.error();
+                    }
                 }
                 setSessionState('running');
                 setStepIndex(0); // Ensure cycle starts from the beginning

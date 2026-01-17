@@ -6,6 +6,7 @@ import { playSleepSound, stopSleepSound, setLiveVolume, shouldPersistSleepSound,
 import { useAppContext } from '../../contexts/AppContext';
 import haptics from '../../services/hapticsService';
 import { useBackButton } from '../../hooks/useBackButton';
+import { useToast } from '../../contexts/ToastContext';
 
 // Placeholder types for disabled framer-motion
 type PanInfo = { offset: { y: number }; velocity: { y: number } };
@@ -21,6 +22,7 @@ interface SoundscapeModalProps {
 
 export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlaying, onPlay, onStop, onClose, onFallAsleep }) => {
     const { volume, setVolume, logSoundActivity, activeSleepSession, ensureSleepSession, createSleepEntryForSession } = useAppContext();
+    const { showToast } = useToast();
     const [duration, setDuration] = useState(30);
 
     // Swipe-to-dismiss disabled for now (framer-motion removed for debugging)
@@ -215,21 +217,29 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
         // Calculate remaining duration in minutes
         const durationSeconds = timeRemaining || playDuration;
         const remainingMinutes = durationSeconds / 60;
-        await playSleepSound(soundToPlay, remainingMinutes, volume);
 
-        const now = Date.now();
-        soundStartTimeRef.current = now; // Track for activity logging
-        accumulatedPlayTimeRef.current = 0; // Reset accumulated time for new session
+        try {
+            await playSleepSound(soundToPlay, remainingMinutes, volume);
 
-        // Sync refs for timer interval (avoids stale closures)
-        timerStartRef.current = now;
-        timerDurationRef.current = durationSeconds;
+            const now = Date.now();
+            soundStartTimeRef.current = now; // Track for activity logging
+            accumulatedPlayTimeRef.current = 0; // Reset accumulated time for new session
 
-        // Set all states together - playStartTime triggers the timer effect
-        setIsReadyToPlay(false);
-        setIsPaused(false);
-        setPlayDuration(durationSeconds); // Ensure playDuration is in sync
-        setPlayStartTime(now);
+            // Sync refs for timer interval (avoids stale closures)
+            timerStartRef.current = now;
+            timerDurationRef.current = durationSeconds;
+
+            // Set all states together - playStartTime triggers the timer effect
+            setIsReadyToPlay(false);
+            setIsPaused(false);
+            setPlayDuration(durationSeconds); // Ensure playDuration is in sync
+            setPlayStartTime(now);
+        } catch (error) {
+            showToast('Failed to play soundscape. Please try again.', 'error');
+            haptics.error();
+            // Reset to ready state so user can retry
+            setIsReadyToPlay(true);
+        }
     };
 
     // Fall asleep with sound playing - logs activity, creates entry, keeps sound playing
