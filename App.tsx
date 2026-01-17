@@ -407,7 +407,7 @@ const App: React.FC = () => {
         <NavigationProvider onNavigate={handleGlobalNavigate}>
             <div className="flex flex-col h-[100dvh] overflow-hidden bg-gradient-to-b from-day-bg-start to-day-bg-end dark:from-night-bg-start dark:to-night-bg-end text-day-text-primary dark:text-night-text-primary transition-colors duration-500">
                 <a href="#main-content" className="skip-link">Skip to main content</a>
-                <main ref={mainScrollRef} id="main-content" className="flex-grow overflow-y-auto overscroll-contain custom-scrollbar px-4 md:px-6 pt-[calc(3.5rem+var(--safe-area-inset-top))] pb-[calc(5rem+var(--safe-area-inset-bottom))]">
+                <main ref={mainScrollRef} id="main-content" className="flex-grow overflow-y-auto overscroll-contain custom-scrollbar px-4 md:px-6 pt-[calc(3.5rem+var(--safe-area-inset-top))] pb-[calc(6.5rem+var(--safe-area-inset-bottom))]">
                     <AnimatePresence mode="wait">
                         {renderPage()}
                     </AnimatePresence>

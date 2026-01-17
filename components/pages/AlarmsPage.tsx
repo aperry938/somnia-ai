@@ -520,8 +520,8 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
     // Show saved confirmation - only offer Sleep Gateway for sleep alarms
     if (showSavedConfirmation) {
         return (
-            <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center px-4 pt-4 pb-[calc(1rem+var(--safe-area-inset-bottom))] z-50" onClick={handleDismissConfirmation} role="dialog" aria-modal="true" aria-labelledby="alarm-saved-title">
-                <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-sm animate-fadeIn text-center max-h-[calc(90vh-var(--safe-area-inset-bottom))] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center px-4 pt-4 pb-[calc(2rem+var(--safe-area-inset-bottom))] z-50" onClick={handleDismissConfirmation} role="dialog" aria-modal="true" aria-labelledby="alarm-saved-title">
+                <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 pb-8 w-full max-w-sm animate-fadeIn text-center max-h-[calc(85vh-var(--safe-area-inset-bottom))] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                     {/* Success checkmark */}
                     <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center" aria-hidden="true">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -569,8 +569,8 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
     }
 
     return (
-        <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center px-4 pt-4 pb-[calc(1rem+var(--safe-area-inset-bottom))] z-50" onClick={() => { stopAlarmPreview(); onClose(); }} role="dialog" aria-modal="true" aria-labelledby="alarm-modal-title">
-            <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-sm animate-fadeIn max-h-[calc(90vh-var(--safe-area-inset-bottom))] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center px-4 pt-4 pb-[calc(2rem+var(--safe-area-inset-bottom))] z-50" onClick={() => { stopAlarmPreview(); onClose(); }} role="dialog" aria-modal="true" aria-labelledby="alarm-modal-title">
+            <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 pb-8 w-full max-w-sm animate-fadeIn max-h-[calc(85vh-var(--safe-area-inset-bottom))] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                 <h2 id="alarm-modal-title" className="font-serif text-2xl text-center mb-6">{alarmToEdit ? "Edit Alarm" : "Set Alarm"}</h2>
                 <DrumTimePicker initialTime={time} onChange={setTime} />
 
@@ -1014,7 +1014,7 @@ export const AlarmsPage: React.FC<{ timeString: string, dateString: string, onNa
                     )}
                 </div>
             </div>
-            <button onClick={() => openModal()} aria-label="Add new alarm" className="fixed bottom-[calc(6rem+var(--safe-area-inset-bottom))] right-6 bg-day-accent dark:bg-night-accent text-white rounded-full p-4 shadow-lg shadow-indigo-500/30 hover:bg-indigo-600 dark:hover:bg-indigo-500 transition-colors">
+            <button onClick={() => openModal()} aria-label="Add new alarm" className="fixed bottom-[calc(7rem+var(--safe-area-inset-bottom))] right-6 bg-day-accent dark:bg-night-accent text-white rounded-full p-4 shadow-lg shadow-indigo-500/30 hover:bg-indigo-600 dark:hover:bg-indigo-500 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
             </button>
             {isModalOpen && <AlarmModal alarmToEdit={alarmToEdit} onClose={closeModal} onConfigureSleepGateway={handleConfigureSleepGateway} />}
