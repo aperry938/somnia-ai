@@ -7,6 +7,7 @@ import { isDevMode } from '../../services/secureSubscriptionService';
 import haptics from '../../services/hapticsService';
 import { startHapticAlarmRamp, stopHapticAlarmRamp, triggerWakePattern } from '../../services/hapticAlarmService';
 import { stopAlarm as stopNativeAlarm } from '../../services/nativeAlarmService';
+import { sanitizeTextLive, INPUT_LIMITS } from '../../services/validationService';
 
 // Minimum distance (px) to trigger a swipe action
 const SWIPE_THRESHOLD = 100;
@@ -183,7 +184,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
 
     // Callback for when speech is finalized
     const handleFinalTranscript = useCallback((text: string) => {
-        setQuickNote(prev => (prev + ' ' + text).trim());
+        setQuickNote(prev => sanitizeTextLive(prev + ' ' + text).trim().slice(0, INPUT_LIMITS.notes));
     }, []);
 
     const { isListening, interimTranscript, startListening, stopListening, isSupported } = useSpeechRecognition(handleFinalTranscript);
@@ -564,7 +565,8 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                             {/* Text display - shows live transcription when recording */}
                             <textarea
                                 value={displayText}
-                                onChange={(e) => setQuickNote(e.target.value)}
+                                onChange={(e) => setQuickNote(sanitizeTextLive(e.target.value).slice(0, INPUT_LIMITS.notes))}
+                                maxLength={INPUT_LIMITS.notes}
                                 placeholder={isListening ? "Listening..." : "Key words, images, feelings..."}
                                 aria-label="Quick dream notes"
                                 readOnly={isListening}
