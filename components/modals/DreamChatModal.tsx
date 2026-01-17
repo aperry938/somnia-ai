@@ -137,7 +137,7 @@ export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }
 
     return (
         <motion.div
-            className="fixed inset-0 bg-day-bg-start/70 dark:bg-night-bg-start/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 z-50 pb-[calc(4rem+var(--safe-area-inset-bottom))] sm:pb-4"
+            className="fixed inset-0 bg-day-bg-start/70 dark:bg-night-bg-start/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 z-50 pb-[calc(6.5rem+var(--safe-area-inset-bottom))] sm:pb-4"
             onClick={onClose}
             role="dialog"
             aria-modal="true"

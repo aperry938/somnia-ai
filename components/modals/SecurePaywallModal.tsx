@@ -140,7 +140,7 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
 
     return (
         <div
-            className="fixed inset-0 z-[100] flex items-center justify-center px-4 pt-4 pb-[calc(1rem+var(--safe-area-inset-bottom))] bg-black/60 backdrop-blur-sm animate-fadeIn"
+            className="fixed inset-0 z-[100] flex items-center justify-center px-4 pt-4 pb-[calc(2rem+var(--safe-area-inset-bottom))] bg-black/60 backdrop-blur-sm animate-fadeIn"
             onClick={onClose}
             role="dialog"
             aria-modal="true"

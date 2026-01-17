@@ -170,7 +170,7 @@ const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = Re
 
             {/* Delete Confirmation Popup */}
             {showDeleteConfirm && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center px-4 pt-4 pb-[calc(1rem+var(--safe-area-inset-bottom))] z-50" onClick={() => setShowDeleteConfirm(false)}>
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center px-4 pt-4 pb-[calc(2rem+var(--safe-area-inset-bottom))] z-50" onClick={() => setShowDeleteConfirm(false)}>
                     <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-xs animate-fadeIn" onClick={(e) => e.stopPropagation()}>
                         <h3 className="font-serif text-lg text-center mb-2">Delete Alarm?</h3>
                         <p className="text-sm text-center text-day-text-secondary dark:text-night-text-secondary mb-4">

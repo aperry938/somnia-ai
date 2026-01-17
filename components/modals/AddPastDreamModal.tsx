@@ -46,7 +46,7 @@ export const AddPastDreamModal: React.FC<AddPastDreamModalProps> = ({ onSave, on
         : dreamText;
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4 pt-4 pb-[calc(1rem+var(--safe-area-inset-bottom))] z-50" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="add-past-dream-title">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4 pt-4 pb-[calc(2rem+var(--safe-area-inset-bottom))] z-50" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="add-past-dream-title">
             <div
                 className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-lg animate-fadeIn max-h-[calc(90vh-var(--safe-area-inset-bottom))] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
