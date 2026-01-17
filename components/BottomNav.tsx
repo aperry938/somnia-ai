@@ -2,6 +2,7 @@ import React from 'react';
 import { Page } from '../types';
 import { useAppContext } from '../contexts/AppContext';
 import { isPremium } from '../services/secureSubscriptionService';
+import { useTheme } from '../hooks/useTheme';
 
 interface BottomNavProps {
     currentPage: Page;
@@ -10,6 +11,7 @@ interface BottomNavProps {
 
 export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, setCurrentPage }) => {
     const { getUnreadDreamCount, markDreamsAsSeen } = useAppContext();
+    const { theme } = useTheme();
     const unreadCount = getUnreadDreamCount();
     const userIsPremium = isPremium();
 
@@ -28,13 +30,42 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, setCurrentPag
         { page: 'insights' as Page, label: 'Insights', icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>, isPro: !userIsPremium },
     ];
 
+    // Theme-specific styling - Sleep mode uses warm amber/orange tones (no blue light)
+    const themeStyles = {
+        day: {
+            nav: 'bg-gradient-to-t from-slate-100/95 via-slate-50/90 to-white/80 border-slate-200/50 shadow-[0_-8px_32px_rgba(99,102,241,0.1)]',
+            activeTab: 'bg-indigo-100/80 text-indigo-700 shadow-[0_0_20px_rgba(99,102,241,0.3)]',
+            inactiveTab: 'text-slate-500 hover:text-slate-700 hover:bg-slate-100/50',
+            activeGlow: 'drop-shadow-[0_0_8px_rgba(99,102,241,0.6)]',
+            activeDot: 'bg-indigo-500 shadow-[0_0_8px_2px_rgba(99,102,241,0.8)]',
+            badge: 'from-indigo-500 to-purple-500',
+        },
+        night: {
+            nav: 'bg-gradient-to-t from-slate-900/95 via-slate-800/90 to-slate-700/80 border-white/10 shadow-[0_-8px_32px_rgba(99,102,241,0.15)]',
+            activeTab: 'bg-white/10 text-white shadow-[0_0_20px_rgba(139,92,246,0.4)]',
+            inactiveTab: 'text-white/50 hover:text-white/70 hover:bg-white/5',
+            activeGlow: 'drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]',
+            activeDot: 'bg-purple-400 shadow-[0_0_8px_2px_rgba(168,85,247,0.8)]',
+            badge: 'from-indigo-500 to-purple-500',
+        },
+        sleep: {
+            // Warm amber/orange tones - NO BLUE LIGHT for sleep mode
+            nav: 'bg-gradient-to-t from-stone-950/95 via-stone-900/90 to-stone-800/80 border-amber-900/20 shadow-[0_-8px_32px_rgba(217,119,6,0.1)]',
+            activeTab: 'bg-amber-900/30 text-amber-200 shadow-[0_0_20px_rgba(217,119,6,0.3)]',
+            inactiveTab: 'text-amber-200/40 hover:text-amber-200/60 hover:bg-amber-900/20',
+            activeGlow: 'drop-shadow-[0_0_8px_rgba(217,119,6,0.6)]',
+            activeDot: 'bg-amber-500 shadow-[0_0_8px_2px_rgba(217,119,6,0.8)]',
+            badge: 'from-amber-600 to-orange-600',
+        },
+    };
+
+    const styles = themeStyles[theme];
+
     return (
         <nav
-            className="fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center px-3 pt-3 pb-[calc(0.75rem+var(--safe-area-inset-bottom))] 
-                       bg-gradient-to-t from-slate-900/95 via-slate-800/90 to-slate-700/80 
-                       backdrop-blur-xl border-t border-white/10 
-                       shadow-[0_-8px_32px_rgba(99,102,241,0.15),0_-4px_16px_rgba(139,92,246,0.1)]
-                       select-none"
+            className={`fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center px-3 pt-3 pb-[calc(0.75rem+var(--safe-area-inset-bottom))] 
+                       backdrop-blur-xl border-t transition-colors duration-500
+                       select-none ${styles.nav}`}
             aria-label="Main navigation"
             onDragStart={(e) => e.preventDefault()}
         >
@@ -46,14 +77,14 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, setCurrentPag
                     aria-current={currentPage === item.page ? 'page' : undefined}
                     className={`flex flex-col items-center justify-center flex-1 min-h-[52px] py-1.5 rounded-xl transition-all duration-300 relative
                         ${currentPage === item.page
-                            ? 'bg-white/10 text-white shadow-[0_0_20px_rgba(139,92,246,0.4)] scale-105'
-                            : 'text-white/50 hover:text-white/70 hover:bg-white/5'
+                            ? `${styles.activeTab} scale-105`
+                            : styles.inactiveTab
                         }`}
                 >
                     <div className="relative">
-                        <span aria-hidden="true" className={currentPage === item.page ? 'drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]' : ''}>{item.icon}</span>
+                        <span aria-hidden="true" className={currentPage === item.page ? styles.activeGlow : ''}>{item.icon}</span>
                         {item.badge && (
-                            <span className="absolute -top-1 -right-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-[10px] min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center shadow-lg" aria-hidden="true">
+                            <span className={`absolute -top-1 -right-2 bg-gradient-to-r ${styles.badge} text-white text-[10px] min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center shadow-lg`} aria-hidden="true">
                                 {item.badge > 99 ? '99+' : item.badge}
                             </span>
                         )}
@@ -66,11 +97,11 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, setCurrentPag
                             </span>
                         )}
                     </div>
-                    <span className={`text-xs mt-1 ${currentPage === item.page ? 'font-semibold text-white' : ''}`} aria-hidden="true">
+                    <span className={`text-xs mt-1 ${currentPage === item.page ? 'font-semibold' : ''}`} aria-hidden="true">
                         {item.label}
                     </span>
                     {currentPage === item.page && (
-                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-purple-400 shadow-[0_0_8px_2px_rgba(168,85,247,0.8)]" />
+                        <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${styles.activeDot}`} />
                     )}
                 </button>
             ))}
