@@ -265,7 +265,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                         </div>
                     </div>
 
-                    <div className="flex justify-center gap-4 mt-4">
+                    <div className="flex justify-center gap-4 mt-4 pb-[env(safe-area-inset-bottom,16px)]">
                         <button onClick={onClose} aria-label="Cancel and close" className="py-3 px-6 min-h-[48px] bg-white/20 hover:bg-white/30 text-white rounded-full transition-all flex items-center justify-center">Cancel</button>
                         <button
                             onClick={handleSave}
