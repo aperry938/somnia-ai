@@ -112,37 +112,42 @@ export const isDemoDream = (dream: Dream): boolean => dream.id < 0;
 export const CALIBRATION_DREAM: Dream = {
     id: -100,
     timestamp: new Date().toISOString(),
-    dreamText: "I was flying over a vast ocean at sunset. The water below sparkled with golden light. I felt completely free and at peace. A friendly dolphin joined me, swimming through the air alongside me. We communicated without words, sharing a profound understanding.",
-    sleepQuality: 5,
-    title: "Flying Over Golden Waters",
+    dreamText: "I was rushing through an unfamiliar building, trying to find a meeting room. The hallways kept changing—doors I remembered weren't where they should be. I checked my phone but the screen was blurry. Finally found the room, but everyone was already leaving. My old mentor from years ago was there and smiled at me, saying 'You made it. That's what matters.' The panic faded and I felt a wave of relief wash over me.",
+    sleepQuality: 4,
+    title: "The Shifting Hallways",
     imageUrl: null,
     aiAnalysis: {
-        title: "The Liberated Self",
+        title: "Navigating Uncertainty",
         analysis: [
             {
-                title: "🌊 The Ocean of the Unconscious",
-                content: "Water in dreams often represents the unconscious mind and emotional depth. Your flight over this vast ocean suggests you're gaining perspective on your inner emotional landscape—viewing it from above rather than being submerged in it."
+                title: "🏢 The Labyrinth of Change",
+                content: "Buildings that shift and change often represent transitional periods in life—when the familiar structures we relied on no longer feel stable. The changing hallways suggest you may be navigating a situation where 'the rules' feel unclear or the path forward isn't obvious. This is your psyche processing adaptation to new circumstances."
             },
             {
-                title: "🕊️ The Freedom of Flight",
-                content: "Flying dreams typically emerge during periods of personal growth or when you're transcending limitations. The sunset timing adds significance: you may be completing one chapter and preparing for transformation."
+                title: "📱 The Blurred Screen",
+                content: "Technology failing in dreams—phones not working, screens unreadable—typically signals that your usual coping mechanisms or 'quick fixes' feel inadequate right now. The blurry phone suggests a need to rely less on external validation or information, and more on internal navigation."
             },
             {
-                title: "🐬 The Dolphin Guide",
-                content: "Dolphins symbolize playful intelligence and emotional guidance. This companion appearing suggests your intuition is strong right now. The wordless communication indicates trust in non-rational knowing."
+                title: "👤 The Mentor's Reassurance",
+                content: "Your old mentor appearing at the resolution is significant—they represent internalized wisdom from your past. Their message 'You made it. That's what matters' reveals a core insight: your unconscious already knows that showing up matters more than perfection. This figure lives within you as a source of self-compassion."
+            },
+            {
+                title: "🌊 The Relief Wave",
+                content: "The emotional shift from panic to relief at the end indicates this isn't a stress dream—it's a processing dream. Your mind rehearsed anxiety and then resolved it, suggesting you're building emotional resilience around whatever uncertainty you're facing."
             }
         ],
         integration: {
             title: "✨ Integration Practice",
-            content: "This dream invites you to trust your intuitive guidance today. When facing decisions, pause and notice what feels 'right' before analyzing logically. Your unconscious is signaling readiness for expansion."
+            content: "This dream is teaching you something important: the fear of being 'too late' or 'not enough' is often louder than reality. Today, when you notice perfectionist anxiety arising, recall your mentor's words. Consider: What would it mean to simply 'show up' rather than arrive perfectly? The relief you felt in the dream is available to you now—your unconscious has already rehearsed letting go."
         },
         telemetry: {
-            valence: 0.85,
-            arousal: 0.6,
-            tags: ['peaceful', 'free', 'connected']
+            valence: 0.45,
+            arousal: 0.7,
+            lucidity: 15,
+            tags: ['transition', 'self-compassion', 'processing', 'reassurance']
         }
     },
     chatHistory: [],
-    tags: ['flying', 'ocean', 'freedom', 'animals'],
-    mood: 'peaceful'
+    tags: ['buildings', 'searching', 'mentor', 'relief', 'technology'],
+    mood: 'anxious'
 };
