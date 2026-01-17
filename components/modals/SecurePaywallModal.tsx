@@ -24,7 +24,7 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
     feature,
     onNavigateToTerms
 }) => {
-    const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
+    const [selectedPlan, setSelectedPlan] = useState<'weekly' | 'monthly' | 'yearly'>('yearly');
     const [isProcessing, setIsProcessing] = useState(false);
     const [isRestoring, setIsRestoring] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -66,7 +66,9 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
         if (!offerings?.current) return null;
 
         const packages = offerings.current.availablePackages;
-        if (selectedPlan === 'monthly') {
+        if (selectedPlan === 'weekly') {
+            return packages.find(p => p.packageType === 'WEEKLY' || p.identifier.includes('weekly')) ?? null;
+        } else if (selectedPlan === 'monthly') {
             return packages.find(p => p.packageType === 'MONTHLY' || p.identifier.includes('monthly')) ?? null;
         } else {
             return packages.find(p => p.packageType === 'ANNUAL' || p.identifier.includes('annual') || p.identifier.includes('yearly')) ?? null;
@@ -125,11 +127,13 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
     };
 
     // Get display price from package or fallback to static pricing
-    const getDisplayPrice = (plan: 'monthly' | 'yearly'): string => {
+    const getDisplayPrice = (plan: 'weekly' | 'monthly' | 'yearly'): string => {
         const pkg = offerings?.current?.availablePackages.find(p =>
-            plan === 'monthly'
-                ? (p.packageType === 'MONTHLY' || p.identifier.includes('monthly'))
-                : (p.packageType === 'ANNUAL' || p.identifier.includes('annual') || p.identifier.includes('yearly'))
+            plan === 'weekly'
+                ? (p.packageType === 'WEEKLY' || p.identifier.includes('weekly'))
+                : plan === 'monthly'
+                    ? (p.packageType === 'MONTHLY' || p.identifier.includes('monthly'))
+                    : (p.packageType === 'ANNUAL' || p.identifier.includes('annual') || p.identifier.includes('yearly'))
         );
 
         if (pkg?.product.priceString) {
@@ -137,7 +141,9 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
         }
 
         // Fallback to static pricing
-        return plan === 'monthly' ? `$${PRICING.monthly.price}` : `$${PRICING.yearly.price}`;
+        if (plan === 'weekly') return `$${PRICING.weekly.price}`;
+        if (plan === 'monthly') return `$${PRICING.monthly.price}`;
+        return `$${PRICING.yearly.price}`;
     };
 
     const featuredFeature = feature ? PREMIUM_FEATURES[feature] : null;
@@ -240,27 +246,38 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
                     ) : (
                         <>
                             {/* Pricing Toggle */}
-                            <div className="flex justify-center gap-2 mb-4" role="group" aria-label="Subscription plan options">
+                            <div className="flex justify-center gap-1 mb-4" role="group" aria-label="Subscription plan options">
+                                <button
+                                    onClick={() => setSelectedPlan('weekly')}
+                                    aria-pressed={selectedPlan === 'weekly'}
+                                    className={`px-3 py-2 min-h-[44px] rounded-full text-sm font-medium transition-colors ${selectedPlan === 'weekly'
+                                        ? 'bg-day-accent dark:bg-night-accent text-white'
+                                        : 'bg-day-border dark:bg-night-border'
+                                        }`}
+                                >
+                                    Weekly
+                                </button>
                                 <button
                                     onClick={() => setSelectedPlan('monthly')}
                                     aria-pressed={selectedPlan === 'monthly'}
-                                    className={`px-5 py-2 min-h-[44px] rounded-full text-sm font-medium transition-colors ${selectedPlan === 'monthly'
+                                    className={`px-3 py-2 min-h-[44px] rounded-full text-sm font-medium transition-colors ${selectedPlan === 'monthly'
                                         ? 'bg-day-accent dark:bg-night-accent text-white'
                                         : 'bg-day-border dark:bg-night-border'
                                         }`}
                                 >
                                     Monthly
+                                    <span className="ml-1 text-xs opacity-80">-{PRICING.monthly.savingsVsWeekly}%</span>
                                 </button>
                                 <button
                                     onClick={() => setSelectedPlan('yearly')}
                                     aria-pressed={selectedPlan === 'yearly'}
-                                    className={`px-5 py-2 min-h-[44px] rounded-full text-sm font-medium transition-colors ${selectedPlan === 'yearly'
+                                    className={`px-3 py-2 min-h-[44px] rounded-full text-sm font-medium transition-colors ${selectedPlan === 'yearly'
                                         ? 'bg-day-accent dark:bg-night-accent text-white'
                                         : 'bg-day-border dark:bg-night-border'
                                         }`}
                                 >
                                     Yearly
-                                    <span className="ml-1 text-xs opacity-80">Save {PRICING.yearly.savings}%</span>
+                                    <span className="ml-1 text-xs opacity-80">-{PRICING.yearly.savingsVsWeekly}%</span>
                                 </button>
                             </div>
 
@@ -270,11 +287,16 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
                                     {getDisplayPrice(selectedPlan)}
                                 </div>
                                 <div className="text-day-text-secondary dark:text-night-text-secondary">
-                                    per {selectedPlan === 'monthly' ? 'month' : 'year'}
+                                    per {selectedPlan === 'weekly' ? 'week' : selectedPlan === 'monthly' ? 'month' : 'year'}
                                 </div>
                                 {selectedPlan === 'yearly' && (
                                     <div className="text-sm text-green-500 mt-1">
                                         That's just ${(PRICING.yearly.price / 12).toFixed(2)}/month
+                                    </div>
+                                )}
+                                {selectedPlan === 'monthly' && (
+                                    <div className="text-sm text-green-500 mt-1">
+                                        Save {PRICING.monthly.savingsVsWeekly}% vs weekly
                                     </div>
                                 )}
                             </div>
@@ -329,7 +351,7 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
                         ) : !termsAccepted ? (
                             'Accept terms to continue'
                         ) : (
-                            `Subscribe ${selectedPlan === 'yearly' ? 'Yearly' : 'Monthly'}`
+                            `Subscribe ${selectedPlan === 'yearly' ? 'Yearly' : selectedPlan === 'monthly' ? 'Monthly' : 'Weekly'}`
                         )}
                     </button>
 

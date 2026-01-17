@@ -420,15 +420,23 @@ export const PREMIUM_FEATURES: Record<PremiumFeature, { name: string; descriptio
 
 // Reference pricing (actual prices come from app stores)
 export const PRICING = {
+    weekly: {
+        price: 3.49,
+        currency: 'USD',
+        interval: 'week',
+        monthlyEquivalent: 15.13, // 4.33 weeks per month
+    },
     monthly: {
         price: 9.99,
         currency: 'USD',
         interval: 'month',
+        savingsVsWeekly: 34, // vs weekly
     },
     yearly: {
         price: 79.99,
         currency: 'USD',
         interval: 'year',
-        savings: 33,
+        savings: 33, // vs monthly
+        savingsVsWeekly: 57, // vs weekly
     },
 } as const;

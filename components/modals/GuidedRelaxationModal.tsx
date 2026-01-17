@@ -4,7 +4,7 @@ import { GuidedRelaxation } from '../../types';
 import { playBreathSound } from '../../services/audioService';
 import { startResonanceBreathing, ResonanceBreathingState } from '../../services/psychoacousticService';
 import { useAppContext } from '../../contexts/AppContext';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../shared/Toast';
 import haptics from '../../services/hapticsService';
 import { useBackButton } from '../../hooks/useBackButton';
 

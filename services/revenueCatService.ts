@@ -259,6 +259,19 @@ function getMockOfferings(): PurchasesOfferings {
             metadata: {},
             availablePackages: [
                 {
+                    identifier: '$rc_weekly',
+                    packageType: 'WEEKLY',
+                    offeringIdentifier: 'default',
+                    product: {
+                        identifier: 'somnia_premium_weekly',
+                        description: 'Try Somnia Premium for a week',
+                        title: 'Somnia Premium (Weekly)',
+                        price: 3.49,
+                        priceString: '$3.49',
+                        currencyCode: 'USD',
+                    },
+                },
+                {
                     identifier: '$rc_monthly',
                     packageType: 'MONTHLY',
                     offeringIdentifier: 'default',
@@ -295,7 +308,7 @@ function getMockOfferings(): PurchasesOfferings {
  */
 export function addCustomerInfoListener(callback: (info: CustomerInfo) => void): () => void {
     if (!purchasesModule) {
-        return () => {};
+        return () => { };
     }
 
     // RevenueCat Capacitor plugin uses event listeners
