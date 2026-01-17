@@ -145,7 +145,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             logger.warn('Failed to unlink user from RevenueCat:', e);
         }
         clearSubscriptionCache();
-        localStorage.removeItem('somnia_user_email');
+
+        // Clear all user-specific data from localStorage to prevent data leakage
+        // between different users on the same device
+        const userDataKeys = [
+            'somnia_user_email',
+            'somnia_dreams',
+            'somnia_sleep_entries',
+            'somnia_alarms',
+            'somnia_biometrics',
+            'somnia_session',
+            'somnia_auth_token',
+            'somnia_notification_settings',
+            'somnia_daily_analysis',
+            'somnia_daily_chat',
+            'somnia_daily_prompts',
+            'somnia_admin_unlocked',
+            'somnia_migration_log',
+            'somnia_ai_credits',
+            'somnia_credits_reset_date',
+            'somnia_premium_status',
+            'somnia_sync_queue',
+        ];
+        userDataKeys.forEach(key => localStorage.removeItem(key));
     }, []);
 
     const resetPassword = useCallback(async (email: string) => {
