@@ -36,6 +36,7 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
     const [passwordMode, setPasswordMode] = useState<'set' | 'enter'>('set');
     const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
     const [passwordError, setPasswordError] = useState<string | undefined>(undefined);
+    const [isExportImportLoading, setIsExportImportLoading] = useState(false);
 
     // Debounce search query
     useEffect(() => {
@@ -134,33 +135,38 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
 
     // SECURITY FIX: Handle secure import with password modal
     const handleSecureImportSelect = useCallback(async (file: File) => {
-        const isEncrypted = await isEncryptedBackup(file);
-        if (isEncrypted) {
-            setPendingImportFile(file);
-            setPasswordMode('enter');
-            setPasswordError(undefined);
-            setPasswordModalOpen(true);
-        } else {
-            // Non-encrypted file, try regular import
-            try {
+        setIsExportImportLoading(true);
+        try {
+            const isEncrypted = await isEncryptedBackup(file);
+            if (isEncrypted) {
+                setPendingImportFile(file);
+                setPasswordMode('enter');
+                setPasswordError(undefined);
+                setPasswordModalOpen(true);
+            } else {
+                // Non-encrypted file, try regular import
                 const restored = await importDreamsEncrypted(file, dreams, '');
                 importDreams(restored);
                 showToast(`Successfully restored ${restored.length} dreams!`, 'success');
-            } catch (error) {
-                const message = error instanceof Error ? error.message : 'Unknown error';
-                showToast(`Restore failed: ${message}`, 'error');
             }
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Unknown error';
+            showToast(`Restore failed: ${message}`, 'error');
+        } finally {
+            setIsExportImportLoading(false);
         }
         setShowExportMenu(false);
     }, [dreams, importDreams, showToast]);
 
     // Handle password submission
     const handlePasswordSubmit = useCallback(async (password: string) => {
+        setIsExportImportLoading(true);
         try {
             if (passwordMode === 'set') {
                 // Exporting
                 await exportDreamsEncrypted(dreams, password);
                 setPasswordModalOpen(false);
+                showToast('Backup exported successfully!', 'success');
             } else if (pendingImportFile) {
                 // Importing
                 const restored = await importDreamsEncrypted(pendingImportFile, dreams, password);
@@ -176,6 +182,8 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
             } else {
                 setPasswordError(message);
             }
+        } finally {
+            setIsExportImportLoading(false);
         }
     }, [passwordMode, dreams, pendingImportFile, importDreams, showToast]);
 
@@ -459,6 +467,7 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
                 onSubmit={handlePasswordSubmit}
                 onCancel={handlePasswordCancel}
                 error={passwordError}
+                isLoading={isExportImportLoading}
             />
         </div>
     );
