@@ -26,12 +26,24 @@ function createNoiseBuffer(ctx: AudioContext, type: 'brown' | 'pink'): AudioBuff
     const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     const data = buffer.getChannelData(0);
 
+    // Crossfade length for seamless looping (50ms)
+    const crossfadeLength = Math.floor(ctx.sampleRate * 0.05);
+
     if (type === 'brown') {
+        // Leaky integrator with soft saturation to prevent crackling
         let lastOut = 0;
         for (let i = 0; i < bufferSize; i++) {
             const white = Math.random() * 2 - 1;
             lastOut = (lastOut + (0.02 * white)) / 1.02;
-            data[i] = lastOut * 3.5; // Gain compensation
+            // Soft saturation using tanh prevents harsh digital clipping
+            data[i] = Math.tanh(lastOut * 3.0);
+        }
+        // Crossfade end into beginning for seamless looping
+        for (let i = 0; i < crossfadeLength; i++) {
+            const fadeOut = 1 - (i / crossfadeLength);
+            const fadeIn = i / crossfadeLength;
+            const endIdx = bufferSize - crossfadeLength + i;
+            data[endIdx] = data[endIdx] * fadeOut + data[i] * fadeIn;
         }
     } else {
         // Pink Noise (Paul Kellett algorithm)

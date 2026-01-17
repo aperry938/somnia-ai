@@ -993,11 +993,19 @@ const createPinkBuffer = (context: AudioContext): AudioBuffer => {
  * Uses Leaky Integrator to prevent DC offset drift
  * Formula: output = (lastOutput * 0.98) + (white * 0.02)
  * The "leak" (division by 1.02) forces wave to center itself
+ *
+ * Anti-crackling measures:
+ * - Soft saturation (tanh) prevents harsh digital clipping
+ * - Crossfade at buffer boundaries for seamless looping
+ * - Headroom-aware gain staging
  */
 const createBrownBuffer = (context: AudioContext): AudioBuffer => {
     const bufferSize = context.sampleRate * NOISE_BUFFER_DURATION;
     // STEREO buffer for decorrelation
     const buffer = context.createBuffer(2, bufferSize, context.sampleRate);
+
+    // Crossfade length for seamless looping (50ms)
+    const crossfadeLength = Math.floor(context.sampleRate * 0.05);
 
     for (let channel = 0; channel < 2; channel++) {
         const data = buffer.getChannelData(channel);
@@ -1007,7 +1015,19 @@ const createBrownBuffer = (context: AudioContext): AudioBuffer => {
             const white = Math.random() * 2 - 1;
             // Leaky Integrator: 0.02 is slew rate, 1.02 is the leak
             lastOut = (lastOut + (0.02 * white)) / 1.02;
-            data[i] = lastOut * 3.5; // Gain compensation for warm presence
+            // Soft saturation using tanh to prevent harsh clipping while preserving warmth
+            // Gain of 3.0 (slightly reduced) fed through tanh for gentle saturation
+            data[i] = Math.tanh(lastOut * 3.0);
+        }
+
+        // Crossfade the end into the beginning for seamless looping
+        // This prevents clicks/pops at the loop boundary
+        for (let i = 0; i < crossfadeLength; i++) {
+            const fadeOut = 1 - (i / crossfadeLength); // 1 -> 0
+            const fadeIn = i / crossfadeLength;        // 0 -> 1
+            const endIdx = bufferSize - crossfadeLength + i;
+            // Blend the end samples with the beginning samples
+            data[endIdx] = data[endIdx] * fadeOut + data[i] * fadeIn;
         }
     }
     return buffer;
@@ -1044,12 +1064,21 @@ const createRawNoiseBuffer = (context: AudioContext, type: 'white' | 'pink' | 'b
             b6 = white * 0.115926;
         }
     } else if (type === 'brown') {
-        // Leaky integrator brown noise
+        // Leaky integrator brown noise with soft saturation to prevent crackling
         let lastOut = 0.0;
+        const crossfadeLength = Math.floor(context.sampleRate * 0.05);
         for (let i = 0; i < bufferSize; i++) {
             const white = Math.random() * 2 - 1;
             lastOut = (lastOut + (0.02 * white)) / 1.02;
-            output[i] = lastOut * 3.5;
+            // Soft saturation using tanh to prevent harsh clipping
+            output[i] = Math.tanh(lastOut * 3.0);
+        }
+        // Crossfade for seamless looping
+        for (let i = 0; i < crossfadeLength; i++) {
+            const fadeOut = 1 - (i / crossfadeLength);
+            const fadeIn = i / crossfadeLength;
+            const endIdx = bufferSize - crossfadeLength + i;
+            output[endIdx] = output[endIdx] * fadeOut + output[i] * fadeIn;
         }
     }
 
