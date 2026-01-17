@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { motion, PanInfo } from 'framer-motion';
 import haptics from '../../services/hapticsService';
+import { useBackButton } from '../../hooks/useBackButton';
 
 interface ImageModalProps {
     src: string;
@@ -8,6 +9,9 @@ interface ImageModalProps {
 }
 
 export const ImageModal: React.FC<ImageModalProps> = ({ src, onClose }) => {
+    // Handle hardware back button (Android) - always true since modal only renders when open
+    useBackButton(true, onClose);
+
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.key === 'Escape') {

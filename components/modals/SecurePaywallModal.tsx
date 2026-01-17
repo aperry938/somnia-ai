@@ -9,6 +9,7 @@ import {
     type Package,
     type Offerings,
 } from '../../services/secureSubscriptionService';
+import { useBackButton } from '../../hooks/useBackButton';
 
 interface SecurePaywallModalProps {
     isOpen: boolean;
@@ -30,6 +31,9 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
     const [termsAccepted, setTermsAccepted] = useState(false);
     const [offerings, setOfferings] = useState<Offerings | null>(null);
     const [isLoadingOfferings, setIsLoadingOfferings] = useState(true);
+
+    // Handle hardware back button (Android)
+    useBackButton(isOpen && !isProcessing, onClose);
 
     // Load offerings on mount
     useEffect(() => {
