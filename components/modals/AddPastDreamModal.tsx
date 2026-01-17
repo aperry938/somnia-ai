@@ -67,15 +67,15 @@ export const AddPastDreamModal: React.FC<AddPastDreamModalProps> = ({ onSave, on
 
                 {/* Date Picker */}
                 <div className="mb-4">
-                    <label className="block text-sm text-day-text-secondary dark:text-night-text-secondary mb-2">
+                    <label htmlFor="past-dream-date" className="block text-sm text-day-text-secondary dark:text-night-text-secondary mb-2">
                         When did you have this dream?
                     </label>
                     <input
+                        id="past-dream-date"
                         type="date"
                         value={dreamDate}
                         onChange={(e) => setDreamDate(e.target.value)}
                         max={new Date().toISOString().split('T')[0]}
-                        aria-label="Dream date"
                         className="w-full p-3 min-h-[48px] text-base bg-white/50 dark:bg-black/30 border border-day-border dark:border-night-border rounded-lg focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent focus:outline-none"
                     />
                 </div>
