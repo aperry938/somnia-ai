@@ -616,7 +616,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                         if (showProBadge) {
                                             return (
                                                 <PremiumBadge key={sound.id} feature="binaural_beats" className="h-[120px] w-full" hideBadge>
-                                                    <div className={`${cardClasses} text-gray-400 h-full`}>
+                                                    <div className={`${cardClasses} text-gray-400 dark:text-gray-500 h-full`}>
                                                         {/* PRO badge inside card */}
                                                         <span className="absolute top-2 right-2 text-[10px] bg-gradient-to-r from-amber-500 to-orange-500 text-white px-1.5 py-0.5 rounded-full font-medium flex items-center gap-0.5">
                                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 20 20">
@@ -625,7 +625,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                                             PRO
                                                         </span>
                                                         <div className="flex justify-center items-center h-12 w-12 mx-auto">{sound.icon}</div>
-                                                        <p className="mt-2 font-medium text-gray-500">{sound.name}</p>
+                                                        <p className="mt-2 font-medium text-gray-500 dark:text-gray-400">{sound.name}</p>
                                                     </div>
                                                 </PremiumBadge>
                                             );
@@ -692,8 +692,8 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                                         </span>
                                                         <div className="flex flex-col items-center text-center">
                                                             <div className="text-gray-400 dark:text-gray-500 w-12 h-12 flex items-center justify-center">{item.icon}</div>
-                                                            <h3 className="font-serif text-xl mt-2 text-gray-500">{item.name}</h3>
-                                                            <p className="text-sm text-gray-400 mt-1">{item.description}</p>
+                                                            <h3 className="font-serif text-xl mt-2 text-gray-500 dark:text-gray-400">{item.name}</h3>
+                                                            <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">{item.description}</p>
                                                         </div>
                                                     </div>
                                                 </PremiumBadge>
