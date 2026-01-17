@@ -190,10 +190,10 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                     <div className="flex justify-center pb-2 sm:hidden cursor-grab active:cursor-grabbing">
                         <div className="w-10 h-1 rounded-full bg-white/30" />
                     </div>
-                    <h2 id="dream-scribe-title" className="font-serif text-2xl text-center mb-4">The Dream Scribe</h2>
+                    <h2 id="dream-scribe-title" className="font-serif text-2xl text-center mb-2">The Dream Scribe</h2>
 
-                    {/* Prominent Voice Recording Button */}
-                    <div className="mb-3 text-center">
+                    {/* Compact Voice Recording Button */}
+                    <div className="mb-2 text-center">
                         <button
                             onClick={isListening ? stopListening : startListening}
                             aria-label={isListening ? "Stop recording" : "Start voice recording"}
@@ -237,13 +237,13 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                     )}
 
                     {/* Sleep Quality Rating */}
-                    <div className="my-4">
+                    <div className="my-2">
                         <p className="text-center text-white/70 mb-2">How was your sleep?</p>
                         <SleepQualityRating rating={sleepQuality} onRate={setSleepQuality} />
                     </div>
 
                     {/* Mood Selector */}
-                    <div className="my-4">
+                    <div className="my-2">
                         <p className="text-center text-white/70 mb-2">How did the dream feel?</p>
                         <div className="flex flex-wrap justify-center gap-2" role="group" aria-label="Dream mood options">
                             {MOOD_OPTIONS.map((value) => (
@@ -265,7 +265,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                         </div>
                     </div>
 
-                    <div className="flex justify-center gap-4 mt-4 pb-[env(safe-area-inset-bottom,16px)]">
+                    <div className="flex justify-center gap-4 mt-4 pb-20">
                         <button onClick={onClose} aria-label="Cancel and close" className="py-3 px-6 min-h-[48px] bg-white/20 hover:bg-white/30 text-white rounded-full transition-all flex items-center justify-center">Cancel</button>
                         <button
                             onClick={handleSave}
