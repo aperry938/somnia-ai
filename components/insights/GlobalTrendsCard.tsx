@@ -238,14 +238,15 @@ export const GlobalTrendsCard: React.FC = () => {
                 {(Object.keys(periodLabels) as TrendPeriod[]).map((p) => (
                     <button
                         key={p}
-                        onClick={() => setPeriod(p)}
+                        onClick={(e) => { e.stopPropagation(); setPeriod(p); }}
+                        onTouchStart={(e) => e.stopPropagation()}
+                        onTouchEnd={(e) => e.stopPropagation()}
                         aria-pressed={period === p}
                         aria-label={`Show ${periodLabels[p]} trends`}
-                        className={`flex-1 px-2 py-2 min-h-[44px] text-xs font-medium rounded-md transition-all flex items-center justify-center ${
-                            period === p
-                                ? 'bg-indigo-500 text-white shadow-lg'
-                                : 'text-indigo-200 hover:bg-indigo-500/30'
-                        }`}
+                        className={`flex-1 px-2 py-2 min-h-[44px] text-xs font-medium rounded-md transition-all flex items-center justify-center ${period === p
+                            ? 'bg-indigo-500 text-white shadow-lg'
+                            : 'text-indigo-200 hover:bg-indigo-500/30'
+                            }`}
                     >
                         {periodLabels[p]}
                     </button>
@@ -256,13 +257,14 @@ export const GlobalTrendsCard: React.FC = () => {
             {hasLocation && regionalTrends && (
                 <div className="flex gap-1 mb-5 bg-black/20 p-1 rounded-lg" role="group" aria-label="Trend scope">
                     <button
-                        onClick={() => setShowRegional(false)}
+                        onClick={(e) => { e.stopPropagation(); setShowRegional(false); }}
+                        onTouchStart={(e) => e.stopPropagation()}
+                        onTouchEnd={(e) => e.stopPropagation()}
                         aria-pressed={!showRegional}
-                        className={`flex-1 px-3 py-2 min-h-[44px] text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1 ${
-                            !showRegional
-                                ? 'bg-purple-500 text-white shadow-lg'
-                                : 'text-purple-200 hover:bg-purple-500/30'
-                        }`}
+                        className={`flex-1 px-3 py-2 min-h-[44px] text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1 ${!showRegional
+                            ? 'bg-purple-500 text-white shadow-lg'
+                            : 'text-purple-200 hover:bg-purple-500/30'
+                            }`}
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -270,13 +272,14 @@ export const GlobalTrendsCard: React.FC = () => {
                         Global
                     </button>
                     <button
-                        onClick={() => setShowRegional(true)}
+                        onClick={(e) => { e.stopPropagation(); setShowRegional(true); }}
+                        onTouchStart={(e) => e.stopPropagation()}
+                        onTouchEnd={(e) => e.stopPropagation()}
                         aria-pressed={showRegional}
-                        className={`flex-1 px-3 py-2 min-h-[44px] text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1 ${
-                            showRegional
-                                ? 'bg-purple-500 text-white shadow-lg'
-                                : 'text-purple-200 hover:bg-purple-500/30'
-                        }`}
+                        className={`flex-1 px-3 py-2 min-h-[44px] text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1 ${showRegional
+                            ? 'bg-purple-500 text-white shadow-lg'
+                            : 'text-purple-200 hover:bg-purple-500/30'
+                            }`}
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -312,8 +315,8 @@ export const GlobalTrendsCard: React.FC = () => {
                             <div className="w-full bg-black/20 rounded-full h-2" role="progressbar" aria-valuenow={trend.percentage} aria-valuemin={0} aria-valuemax={100} aria-label={`${trend.topic}: ${trend.percentage}%`}>
                                 <div
                                     className={`h-2 rounded-full transition-all duration-500 ${trend.sentiment === 'positive' ? 'bg-gradient-to-r from-green-400 to-emerald-500' :
-                                            trend.sentiment === 'negative' ? 'bg-gradient-to-r from-red-400 to-rose-500' :
-                                                'bg-gradient-to-r from-blue-400 to-indigo-500'
+                                        trend.sentiment === 'negative' ? 'bg-gradient-to-r from-red-400 to-rose-500' :
+                                            'bg-gradient-to-r from-blue-400 to-indigo-500'
                                         }`}
                                     style={{ width: `${trend.percentage}%` }}
                                     aria-hidden="true"
