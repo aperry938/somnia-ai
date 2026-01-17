@@ -7,6 +7,7 @@ interface PasswordInputModalProps {
     onSubmit: (password: string) => void;
     onCancel: () => void;
     error?: string;
+    isLoading?: boolean;
 }
 
 /**
@@ -18,7 +19,8 @@ export const PasswordInputModal: React.FC<PasswordInputModalProps> = ({
     mode,
     onSubmit,
     onCancel,
-    error
+    error,
+    isLoading = false
 }) => {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -191,15 +193,27 @@ export const PasswordInputModal: React.FC<PasswordInputModalProps> = ({
                         <button
                             type="button"
                             onClick={onCancel}
-                            className="flex-1 py-3 min-h-[48px] border border-day-border dark:border-night-border rounded-xl text-day-text-secondary dark:text-night-text-secondary hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                            disabled={isLoading}
+                            className="flex-1 py-3 min-h-[48px] border border-day-border dark:border-night-border rounded-xl text-day-text-secondary dark:text-night-text-secondary hover:bg-black/5 dark:hover:bg-white/5 transition-colors disabled:opacity-50"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
-                            className="flex-1 py-3 min-h-[48px] bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 transition-colors"
+                            disabled={isLoading}
+                            className="flex-1 py-3 min-h-[48px] bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                         >
-                            {mode === 'set' ? 'Encrypt & Download' : 'Decrypt'}
+                            {isLoading ? (
+                                <>
+                                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                    </svg>
+                                    <span>Processing...</span>
+                                </>
+                            ) : (
+                                mode === 'set' ? 'Encrypt & Download' : 'Decrypt'
+                            )}
                         </button>
                     </div>
                 </form>
