@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#FFFFFF</color>
+    <!-- Dark indigo to match Somnia's night theme -->
+    <color name="ic_launcher_background">#0f0a1e</color>
 </resources>
