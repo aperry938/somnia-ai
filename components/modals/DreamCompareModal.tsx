@@ -9,20 +9,37 @@ interface DreamCompareModalProps {
 export const DreamCompareModal: React.FC<DreamCompareModalProps> = ({ dreams, onClose }) => {
     const [leftDreamId, setLeftDreamId] = useState<number | null>(dreams[0]?.id || null);
     const [rightDreamId, setRightDreamId] = useState<number | null>(dreams[1]?.id || null);
-    const [isSelectOpen, setIsSelectOpen] = useState(false);
+    // Track if any select is currently being interacted with
+    const isSelectActiveRef = React.useRef(false);
+    const selectInteractionTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
     // Handle Escape key to close modal
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') onClose();
+            if (e.key === 'Escape' && !isSelectActiveRef.current) onClose();
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [onClose]);
 
+    // Set select interaction flag with auto-clear
+    const setSelectActive = (active: boolean) => {
+        if (selectInteractionTimeoutRef.current) {
+            clearTimeout(selectInteractionTimeoutRef.current);
+        }
+        isSelectActiveRef.current = active;
+        if (active) {
+            // Keep active for at least 1 second after any interaction
+            selectInteractionTimeoutRef.current = setTimeout(() => {
+                isSelectActiveRef.current = false;
+            }, 1000);
+        }
+    };
+
     // Safely close modal only if select is not being interacted with
-    const handleBackdropClick = () => {
-        if (!isSelectOpen) {
+    const handleBackdropClick = (e: React.MouseEvent) => {
+        // Only close if clicking directly on backdrop element
+        if (e.target === e.currentTarget && !isSelectActiveRef.current) {
             onClose();
         }
     };
@@ -31,54 +48,36 @@ export const DreamCompareModal: React.FC<DreamCompareModalProps> = ({ dreams, on
     const rightDream = dreams.find(d => d.id === rightDreamId);
 
     const DreamCard: React.FC<{ dream: Dream | undefined; side: 'left' | 'right'; onSelect: (id: number) => void }> = ({ dream, side, onSelect }) => {
-        // Use a ref to track if this specific select is currently open/active
-        const selectRef = React.useRef<HTMLSelectElement>(null);
-        const isInteractingRef = React.useRef(false);
-
         return (
             <div className="flex-1 min-w-0">
                 <select
-                    ref={selectRef}
                     value={dream?.id || ''}
                     onChange={(e) => {
                         onSelect(Number(e.target.value));
-                        isInteractingRef.current = false;
-                        setIsSelectOpen(false);
+                        setSelectActive(false);
                     }}
                     aria-label={`Select ${side} dream for comparison`}
-                    onFocus={() => {
-                        isInteractingRef.current = true;
-                        setIsSelectOpen(true);
-                    }}
+                    onFocus={() => setSelectActive(true)}
                     onBlur={() => {
-                        // Longer delay for iOS native picker to fully close
-                        setTimeout(() => {
-                            isInteractingRef.current = false;
-                            setIsSelectOpen(false);
-                        }, 500);
+                        // Keep active for extra time after blur to handle native picker
+                        setTimeout(() => setSelectActive(false), 500);
                     }}
                     onClick={(e) => {
                         e.stopPropagation();
-                        isInteractingRef.current = true;
-                        setIsSelectOpen(true);
+                        setSelectActive(true);
                     }}
                     onPointerDown={(e) => {
                         e.stopPropagation();
-                        isInteractingRef.current = true;
-                        setIsSelectOpen(true);
+                        setSelectActive(true);
                     }}
                     onTouchStart={(e) => {
                         e.stopPropagation();
-                        isInteractingRef.current = true;
-                        setIsSelectOpen(true);
+                        setSelectActive(true);
                     }}
-                    onTouchEnd={(e) => {
-                        e.stopPropagation();
-                    }}
+                    onTouchEnd={(e) => e.stopPropagation()}
                     onMouseDown={(e) => {
                         e.stopPropagation();
-                        isInteractingRef.current = true;
-                        setIsSelectOpen(true);
+                        setSelectActive(true);
                     }}
                     className="w-full mb-4 p-3 min-h-[48px] text-base bg-white/50 dark:bg-black/30 border border-day-border dark:border-night-border rounded-lg focus:outline-none focus:ring-2 focus:ring-day-accent appearance-none cursor-pointer"
                     style={{ WebkitAppearance: 'menulist' }}

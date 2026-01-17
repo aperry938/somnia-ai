@@ -70,6 +70,7 @@ export interface SubscriptionStatus {
 const PREMIUM_CACHE_KEY = 'somnia_premium_status';
 const DEV_MODE_KEY = 'somnia_dev_mode';
 const DEV_PREMIUM_KEY = 'somnia_dev_premium';
+const TEST_PREMIUM_OVERRIDE_KEY = 'somnia_test_premium_override'; // For mobile testing
 
 // Superuser emails - loaded from environment
 const SUPERUSER_EMAILS: string[] = (import.meta.env.VITE_SUPERUSER_EMAILS || '')
@@ -166,9 +167,23 @@ export function isSuperuser(): boolean {
  * Check if user has premium access
  */
 export function isPremium(): boolean {
+    // Test override for mobile testing (works in production builds)
+    if (localStorage.getItem(TEST_PREMIUM_OVERRIDE_KEY) === 'true') return true;
     if (isSuperuser()) return true;
     if (isDevMode()) return isDevPremium();
     return cachedPremiumStatus;
+}
+
+/**
+ * Enable test premium override (for mobile testing in production builds)
+ */
+export function setTestPremiumOverride(enabled: boolean): void {
+    if (enabled) {
+        localStorage.setItem(TEST_PREMIUM_OVERRIDE_KEY, 'true');
+    } else {
+        localStorage.removeItem(TEST_PREMIUM_OVERRIDE_KEY);
+    }
+    window.dispatchEvent(new CustomEvent('subscriptionChanged', { detail: { isPremium: enabled } }));
 }
 
 /**
