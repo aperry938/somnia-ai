@@ -6,6 +6,7 @@ import { toggleAlarmPreview, stopAlarmPreview, isPreviewPlaying as _isPreviewPla
 import { isPremium } from '../../services/secureSubscriptionService';
 import { requestPermissions as requestAlarmPermissions } from '../../services/nativeAlarmService';
 import haptics from '../../services/hapticsService';
+import { useBackButton } from '../../hooks/useBackButton';
 
 // Helper to format alarm repetition text
 const formatRepeatText = (days: number[]): string => {
@@ -442,6 +443,9 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
             setSelectedDays([1, 2, 3, 4, 5]);
         }
     }, [frequency]);
+
+    // Hardware back button closes modal
+    useBackButton(true, () => { stopAlarmPreview(); onClose(); });
 
     const toggleDay = (dayIndex: number) => {
         if (frequency !== 'weekly') setFrequency('weekly');

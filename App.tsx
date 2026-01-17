@@ -37,6 +37,7 @@ import { useWidgetSync } from './hooks/useWidgetSync';
 import { useAppLifecycle } from './hooks/useAppLifecycle';
 import { initializeOfflineQueue, removeFromQueue } from './services/offlineQueueService';
 import { analyzeDream } from './services/geminiService';
+import { useBackButtonInit } from './hooks/useBackButton';
 
 
 // Lazy load heavy pages for better code splitting
@@ -90,6 +91,9 @@ const App: React.FC = () => {
         onNavigate: setCurrentPage,
         onOpenScribe: () => setIsScribeOpen(true),
     });
+
+    // Initialize hardware back button handling for modals
+    useBackButtonInit();
 
     // When an alarm rings, ensure a sleep session exists so we can save wake metrics
     useEffect(() => {

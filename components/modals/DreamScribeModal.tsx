@@ -7,6 +7,7 @@ import { playAlertnessBoost, stopAlertnessBoost, setAlertnessVolume } from '../.
 import haptics from '../../services/hapticsService';
 import { MOOD_ICONS, MOOD_LABELS } from '../../constants/uiIcons';
 import { validateDreamText, containsScriptInjection } from '../../services/validationService';
+import { useBackButton } from '../../hooks/useBackButton';
 
 const MOOD_OPTIONS: DreamMood[] = ['joyful', 'peaceful', 'neutral', 'confused', 'anxious', 'sad', 'fearful', 'nightmare'];
 
@@ -32,6 +33,9 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
         const timer = setTimeout(() => setCanCloseViaBackdrop(true), 150);
         return () => clearTimeout(timer);
     }, []);
+
+    // Hardware back button closes modal
+    useBackButton(true, onClose);
 
     // Swipe-to-dismiss
     const y = useMotionValue(0);
