@@ -412,7 +412,7 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
     const { addAlarm, updateAlarm, deleteAlarm, startSleepSession } = useAppContext();
     // Use current time for new alarms, existing time for edits
     const [time, setTime] = useState(alarmToEdit?.time || getCurrentTimeString());
-    const [selectedSound, setSelectedSound] = useState(alarmToEdit?.soundId || 'somnia');
+    const [selectedSound, setSelectedSound] = useState(alarmToEdit?.soundId || 'classic');
     const [showSmartWakeInfo, setShowSmartWakeInfo] = useState(false);
     const [savedAlarmId, setSavedAlarmId] = useState<number | null>(null);
     const [showSavedConfirmation, setShowSavedConfirmation] = useState(false);
