@@ -1013,16 +1013,7 @@ const createBrownBuffer = (context: AudioContext): AudioBuffer => {
             const white = Math.random() * 2 - 1;
             // Leaky Integrator: 0.02 is slew rate, 1.02 is the leak
             lastOut = (lastOut + (0.02 * white)) / 1.02;
-            // Apply gain with soft-clip protection only on peaks
-            // This preserves character while preventing random pops from clipping
-            const raw = lastOut * 3.5;
-            if (raw > 0.95) {
-                data[i] = 0.95 + 0.05 * Math.tanh((raw - 0.95) * 20);
-            } else if (raw < -0.95) {
-                data[i] = -0.95 - 0.05 * Math.tanh((-raw - 0.95) * 20);
-            } else {
-                data[i] = raw;
-            }
+            data[i] = lastOut * 3.5; // Gain compensation for warm presence
         }
     }
     return buffer;
@@ -1061,19 +1052,12 @@ const createRawNoiseBuffer = (context: AudioContext, type: 'white' | 'pink' | 'b
             b6 = white * 0.115926;
         }
     } else if (type === 'brown') {
-        // Leaky integrator brown noise with peak soft-clipping
+        // Leaky integrator brown noise
         let lastOut = 0.0;
         for (let i = 0; i < bufferSize; i++) {
             const white = Math.random() * 2 - 1;
             lastOut = (lastOut + (0.02 * white)) / 1.02;
-            const raw = lastOut * 3.5;
-            if (raw > 0.95) {
-                output[i] = 0.95 + 0.05 * Math.tanh((raw - 0.95) * 20);
-            } else if (raw < -0.95) {
-                output[i] = -0.95 - 0.05 * Math.tanh((-raw - 0.95) * 20);
-            } else {
-                output[i] = raw;
-            }
+            output[i] = lastOut * 3.5; // Gain compensation
         }
     }
 
