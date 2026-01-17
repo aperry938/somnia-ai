@@ -320,17 +320,17 @@ export function startResonanceBreathing(volume: number = 0.5): ResonanceBreathin
 
 // --- 4. ALARM: CYBER-DAWN (Full-Spectrum Synthetic Dawn Chorus) ---
 // Dense, immersive dawn soundscape with multiple layers - designed to WAKE PEOPLE UP
-export function playCyberDawnAlarm(volume: number = 0.8): { stop: () => void } {
+export function playCyberDawnAlarm(volume: number = 1.0): { stop: () => void } {
     const ctx = getContext();
     let isPlaying = true;
     const t = ctx.currentTime;
 
-    // Master gain - starts audible, builds to full quickly
+    // Master gain - 5x louder start, reaches MAXIMUM in 60s (alarms need to wake people!)
     masterGain = ctx.createGain();
-    masterGain.gain.setValueAtTime(0, t);
-    masterGain.gain.linearRampToValueAtTime(volume * 0.4, t + 2);   // 40% at 2s
-    masterGain.gain.linearRampToValueAtTime(volume * 0.7, t + 15);  // 70% at 15s
-    masterGain.gain.linearRampToValueAtTime(volume, t + 35);        // Full at 35s
+    masterGain.gain.setValueAtTime(0.15, t);                        // Start at 15% (audible immediately)
+    masterGain.gain.linearRampToValueAtTime(volume * 0.5, t + 10);  // 50% at 10s
+    masterGain.gain.linearRampToValueAtTime(volume * 0.8, t + 30);  // 80% at 30s
+    masterGain.gain.linearRampToValueAtTime(volume, t + 60);        // MAXIMUM at 60s
     masterGain.connect(ctx.destination);
 
     // === LAYER 1: WARM AMBIENT BED (Low-mid frequencies - forest atmosphere) ===
@@ -546,17 +546,17 @@ export function playCyberDawnAlarm(volume: number = 0.8): { stop: () => void } {
 
 // --- 5. ALARM: SOLAR ASCENT (Harmonic Sunrise with Rhythmic Chimes) ---
 // A warm, building alarm with pulsing harmonics, rhythmic chimes, and progressive intensity
-export function playSolarAlarm(volume: number = 0.7): { stop: () => void } {
+export function playSolarAlarm(volume: number = 1.0): { stop: () => void } {
     const ctx = getContext();
     const t = ctx.currentTime;
     let isPlaying = true;
 
-    // Master gain with progressive build
+    // Master gain - 5x louder start, reaches MAXIMUM in 60s (alarms need to wake people!)
     masterGain = ctx.createGain();
-    masterGain.gain.setValueAtTime(0, t);
-    masterGain.gain.linearRampToValueAtTime(volume * 0.4, t + 2);   // Start at 40%
-    masterGain.gain.linearRampToValueAtTime(volume * 0.7, t + 15);  // Build to 70%
-    masterGain.gain.linearRampToValueAtTime(volume, t + 30);        // Full by 30s
+    masterGain.gain.setValueAtTime(0.15, t);                        // Start at 15% (audible immediately)
+    masterGain.gain.linearRampToValueAtTime(volume * 0.5, t + 10);  // 50% at 10s
+    masterGain.gain.linearRampToValueAtTime(volume * 0.8, t + 30);  // 80% at 30s
+    masterGain.gain.linearRampToValueAtTime(volume, t + 60);        // MAXIMUM at 60s
     masterGain.connect(ctx.destination);
 
     // === HARMONIC PAD with Tremolo ===
