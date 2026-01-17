@@ -166,6 +166,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             'somnia_credits_reset_date',
             'somnia_premium_status',
             'somnia_sync_queue',
+            'somnia_global_trends_prefs',
+            'somnia_global_trends_cache',
         ];
         userDataKeys.forEach(key => localStorage.removeItem(key));
     }, []);
