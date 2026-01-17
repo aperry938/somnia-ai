@@ -4,6 +4,7 @@ import { SleepQualityRating } from '../shared/SleepQualityRating';
 import { DreamMood } from '../../types';
 import haptics from '../../services/hapticsService';
 import { MOOD_ICONS, MOOD_LABELS } from '../../constants/uiIcons';
+import { validateDreamText, INPUT_LIMITS } from '../../services/validationService';
 
 const MOOD_OPTIONS: DreamMood[] = ['joyful', 'peaceful', 'neutral', 'confused', 'anxious', 'sad', 'fearful', 'nightmare'];
 
@@ -17,6 +18,7 @@ export const AddPastDreamModal: React.FC<AddPastDreamModalProps> = ({ onSave, on
     const [sleepQuality, setSleepQuality] = useState<number | null>(null);
     const [mood, setMood] = useState<DreamMood | null>(null);
     const [dreamDate, setDreamDate] = useState<string>(new Date().toISOString().split('T')[0] ?? '');
+    const [validationError, setValidationError] = useState<string | null>(null);
 
     // Handle Escape key to close modal
     useEffect(() => {
@@ -35,10 +37,20 @@ export const AddPastDreamModal: React.FC<AddPastDreamModalProps> = ({ onSave, on
 
     const handleSave = () => {
         if (!dreamText.trim() || isListening) return;
+
+        // Validate dream text
+        const validation = validateDreamText(dreamText);
+        if (!validation.valid) {
+            setValidationError(validation.error || 'Invalid dream text');
+            haptics.error();
+            return;
+        }
+
+        setValidationError(null);
         haptics.dreamSaved();
         // Create timestamp from selected date
         const timestamp = new Date(dreamDate).toISOString();
-        onSave(dreamText, sleepQuality, mood || undefined, timestamp);
+        onSave(validation.sanitized, sleepQuality, mood || undefined, timestamp);
     };
 
     const displayText = isListening
@@ -72,10 +84,12 @@ export const AddPastDreamModal: React.FC<AddPastDreamModalProps> = ({ onSave, on
                 <div className="relative mb-4">
                     <textarea
                         value={displayText}
-                        onChange={(e) => setDreamText(e.target.value)}
-                        className="w-full h-32 p-4 pr-12 bg-white/50 dark:bg-black/30 border border-day-border dark:border-night-border rounded-lg focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent focus:outline-none transition-all custom-scrollbar"
+                        onChange={(e) => { setDreamText(e.target.value); setValidationError(null); }}
+                        maxLength={INPUT_LIMITS.dreamText}
+                        className={`w-full h-32 p-4 pr-12 bg-white/50 dark:bg-black/30 border rounded-lg focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent focus:outline-none transition-all custom-scrollbar ${validationError ? 'border-red-400 dark:border-red-500' : 'border-day-border dark:border-night-border'}`}
                         placeholder="Describe your dream..."
                         aria-label="Dream description"
+                        aria-invalid={!!validationError}
                         disabled={isListening}
                     ></textarea>
                     {isSupported && (
@@ -91,7 +105,20 @@ export const AddPastDreamModal: React.FC<AddPastDreamModalProps> = ({ onSave, on
                             </svg>
                         </button>
                     )}
+                    {/* Character count */}
+                    <div className="text-xs text-day-text-secondary dark:text-night-text-secondary text-right mt-1">
+                        {dreamText.length.toLocaleString()} / {INPUT_LIMITS.dreamText.toLocaleString()}
+                    </div>
                 </div>
+                {/* Validation error */}
+                {validationError && (
+                    <div role="alert" className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-600 dark:text-red-400 text-sm flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        {validationError}
+                    </div>
+                )}
                 {isListening && (
                     <div className="flex items-center justify-center gap-2 text-sm text-red-500 mb-4">
                         <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
