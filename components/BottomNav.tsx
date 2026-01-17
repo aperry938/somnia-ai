@@ -30,7 +30,11 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, setCurrentPag
 
     return (
         <nav
-            className="fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center px-2 pt-2 pb-[calc(0.5rem+var(--safe-area-inset-bottom))] bg-day-card-bg/95 dark:bg-night-card-bg/95 backdrop-blur-lg border-t border-day-border dark:border-night-border select-none"
+            className="fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center px-3 pt-3 pb-[calc(0.75rem+var(--safe-area-inset-bottom))] 
+                       bg-gradient-to-t from-slate-900/95 via-slate-800/90 to-slate-700/80 
+                       backdrop-blur-xl border-t border-white/10 
+                       shadow-[0_-8px_32px_rgba(99,102,241,0.15),0_-4px_16px_rgba(139,92,246,0.1)]
+                       select-none"
             aria-label="Main navigation"
             onDragStart={(e) => e.preventDefault()}
         >
@@ -40,20 +44,21 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, setCurrentPag
                     onClick={() => handleNavClick(item.page)}
                     aria-label={`${item.label}${item.badge ? `, ${item.badge} new items` : ''}${item.isPro ? ' (Premium)' : ''}`}
                     aria-current={currentPage === item.page ? 'page' : undefined}
-                    className={`flex flex-col items-center justify-end flex-1 min-h-[40px] rounded-lg transition-colors duration-300 relative ${currentPage === item.page
-                        ? 'text-day-accent dark:text-night-accent'
-                        : 'text-day-text-secondary dark:text-night-text-secondary'
+                    className={`flex flex-col items-center justify-center flex-1 min-h-[52px] py-1.5 rounded-xl transition-all duration-300 relative
+                        ${currentPage === item.page
+                            ? 'bg-white/10 text-white shadow-[0_0_20px_rgba(139,92,246,0.4)] scale-105'
+                            : 'text-white/50 hover:text-white/70 hover:bg-white/5'
                         }`}
                 >
                     <div className="relative">
-                        <span aria-hidden="true">{item.icon}</span>
+                        <span aria-hidden="true" className={currentPage === item.page ? 'drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]' : ''}>{item.icon}</span>
                         {item.badge && (
-                            <span className="absolute -top-1 -right-2 bg-day-accent dark:bg-night-accent text-white text-[10px] min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center" aria-hidden="true">
+                            <span className="absolute -top-1 -right-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-[10px] min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center shadow-lg" aria-hidden="true">
                                 {item.badge > 99 ? '99+' : item.badge}
                             </span>
                         )}
                         {item.isPro && (
-                            <span className="absolute -top-1 -right-2 inline-flex items-center gap-0.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[8px] px-1 py-0.5 rounded-full font-bold" aria-hidden="true">
+                            <span className="absolute -top-1 -right-2 inline-flex items-center gap-0.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[8px] px-1 py-0.5 rounded-full font-bold shadow-lg" aria-hidden="true">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-2 w-2" viewBox="0 0 20 20" fill="currentColor">
                                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                                 </svg>
@@ -61,9 +66,12 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, setCurrentPag
                             </span>
                         )}
                     </div>
-                    <span className={`text-sm mt-0.5 ${currentPage === item.page ? 'font-medium' : ''}`} aria-hidden="true">
+                    <span className={`text-xs mt-1 ${currentPage === item.page ? 'font-semibold text-white' : ''}`} aria-hidden="true">
                         {item.label}
                     </span>
+                    {currentPage === item.page && (
+                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-purple-400 shadow-[0_0_8px_2px_rgba(168,85,247,0.8)]" />
+                    )}
                 </button>
             ))}
         </nav>
