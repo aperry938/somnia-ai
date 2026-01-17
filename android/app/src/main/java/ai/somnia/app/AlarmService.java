@@ -101,13 +101,6 @@ public class AlarmService extends Service {
         try {
             Uri alarmUri = getAlarmSoundUri(soundId);
 
-            // If no custom sound found, skip audio playback
-            // The app will play the programmatic alarm when the full-screen intent opens
-            if (alarmUri == null) {
-                Log.d(TAG, "No custom alarm sound, relying on app's programmatic audio");
-                return;
-            }
-
             mediaPlayer = new MediaPlayer();
             mediaPlayer.setDataSource(this, alarmUri);
 
@@ -136,8 +129,7 @@ public class AlarmService extends Service {
 
     /**
      * Get the URI for the alarm sound based on soundId
-     * Returns null if no custom sound found - the app's JavaScript code
-     * will play the programmatic alarm sound when the full-screen intent opens
+     * Falls back to system default if custom sound not found
      */
     private Uri getAlarmSoundUri(String soundId) {
         // Try to get custom sound from res/raw
@@ -150,15 +142,16 @@ public class AlarmService extends Service {
                 Log.d(TAG, "Using custom alarm sound: " + resourceName);
                 return customUri;
             } else {
-                Log.d(TAG, "Custom sound not found: " + resourceName + ", will use app's programmatic audio");
+                Log.d(TAG, "Custom sound not found: " + resourceName + ", using system default");
             }
         }
 
-        // Don't fall back to system alarm sound - return null instead
-        // The alarm notification will still show with full-screen intent,
-        // and the app's JavaScript code will play the programmatic alarm sound
-        // This prevents the jarring system alarm sound from playing
-        return null;
+        // Fall back to system alarm sound
+        Uri systemAlarm = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+        if (systemAlarm == null) {
+            systemAlarm = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        }
+        return systemAlarm;
     }
 
     private void startVibration() {
