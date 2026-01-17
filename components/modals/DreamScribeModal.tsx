@@ -163,7 +163,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
     if (step === 'record') {
         return (
             <motion.div
-                className="fixed inset-0 bg-gradient-to-b from-indigo-900/95 to-purple-900/95 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 z-50 pb-[calc(6.5rem+var(--safe-area-inset-bottom))] sm:pb-4"
+                className="fixed inset-0 bg-gradient-to-b from-indigo-900/95 to-purple-900/95 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 z-50"
                 onClick={canCloseViaBackdrop ? onClose : undefined}
                 role="dialog"
                 aria-modal="true"
@@ -174,7 +174,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                 transition={{ duration: 0.2 }}
             >
                 <motion.div
-                    className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-t-2xl sm:rounded-2xl p-6 pb-8 w-full max-w-lg max-h-[calc(85vh-4rem)] sm:max-h-[85vh] overflow-y-auto text-white"
+                    className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-t-2xl sm:rounded-2xl p-6 pb-10 w-full max-w-lg max-h-[90vh] sm:max-h-[88vh] overflow-y-auto text-white"
                     onClick={(e) => e.stopPropagation()}
                     style={{ y }}
                     initial={{ y: '100%' }}
