@@ -4,6 +4,7 @@ import { Alarm, WakeData } from '../types';
 import { useClock } from './useClock';
 import { useAppContext } from '../contexts/AppContext';
 import { logger } from '../services/logger';
+import { stopAlarm as stopNativeAlarm } from '../services/nativeAlarmService';
 
 const SNOOZE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -137,6 +138,9 @@ export const useAlarmManager = () => {
 
     const stopRinging = useCallback(() => {
         if (ringingAlarm) {
+            // Stop the native AlarmService (stops vibration)
+            stopNativeAlarm();
+
             // Sleep detection alarms (id=-1) don't need to be deactivated in storage
             if (ringingAlarm.id !== -1) {
                 // Only deactivate one-time alarms (no days specified)
@@ -162,6 +166,9 @@ export const useAlarmManager = () => {
 
     const snooze = useCallback(() => {
         if (ringingAlarm) {
+            // Stop the native AlarmService (stops vibration)
+            stopNativeAlarm();
+
             // Track snooze count
             snoozeCountRef.current += 1;
 
