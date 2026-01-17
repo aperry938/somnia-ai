@@ -6,6 +6,7 @@ import { Alarm } from '../../types';
 import { isDevMode } from '../../services/secureSubscriptionService';
 import haptics from '../../services/hapticsService';
 import { startHapticAlarmRamp, stopHapticAlarmRamp, triggerWakePattern } from '../../services/hapticAlarmService';
+import { stopAlarm as stopNativeAlarm } from '../../services/nativeAlarmService';
 
 // Minimum distance (px) to trigger a swipe action
 const SWIPE_THRESHOLD = 100;
@@ -218,6 +219,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
         haptics.snooze();
         stopAlarmSound();
         stopHapticAlarmRamp();
+        stopNativeAlarm(); // Stop native AlarmService vibration
         if (isListening) stopListening();
         // Increment snooze count in the alarm manager
         if (onSnooze) onSnooze();
@@ -262,6 +264,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
         haptics.medium();
         stopAlarmSound();
         stopHapticAlarmRamp();
+        stopNativeAlarm(); // Stop native AlarmService vibration
         // Capture wake metrics when canceling snooze (same as handleAwake)
         if (onCaptureWakeMetrics) {
             onCaptureWakeMetrics();
@@ -274,6 +277,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
         haptics.success();
         stopAlarmSound();
         stopHapticAlarmRamp();
+        stopNativeAlarm(); // Stop native AlarmService vibration
         triggerWakePattern(); // Triple-pulse wake confirmation
 
         // Capture wake metrics NOW (time-to-silence, snooze count) before user goes through dream/boost
