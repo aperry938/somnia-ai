@@ -29,11 +29,19 @@ function createNoiseBuffer(ctx: AudioContext, type: 'brown' | 'pink'): AudioBuff
     const data = buffer.getChannelData(0);
 
     if (type === 'brown') {
+        // Leaky integrator brown noise with peak soft-clipping
         let lastOut = 0;
         for (let i = 0; i < bufferSize; i++) {
             const white = Math.random() * 2 - 1;
             lastOut = (lastOut + (0.02 * white)) / 1.02;
-            data[i] = lastOut * 3.5; // Gain compensation
+            const raw = lastOut * 3.5;
+            if (raw > 0.95) {
+                data[i] = 0.95 + 0.05 * Math.tanh((raw - 0.95) * 20);
+            } else if (raw < -0.95) {
+                data[i] = -0.95 - 0.05 * Math.tanh((-raw - 0.95) * 20);
+            } else {
+                data[i] = raw;
+            }
         }
     } else {
         // Pink Noise (Paul Kellett algorithm)
