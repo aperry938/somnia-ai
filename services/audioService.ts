@@ -1193,15 +1193,12 @@ const createBinauralNode = (context: AudioContext, baseFreq: number, diff: numbe
     oscLeft.frequency.value = baseFreq - diff / 2;
     oscRight.frequency.value = baseFreq + diff / 2;
 
-    // Binaural beats need significant amplitude boost because:
-    // 1. 110Hz is in a low-sensitivity region of human hearing (Fletcher-Munson curves)
-    // 2. Phone speakers often can't reproduce bass well
-    // 3. Pure sine waves sound quieter than broadband noise at same amplitude
-    // Boost to 3.0 - the limiter will prevent actual clipping
+    // Binaural beats volume - audible but not overwhelming
+    // (0.35 provides clear presence while master gain controls overall level)
     const gainLeft = context.createGain();
     const gainRight = context.createGain();
-    gainLeft.gain.value = 3.0;
-    gainRight.gain.value = 3.0;
+    gainLeft.gain.value = 0.35;
+    gainRight.gain.value = 0.35;
 
     oscLeft.connect(gainLeft);
     oscRight.connect(gainRight);
@@ -1298,12 +1295,11 @@ const createSleepRampNode = (
 
     // After ramp: Hold at 1.5Hz indefinitely (no further changes needed - audio API holds last value)
 
-    // Binaural beats need significant amplitude boost (see createBinauralNode comments)
-    // 110Hz sine waves are perceived much quieter than noise - boost to compensate
+    // Audible binaural gain (matches regular binaural beats)
     const gainLeft = context.createGain();
     const gainRight = context.createGain();
-    gainLeft.gain.setValueAtTime(3.0, now);
-    gainRight.gain.setValueAtTime(3.0, now);
+    gainLeft.gain.setValueAtTime(0.35, now);
+    gainRight.gain.setValueAtTime(0.35, now);
 
     oscLeft.connect(gainLeft);
     oscRight.connect(gainRight);
@@ -1391,19 +1387,20 @@ export const playSleepSound = async (sound: Soundscape, durationMinutes: number,
 
     stopSleepSound(); // Stop any currently playing sleep sound
 
-    // Master Bus: Light limiter to prevent clipping only (not for volume reduction)
+    // Master Bus: Dynamics Compressor for professional sound
     sleepCompressor = context.createDynamicsCompressor();
-    sleepCompressor.threshold.setValueAtTime(-3, context.currentTime);  // Only limit near clipping
-    sleepCompressor.knee.setValueAtTime(6, context.currentTime);        // Soft knee for transparency
-    sleepCompressor.ratio.setValueAtTime(2, context.currentTime);       // Gentle limiting
+    sleepCompressor.threshold.setValueAtTime(-20, context.currentTime);
+    sleepCompressor.knee.setValueAtTime(10, context.currentTime);
+    sleepCompressor.ratio.setValueAtTime(4, context.currentTime);
     sleepCompressor.attack.setValueAtTime(0.003, context.currentTime);
-    sleepCompressor.release.setValueAtTime(0.1, context.currentTime);   // Faster release
+    sleepCompressor.release.setValueAtTime(0.25, context.currentTime);
     sleepCompressor.connect(context.destination);
 
     sleepGainNode = context.createGain();
     sleepGainNode.gain.setValueAtTime(0, context.currentTime);
-    // Allow full volume - user controls via slider
-    sleepGainNode.gain.linearRampToValueAtTime(volume, context.currentTime + 2); // Fade in to target volume
+    // Soft limiter: never exceed 0.9
+    const targetVolume = Math.min(volume, 0.9);
+    sleepGainNode.gain.linearRampToValueAtTime(targetVolume, context.currentTime + 2); // Fade in to target volume
     sleepGainNode.connect(sleepCompressor);
 
     if (sound.type === 'noise') {
@@ -1745,8 +1742,10 @@ export const stopSleepSound = (fadeDuration: number = 2) => {
  */
 export const setLiveVolume = (volume: number) => {
     if (sleepGainNode && audioContext) {
+        // Soft limiter: never exceed 0.9
+        const targetVolume = Math.min(volume, 0.9);
         // Smooth transition to new volume
-        sleepGainNode.gain.setTargetAtTime(volume, audioContext.currentTime, 0.1);
+        sleepGainNode.gain.setTargetAtTime(targetVolume, audioContext.currentTime, 0.1);
     }
     // Also update psychoacoustic volume if active
     setPsychoacousticVolume(volume);
