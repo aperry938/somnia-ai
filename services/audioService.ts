@@ -1386,13 +1386,13 @@ export const playSleepSound = async (sound: Soundscape, durationMinutes: number,
 
     stopSleepSound(); // Stop any currently playing sleep sound
 
-    // Master Bus: Dynamics Compressor for professional sound
+    // Master Bus: Light limiter to prevent clipping only (not for volume reduction)
     sleepCompressor = context.createDynamicsCompressor();
-    sleepCompressor.threshold.setValueAtTime(-20, context.currentTime);
-    sleepCompressor.knee.setValueAtTime(10, context.currentTime);
-    sleepCompressor.ratio.setValueAtTime(4, context.currentTime);
+    sleepCompressor.threshold.setValueAtTime(-3, context.currentTime);  // Only limit near clipping
+    sleepCompressor.knee.setValueAtTime(6, context.currentTime);        // Soft knee for transparency
+    sleepCompressor.ratio.setValueAtTime(2, context.currentTime);       // Gentle limiting
     sleepCompressor.attack.setValueAtTime(0.003, context.currentTime);
-    sleepCompressor.release.setValueAtTime(0.25, context.currentTime);
+    sleepCompressor.release.setValueAtTime(0.1, context.currentTime);   // Faster release
     sleepCompressor.connect(context.destination);
 
     sleepGainNode = context.createGain();
