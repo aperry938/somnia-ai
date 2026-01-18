@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useBackButton } from '../../hooks/useBackButton';
 
 interface AIConsentModalProps {
     onConsent: () => void;
@@ -20,6 +21,9 @@ export const setAIConsent = (consented: boolean): void => {
 };
 
 export const AIConsentModal: React.FC<AIConsentModalProps> = ({ onConsent, onDecline }) => {
+    // Hardware back button support
+    useBackButton(true, onDecline);
+
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') onDecline();

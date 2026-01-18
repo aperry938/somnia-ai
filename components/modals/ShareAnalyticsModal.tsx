@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useBackButton } from '../../hooks/useBackButton';
 import { Dream } from '../../types';
 import { ShareCardFormat, ShareCardTheme } from '../../services/shareCardService';
 import {
@@ -99,6 +100,9 @@ export const ShareAnalyticsModal: React.FC<ShareAnalyticsModalProps> = ({ dreams
         }
         return now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
     };
+
+    // Hardware back button support
+    useBackButton(isOpen, onClose);
 
     // Generate preview when options change
     useEffect(() => {

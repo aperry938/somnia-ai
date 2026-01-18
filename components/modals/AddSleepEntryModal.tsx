@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { SleepQualityRating } from '../shared/SleepQualityRating';
+import { useBackButton } from '../../hooks/useBackButton';
 import { SleepAids } from '../../types';
 import haptics from '../../services/hapticsService';
 import { sanitizeText, INPUT_LIMITS } from '../../services/validationService';
@@ -15,6 +16,9 @@ export const AddSleepEntryModal: React.FC<AddSleepEntryModalProps> = ({
     onSaveWithDream,
     onClose
 }) => {
+    // Hardware back button support
+    useBackButton(true, onClose);
+
     // Handle Escape key to close modal
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useBackButton } from '../../hooks/useBackButton';
 import { Dream } from '../../types';
 import {
     ShareCardFormat,
@@ -66,6 +67,9 @@ export const ShareDreamModal: React.FC<ShareDreamModalProps> = ({ dream, isOpen,
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
     const [isSharing, setIsSharing] = useState(false);
+
+    // Hardware back button support
+    useBackButton(isOpen, onClose);
 
     // Generate preview when options change
     useEffect(() => {

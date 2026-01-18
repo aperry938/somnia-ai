@@ -1,6 +1,7 @@
 // components/modals/RealityCheckInfoModal.tsx
 import React, { useEffect } from 'react';
 import { REALITY_CHECKS } from '../../constants/lucidDreaming';
+import { useBackButton } from '../../hooks/useBackButton';
 
 interface RealityCheckInfoModalProps {
     isOpen: boolean;
@@ -8,6 +9,9 @@ interface RealityCheckInfoModalProps {
 }
 
 export const RealityCheckInfoModal: React.FC<RealityCheckInfoModalProps> = ({ isOpen, onClose }) => {
+    // Hardware back button support
+    useBackButton(isOpen, onClose);
+
     // Handle Escape key to close modal
     useEffect(() => {
         if (!isOpen) return;

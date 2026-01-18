@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Dream } from '../../types';
+import { useBackButton } from '../../hooks/useBackButton';
 
 interface DreamCompareModalProps {
     dreams: Dream[];
@@ -12,6 +13,9 @@ export const DreamCompareModal: React.FC<DreamCompareModalProps> = ({ dreams, on
     // Track if any select is currently being interacted with
     const isSelectActiveRef = React.useRef(false);
     const selectInteractionTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+    // Hardware back button support
+    useBackButton(true, onClose);
 
     // Handle Escape key to close modal
     useEffect(() => {

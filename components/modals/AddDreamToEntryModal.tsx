@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
+import { useBackButton } from '../../hooks/useBackButton';
 import { DreamMood } from '../../types';
 import haptics from '../../services/hapticsService';
 import { MOOD_ICONS, MOOD_LABELS } from '../../constants/uiIcons';
@@ -23,6 +24,9 @@ export const AddDreamToEntryModal: React.FC<AddDreamToEntryModalProps> = ({
     const [dreamText, setDreamText] = useState('');
     const [mood, setMood] = useState<DreamMood | null>(null);
     const [validationError, setValidationError] = useState<string | null>(null);
+
+    // Hardware back button support
+    useBackButton(true, onClose);
 
     // Handle Escape key to close modal
     useEffect(() => {

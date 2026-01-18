@@ -1,6 +1,7 @@
 // components/modals/TechniqueInfoModal.tsx
 import React, { useEffect } from 'react';
 import { LucidDreamTechnique } from '../../constants/lucidDreaming';
+import { useBackButton } from '../../hooks/useBackButton';
 
 interface TechniqueInfoModalProps {
     technique: LucidDreamTechnique | null;
@@ -47,6 +48,9 @@ const TECHNIQUE_DETAILS: Record<string, { tips: string[]; timing: string; durati
 };
 
 export const TechniqueInfoModal: React.FC<TechniqueInfoModalProps> = ({ technique, onClose }) => {
+    // Hardware back button support
+    useBackButton(!!technique, onClose);
+
     // Handle Escape key to close modal
     useEffect(() => {
         if (!technique) return;
