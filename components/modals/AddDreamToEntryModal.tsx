@@ -43,6 +43,15 @@ export const AddDreamToEntryModal: React.FC<AddDreamToEntryModalProps> = ({
 
     const { isListening, interimTranscript, startListening, stopListening, isSupported } = useSpeechRecognition(handleFinalTranscript);
 
+    // Cleanup speech recognition on unmount (e.g., when back button closes modal)
+    useEffect(() => {
+        return () => {
+            if (isListening) {
+                stopListening();
+            }
+        };
+    }, [isListening, stopListening]);
+
     const handleSave = () => {
         if (!dreamText.trim() || isListening) return;
 
