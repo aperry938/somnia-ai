@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, PanInfo, useMotionValue, useTransform } from 'framer-motion';
+import { useBackButton } from '../../hooks/useBackButton';
 import { getDreamChatResponse } from '../../services/geminiService';
 import { ChatMessage, Dream } from '../../types';
 import { useAppContext } from '../../contexts/AppContext';
@@ -27,6 +28,9 @@ export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }
     const [isLoading, setIsLoading] = useState(false);
     const chatBoxRef = useRef<HTMLDivElement>(null);
     const { showToast } = useToast();
+
+    // Hardware back button support
+    useBackButton(true, onClose);
 
     // Check if dream content contains crisis-related keywords
     const showCrisisResources = hasCrisisContent(dream.dreamText);

@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { LEVEL_TITLES, getDreamsForLevel } from '../../constants/gamification';
+import { useBackButton } from '../../hooks/useBackButton';
 
 interface LevelGuideModalProps {
     isOpen: boolean;
@@ -30,6 +31,9 @@ const LEVELS_DATA = Object.entries(LEVEL_TITLES).map(([level, title]) => ({
 }));
 
 export const LevelGuideModal: React.FC<LevelGuideModalProps> = ({ isOpen, onClose, currentLevel, totalDreams }) => {
+    // Hardware back button support
+    useBackButton(isOpen, onClose);
+
     // Handle escape key to close modal
     useEffect(() => {
         if (!isOpen) return;

@@ -1,5 +1,6 @@
 // components/modals/PasswordInputModal.tsx
 import React, { useState, useEffect, useRef } from 'react';
+import { useBackButton } from '../../hooks/useBackButton';
 
 interface PasswordInputModalProps {
     isOpen: boolean;
@@ -27,6 +28,9 @@ export const PasswordInputModal: React.FC<PasswordInputModalProps> = ({
     const [showPassword, setShowPassword] = useState(false);
     const [validationError, setValidationError] = useState<string | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+
+    // Hardware back button support
+    useBackButton(isOpen, onCancel);
 
     // Focus input on open
     useEffect(() => {

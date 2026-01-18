@@ -140,6 +140,15 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
         };
     }, [boostActive]);
 
+    // Cleanup speech recognition on unmount (e.g., when back button closes modal)
+    useEffect(() => {
+        return () => {
+            if (isListening) {
+                stopListening();
+            }
+        };
+    }, [isListening, stopListening]);
+
     // Timer for boost
     useEffect(() => {
         let interval: ReturnType<typeof setInterval> | null = null;

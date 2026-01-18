@@ -1,10 +1,14 @@
 import React, { useEffect } from 'react';
+import { useBackButton } from '../../hooks/useBackButton';
 
 interface HardwareSyncModalProps {
     onClose: () => void;
 }
 
 export const HardwareSyncModal: React.FC<HardwareSyncModalProps> = ({ onClose }) => {
+    // Hardware back button support
+    useBackButton(true, onClose);
+
     // Handle Escape key to close modal
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {

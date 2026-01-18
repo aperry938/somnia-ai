@@ -205,6 +205,14 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
         setEditedText(prev => (prev ? prev.trim() + ' ' : '') + transcript);
     });
 
+    // Cleanup speech recognition on unmount
+    useEffect(() => {
+        return () => {
+            if (isListening) {
+                stopListening();
+            }
+        };
+    }, [isListening, stopListening]);
 
     const performAnalysis = useCallback(async () => {
         if (!dream || dream.aiAnalysis) {

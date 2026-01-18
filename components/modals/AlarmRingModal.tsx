@@ -189,6 +189,15 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
 
     const { isListening, interimTranscript, startListening, stopListening, isSupported } = useSpeechRecognition(handleFinalTranscript);
 
+    // Cleanup speech recognition on unmount
+    useEffect(() => {
+        return () => {
+            if (isListening) {
+                stopListening();
+            }
+        };
+    }, [isListening, stopListening]);
+
     // Combine saved text with live transcription for display
     const displayText = isListening
         ? (quickNote ? quickNote + ' ' : '') + interimTranscript

@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
+import { useBackButton } from '../../hooks/useBackButton';
 import { SleepQualityRating } from '../shared/SleepQualityRating';
 import { DreamMood } from '../../types';
 import haptics from '../../services/hapticsService';
@@ -20,6 +21,9 @@ export const AddPastDreamModal: React.FC<AddPastDreamModalProps> = ({ onSave, on
     const [dreamDate, setDreamDate] = useState<string>(new Date().toISOString().split('T')[0] ?? '');
     const [validationError, setValidationError] = useState<string | null>(null);
 
+    // Hardware back button support
+    useBackButton(true, onClose);
+
     // Handle Escape key to close modal
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -34,6 +38,15 @@ export const AddPastDreamModal: React.FC<AddPastDreamModalProps> = ({ onSave, on
     }, []);
 
     const { isListening, interimTranscript, startListening, stopListening, isSupported } = useSpeechRecognition(handleFinalTranscript);
+
+    // Cleanup speech recognition on unmount (e.g., when back button closes modal)
+    useEffect(() => {
+        return () => {
+            if (isListening) {
+                stopListening();
+            }
+        };
+    }, [isListening, stopListening]);
 
     const handleSave = () => {
         if (!dreamText.trim() || isListening) return;
