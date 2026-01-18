@@ -97,7 +97,7 @@ const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = Re
                 tabIndex={0}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit(alarm); } }}
                 aria-label={`Alarm at ${displayTime} ${period}${alarm.label ? `, ${alarm.label}` : ''}, ${formatRepeatText(alarm.days)}, ${alarm.isActive ? 'enabled' : 'disabled'}. Long press to delete.`}
-                className={`group relative bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border shadow-lg rounded-2xl p-4 cursor-pointer transition-all duration-300 flex flex-col justify-between h-32 hover:shadow-xl hover:scale-[1.02] hover:border-day-accent dark:hover:border-night-accent active:scale-[0.98] ${alarm.isActive
+                className={`group relative bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border shadow-lg rounded-2xl p-4 cursor-pointer transition-all duration-300 flex flex-col justify-between h-32 hover:shadow-xl hover:scale-[1.02] hover:border-day-accent dark:hover:border-night-accent active:scale-[0.98] select-none ${alarm.isActive
                     ? 'ring-2 ring-day-accent/30 dark:ring-night-accent/30'
                     : 'opacity-80 hover:opacity-100'
                     }`}
@@ -172,7 +172,7 @@ const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = Re
             {/* Delete Confirmation Popup */}
             {showDeleteConfirm && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center px-4 pt-4 pb-[calc(2rem+var(--safe-area-inset-bottom))] z-50" onClick={() => setShowDeleteConfirm(false)}>
-                    <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-xs animate-fadeIn" onClick={(e) => e.stopPropagation()}>
+                    <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-xs animate-fadeIn select-none" onClick={(e) => e.stopPropagation()}>
                         <h3 className="font-serif text-lg text-center mb-2">Delete Alarm?</h3>
                         <p className="text-sm text-center text-day-text-secondary dark:text-night-text-secondary mb-4">
                             {displayTime} {period}{alarm.label ? ` - ${alarm.label}` : ''}
