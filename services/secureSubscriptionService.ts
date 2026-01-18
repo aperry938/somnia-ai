@@ -81,6 +81,10 @@ const SUPERUSER_EMAILS: string[] = (import.meta.env.VITE_SUPERUSER_EMAILS || '')
 // Cached premium status (updated by RevenueCat listener)
 let cachedPremiumStatus = false;
 
+// ⚠️ TESTING MODE: Set to true to unlock all premium features for mobile testing
+// Remember to set this back to false before production release!
+const TESTING_MODE_PREMIUM = true;
+
 /**
  * Initialize subscription service
  * Must be called at app startup
@@ -167,6 +171,8 @@ export function isSuperuser(): boolean {
  * Check if user has premium access
  */
 export function isPremium(): boolean {
+    // Testing mode override for mobile development
+    if (TESTING_MODE_PREMIUM) return true;
     // Test override for mobile testing (works in production builds)
     if (localStorage.getItem(TEST_PREMIUM_OVERRIDE_KEY) === 'true') return true;
     if (isSuperuser()) return true;
