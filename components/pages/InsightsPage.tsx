@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect as _useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect as _useEffect } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
 import { analyzeSleepHabits, synthesizeDreamThemes } from '../../services/geminiService';
 import { DreamSynthesis, SleepHabitAnalysis } from '../../types';
@@ -37,8 +37,11 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
     const userIsPremium = isPremium();
 
     // Free users always see demo data, premium users see their own data (or demo if < 3 dreams)
-    const isUsingDemo = !userIsPremium || dreams.length < 3;
-    const displayDreams = isUsingDemo ? DEMO_DREAMS : dreams;
+    // Memoize to prevent reference changes that would cause child components to re-render
+    const displayDreams = useMemo(() => {
+        const isUsingDemo = !userIsPremium || dreams.length < 3;
+        return isUsingDemo ? DEMO_DREAMS : dreams;
+    }, [userIsPremium, dreams]);
 
     const [activeTab, setActiveTab] = useState<InsightTab>('dreams');
     const [dreamSynthesis, setDreamSynthesis] = useState<DreamSynthesis | null>(null);
@@ -51,6 +54,10 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
     const [isCompareOpen, setIsCompareOpen] = useState(false);
     const [isSyncOpen, setIsSyncOpen] = useState(false);
     const [isShareOpen, setIsShareOpen] = useState(false);
+
+    // Memoize modal close handlers to prevent re-renders
+    const handleCloseCompare = useCallback(() => setIsCompareOpen(false), []);
+    const handleCloseShare = useCallback(() => setIsShareOpen(false), []);
 
     // Weekly rate limit helpers
     const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -551,13 +558,13 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                 )}
             </div>
 
-            {isCompareOpen && <DreamCompareModal dreams={displayDreams} onClose={() => setIsCompareOpen(false)} />}
+            {isCompareOpen && <DreamCompareModal dreams={displayDreams} onClose={handleCloseCompare} />}
 
             {/* Share Analytics Modal */}
             <ShareAnalyticsModal
                 dreams={dreams}
                 isOpen={isShareOpen}
-                onClose={() => setIsShareOpen(false)}
+                onClose={handleCloseShare}
             />
 
             {/* Sync Wearable Modal */}
