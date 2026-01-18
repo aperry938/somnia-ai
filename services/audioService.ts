@@ -1193,11 +1193,15 @@ const createBinauralNode = (context: AudioContext, baseFreq: number, diff: numbe
     oscLeft.frequency.value = baseFreq - diff / 2;
     oscRight.frequency.value = baseFreq + diff / 2;
 
-    // Binaural beats volume - full volume, user controls via master slider
+    // Binaural beats need significant amplitude boost because:
+    // 1. 110Hz is in a low-sensitivity region of human hearing (Fletcher-Munson curves)
+    // 2. Phone speakers often can't reproduce bass well
+    // 3. Pure sine waves sound quieter than broadband noise at same amplitude
+    // Boost to 3.0 - the limiter will prevent actual clipping
     const gainLeft = context.createGain();
     const gainRight = context.createGain();
-    gainLeft.gain.value = 1.0;
-    gainRight.gain.value = 1.0;
+    gainLeft.gain.value = 3.0;
+    gainRight.gain.value = 3.0;
 
     oscLeft.connect(gainLeft);
     oscRight.connect(gainRight);
@@ -1294,11 +1298,12 @@ const createSleepRampNode = (
 
     // After ramp: Hold at 1.5Hz indefinitely (no further changes needed - audio API holds last value)
 
-    // Full volume binaural gain - user controls via master slider
+    // Binaural beats need significant amplitude boost (see createBinauralNode comments)
+    // 110Hz sine waves are perceived much quieter than noise - boost to compensate
     const gainLeft = context.createGain();
     const gainRight = context.createGain();
-    gainLeft.gain.setValueAtTime(1.0, now);
-    gainRight.gain.setValueAtTime(1.0, now);
+    gainLeft.gain.setValueAtTime(3.0, now);
+    gainRight.gain.setValueAtTime(3.0, now);
 
     oscLeft.connect(gainLeft);
     oscRight.connect(gainRight);
