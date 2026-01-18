@@ -37,11 +37,11 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
     const userIsPremium = isPremium();
 
     // Free users always see demo data, premium users see their own data (or demo if < 3 dreams)
-    // Memoize to prevent reference changes that would cause child components to re-render
+    const isUsingDemo = !userIsPremium || dreams.length < 3;
+    // Memoize displayDreams to prevent reference changes that would cause child components to re-render
     const displayDreams = useMemo(() => {
-        const isUsingDemo = !userIsPremium || dreams.length < 3;
         return isUsingDemo ? DEMO_DREAMS : dreams;
-    }, [userIsPremium, dreams]);
+    }, [isUsingDemo, dreams]);
 
     const [activeTab, setActiveTab] = useState<InsightTab>('dreams');
     const [dreamSynthesis, setDreamSynthesis] = useState<DreamSynthesis | null>(null);
