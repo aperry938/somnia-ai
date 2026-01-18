@@ -1193,12 +1193,11 @@ const createBinauralNode = (context: AudioContext, baseFreq: number, diff: numbe
     oscLeft.frequency.value = baseFreq - diff / 2;
     oscRight.frequency.value = baseFreq + diff / 2;
 
-    // Binaural beats volume - audible but not overwhelming
-    // (0.35 provides clear presence while master gain controls overall level)
+    // Binaural beats volume - full volume, user controls via master slider
     const gainLeft = context.createGain();
     const gainRight = context.createGain();
-    gainLeft.gain.value = 0.35;
-    gainRight.gain.value = 0.35;
+    gainLeft.gain.value = 1.0;
+    gainRight.gain.value = 1.0;
 
     oscLeft.connect(gainLeft);
     oscRight.connect(gainRight);
@@ -1295,11 +1294,11 @@ const createSleepRampNode = (
 
     // After ramp: Hold at 1.5Hz indefinitely (no further changes needed - audio API holds last value)
 
-    // Audible binaural gain (matches regular binaural beats)
+    // Full volume binaural gain - user controls via master slider
     const gainLeft = context.createGain();
     const gainRight = context.createGain();
-    gainLeft.gain.setValueAtTime(0.35, now);
-    gainRight.gain.setValueAtTime(0.35, now);
+    gainLeft.gain.setValueAtTime(1.0, now);
+    gainRight.gain.setValueAtTime(1.0, now);
 
     oscLeft.connect(gainLeft);
     oscRight.connect(gainRight);
@@ -1398,9 +1397,8 @@ export const playSleepSound = async (sound: Soundscape, durationMinutes: number,
 
     sleepGainNode = context.createGain();
     sleepGainNode.gain.setValueAtTime(0, context.currentTime);
-    // Soft limiter: never exceed 0.9
-    const targetVolume = Math.min(volume, 0.9);
-    sleepGainNode.gain.linearRampToValueAtTime(targetVolume, context.currentTime + 2); // Fade in to target volume
+    // Allow full volume - user controls via slider
+    sleepGainNode.gain.linearRampToValueAtTime(volume, context.currentTime + 2); // Fade in to target volume
     sleepGainNode.connect(sleepCompressor);
 
     if (sound.type === 'noise') {
