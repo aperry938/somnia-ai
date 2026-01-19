@@ -376,7 +376,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
 
     return (
         <div
-            className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 z-50 pb-[calc(6.5rem+var(--safe-area-inset-bottom))] sm:pb-4"
+            className={`fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 z-50 sm:pb-4 ${isInPlayingView ? 'pb-[calc(2rem+var(--safe-area-inset-bottom))]' : 'pb-[calc(6.5rem+var(--safe-area-inset-bottom))]'}`}
             onClick={handleBackdropClick}
             role="dialog"
             aria-modal="true"
