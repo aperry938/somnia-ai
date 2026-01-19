@@ -34,7 +34,7 @@ function createNoiseBuffer(ctx: AudioContext, type: 'brown' | 'pink'): AudioBuff
         for (let i = 0; i < bufferSize; i++) {
             const white = Math.random() * 2 - 1;
             lastOut = (lastOut + (0.02 * white)) / 1.02;
-            data[i] = lastOut * 3.5; // Gain compensation
+            data[i] = lastOut * 2.0; // Gain compensation (reduced from 3.5 to prevent digital clipping)
         }
     } else {
         // Pink Noise (Paul Kellett algorithm)
@@ -97,6 +97,15 @@ export function playAbyssalPressure(volume: number = 0.5): { stop: () => void } 
     const subGain = ctx.createGain();
     subGain.gain.value = 0.15; // Subtle grounding
 
+    // LAYER C: Ghost Harmonic (80Hz for phone speaker audibility)
+    // Uses "Missing Fundamental" psychoacoustic effect: brain hears 80Hz and
+    // "hallucinates" the 40Hz fundamental below it, making rumble perceivable on phone speakers
+    const ghostOsc = ctx.createOscillator();
+    ghostOsc.type = 'sine';
+    ghostOsc.frequency.value = 80; // One octave above 40Hz
+    const ghostGain = ctx.createGain();
+    ghostGain.gain.value = 0.03; // 20% of subOsc gain (0.15 * 0.2 = 0.03) - very subtle
+
     // Connect noise chain
     noise.connect(filter);
     filter.connect(noiseGain);
@@ -106,10 +115,15 @@ export function playAbyssalPressure(volume: number = 0.5): { stop: () => void } 
     subOsc.connect(subGain);
     subGain.connect(masterGain);
 
+    // Connect ghost harmonic
+    ghostOsc.connect(ghostGain);
+    ghostGain.connect(masterGain);
+
     // Start all
     noise.start(t);
     lfo.start(t);
     subOsc.start(t);
+    ghostOsc.start(t);
 
     const stopFn = () => {
         const now = ctx.currentTime;
@@ -122,6 +136,7 @@ export function playAbyssalPressure(volume: number = 0.5): { stop: () => void } 
                 noise.stop();
                 lfo.stop();
                 subOsc.stop();
+                ghostOsc.stop();
             } catch { /* already stopped */ }
         }, 1100);
     };

@@ -1013,7 +1013,7 @@ const createBrownBuffer = (context: AudioContext): AudioBuffer => {
             const white = Math.random() * 2 - 1;
             // Leaky Integrator: 0.02 is slew rate, 1.02 is the leak
             lastOut = (lastOut + (0.02 * white)) / 1.02;
-            data[i] = lastOut * 3.5; // Gain compensation for warm presence
+            data[i] = lastOut * 2.0; // Gain compensation (reduced from 3.5 to prevent digital clipping)
         }
     }
     return buffer;
@@ -1057,7 +1057,7 @@ const createRawNoiseBuffer = (context: AudioContext, type: 'white' | 'pink' | 'b
         for (let i = 0; i < bufferSize; i++) {
             const white = Math.random() * 2 - 1;
             lastOut = (lastOut + (0.02 * white)) / 1.02;
-            output[i] = lastOut * 3.5; // Gain compensation
+            output[i] = lastOut * 2.0; // Gain compensation (reduced from 3.5 to prevent digital clipping)
         }
     }
 
@@ -1205,13 +1205,38 @@ const createBinauralNode = (context: AudioContext, baseFreq: number, diff: numbe
     gainLeft.connect(merger, 0, 0);
     gainRight.connect(merger, 0, 1);
 
+    // Ghost Harmonics (for phone speaker audibility)
+    // Uses "Missing Fundamental" psychoacoustic effect: brain hears 220Hz and
+    // "fills in" the 110Hz fundamental, making binaural beats perceivable on phone speakers
+    const ghostLeft = context.createOscillator();
+    const ghostRight = context.createOscillator();
+    ghostLeft.type = 'sine';
+    ghostRight.type = 'sine';
+
+    // Ghost oscillators at one octave up (2x frequency)
+    ghostLeft.frequency.value = (baseFreq * 2) - diff / 2;
+    ghostRight.frequency.value = (baseFreq * 2) + diff / 2;
+
+    // Separate gains for each ghost channel to preserve binaural stereo separation
+    const ghostGainLeft = context.createGain();
+    const ghostGainRight = context.createGain();
+    ghostGainLeft.gain.value = 0.1; // Subtle (-20dB relative to main)
+    ghostGainRight.gain.value = 0.1;
+
+    ghostLeft.connect(ghostGainLeft);
+    ghostRight.connect(ghostGainRight);
+    ghostGainLeft.connect(merger, 0, 0); // Left ghost → Left channel only
+    ghostGainRight.connect(merger, 0, 1); // Right ghost → Right channel only
+
     oscLeft.start();
     oscRight.start();
+    ghostLeft.start();
+    ghostRight.start();
 
     // Attach oscillators and gains to the merger node for cleanup and live updates
     const binauralMerger = merger as BinauralMergerNode;
-    binauralMerger.oscillators = [oscLeft, oscRight];
-    binauralMerger.gains = [gainLeft, gainRight];
+    binauralMerger.oscillators = [oscLeft, oscRight, ghostLeft, ghostRight];
+    binauralMerger.gains = [gainLeft, gainRight, ghostGainLeft, ghostGainRight];
 
     return binauralMerger;
 };
@@ -1306,13 +1331,49 @@ const createSleepRampNode = (
     gainLeft.connect(merger, 0, 0);
     gainRight.connect(merger, 0, 1);
 
+    // Ghost Harmonics (for phone speaker audibility)
+    // Uses "Missing Fundamental" psychoacoustic effect
+    const ghostLeft = context.createOscillator();
+    const ghostRight = context.createOscillator();
+    ghostLeft.type = 'sine';
+    ghostRight.type = 'sine';
+
+    // Ghost oscillators at one octave up (2x frequency), with same ramp schedule
+    // Start at 2x base (220Hz for 110Hz carrier)
+    ghostLeft.frequency.setValueAtTime((baseFreq * 2) - alphaStart / 2, now);
+    ghostRight.frequency.setValueAtTime((baseFreq * 2) + alphaStart / 2, now);
+
+    // Ghost ramp: follows same phase schedule as main oscillators
+    // Phase 1: Alpha (12Hz → 8Hz beat diff at 2x carrier)
+    ghostLeft.frequency.linearRampToValueAtTime((baseFreq * 2) - alphaEnd / 2, now + phase1End);
+    ghostRight.frequency.linearRampToValueAtTime((baseFreq * 2) + alphaEnd / 2, now + phase1End);
+    // Phase 2: Theta (8Hz → 4Hz)
+    ghostLeft.frequency.linearRampToValueAtTime((baseFreq * 2) - thetaEnd / 2, now + phase2End);
+    ghostRight.frequency.linearRampToValueAtTime((baseFreq * 2) + thetaEnd / 2, now + phase2End);
+    // Phase 3: Delta (4Hz → 1.5Hz)
+    ghostLeft.frequency.linearRampToValueAtTime((baseFreq * 2) - deltaEnd / 2, now + phase3End);
+    ghostRight.frequency.linearRampToValueAtTime((baseFreq * 2) + deltaEnd / 2, now + phase3End);
+
+    // Separate gains for each ghost channel to preserve binaural stereo separation
+    const ghostGainLeft = context.createGain();
+    const ghostGainRight = context.createGain();
+    ghostGainLeft.gain.setValueAtTime(0.1, now); // Subtle (-20dB relative to main)
+    ghostGainRight.gain.setValueAtTime(0.1, now);
+
+    ghostLeft.connect(ghostGainLeft);
+    ghostRight.connect(ghostGainRight);
+    ghostGainLeft.connect(merger, 0, 0); // Left ghost → Left channel only
+    ghostGainRight.connect(merger, 0, 1); // Right ghost → Right channel only
+
     oscLeft.start(now);
     oscRight.start(now);
+    ghostLeft.start(now);
+    ghostRight.start(now);
 
     // Attach oscillators for cleanup
     const binauralMerger = merger as BinauralMergerNode;
-    binauralMerger.oscillators = [oscLeft, oscRight];
-    binauralMerger.gains = [gainLeft, gainRight];
+    binauralMerger.oscillators = [oscLeft, oscRight, ghostLeft, ghostRight];
+    binauralMerger.gains = [gainLeft, gainRight, ghostGainLeft, ghostGainRight];
     binauralMerger.rampDurationSeconds = rampSeconds;
 
     return binauralMerger;
@@ -1495,48 +1556,66 @@ export const playSleepSound = async (sound: Soundscape, durationMinutes: number,
             rumbleGain.connect(sleepGainNode);
             rumble.start();
 
-            // Layer B: Spark/crackle generator with filter pinging
-            const createSpark = () => {
+            // Layer B: Spark/crackle generator using Lookahead Scheduler
+            // MEMORY FIX: Pre-allocate spark buffer ONCE (prevents garbage collection thrashing)
+            const sparkBuffer = context.createBuffer(1, Math.floor(context.sampleRate * 0.001), context.sampleRate);
+            const sparkData = sparkBuffer.getChannelData(0);
+            for (let i = 0; i < sparkData.length; i++) {
+                sparkData[i] = (Math.random() * 2 - 1);
+            }
+
+            // TIMING FIX: Lookahead Scheduler for background-safe audio scheduling
+            // This allows sparks to continue even when JS thread is throttled (screen locked)
+            const LOOKAHEAD = 0.1; // Schedule 100ms ahead
+            const CHECK_INTERVAL = 25; // JS checks every 25ms
+            let nextSparkTime = context.currentTime;
+
+            const scheduler = () => {
                 if (isCleaningUp || !sleepGainNode || !audioContext) return;
 
-                // Random check (roughly 3% chance every 50ms)
-                if (Math.random() > 0.97) {
-                    // Create impulse (1ms of noise)
-                    const impulseBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.001, audioContext.sampleRate);
-                    const data = impulseBuffer.getChannelData(0);
-                    for (let i = 0; i < data.length; i++) {
-                        data[i] = (Math.random() * 2 - 1);
-                    }
+                // Schedule all sparks falling within the lookahead window
+                while (nextSparkTime < audioContext.currentTime + LOOKAHEAD) {
+                    // Poisson-like distribution (random interval ~50ms average)
+                    const timeToNext = 0.02 + (Math.random() * 0.08);
+                    nextSparkTime += timeToNext;
 
+                    // ~3% chance to fire a spark
+                    if (Math.random() > 0.03) continue;
+
+                    // Create BufferSource (cheap) reusing pre-allocated buffer (expensive)
                     const impulse = audioContext.createBufferSource();
-                    impulse.buffer = impulseBuffer;
+                    impulse.buffer = sparkBuffer;
 
-                    // High-Q bandpass filter (Q: 20) for resonant "ping"
+                    // High-Q bandpass filter for resonant "ping"
                     const pingFilter = audioContext.createBiquadFilter();
                     pingFilter.type = 'bandpass';
-                    pingFilter.frequency.setValueAtTime(400 + Math.random() * 200, audioContext.currentTime); // 400-600Hz
-                    pingFilter.Q.setValueAtTime(20, audioContext.currentTime); // High Q for resonance
+                    pingFilter.frequency.setValueAtTime(400 + Math.random() * 200, nextSparkTime);
+                    pingFilter.Q.setValueAtTime(20, nextSparkTime);
 
                     // Envelope for the ping
                     const pingGain = audioContext.createGain();
-                    const now = audioContext.currentTime;
-                    pingGain.gain.setValueAtTime(0.4 + Math.random() * 0.3, now);
-                    pingGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+                    pingGain.gain.setValueAtTime(0, nextSparkTime);
+                    pingGain.gain.linearRampToValueAtTime(0.4 + Math.random() * 0.3, nextSparkTime + 0.005);
+                    pingGain.gain.exponentialRampToValueAtTime(0.001, nextSparkTime + 0.15);
+
+                    // Stereo panning for spatial realism
+                    const panner = audioContext.createStereoPanner();
+                    panner.pan.setValueAtTime((Math.random() * 2) - 1, nextSparkTime);
 
                     impulse.connect(pingFilter);
                     pingFilter.connect(pingGain);
-                    pingGain.connect(sleepGainNode);
+                    pingGain.connect(panner);
+                    panner.connect(sleepGainNode);
 
-                    impulse.start(now);
-                    impulse.stop(now + 0.001);
+                    impulse.start(nextSparkTime);
+                    impulse.stop(nextSparkTime + 0.2);
                 }
 
-                // Schedule next check
-                sparkInterval = setTimeout(createSpark, 50);
+                sparkInterval = setTimeout(scheduler, CHECK_INTERVAL);
             };
 
-            // Start spark generation
-            sparkInterval = setTimeout(createSpark, 100);
+            // Start spark scheduler
+            scheduler();
 
             sleepSourceNode = rumble;
         }
@@ -1699,6 +1778,13 @@ export const stopSleepSound = (fadeDuration: number = 2) => {
                     });
                 }
 
+                // Disconnect binaural gain nodes (prevents memory leaks)
+                if (binauralNode.gains) {
+                    binauralNode.gains.forEach(gain => {
+                        try { gain.disconnect(); } catch { /* ignore */ }
+                    });
+                }
+
                 // Disconnect synthesis extras
                 if (synthNode.lfo) synthNode.lfo.disconnect();
                 if (synthNode.crackle) synthNode.crackle.disconnect();
@@ -1760,11 +1846,18 @@ export const setLiveBeatFrequency = (baseFreq: number, diff: number) => {
     const binauralNode = sleepSourceNode as Partial<BinauralMergerNode> | null;
     if (binauralNode && audioContext && binauralNode.oscillators) {
         const oscillators = binauralNode.oscillators;
-        if (oscillators?.length === 2) {
-            const now = audioContext.currentTime;
-            // Smooth transition to new frequencies
+        const now = audioContext.currentTime;
+
+        // Update main oscillators (indices 0 and 1)
+        if (oscillators?.length >= 2) {
             oscillators[0]?.frequency.setTargetAtTime(baseFreq - diff / 2, now, 0.1);
             oscillators[1]?.frequency.setTargetAtTime(baseFreq + diff / 2, now, 0.1);
+        }
+
+        // Update ghost oscillators if present (indices 2 and 3)
+        if (oscillators?.length >= 4) {
+            oscillators[2]?.frequency.setTargetAtTime((baseFreq * 2) - diff / 2, now, 0.1);
+            oscillators[3]?.frequency.setTargetAtTime((baseFreq * 2) + diff / 2, now, 0.1);
         }
     }
 };
@@ -1827,8 +1920,16 @@ export const playBreathSound = (direction: 'in' | 'out', duration: number) => {
 
 // --- ALERTNESS BOOST FUNCTIONS (Wake-Up Flow) ---
 
-// Active alertness nodes
-let alertnessNodes: { oscLeft: OscillatorNode; oscRight: OscillatorNode; gainNode: GainNode } | null = null;
+// Active alertness nodes (including ghost harmonics for phone speaker audibility)
+let alertnessNodes: {
+    oscLeft: OscillatorNode;
+    oscRight: OscillatorNode;
+    gainNode: GainNode;
+    ghostLeft?: OscillatorNode;
+    ghostRight?: OscillatorNode;
+    ghostGainLeft?: GainNode;
+    ghostGainRight?: GainNode;
+} | null = null;
 
 /**
  * Plays 12Hz Beta binaural beats for alertness during wake-up
@@ -1863,13 +1964,38 @@ export const playAlertnessBoost = (volume: number = 0.25) => {
 
     oscLeft.connect(merger, 0, 0);
     oscRight.connect(merger, 0, 1);
+
+    // Ghost Harmonics (for phone speaker audibility)
+    // Uses "Missing Fundamental" psychoacoustic effect for 110Hz carrier
+    const ghostLeft = context.createOscillator();
+    const ghostRight = context.createOscillator();
+    ghostLeft.type = 'sine';
+    ghostRight.type = 'sine';
+    ghostLeft.frequency.value = (baseFreq * 2) - betaDiff / 2; // ~214Hz
+    ghostRight.frequency.value = (baseFreq * 2) + betaDiff / 2; // ~226Hz
+
+    // Separate gains for each ghost channel to preserve binaural stereo separation
+    const ghostGainLeft = context.createGain();
+    const ghostGainRight = context.createGain();
+    ghostGainLeft.gain.setValueAtTime(0, now);
+    ghostGainRight.gain.setValueAtTime(0, now);
+    ghostGainLeft.gain.linearRampToValueAtTime(0.1, now + 2); // Subtle (-20dB)
+    ghostGainRight.gain.linearRampToValueAtTime(0.1, now + 2);
+
+    ghostLeft.connect(ghostGainLeft);
+    ghostRight.connect(ghostGainRight);
+    ghostGainLeft.connect(merger, 0, 0); // Left ghost → Left channel only
+    ghostGainRight.connect(merger, 0, 1); // Right ghost → Right channel only
+
     merger.connect(gainNode);
     gainNode.connect(context.destination);
 
     oscLeft.start();
     oscRight.start();
+    ghostLeft.start();
+    ghostRight.start();
 
-    alertnessNodes = { oscLeft, oscRight, gainNode };
+    alertnessNodes = { oscLeft, oscRight, gainNode, ghostLeft, ghostRight, ghostGainLeft, ghostGainRight };
 };
 
 /**
@@ -1878,10 +2004,16 @@ export const playAlertnessBoost = (volume: number = 0.25) => {
 export const stopAlertnessBoost = () => {
     if (!alertnessNodes || !audioContext) return;
 
-    const { oscLeft, oscRight, gainNode } = alertnessNodes;
+    const { oscLeft, oscRight, gainNode, ghostLeft, ghostRight, ghostGainLeft, ghostGainRight } = alertnessNodes;
     const now = audioContext.currentTime;
 
     gainNode.gain.linearRampToValueAtTime(0, now + 1);
+    if (ghostGainLeft) {
+        ghostGainLeft.gain.linearRampToValueAtTime(0, now + 1);
+    }
+    if (ghostGainRight) {
+        ghostGainRight.gain.linearRampToValueAtTime(0, now + 1);
+    }
 
     setTimeout(() => {
         try {
@@ -1890,6 +2022,11 @@ export const stopAlertnessBoost = () => {
             oscLeft.disconnect();
             oscRight.disconnect();
             gainNode.disconnect();
+            // Stop ghost oscillators and gains
+            if (ghostLeft) { ghostLeft.stop(); ghostLeft.disconnect(); }
+            if (ghostRight) { ghostRight.stop(); ghostRight.disconnect(); }
+            if (ghostGainLeft) { ghostGainLeft.disconnect(); }
+            if (ghostGainRight) { ghostGainRight.disconnect(); }
         } catch (_e) {
             // Already stopped
         }
