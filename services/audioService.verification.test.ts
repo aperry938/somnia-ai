@@ -30,8 +30,8 @@ describe('Audio Specification Verification', () => {
 
     describe('Soundscape Definitions (constants.ts)', () => {
 
-        it('should define exactly 8 soundscapes', () => {
-            expect(SOUNDSCAPES).toHaveLength(8);
+        it('should define exactly 10 soundscapes', () => {
+            expect(SOUNDSCAPES).toHaveLength(10);
         });
 
         it('should have 3 free noise-based soundscapes', () => {
@@ -85,8 +85,8 @@ describe('Audio Specification Verification', () => {
 
     describe('Guided Relaxation Definitions', () => {
 
-        it('should define exactly 2 breathing exercises', () => {
-            expect(GUIDED_RELAXATIONS).toHaveLength(2);
+        it('should define exactly 3 breathing exercises', () => {
+            expect(GUIDED_RELAXATIONS).toHaveLength(3);
         });
 
         it('should have 4-7-8 breathing with correct timing description', () => {
