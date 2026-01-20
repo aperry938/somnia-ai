@@ -370,8 +370,12 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
 
                         {/* Calibration Dream Card */}
                         <div
+                            role="button"
+                            tabIndex={0}
                             onClick={() => onDreamSelect(CALIBRATION_DREAM.id)}
-                            className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-xl p-4 cursor-pointer hover:border-day-accent dark:hover:border-night-accent transition-colors"
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onDreamSelect(CALIBRATION_DREAM.id); } }}
+                            aria-label={`View sample dream: ${CALIBRATION_DREAM.title}`}
+                            className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-xl p-4 cursor-pointer hover:border-day-accent dark:hover:border-night-accent transition-colors focus:outline-none focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent"
                         >
                             <div className="flex items-start justify-between mb-3">
                                 <div>
