@@ -1,0 +1,266 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Circadian Deep Night - even darker than regular night */
+html[data-circadian-phase="night"].dark {
+    --night-bg-start: #050810;
+    --night-bg-end: #0a0f1a;
+    --night-card-bg: rgba(10, 15, 30, 0.8);
+}
+
+/* Circadian Dusk/Dawn - uses warmer tones */
+html[data-circadian-phase="dusk"].dark,
+html[data-circadian-phase="dawn"].dark {
+    --night-bg-start: #0F172A;
+    --night-bg-end: #1E293B;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(100, 116, 139, 0.3);
+    border-radius: 6px;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(148, 163, 184, 0.3);
+}
+
+/* Focus-visible for keyboard navigation accessibility */
+:focus-visible {
+    outline: 2px solid #6366F1;
+    outline-offset: 2px;
+}
+
+.dark :focus-visible {
+    outline-color: #818CF8;
+}
+
+/* Sleep Mode: Zero blue light for melatonin preservation */
+.sleep :focus-visible {
+    outline-color: #FF6B35;
+}
+
+.sleep .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 107, 53, 0.3);
+}
+
+/* Sleep Mode Color Overrides - replaces all blue with warm amber */
+.sleep {
+    --tw-gradient-from: #1A0A00 !important;
+    --tw-gradient-to: #2D1810 !important;
+}
+
+/* Override night colors with sleep colors when .sleep is active */
+.sleep .bg-night-accent {
+    background-color: #FF6B35 !important;
+}
+
+.sleep .text-night-accent {
+    color: #FF6B35 !important;
+}
+
+.sleep .border-night-accent {
+    border-color: #FF6B35 !important;
+}
+
+.sleep .text-night-text-primary {
+    color: #FFD4B8 !important;
+}
+
+.sleep .text-night-text-secondary {
+    color: #C4A68A !important;
+}
+
+.sleep .bg-night-card-bg {
+    background-color: rgba(45, 24, 16, 0.65) !important;
+}
+
+.sleep .border-night-border {
+    border-color: rgba(255, 107, 53, 0.2) !important;
+}
+
+.sleep .from-night-bg-start {
+    --tw-gradient-from: #1A0A00 !important;
+}
+
+.sleep .to-night-bg-end {
+    --tw-gradient-to: #2D1810 !important;
+}
+
+/* Override indigo accents (common across app) */
+.sleep .bg-indigo-500,
+.sleep .bg-indigo-500\/20 {
+    background-color: #FF6B35 !important;
+}
+
+.sleep .bg-indigo-600 {
+    background-color: #E55A2B !important;
+}
+
+.sleep .text-indigo-500 {
+    color: #FF6B35 !important;
+}
+
+.sleep .text-indigo-400 {
+    color: #FF8C5A !important;
+}
+
+.sleep .border-indigo-500 {
+    border-color: #FF6B35 !important;
+}
+
+.sleep .ring-indigo-500 {
+    --tw-ring-color: #FF6B35 !important;
+}
+
+.sleep .accent-night-accent {
+    accent-color: #FF6B35 !important;
+}
+
+/* Sleep mode gradient backgrounds */
+html.sleep.dark .from-night-bg-start {
+    --tw-gradient-from: #1A0A00 !important;
+}
+
+html.sleep.dark .to-night-bg-end {
+    --tw-gradient-to: #2D1810 !important;
+}
+
+html.sleep .dark\:from-night-bg-start {
+    --tw-gradient-from: #1A0A00 !important;
+}
+
+html.sleep .dark\:to-night-bg-end {
+    --tw-gradient-to: #2D1810 !important;
+}
+
+html.sleep .dark\:bg-night-accent {
+    background-color: #FF6B35 !important;
+}
+
+html.sleep .dark\:text-night-accent {
+    color: #FF6B35 !important;
+}
+
+html.sleep .dark\:text-night-text-primary {
+    color: #FFD4B8 !important;
+}
+
+html.sleep .dark\:text-night-text-secondary {
+    color: #C4A68A !important;
+}
+
+html.sleep .dark\:bg-night-card-bg {
+    background-color: rgba(45, 24, 16, 0.65) !important;
+}
+
+html.sleep .dark\:border-night-border {
+    border-color: rgba(255, 107, 53, 0.2) !important;
+}
+
+/* Sleep mode toggle switch overrides (hardcoded colors in AlarmsPage) */
+.sleep .toggle-checkbox:checked {
+    border-color: #FF6B35 !important;
+}
+
+.sleep .toggle-checkbox:checked+.toggle-label {
+    background-color: #FF6B35 !important;
+}
+
+/* Sleep mode: Override any remaining blue/indigo elements */
+.sleep .shadow-indigo-500\/30 {
+    --tw-shadow-color: rgba(255, 107, 53, 0.3) !important;
+}
+
+.sleep .hover\:bg-indigo-600:hover {
+    background-color: #E55A2B !important;
+}
+
+.sleep .dark\:hover\:bg-indigo-500:hover {
+    background-color: #FF6B35 !important;
+}
+
+/* Skip link for screen readers */
+.skip-link {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    padding: 0.5rem 1rem;
+    background: #6366F1;
+    color: white;
+    z-index: 100;
+}
+
+.skip-link:focus {
+    left: 0;
+}
+
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Safe area insets for notched devices */
+:root {
+    --safe-area-inset-top: env(safe-area-inset-top, 0px);
+    --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-area-inset-left: env(safe-area-inset-left, 0px);
+    --safe-area-inset-right: env(safe-area-inset-right, 0px);
+}
+
+.safe-area-top {
+    padding-top: var(--safe-area-inset-top);
+}
+
+.safe-area-bottom {
+    padding-bottom: var(--safe-area-inset-bottom);
+}
+
+/* Respect user's reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Mobile touch optimization */
+button,
+a,
+[role="button"] {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+/* Prevent iOS bounce/rubber-band scrolling issues */
+html, body {
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Smooth scroll for main content areas */
+.overflow-y-auto {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+}
+
+/* Prevent body scroll when modal is open */
+body.modal-open {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+}
