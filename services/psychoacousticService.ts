@@ -578,12 +578,13 @@ export function playSolarAlarm(volume: number = 1.0): { stop: () => void } {
     if (ctx.state === 'suspended') { ctx.resume(); }
 
     // Master gain - 5x louder start, reaches MAXIMUM in 60s (alarms need to wake people!)
-    masterGain = ctx.createGain();
-    masterGain.gain.setValueAtTime(0.4, t);                        // Start at 40% (audible immediately)
-    masterGain.gain.linearRampToValueAtTime(volume * 0.5, t + 10);  // 50% at 10s
-    masterGain.gain.linearRampToValueAtTime(volume * 0.8, t + 30);  // 80% at 30s
-    masterGain.gain.linearRampToValueAtTime(volume, t + 60);        // MAXIMUM at 60s
-    masterGain.connect(ctx.destination);
+    const master = ctx.createGain();
+    masterGain = master; // Store in module variable for stop function
+    master.gain.setValueAtTime(0.4, t);                        // Start at 40% (audible immediately)
+    master.gain.linearRampToValueAtTime(volume * 0.5, t + 10);  // 50% at 10s
+    master.gain.linearRampToValueAtTime(volume * 0.8, t + 30);  // 80% at 30s
+    master.gain.linearRampToValueAtTime(volume, t + 60);        // MAXIMUM at 60s
+    master.connect(ctx.destination);
 
     // === HARMONIC PAD with Tremolo ===
     const fundamental = 261.63; // C4
@@ -624,7 +625,7 @@ export function playSolarAlarm(volume: number = 1.0): { stop: () => void } {
         osc.detune.value = (Math.random() - 0.5) * 8;
 
         osc.connect(gain);
-        gain.connect(masterGain);
+        gain.connect(master);
         osc.start(t);
 
         oscillators.push(osc);
@@ -641,7 +642,7 @@ export function playSolarAlarm(volume: number = 1.0): { stop: () => void } {
 
         // Pick note from arpeggio
         const noteIndex = Math.floor(Math.random() * chimeNotes.length);
-        const freq = chimeNotes[noteIndex];
+        const freq = chimeNotes[noteIndex] ?? 523.25; // Default to C5 if undefined
 
         // Main chime oscillator
         const chimeOsc = ctx.createOscillator();
@@ -705,13 +706,11 @@ export function playSolarAlarm(volume: number = 1.0): { stop: () => void } {
         g.disconnect();
         g.connect(brightnessFilter);
     });
-    brightnessFilter.connect(masterGain);
+    brightnessFilter.connect(master);
 
     // === PULSE/SWELL for urgency (starts after 20s) ===
-    let pulseActive = false;
     setTimeout(() => {
-        if (!isPlaying) return;
-        pulseActive = true;
+        if (!isPlaying || !masterGain) return;
 
         const pulseLfo = ctx.createOscillator();
         const pulseGain = ctx.createGain();
