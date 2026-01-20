@@ -21,6 +21,7 @@ export interface QueuedAnalysis {
 const QUEUE_STORAGE_KEY = 'somnia_offline_analysis_queue';
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 5000;
+const MAX_QUEUE_SIZE = 50; // Prevent unbounded queue growth
 
 // Event for queue updates
 const QUEUE_UPDATED_EVENT = 'offlineQueueUpdated';
@@ -64,6 +65,12 @@ export function queueForAnalysis(dreamId: number, dreamText: string): void {
     if (queue.some(item => item.dreamId === dreamId)) {
         logger.info('[OfflineQueue] Dream already queued:', dreamId);
         return;
+    }
+
+    // Prevent unbounded queue growth
+    if (queue.length >= MAX_QUEUE_SIZE) {
+        logger.warn('[OfflineQueue] Queue full, removing oldest item to make room');
+        queue.shift(); // Remove oldest item
     }
 
     queue.push({

@@ -5,6 +5,7 @@ const SYNC_QUEUE_KEY = 'somnia_sync_queue';
 const DREAMS_KEY = 'somnia_dreams';
 const MAX_RETRIES = 3;
 const FETCH_TIMEOUT_MS = 10000; // 10 second timeout to prevent hanging
+const MAX_PENDING_ACTIONS = 100; // Prevent unbounded queue growth
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
@@ -97,6 +98,17 @@ export const saveSyncQueue = (queue: SyncAction[]) => {
 
 export const enqueueAction = (type: SyncActionType, payload: unknown) => {
     const queue = getSyncQueue();
+
+    // Prevent unbounded queue growth - remove oldest pending actions if at limit
+    const pendingCount = queue.filter(a => a.status === 'PENDING').length;
+    if (pendingCount >= MAX_PENDING_ACTIONS) {
+        logger.warn('[SyncService] Queue full, removing oldest pending action');
+        const oldestPendingIndex = queue.findIndex(a => a.status === 'PENDING');
+        if (oldestPendingIndex !== -1) {
+            queue.splice(oldestPendingIndex, 1);
+        }
+    }
+
     const newAction: SyncAction = {
         id: crypto.randomUUID(),
         type,
