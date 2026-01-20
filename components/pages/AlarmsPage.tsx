@@ -890,6 +890,8 @@ const TonightsSleepCard: React.FC<{
                                     <button
                                         key={rating}
                                         onClick={() => handleRatingSelect(rating)}
+                                        aria-label={`Rate day as ${ratingLabels[rating - 1]}, ${rating} out of 5`}
+                                        aria-pressed={dayRating === rating}
                                         className={`flex-1 py-2 px-1 rounded-lg flex flex-col items-center gap-1 transition-all ${dayRating === rating
                                             ? 'bg-indigo-500 dark:bg-indigo-600 text-white scale-105 shadow-md'
                                             : 'bg-white/50 dark:bg-gray-800/50 text-day-text-secondary dark:text-night-text-secondary hover:bg-white dark:hover:bg-gray-800'
