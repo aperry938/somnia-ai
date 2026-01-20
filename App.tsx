@@ -5,7 +5,7 @@ import { useAppContext } from './contexts/AppContext';
 import { useAuth } from './contexts/AuthContext';
 import { NavigationProvider } from './contexts/NavigationContext';
 import { useAlarmManager } from './hooks/useAlarmManager';
-import { initAudioContext } from './services/audioService';
+import { initAudioContext, playAlertnessBoost } from './services/audioService';
 
 import { useStreakNotification } from './hooks/useStreakNotification';
 import { useAlarmNotification } from './hooks/useAlarmNotification';
@@ -260,7 +260,7 @@ const App: React.FC = () => {
             );
         } else {
             // Initiate Morning Boost (Alpha Waves) for wakefulness + Toast
-            playMorningBoost();
+            playAlertnessBoost();
 
             showToast(
                 <div className="flex flex-col gap-1">
