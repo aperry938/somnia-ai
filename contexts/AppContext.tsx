@@ -129,6 +129,33 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         });
     }, []); // Only run on initial mount
 
+    // Listen for sync conflict resolution events and update React state
+    // This fixes the bug where localStorage gets updated but React state stays stale
+    useEffect(() => {
+        const handleSyncConflictResolved = (event: CustomEvent<{ dreamId: number; resolution: 'server' | 'client' }>) => {
+            const { dreamId, resolution } = event.detail;
+            logger.log(`[AppContext] Sync conflict resolved for dream ${dreamId} with ${resolution} version`);
+
+            // Re-read dreams from localStorage to get the updated version
+            try {
+                const storedDreams = localStorage.getItem('somnia_dreams');
+                if (storedDreams) {
+                    const parsedDreams: Dream[] = JSON.parse(storedDreams);
+                    const updatedDream = parsedDreams.find(d => d.id === dreamId);
+                    if (updatedDream) {
+                        // Update only the affected dream in state
+                        setDreams(prev => prev.map(d => d.id === dreamId ? updatedDream : d));
+                    }
+                }
+            } catch (e) {
+                logger.error('[AppContext] Failed to sync conflict-resolved dream to state:', e);
+            }
+        };
+
+        window.addEventListener('syncConflictResolved', handleSyncConflictResolved as EventListener);
+        return () => window.removeEventListener('syncConflictResolved', handleSyncConflictResolved as EventListener);
+    }, [setDreams]);
+
     // Migration: Convert legacy dreams (without sleepEntryId) to sleep entries
     useEffect(() => {
         const migrationKey = 'somnia_migration_v1_complete';
