@@ -259,7 +259,7 @@ const App: React.FC = () => {
                 "success"
             );
         } else {
-            // Initiate Morning Boost (Alpha Waves) for wakefulness + Toast
+            // Initiate Alertness Boost (Beta Waves 12Hz) for wakefulness + Toast
             playAlertnessBoost();
 
             showToast(
