@@ -327,6 +327,8 @@ export const retryFailedActions = (): void => {
 // Listen for online/offline events
 if (typeof window !== 'undefined') {
     window.addEventListener('online', () => {
-        processSyncQueue().catch(() => {});
+        // Retry failed actions first (resets FAILED → PENDING), then process all pending
+        // This ensures users don't have permanently stuck syncs after network issues
+        retryFailedActions();
     });
 }
