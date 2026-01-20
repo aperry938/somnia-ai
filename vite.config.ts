@@ -28,7 +28,28 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           manualChunks: {
-            recharts: ['recharts']
+            // Charting library (heavy, only used on InsightsPage)
+            recharts: ['recharts'],
+            // React core - small, cached well
+            'vendor-react': ['react', 'react-dom'],
+            // Animation library - large, used throughout
+            'vendor-ui': ['framer-motion'],
+            // Native mobile plugins - only needed on mobile
+            'vendor-capacitor': [
+              '@capacitor/core',
+              '@capacitor/app',
+              '@capacitor/haptics',
+              '@capacitor/share',
+              '@capacitor/filesystem',
+              '@capacitor/local-notifications',
+              '@capacitor-community/speech-recognition'
+            ],
+            // Backend/cloud services
+            'vendor-services': [
+              '@supabase/supabase-js',
+              '@google/genai',
+              '@revenuecat/purchases-capacitor'
+            ]
           }
         }
       }
