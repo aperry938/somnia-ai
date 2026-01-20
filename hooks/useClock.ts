@@ -21,11 +21,18 @@ export const useClock = () => {
 
     const hours = date.getHours();
 
-    // Simple auto theme: light during 6am-6pm, dark otherwise
-    const autoTheme: Theme = (hours >= 6 && hours < 18) ? 'day' : 'night';
+    // Auto theme with sleep mode support:
+    // - Sleep mode (amber, zero blue light): 7PM - 6AM for melatonin preservation
+    // - Day mode: 6AM - 7PM
+    const getAutoTheme = (): Theme => {
+        if (hours >= 19 || hours < 6) {
+            return 'sleep'; // Evening/night hours - minimize blue light
+        }
+        return 'day';
+    };
 
     // Use override if set, otherwise use auto theme based on time
-    const theme: Theme = themeOverride === 'auto' ? autoTheme : themeOverride;
+    const theme: Theme = themeOverride === 'auto' ? getAutoTheme() : themeOverride;
 
     const timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).replace(" AM", "").replace(" PM", "");
     const dateString = date.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
