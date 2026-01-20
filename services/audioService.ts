@@ -1826,12 +1826,15 @@ export const stopSleepSound = (fadeDuration: number = 2) => {
  * @param volume - Target volume level (0-1)
  */
 export const setLiveVolume = (volume: number) => {
+    // Soft limiter: match playSleepSound behavior (never exceed 0.9)
+    const targetVolume = Math.min(volume, 0.9);
+
     if (sleepGainNode && audioContext) {
         // Smooth transition to new volume
-        sleepGainNode.gain.setTargetAtTime(volume, audioContext.currentTime, 0.1);
+        sleepGainNode.gain.setTargetAtTime(targetVolume, audioContext.currentTime, 0.1);
     }
     // Also update psychoacoustic volume if active
-    setPsychoacousticVolume(volume);
+    setPsychoacousticVolume(targetVolume);
 };
 
 /**
