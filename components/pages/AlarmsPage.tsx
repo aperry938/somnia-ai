@@ -236,9 +236,8 @@ const DrumTimePicker: React.FC<{ initialTime: string; onChange: (time: string) =
 
         // Use double requestAnimationFrame to ensure layout is complete
         // First RAF waits for next frame, second RAF ensures paint is done
-        let rafId1: number;
         let rafId2: number | undefined;
-        rafId1 = requestAnimationFrame(() => {
+        const rafId1 = requestAnimationFrame(() => {
             rafId2 = requestAnimationFrame(scrollToInitialValues);
         });
 
