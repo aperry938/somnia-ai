@@ -136,6 +136,7 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
     const chartData = useMemo(() => {
         return dreams
             .filter(d => d.sleepQuality !== null)
+            .slice(0, 30) // Limit to last 30 entries for performance and readability
             .map(d => ({
                 date: new Date(d.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' }),
                 quality: d.sleepQuality,
