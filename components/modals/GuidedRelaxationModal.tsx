@@ -237,7 +237,7 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
                         resonanceRef.current = startResonanceBreathing(0.5);
                     } catch (error) {
                         console.error('Failed to start resonance breathing audio:', error);
-                        showToast('Audio playback failed. Session will continue without sound.', 'warning');
+                        showToast('Audio playback failed. Session will continue without sound.', 'error');
                         haptics.error();
                     }
                 }

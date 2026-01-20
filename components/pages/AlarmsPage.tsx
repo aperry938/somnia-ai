@@ -33,7 +33,7 @@ const getSoundName = (soundId: string | undefined): string => {
 
 // Constants for time picker - defined outside component to prevent re-creation
 const HOURS_12 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;
-const MINUTES_60 = Array.from({ length: 60 }, (_, i) => i) as const;
+const MINUTES_60 = Array.from({ length: 60 }, (_, i) => i);
 const PERIODS = ['AM', 'PM'] as const;
 
 // Memoized component for a single alarm item - fully clickable with dynamic styling
