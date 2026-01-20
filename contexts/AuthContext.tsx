@@ -176,6 +176,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             'somnia_offline_analysis_queue',
             'somnia_completed_sleep_sessions',
             'somnia_health_connection',
+            // Auth-related state that should be cleared on explicit signOut
+            'somnia_skipped_auth',
         ];
         userDataKeys.forEach(key => localStorage.removeItem(key));
     }, []);

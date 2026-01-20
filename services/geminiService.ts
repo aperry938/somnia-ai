@@ -265,6 +265,19 @@ export const analyzeDream = async (dreamText: string, sleepAids?: SleepAids, bio
  * User-triggered, not automatic.
  */
 export const generateImagePrompt = async (dreamText: string, style: DreamArtStyle): Promise<string> => {
+    // Check if device is online
+    checkOnline();
+
+    // Rate limit image prompt generation
+    const rateCheck = checkRateLimit('ai_imagery');
+    if (!rateCheck.allowed) {
+        throw new RateLimitError(
+            `Too many image requests. Try again in ${Math.ceil(rateCheck.resetIn / 1000)} seconds.`,
+            rateCheck.resetIn,
+            'ai_imagery'
+        );
+    }
+
     try {
         const ai = getAi();
         const styleInfo = DREAM_ART_STYLES[style];
@@ -394,8 +407,12 @@ Return ONLY the title, nothing else. No quotes, no explanation.`;
 
             const title = response.text?.trim() || 'Untitled Dream';
 
-            // Cache the result
+            // Cache the result with size limit to prevent memory issues
             dreamTitleCache.set(cacheKey, title);
+            if (dreamTitleCache.size > 200) {
+                const firstKey = dreamTitleCache.keys().next().value;
+                if (firstKey) dreamTitleCache.delete(firstKey);
+            }
 
             return title;
         } catch (error) {
@@ -420,6 +437,11 @@ Return ONLY the title, nothing else. No quotes, no explanation.`;
 export const cacheDreamTitle = (dreamText: string, title: string): void => {
     const cacheKey = getTitleCacheKey(dreamText);
     dreamTitleCache.set(cacheKey, title);
+    // Limit cache size to prevent memory issues
+    if (dreamTitleCache.size > 200) {
+        const firstKey = dreamTitleCache.keys().next().value;
+        if (firstKey) dreamTitleCache.delete(firstKey);
+    }
 };
 
 const createDreamChatSystemPrompt = (dream: Dream, personality: AnalysisPersonality = 'oneironaut') => ({
@@ -438,6 +460,19 @@ const createDreamChatSystemPrompt = (dream: Dream, personality: AnalysisPersonal
  * @returns Promise<string> - The AI's response
  */
 export const getDreamChatResponse = async (dream: Dream, history: ChatMessage[]): Promise<string> => {
+    // Check if device is online
+    checkOnline();
+
+    // Rate limit chat requests
+    const rateCheck = checkRateLimit('ai_chat');
+    if (!rateCheck.allowed) {
+        throw new RateLimitError(
+            `Too many chat requests. Try again in ${Math.ceil(rateCheck.resetIn / 1000)} seconds.`,
+            rateCheck.resetIn,
+            'ai_chat'
+        );
+    }
+
     const cleanHistory = history.map(({ id: _id, isError: _isError, ...rest }) => rest);
     const chatHistory = [createDreamChatSystemPrompt(dream), ...cleanHistory];
     try {
@@ -466,6 +501,19 @@ export const getDreamChatResponse = async (dream: Dream, history: ChatMessage[])
  * @returns Promise<DreamSynthesis> - Structured analysis of themes and patterns
  */
 export const synthesizeDreamThemes = async (dreams: Dream[]): Promise<DreamSynthesis> => {
+    // Check if device is online
+    checkOnline();
+
+    // Rate limit synthesis requests (uses ai_analysis bucket)
+    const rateCheck = checkRateLimit('ai_analysis');
+    if (!rateCheck.allowed) {
+        throw new RateLimitError(
+            `Too many analysis requests. Try again in ${Math.ceil(rateCheck.resetIn / 1000)} seconds.`,
+            rateCheck.resetIn,
+            'ai_analysis'
+        );
+    }
+
     try {
         const ai = getAi();
         const prompt = createSynthesisPrompt(dreams);
