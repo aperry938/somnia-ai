@@ -135,7 +135,7 @@ const fetchWithTimeout = async (url: string, options: RequestInit, timeoutMs: nu
 /**
  * Handle sync conflict by updating local dream with server version
  */
-const handleSyncConflict = (conflictData: ConflictResponse, action: SyncAction): void => {
+const handleSyncConflict = (conflictData: ConflictResponse, _action: SyncAction): void => {
     const { serverVersion } = conflictData;
     const dreamId = serverVersion.id;
 
@@ -161,13 +161,14 @@ const handleSyncConflict = (conflictData: ConflictResponse, action: SyncAction):
         }
 
         // Update local dream with server version
+        // Note: server returns mood as string | null, but Dream.mood is DreamMood | undefined
         const updatedDream: Dream = {
             ...existingDream,
             dreamText: serverVersion.dream_text,
             title: serverVersion.title,
             sleepQuality: serverVersion.sleep_quality,
             tags: serverVersion.tags,
-            mood: serverVersion.mood as Dream['mood'],
+            mood: serverVersion.mood ? (serverVersion.mood as Dream['mood']) : undefined,
         };
 
         dreams[dreamIndex] = updatedDream;

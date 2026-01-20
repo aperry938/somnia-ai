@@ -1,6 +1,6 @@
 import { Dream, DreamMood } from '../types';
 import { ShareCardFormat, ShareCardTheme, downloadShareCard, shareCard } from './shareCardService';
-import { getLevelTitle, getLevelFromDreams, getLevelProgress, getDreamsForLevel } from '../constants/gamification';
+import { getLevelTitle, getLevelProgress, getDreamsForLevel } from '../constants/gamification';
 import { calculateUserStats } from './userStatsService';
 import { MOOD_LABELS } from '../constants/uiIcons';
 

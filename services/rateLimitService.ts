@@ -209,18 +209,26 @@ export class RateLimitError extends Error {
 
 /**
  * Clean up expired entries from localStorage
+ * Note: We collect keys first to avoid index issues when removing during iteration
  */
 export const cleanupExpiredEntries = (): void => {
     const now = Date.now();
     try {
+        // Collect keys to remove first to avoid modifying localStorage while iterating
+        const keysToRemove: string[] = [];
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
             if (key?.startsWith(STORAGE_PREFIX)) {
-                const entry = getEntry(key.replace(STORAGE_PREFIX, ''));
+                const entryKey = key.replace(STORAGE_PREFIX, '');
+                const entry = getEntry(entryKey);
                 if (entry && now >= entry.resetTime) {
-                    removeEntry(key.replace(STORAGE_PREFIX, ''));
+                    keysToRemove.push(entryKey);
                 }
             }
+        }
+        // Now remove all expired entries
+        for (const key of keysToRemove) {
+            removeEntry(key);
         }
     } catch {
         // Ignore errors during cleanup
