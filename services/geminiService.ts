@@ -725,9 +725,10 @@ export const analyzeDreamWithMemory = async (
 
     // 3. Build context string from similar dreams with poetic synthesis instructions
     let contextString = '';
-    if (similarDreams.length > 0) {
+    const firstDream = similarDreams[0];
+    if (similarDreams.length > 0 && firstDream) {
         const daysSinceFirst = Math.round(
-            (Date.now() - new Date(similarDreams[0].timestamp).getTime()) / (1000 * 60 * 60 * 24)
+            (Date.now() - new Date(firstDream.timestamp).getTime()) / (1000 * 60 * 60 * 24)
         );
         contextString = `\n\n[DREAM MEMORY CONTEXT - DÉJÀ VU SYNTHESIS]
 The dreamer has experienced similar dreams in the past:
