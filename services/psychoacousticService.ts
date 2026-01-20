@@ -426,13 +426,16 @@ export function playCyberDawnAlarm(volume: number = 1.0): { stop: () => void } {
         if (!isPlaying || !masterGain) return;
         const now = ctx.currentTime;
         const bird = species[speciesIdx % species.length];
+        if (!bird) return; // Safety check for TypeScript
 
         const carrier = ctx.createOscillator();
         const modulator = ctx.createOscillator();
         const modGain = ctx.createGain();
         const env = ctx.createGain();
 
-        const baseFreq = bird.freqRange[0] + Math.random() * (bird.freqRange[1] - bird.freqRange[0]);
+        const freqMin = bird.freqRange[0] ?? 2000;
+        const freqMax = bird.freqRange[1] ?? 3000;
+        const baseFreq = freqMin + Math.random() * (freqMax - freqMin);
         carrier.frequency.value = baseFreq;
         modulator.frequency.value = baseFreq * bird.modRatio;
 
