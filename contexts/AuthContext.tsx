@@ -168,6 +168,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             'somnia_sync_queue',
             'somnia_global_trends_prefs',
             'somnia_global_trends_cache',
+            // Additional user data keys (added 2026-01-20)
+            'somnia_active_sleep_session',
+            'somnia_pending_sleep_data',
+            'somnia_last_seen_dream_count',
+            'somnia_earned_achievements',
+            'somnia_offline_analysis_queue',
+            'somnia_completed_sleep_sessions',
+            'somnia_health_connection',
         ];
         userDataKeys.forEach(key => localStorage.removeItem(key));
     }, []);
