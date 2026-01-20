@@ -17,6 +17,10 @@ function getContext(): AudioContext {
     if (!audioContext || audioContext.state === 'closed') {
         audioContext = new AudioContext();
     }
+    // Resume if suspended (mobile browsers require user interaction first)
+    if (audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
     return audioContext;
 }
 
