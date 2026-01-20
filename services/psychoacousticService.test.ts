@@ -104,7 +104,10 @@ describe('psychoacousticService', () => {
         vi.useFakeTimers();
     });
 
-    afterEach(() => {
+    afterEach(async () => {
+        // Clean up any playing sounds to ensure test isolation
+        const { stopPsychoacoustic } = await import('./psychoacousticService');
+        stopPsychoacoustic();
         vi.restoreAllMocks();
         vi.useRealTimers();
     });
