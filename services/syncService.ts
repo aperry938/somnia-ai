@@ -154,9 +154,15 @@ const handleSyncConflict = (conflictData: ConflictResponse, action: SyncAction):
             return;
         }
 
+        const existingDream = dreams[dreamIndex];
+        if (!existingDream) {
+            logger.warn(`[SyncService] Dream at index ${dreamIndex} is undefined`);
+            return;
+        }
+
         // Update local dream with server version
         const updatedDream: Dream = {
-            ...dreams[dreamIndex],
+            ...existingDream,
             dreamText: serverVersion.dream_text,
             title: serverVersion.title,
             sleepQuality: serverVersion.sleep_quality,

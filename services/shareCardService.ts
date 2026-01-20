@@ -89,11 +89,11 @@ function truncateText(text: string, maxLength: number): string {
 
 // Get content to display on card
 function getCardContent(dream: Dream, contentType: 'dream-excerpt' | 'ai-insight'): string {
-    if (contentType === 'ai-insight' && dream.aiAnalysis?.interpretation) {
-        // Get first sentence or first 150 chars of interpretation
-        const interpretation = dream.aiAnalysis.interpretation;
-        const firstSentence = interpretation.split('.')[0];
-        return truncateText(firstSentence || interpretation, 180);
+    if (contentType === 'ai-insight' && dream.aiAnalysis?.integration?.content) {
+        // Get first sentence or first 150 chars of integration insight
+        const insight = dream.aiAnalysis.integration.content;
+        const firstSentence = insight.split('.')[0];
+        return truncateText(firstSentence || insight, 180);
     }
     // Default to dream excerpt
     return truncateText(dream.dreamText, 200);
@@ -173,9 +173,9 @@ export async function generateShareCard(options: ShareCardOptions): Promise<stri
     if (!backgroundLoaded) {
         const gradient = ctx.createLinearGradient(0, 0, width, height);
         const colors = FALLBACK_GRADIENTS[theme];
-        gradient.addColorStop(0, colors[0]);
-        gradient.addColorStop(0.5, colors[1]);
-        gradient.addColorStop(1, colors[2]);
+        gradient.addColorStop(0, colors[0] ?? '#1a1a2e');
+        gradient.addColorStop(0.5, colors[1] ?? '#4a148c');
+        gradient.addColorStop(1, colors[2] ?? '#6a1b9a');
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, width, height);
     }

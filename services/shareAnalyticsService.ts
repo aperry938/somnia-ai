@@ -468,9 +468,9 @@ export async function generateAnalyticsCard(options: AnalyticsCardOptions): Prom
     // Draw gradient background
     const gradient = ctx.createLinearGradient(0, 0, width, height);
     const colors = ANALYTICS_GRADIENTS[theme];
-    gradient.addColorStop(0, colors[0]);
-    gradient.addColorStop(0.5, colors[1]);
-    gradient.addColorStop(1, colors[2]);
+    gradient.addColorStop(0, colors[0] ?? '#1a1a2e');
+    gradient.addColorStop(0.5, colors[1] ?? '#4a148c');
+    gradient.addColorStop(1, colors[2] ?? '#6a1b9a');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
 
