@@ -340,9 +340,11 @@ export function playCyberDawnAlarm(volume: number = 1.0): { stop: () => void } {
     let isPlaying = true;
     const t = ctx.currentTime;
 
+    if (ctx.state === 'suspended') { ctx.resume(); }
+
     // Master gain - 5x louder start, reaches MAXIMUM in 60s (alarms need to wake people!)
     masterGain = ctx.createGain();
-    masterGain.gain.setValueAtTime(0.15, t);                        // Start at 15% (audible immediately)
+    masterGain.gain.setValueAtTime(0.4, t);                        // Start at 40% (audible immediately)
     masterGain.gain.linearRampToValueAtTime(volume * 0.5, t + 10);  // 50% at 10s
     masterGain.gain.linearRampToValueAtTime(volume * 0.8, t + 30);  // 80% at 30s
     masterGain.gain.linearRampToValueAtTime(volume, t + 60);        // MAXIMUM at 60s
@@ -566,9 +568,11 @@ export function playSolarAlarm(volume: number = 1.0): { stop: () => void } {
     const t = ctx.currentTime;
     let isPlaying = true;
 
+    if (ctx.state === 'suspended') { ctx.resume(); }
+
     // Master gain - 5x louder start, reaches MAXIMUM in 60s (alarms need to wake people!)
     masterGain = ctx.createGain();
-    masterGain.gain.setValueAtTime(0.15, t);                        // Start at 15% (audible immediately)
+    masterGain.gain.setValueAtTime(0.4, t);                        // Start at 40% (audible immediately)
     masterGain.gain.linearRampToValueAtTime(volume * 0.5, t + 10);  // 50% at 10s
     masterGain.gain.linearRampToValueAtTime(volume * 0.8, t + 30);  // 80% at 30s
     masterGain.gain.linearRampToValueAtTime(volume, t + 60);        // MAXIMUM at 60s

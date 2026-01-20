@@ -53,7 +53,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
     const [mood, setMood] = useState<DreamMood | null>(null);
     const [boostActive, setBoostActive] = useState(false);
     const [boostTimer, setBoostTimer] = useState(0);
-    const [boostVolume, setBoostVolume] = useState(0.25);
+    const [boostVolume, setBoostVolume] = useState(0.5); // Boosted default volume (was 0.25)
     const savedDataRef = useRef<{ text: string; quality: number | null; mood?: DreamMood } | null>(null);
     const dreamSavedRef = useRef(false);
 

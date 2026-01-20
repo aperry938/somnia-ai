@@ -1458,10 +1458,9 @@ export const playSleepSound = async (sound: Soundscape, durationMinutes: number,
     sleepCompressor.connect(context.destination);
 
     sleepGainNode = context.createGain();
-    sleepGainNode.gain.setValueAtTime(0, context.currentTime);
-    // Soft limiter: never exceed 0.9
-    const targetVolume = Math.min(volume, 0.9);
-    sleepGainNode.gain.linearRampToValueAtTime(targetVolume, context.currentTime + 2); // Fade in to target volume
+    // Full volume range enabled - compressor provides peak protection
+    // Users control in-app volume (0-100%), device volume buttons add more headroom
+    sleepGainNode.gain.linearRampToValueAtTime(volume, context.currentTime + 2); // Fade in to target volume
     sleepGainNode.connect(sleepCompressor);
 
     if (sound.type === 'noise') {
