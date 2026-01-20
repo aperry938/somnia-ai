@@ -83,7 +83,7 @@ let cachedPremiumStatus = false;
 
 // ⚠️ TESTING MODE: Set to true to unlock all premium features for mobile testing
 // Remember to set this back to false before production release!
-const TESTING_MODE_PREMIUM = true;
+const TESTING_MODE_PREMIUM = false;
 
 /**
  * Initialize subscription service

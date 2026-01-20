@@ -105,11 +105,7 @@ describe('psychoacousticService', () => {
     });
 
     afterEach(async () => {
-<<<<<<< HEAD
-        // Clean up any playing sounds to ensure test isolation
-=======
         // Reset psychoacoustic service state to prevent test pollution
->>>>>>> origin/claude/setup-backend-agent-mesh-IRE6d
         const { stopPsychoacoustic } = await import('./psychoacousticService');
         stopPsychoacoustic();
         vi.restoreAllMocks();
