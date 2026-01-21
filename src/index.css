@@ -188,6 +188,111 @@ html.sleep .dark\:border-night-border {
     background-color: #FF6B35 !important;
 }
 
+/* Additional sleep mode indigo overrides (ISS-005) */
+.sleep .text-indigo-300 {
+    color: #FFB89A !important;
+}
+
+.sleep .text-indigo-200 {
+    color: #FFCFB8 !important;
+}
+
+.sleep .text-indigo-100 {
+    color: #FFE4D9 !important;
+}
+
+.sleep .bg-indigo-100 {
+    background-color: rgba(255, 107, 53, 0.15) !important;
+}
+
+.sleep .bg-indigo-50 {
+    background-color: rgba(255, 107, 53, 0.1) !important;
+}
+
+.sleep .bg-indigo-700 {
+    background-color: #CC4420 !important;
+}
+
+.sleep .bg-indigo-900 {
+    background-color: #8B2E15 !important;
+}
+
+.sleep .bg-indigo-900\/20,
+.sleep .dark\:bg-indigo-900\/20 {
+    background-color: rgba(139, 46, 21, 0.2) !important;
+}
+
+.sleep .bg-indigo-900\/50,
+.sleep .dark\:bg-indigo-900\/50 {
+    background-color: rgba(139, 46, 21, 0.5) !important;
+}
+
+.sleep .bg-indigo-500\/20 {
+    background-color: rgba(255, 107, 53, 0.2) !important;
+}
+
+.sleep .hover\:bg-indigo-700:hover {
+    background-color: #CC4420 !important;
+}
+
+.sleep .border-indigo-200 {
+    border-color: #FFCFB8 !important;
+}
+
+.sleep .border-indigo-400 {
+    border-color: #FF8C5A !important;
+}
+
+.sleep .border-indigo-800 {
+    border-color: #993318 !important;
+}
+
+/* Sleep mode purple to amber overrides */
+.sleep .text-purple-300 {
+    color: #FFB89A !important;
+}
+
+.sleep .text-purple-400 {
+    color: #FF8C5A !important;
+}
+
+.sleep .text-purple-500 {
+    color: #FF6B35 !important;
+}
+
+.sleep .bg-purple-500 {
+    background-color: #FF6B35 !important;
+}
+
+.sleep .bg-purple-500\/20 {
+    background-color: rgba(255, 107, 53, 0.2) !important;
+}
+
+.sleep .bg-purple-900\/50 {
+    background-color: rgba(139, 46, 21, 0.5) !important;
+}
+
+.sleep .border-purple-500 {
+    border-color: #FF6B35 !important;
+}
+
+/* Sleep mode gradient overrides for indigo/purple */
+.sleep .from-indigo-500\/20 {
+    --tw-gradient-from: rgba(255, 107, 53, 0.2) !important;
+}
+
+.sleep .to-purple-500\/20 {
+    --tw-gradient-to: rgba(255, 107, 53, 0.2) !important;
+}
+
+.sleep .from-indigo-900\/50 {
+    --tw-gradient-from: rgba(139, 46, 21, 0.5) !important;
+}
+
+.sleep .to-purple-900\/50 {
+    --tw-gradient-to: rgba(139, 46, 21, 0.5) !important;
+}
+
 /* Skip link for screen readers */
 .skip-link {
     position: absolute;

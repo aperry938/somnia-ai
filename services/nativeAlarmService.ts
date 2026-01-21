@@ -320,7 +320,7 @@ export async function stopAlarm(): Promise<boolean> {
 /**
  * Snooze currently playing alarm
  */
-export async function snoozeAlarm(id: number | string, minutes: number = 9): Promise<boolean> {
+export async function snoozeAlarm(id: number | string, minutes: number = 5): Promise<boolean> {
     if (!isNative) return false;
 
     try {
