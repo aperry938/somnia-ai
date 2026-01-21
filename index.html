@@ -24,19 +24,363 @@
     <link rel="manifest" href="/manifest.json">
     <title>Somnia.ai | Intelligent Alarm & Dream Journal</title>
 
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&family=Quattrocento:wght@400;700&display=swap"
         rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Quattrocento', 'serif'],
+                    },
+                    colors: {
+                        'day-bg-start': '#F0F4F8',
+                        'day-bg-end': '#D9E2EC',
+                        'day-text-primary': '#1E293B',
+                        'day-text-secondary': '#475569',
+                        'day-accent': '#6366F1',
+                        'day-card-bg': 'rgba(255, 255, 255, 0.65)',
+                        'day-border': 'rgba(0, 0, 0, 0.08)',
+                        'night-bg-start': '#0F172A',
+                        'night-bg-end': '#1E293B',
+                        'night-text-primary': '#E2E8F0',
+                        'night-text-secondary': '#94A3B8',
+                        'night-accent': '#818CF8', // Indigo - matches day mode aesthetic, Sleep Mode uses amber for blue light reduction
+                        'night-card-bg': 'rgba(30, 41, 59, 0.65)',
+                        'night-border': 'rgba(255, 255, 255, 0.1)',
+                        // Sleep Mode: Zero blue light, warm amber tones for melatonin preservation
+                        'sleep-bg-start': '#1A0A00',
+                        'sleep-bg-end': '#2D1810',
+                        'sleep-text-primary': '#FFD4B8',
+                        'sleep-text-secondary': '#C4A68A',
+                        'sleep-accent': '#FF6B35',
+                        'sleep-card-bg': 'rgba(45, 24, 16, 0.65)',
+                        'sleep-border': 'rgba(255, 107, 53, 0.2)',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        inhale: {
+                            'from': { transform: 'scale(0.8)', opacity: '0.7' },
+                            'to': { transform: 'scale(1.6)', opacity: '1' }
+                        },
+                        exhale: {
+                            'from': { transform: 'scale(1.6)', opacity: '1' },
+                            'to': { transform: 'scale(0.8)', opacity: '0.7' }
+                        },
+                        'box-breathing-path': {
+                            '0%': { strokeDashoffset: '480' },
+                            '25%': { strokeDashoffset: '360' },
+                            '50%': { strokeDashoffset: '240' },
+                            '75%': { strokeDashoffset: '120' },
+                            '100%': { strokeDashoffset: '0' }
+                        },
+                        'soundwave-1': {
+                            '0%, 100%': { height: '40%' },
+                            '50%': { height: '100%' }
+                        },
+                        'soundwave-2': {
+                            '0%, 100%': { height: '70%' },
+                            '50%': { height: '30%' }
+                        },
+                        'soundwave-3': {
+                            '0%, 100%': { height: '55%' },
+                            '50%': { height: '85%' }
+                        },
+                        'pulse-slow': {
+                            '0%, 100%': { opacity: '1' },
+                            '50%': { opacity: '0.7' }
+                        }
+                    },
+                    animation: {
+                        fadeIn: 'fadeIn 0.5s ease-in-out',
+                        'inhale-4s': 'inhale 4s linear forwards',
+                        'inhale-5s': 'inhale 5.5s linear forwards',
+                        'exhale-8s': 'exhale 8s linear forwards',
+                        'exhale-4s': 'exhale 4s linear forwards',
+                        'exhale-5s': 'exhale 5.5s linear forwards',
+                        'box-breathing-16s': 'box-breathing-path 16s linear infinite',
+                        'soundwave-1': 'soundwave-1 0.8s ease-in-out infinite',
+                        'soundwave-2': 'soundwave-2 0.6s ease-in-out infinite',
+                        'soundwave-3': 'soundwave-3 0.9s ease-in-out infinite',
+                        'pulse-slow': 'pulse-slow 2s ease-in-out infinite'
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        /* Minimal critical CSS for initial render - full styles loaded via Tailwind build */
+        /* Circadian Deep Night - even darker than regular night */
+        html[data-circadian-phase="night"].dark {
+            --night-bg-start: #050810;
+            --night-bg-end: #0a0f1a;
+            --night-card-bg: rgba(10, 15, 30, 0.8);
+        }
+
+        /* Circadian Dusk/Dawn - uses warmer tones */
+        html[data-circadian-phase="dusk"].dark,
+        html[data-circadian-phase="dawn"].dark {
+            --night-bg-start: #0F172A;
+            --night-bg-end: #1E293B;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: rgba(100, 116, 139, 0.3);
+            border-radius: 6px;
+        }
+
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: rgba(148, 163, 184, 0.3);
+        }
+
+        /* Focus-visible for keyboard navigation accessibility */
+        :focus-visible {
+            outline: 2px solid #6366F1;
+            outline-offset: 2px;
+        }
+
+        .dark :focus-visible {
+            outline-color: #818CF8;
+        }
+
+        /* Sleep Mode: Zero blue light for melatonin preservation */
+        .sleep :focus-visible {
+            outline-color: #FF6B35;
+        }
+
+        .sleep .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 107, 53, 0.3);
+        }
+
+        /* Sleep Mode Color Overrides - replaces all blue with warm amber */
+        .sleep {
+            --tw-gradient-from: #1A0A00 !important;
+            --tw-gradient-to: #2D1810 !important;
+        }
+
+        /* Override night colors with sleep colors when .sleep is active */
+        .sleep .bg-night-accent {
+            background-color: #FF6B35 !important;
+        }
+
+        .sleep .text-night-accent {
+            color: #FF6B35 !important;
+        }
+
+        .sleep .border-night-accent {
+            border-color: #FF6B35 !important;
+        }
+
+        .sleep .text-night-text-primary {
+            color: #FFD4B8 !important;
+        }
+
+        .sleep .text-night-text-secondary {
+            color: #C4A68A !important;
+        }
+
+        .sleep .bg-night-card-bg {
+            background-color: rgba(45, 24, 16, 0.65) !important;
+        }
+
+        .sleep .border-night-border {
+            border-color: rgba(255, 107, 53, 0.2) !important;
+        }
+
+        .sleep .from-night-bg-start {
+            --tw-gradient-from: #1A0A00 !important;
+        }
+
+        .sleep .to-night-bg-end {
+            --tw-gradient-to: #2D1810 !important;
+        }
+
+        /* Override indigo accents (common across app) */
+        .sleep .bg-indigo-500,
+        .sleep .bg-indigo-500\/20 {
+            background-color: #FF6B35 !important;
+        }
+
+        .sleep .bg-indigo-600 {
+            background-color: #E55A2B !important;
+        }
+
+        .sleep .text-indigo-500 {
+            color: #FF6B35 !important;
+        }
+
+        .sleep .text-indigo-400 {
+            color: #FF8C5A !important;
+        }
+
+        .sleep .border-indigo-500 {
+            border-color: #FF6B35 !important;
+        }
+
+        .sleep .ring-indigo-500 {
+            --tw-ring-color: #FF6B35 !important;
+        }
+
+        .sleep .accent-night-accent {
+            accent-color: #FF6B35 !important;
+        }
+
+        /* Sleep mode gradient backgrounds */
+        html.sleep.dark .from-night-bg-start {
+            --tw-gradient-from: #1A0A00 !important;
+        }
+
+        html.sleep.dark .to-night-bg-end {
+            --tw-gradient-to: #2D1810 !important;
+        }
+
+        html.sleep .dark\:from-night-bg-start {
+            --tw-gradient-from: #1A0A00 !important;
+        }
+
+        html.sleep .dark\:to-night-bg-end {
+            --tw-gradient-to: #2D1810 !important;
+        }
+
+        html.sleep .dark\:bg-night-accent {
+            background-color: #FF6B35 !important;
+        }
+
+        html.sleep .dark\:text-night-accent {
+            color: #FF6B35 !important;
+        }
+
+        html.sleep .dark\:text-night-text-primary {
+            color: #FFD4B8 !important;
+        }
+
+        html.sleep .dark\:text-night-text-secondary {
+            color: #C4A68A !important;
+        }
+
+        html.sleep .dark\:bg-night-card-bg {
+            background-color: rgba(45, 24, 16, 0.65) !important;
+        }
+
+        html.sleep .dark\:border-night-border {
+            border-color: rgba(255, 107, 53, 0.2) !important;
+        }
+
+        /* Sleep mode toggle switch overrides (hardcoded colors in AlarmsPage) */
+        .sleep .toggle-checkbox:checked {
+            border-color: #FF6B35 !important;
+        }
+
+        .sleep .toggle-checkbox:checked+.toggle-label {
+            background-color: #FF6B35 !important;
+        }
+
+        /* Sleep mode: Override any remaining blue/indigo elements */
+        .sleep .shadow-indigo-500\/30 {
+            --tw-shadow-color: rgba(255, 107, 53, 0.3) !important;
+        }
+
+        .sleep .hover\:bg-indigo-600:hover {
+            background-color: #E55A2B !important;
+        }
+
+        .sleep .dark\:hover\:bg-indigo-500:hover {
+            background-color: #FF6B35 !important;
+        }
+
+        /* Skip link for screen readers */
+        .skip-link {
+            position: absolute;
+            left: -9999px;
+            top: 0;
+            padding: 0.5rem 1rem;
+            background: #6366F1;
+            color: white;
+            z-index: 100;
+        }
+
+        .skip-link:focus {
+            left: 0;
+        }
+
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Safe area insets for notched devices */
         :root {
             --safe-area-inset-top: env(safe-area-inset-top, 0px);
             --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-area-inset-left: env(safe-area-inset-left, 0px);
+            --safe-area-inset-right: env(safe-area-inset-right, 0px);
         }
-        .safe-area-top { padding-top: var(--safe-area-inset-top); }
-        html, body { overscroll-behavior: none; }
+
+        .safe-area-top {
+            padding-top: var(--safe-area-inset-top);
+        }
+
+        .safe-area-bottom {
+            padding-bottom: var(--safe-area-inset-bottom);
+        }
+
+        /* Respect user's reduced motion preference */
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+
+        /* Mobile touch optimization */
+        button,
+        a,
+        [role="button"] {
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        /* Prevent iOS bounce/rubber-band scrolling issues */
+        html, body {
+            overscroll-behavior: none;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Smooth scroll for main content areas */
+        .overflow-y-auto {
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior-y: contain;
+        }
+
+        /* Prevent body scroll when modal is open */
+        body.modal-open {
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+        }
     </style>
 </head>
 
