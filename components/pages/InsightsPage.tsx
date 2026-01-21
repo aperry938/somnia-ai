@@ -107,27 +107,59 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
         return Math.max(0, Math.ceil((WEEK_MS - elapsed) / (24 * 60 * 60 * 1000)));
     };
 
-    // Swipe handling
+    // Swipe handling with improved gesture detection
     const containerRef = useRef<HTMLDivElement>(null);
     const touchStartX = useRef(0);
+    const touchStartY = useRef(0);
     const touchEndX = useRef(0);
+    const touchEndY = useRef(0);
+    const touchStartTime = useRef(0);
+    const isTapOnInteractive = useRef(false);
 
     const handleTouchStart = (e: React.TouchEvent) => {
         touchStartX.current = e.touches[0]?.clientX ?? 0;
+        touchStartY.current = e.touches[0]?.clientY ?? 0;
+        touchStartTime.current = Date.now();
+
+        // Check if touch started on an interactive element (button, input, etc.)
+        const target = e.target as HTMLElement;
+        isTapOnInteractive.current = !!(
+            target.closest('button') ||
+            target.closest('input') ||
+            target.closest('a') ||
+            target.closest('[role="button"]') ||
+            target.closest('[data-no-swipe]')
+        );
     };
 
     const handleTouchMove = (e: React.TouchEvent) => {
         touchEndX.current = e.touches[0]?.clientX ?? 0;
+        touchEndY.current = e.touches[0]?.clientY ?? 0;
     };
 
     const handleTouchEnd = () => {
-        const diff = touchStartX.current - touchEndX.current;
+        // Don't process swipe if touch was on an interactive element
+        if (isTapOnInteractive.current) {
+            return;
+        }
+
+        const diffX = touchStartX.current - touchEndX.current;
+        const diffY = Math.abs(touchStartY.current - touchEndY.current);
+        const touchDuration = Date.now() - touchStartTime.current;
         const threshold = 50;
 
-        if (Math.abs(diff) > threshold) {
-            if (diff > 0 && activeTab === 'dreams') {
+        // Only trigger swipe if:
+        // 1. Horizontal movement exceeds threshold
+        // 2. Horizontal movement is greater than vertical (intentional horizontal swipe)
+        // 3. Touch duration is > 100ms (not a quick tap)
+        // 4. Not a tap on interactive element
+        const isHorizontalSwipe = Math.abs(diffX) > diffY;
+        const isIntentionalSwipe = touchDuration > 100;
+
+        if (Math.abs(diffX) > threshold && isHorizontalSwipe && isIntentionalSwipe) {
+            if (diffX > 0 && activeTab === 'dreams') {
                 setActiveTab('analysis');
-            } else if (diff < 0 && activeTab === 'analysis') {
+            } else if (diffX < 0 && activeTab === 'analysis') {
                 setActiveTab('dreams');
             }
         }
