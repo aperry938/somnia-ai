@@ -19,6 +19,8 @@ import {
     isAuthConfigured,
 } from '../services/authService';
 import { verifySubscription, clearSubscriptionCache, linkUser, unlinkUser } from '../services/secureSubscriptionService';
+import { abortSync } from '../services/syncService';
+import { abortOfflineQueueProcessing } from '../services/offlineQueueService';
 
 interface AuthContextType {
     user: User | null;
@@ -134,6 +136,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, []);
 
     const signOut = useCallback(async () => {
+        // Abort any in-flight sync and offline queue operations BEFORE clearing data
+        // This prevents cross-user data syncing/processing (ISS-006, ISS-007)
+        abortSync();
+        abortOfflineQueueProcessing();
+
         await authSignOut();
         setUser(null);
         setSession(null);

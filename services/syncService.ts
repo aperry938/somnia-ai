@@ -12,6 +12,22 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 // Lock to prevent concurrent queue processing
 let isProcessingQueue = false;
 
+// Abort controller for canceling in-flight sync operations on logout
+let syncAbortController: AbortController | null = null;
+
+/**
+ * Abort all in-flight sync operations.
+ * Call this on logout to prevent cross-user data syncing.
+ */
+export const abortSync = (): void => {
+    if (syncAbortController) {
+        logger.log('[SyncService] Aborting all in-flight sync operations');
+        syncAbortController.abort();
+        syncAbortController = null;
+    }
+    isProcessingQueue = false;
+};
+
 // Conflict response from server
 interface ConflictResponse {
     conflict: true;
@@ -127,11 +143,21 @@ export const enqueueAction = (type: SyncActionType, payload: unknown) => {
 };
 
 /**
- * Fetch with timeout to prevent hanging on CORS/network errors
+ * Fetch with timeout to prevent hanging on CORS/network errors.
+ * Also respects the global sync abort controller for logout handling.
  */
 const fetchWithTimeout = async (url: string, options: RequestInit, timeoutMs: number): Promise<Response> => {
+    // Check if sync was aborted before starting
+    if (syncAbortController?.signal.aborted) {
+        throw new Error('Sync aborted');
+    }
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    // Also abort if global sync abort is triggered
+    const abortHandler = () => controller.abort();
+    syncAbortController?.signal.addEventListener('abort', abortHandler);
 
     try {
         const response = await fetch(url, {
@@ -141,6 +167,7 @@ const fetchWithTimeout = async (url: string, options: RequestInit, timeoutMs: nu
         return response;
     } finally {
         clearTimeout(timeoutId);
+        syncAbortController?.signal.removeEventListener('abort', abortHandler);
     }
 };
 
@@ -251,7 +278,14 @@ const syncActionToBackend = async (action: SyncAction, token: string | null): Pr
         // Re-throw with more context for debugging
         if (error instanceof Error) {
             if (error.name === 'AbortError') {
+                // Check if this was a logout abort vs. timeout
+                if (syncAbortController?.signal.aborted) {
+                    throw new Error('Sync aborted due to logout');
+                }
                 throw new Error(`Sync timed out after ${FETCH_TIMEOUT_MS}ms`);
+            }
+            if (error.message === 'Sync aborted') {
+                throw error; // Re-throw abort errors as-is
             }
             // Network/CORS errors will be TypeErrors with "Failed to fetch"
             if (error.message.includes('Failed to fetch')) {
@@ -281,6 +315,8 @@ export const processSyncQueue = async (): Promise<{ success: number; failed: num
         return { success: 0, failed: 0, conflictsResolved: 0 };
     }
 
+    // Create abort controller for this sync session
+    syncAbortController = new AbortController();
     isProcessingQueue = true;
 
     try {
@@ -289,6 +325,11 @@ export const processSyncQueue = async (): Promise<{ success: number; failed: num
         let conflictsResolved = 0;
 
         const updatedQueue = await Promise.all(queue.map(async (action) => {
+            // Check if sync was aborted (user logged out)
+            if (syncAbortController?.signal.aborted) {
+                return action; // Return unchanged - don't process
+            }
+
             if (action.status !== 'PENDING' || action.retryCount >= MAX_RETRIES) {
                 // Mark as failed if max retries exceeded
                 if (action.retryCount >= MAX_RETRIES && action.status === 'PENDING') {
@@ -307,11 +348,22 @@ export const processSyncQueue = async (): Promise<{ success: number; failed: num
                 successCount++;
                 return { ...action, status: 'SYNCED' as const };
             } catch (e) {
+                // If aborted due to logout, don't retry or log as error
+                if (e instanceof Error && (e.message.includes('aborted') || e.message.includes('Sync aborted'))) {
+                    logger.log(`[SyncService] Sync aborted for action ${action.id}`);
+                    return action; // Return unchanged
+                }
                 logger.error(`[SyncService] Failed to sync action ${action.id}:`, e);
                 failCount++;
                 return { ...action, retryCount: action.retryCount + 1 };
             }
         }));
+
+        // Don't save queue if sync was aborted (user logged out - queue cleared by signOut)
+        if (syncAbortController?.signal.aborted) {
+            logger.log('[SyncService] Sync aborted, skipping queue save');
+            return { success: successCount, failed: failCount, conflictsResolved };
+        }
 
         // Cleanup: Keep last 100 synced items, remove older ones
         const synced = updatedQueue.filter(a => a.status === 'SYNCED');
@@ -322,6 +374,7 @@ export const processSyncQueue = async (): Promise<{ success: number; failed: num
 
         return { success: successCount, failed: failCount, conflictsResolved };
     } finally {
+        syncAbortController = null;
         isProcessingQueue = false;
     }
 };

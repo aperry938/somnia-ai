@@ -28,7 +28,19 @@ const QUEUE_UPDATED_EVENT = 'offlineQueueUpdated';
 
 // Processing state
 let isProcessing = false;
+let shouldAbortProcessing = false;
 let processingCallback: ((dreamId: number, dreamText: string) => Promise<void>) | null = null;
+
+/**
+ * Abort any in-progress queue processing.
+ * Call this on logout to prevent cross-user data processing (ISS-007).
+ */
+export function abortOfflineQueueProcessing(): void {
+    if (isProcessing) {
+        logger.log('[OfflineQueue] Aborting queue processing due to logout');
+        shouldAbortProcessing = true;
+    }
+}
 
 /**
  * Get the current queue from localStorage
@@ -119,9 +131,16 @@ async function processQueue(): Promise<void> {
     if (queue.length === 0) return;
 
     isProcessing = true;
+    shouldAbortProcessing = false; // Reset abort flag
     logger.info(`[OfflineQueue] Processing ${queue.length} queued analyses`);
 
     for (const item of queue) {
+        // Check if processing was aborted (user logged out)
+        if (shouldAbortProcessing) {
+            logger.info('[OfflineQueue] Processing aborted by logout');
+            break;
+        }
+
         // Double-check we're still online
         if (!navigator.onLine) {
             logger.info('[OfflineQueue] Lost connection, pausing queue processing');
@@ -130,9 +149,22 @@ async function processQueue(): Promise<void> {
 
         try {
             await processingCallback(item.dreamId, item.dreamText);
+
+            // Check abort flag again after async operation
+            if (shouldAbortProcessing) {
+                logger.info('[OfflineQueue] Processing aborted after analysis');
+                break;
+            }
+
             removeFromQueue(item.dreamId);
             logger.info('[OfflineQueue] Successfully processed dream:', item.dreamId);
         } catch (error) {
+            // Don't update queue if aborted
+            if (shouldAbortProcessing) {
+                logger.info('[OfflineQueue] Processing aborted during error handling');
+                break;
+            }
+
             logger.error('[OfflineQueue] Failed to process dream:', item.dreamId, error);
 
             // Update retry count
@@ -157,6 +189,7 @@ async function processQueue(): Promise<void> {
     }
 
     isProcessing = false;
+    shouldAbortProcessing = false;
 }
 
 /**
