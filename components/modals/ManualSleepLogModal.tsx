@@ -123,7 +123,7 @@ export const ManualSleepLogModal: React.FC<ManualSleepLogModalProps> = ({ onComp
     };
 
     return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 z-50" role="dialog" aria-modal="true" aria-label="Log yesterday's sleep activities">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center px-4 pt-4 pb-[calc(6.5rem+var(--safe-area-inset-bottom))] sm:pb-4 z-50" role="dialog" aria-modal="true" aria-label="Log yesterday's sleep activities">
             <div className="w-full max-w-md bg-day-card-bg dark:bg-night-card-bg rounded-2xl border border-day-border dark:border-night-border overflow-hidden shadow-xl max-h-[90vh] flex flex-col">
                 {/* Header */}
                 <div className="p-5 border-b border-day-border dark:border-night-border">

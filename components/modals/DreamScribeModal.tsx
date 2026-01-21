@@ -176,7 +176,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
     if (step === 'record') {
         return (
             <motion.div
-                className="fixed inset-0 bg-gradient-to-b from-indigo-900/95 to-purple-900/95 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 z-50"
+                className="fixed inset-0 bg-gradient-to-b from-indigo-900/95 to-purple-900/95 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 pb-[calc(6.5rem+var(--safe-area-inset-bottom))] sm:pb-4 z-50"
                 onClick={canCloseViaBackdrop ? onClose : undefined}
                 role="dialog"
                 aria-modal="true"
@@ -298,7 +298,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
     // Clear layout: Good Morning header, Wake Up Boost card, Start My Day button
     return (
         <motion.div
-            className="fixed inset-0 bg-gradient-to-b from-indigo-900/95 to-purple-900/95 backdrop-blur-md flex flex-col items-center justify-center p-4 z-50"
+            className="fixed inset-0 bg-gradient-to-b from-indigo-900/95 to-purple-900/95 backdrop-blur-md flex flex-col items-center justify-center px-4 pt-4 pb-[calc(6.5rem+var(--safe-area-inset-bottom))] sm:pb-4 z-50"
             role="dialog"
             aria-modal="true"
             aria-labelledby="boost-title"

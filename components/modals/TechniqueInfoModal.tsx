@@ -68,14 +68,14 @@ export const TechniqueInfoModal: React.FC<TechniqueInfoModalProps> = ({ techniqu
 
     return (
         <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4 pt-4 pb-[calc(6.5rem+var(--safe-area-inset-bottom))] sm:pb-4 z-50"
             onClick={onClose}
             role="dialog"
             aria-modal="true"
             aria-labelledby="technique-title"
         >
             <div
-                className="w-full max-w-md bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl shadow-2xl overflow-hidden animate-fadeIn"
+                className="w-full max-w-md max-h-[calc(100%-2rem)] bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl shadow-2xl overflow-hidden animate-fadeIn flex flex-col"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
@@ -92,7 +92,7 @@ export const TechniqueInfoModal: React.FC<TechniqueInfoModalProps> = ({ techniqu
                 </div>
 
                 {/* Content */}
-                <div className="p-5 max-h-[60vh] overflow-y-auto">
+                <div className="p-5 overflow-y-auto flex-1">
                     {/* Steps */}
                     <div className="mb-5">
                         <h3 className="font-medium text-sm text-day-accent dark:text-night-accent mb-3 flex items-center gap-2">
@@ -145,7 +145,7 @@ export const TechniqueInfoModal: React.FC<TechniqueInfoModalProps> = ({ techniqu
                 </div>
 
                 {/* Footer */}
-                <div className="p-4 border-t border-day-border dark:border-night-border">
+                <div className="p-4 border-t border-day-border dark:border-night-border flex-shrink-0">
                     <button
                         onClick={onClose}
                         aria-label="Close technique info"

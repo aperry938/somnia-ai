@@ -26,14 +26,14 @@ export const RealityCheckInfoModal: React.FC<RealityCheckInfoModalProps> = ({ is
 
     return (
         <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4 pt-4 pb-[calc(6.5rem+var(--safe-area-inset-bottom))] sm:pb-4 z-50"
             onClick={onClose}
             role="dialog"
             aria-modal="true"
             aria-labelledby="reality-check-title"
         >
             <div
-                className="w-full max-w-md bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl shadow-2xl overflow-hidden animate-fadeIn"
+                className="w-full max-w-md max-h-[calc(100%-2rem)] bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl shadow-2xl overflow-hidden animate-fadeIn flex flex-col"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}

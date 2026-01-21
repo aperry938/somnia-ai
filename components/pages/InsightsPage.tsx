@@ -602,7 +602,7 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
 
             {/* Sync Wearable Modal */}
             {isSyncOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn" onClick={() => setIsSyncOpen(false)} role="dialog" aria-modal="true" aria-labelledby="sync-modal-title">
+                <div className="fixed inset-0 z-50 flex items-center justify-center px-4 pt-4 pb-[calc(6.5rem+var(--safe-area-inset-bottom))] sm:pb-4 bg-black/60 backdrop-blur-sm animate-fadeIn" onClick={() => setIsSyncOpen(false)} role="dialog" aria-modal="true" aria-labelledby="sync-modal-title">
                     <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 max-w-sm w-full shadow-2xl text-center" onClick={e => e.stopPropagation()}>
                         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 mb-4" aria-hidden="true">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">

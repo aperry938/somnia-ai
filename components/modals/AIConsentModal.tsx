@@ -39,7 +39,7 @@ export const AIConsentModal: React.FC<AIConsentModalProps> = ({ onConsent, onDec
 
     return (
         <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4 pt-4 pb-[calc(6.5rem+var(--safe-area-inset-bottom))] sm:pb-4 z-50"
             onClick={onDecline}
             role="dialog"
             aria-modal="true"
