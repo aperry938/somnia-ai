@@ -260,7 +260,7 @@ describe('Sleep Session Flow Integration', () => {
                     snoozeCount: 2,
                     timeToSilence: 30,
                     alertnessBoostUsed: true,
-                    alarmType: 'standard',
+                    alarmType: 'manual',
                 });
             });
 
