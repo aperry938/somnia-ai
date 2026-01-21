@@ -994,7 +994,7 @@ export const AlarmsPage: React.FC<{ timeString: string, dateString: string, onNa
 
     return (
         <>
-            <div className="flex flex-col h-full">
+            <div className="flex flex-col min-h-full">
                 <header className="text-center mb-6">
                     <h1 className="font-serif text-6xl md:text-8xl font-bold tracking-tight">{timeString}</h1>
                     <p className="text-md mt-2 tracking-wide">{dateString}</p>
