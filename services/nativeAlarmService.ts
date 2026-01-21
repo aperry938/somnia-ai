@@ -157,12 +157,14 @@ export async function scheduleAlarm(
                     title: label || 'Alarm',
                     body: 'Time to wake up!',
                     schedule: { at: scheduleDate },
-                    sound: 'alarm.wav',
+                    // ISS-002/003: Don't set iOS notification sound - JS audioService plays
+                    // the correct user-selected sound when AlarmRingModal opens.
+                    // This prevents dual audio (native + JS) and ensures correct sound.
                     actionTypeId: 'ALARM_ACTIONS',
                     extra: {
                         type: 'alarm',
                         alarmId: alarmId,
-                        soundId,
+                        soundId, // Pass soundId to JS layer for playback
                     },
                 }],
             });
@@ -224,12 +226,13 @@ export async function scheduleRecurringAlarm(
                                 minute: minutes,
                             },
                         },
-                        sound: 'alarm.wav',
+                        // ISS-002/003: No sound here - JS audioService handles playback
                         actionTypeId: 'ALARM_ACTIONS',
                         extra: {
                             type: 'recurring_alarm',
                             alarmId: String(id),
                             dayOfWeek: day,
+                            soundId, // Pass soundId to JS layer for playback
                         },
                     }],
                 });
@@ -335,7 +338,12 @@ export async function snoozeAlarm(id: number | string, minutes: number = 5): Pro
                     title: 'Snooze',
                     body: 'Time to wake up!',
                     schedule: { at: snoozeTime },
-                    sound: 'alarm.wav',
+                    // ISS-002/003: No sound - JS audioService handles playback
+                    actionTypeId: 'ALARM_ACTIONS',
+                    extra: {
+                        type: 'alarm',
+                        alarmId: String(id),
+                    },
                 }],
             });
         }
@@ -422,7 +430,7 @@ export async function registerAlarmActions(): Promise<void> {
                     actions: [
                         {
                             id: 'snooze',
-                            title: 'Snooze (9 min)',
+                            title: 'Snooze (5 min)',
                         },
                         {
                             id: 'dismiss',
