@@ -12,6 +12,7 @@ const NavigationContext = createContext<NavigationContextType>({
     setNavigateTo: () => { },
 });
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useNavigation = () => useContext(NavigationContext);
 
 interface NavigationProviderProps {
@@ -32,6 +33,7 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
 /**
  * Hook to get the Terms navigation callback for use in PremiumBadge/Gate components
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export const useTermsNavigation = (): (() => void) | undefined => {
     const { navigateTo } = useNavigation();
     if (!navigateTo) return undefined;

@@ -8,10 +8,12 @@ interface AIConsentModalProps {
 
 const CONSENT_STORAGE_KEY = 'somnia_ai_consent_given';
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const hasAIConsent = (): boolean => {
     return localStorage.getItem(CONSENT_STORAGE_KEY) === 'true';
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const setAIConsent = (consented: boolean): void => {
     if (consented) {
         localStorage.setItem(CONSENT_STORAGE_KEY, 'true');

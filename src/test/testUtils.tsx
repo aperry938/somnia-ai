@@ -53,6 +53,7 @@ interface AllProvidersProps {
     children: React.ReactNode;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 const AllProviders: React.FC<AllProvidersProps> = ({ children }) => {
     return (
         <AppProvider>
@@ -70,6 +71,7 @@ const customRender = (
 ) => render(ui, { wrapper: AllProviders, ...options });
 
 // Re-export everything from testing-library
+// eslint-disable-next-line react-refresh/only-export-components
 export * from '@testing-library/react';
 
 // Override render with custom render

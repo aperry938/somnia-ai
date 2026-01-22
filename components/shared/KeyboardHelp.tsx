@@ -49,6 +49,7 @@ export const KeyboardShortcutsHelp: React.FC<{ isOpen: boolean; onClose: () => v
 };
 
 // Custom hook for keyboard shortcuts help
+// eslint-disable-next-line react-refresh/only-export-components
 export const useKeyboardHelp = () => {
     const [isHelpOpen, setIsHelpOpen] = useState(false);
 

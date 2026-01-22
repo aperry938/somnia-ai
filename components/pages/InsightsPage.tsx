@@ -23,7 +23,6 @@ import haptics from '../../services/hapticsService';
 
 type InsightTab = 'dreams' | 'analysis';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const _AnalysisCard: React.FC<{ title: string; description: string; buttonText: string; onAnalyze: () => void; isLoading: boolean; children: React.ReactNode; }> =
     ({ title, description, buttonText: _buttonText, onAnalyze: _onAnalyze, isLoading: _isLoading, children }) => (
         <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">

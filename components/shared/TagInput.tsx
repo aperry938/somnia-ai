@@ -107,6 +107,7 @@ export const TagInput: React.FC<TagInputProps> = ({
 };
 
 // Predefined common dream tags for suggestions
+// eslint-disable-next-line react-refresh/only-export-components
 export const COMMON_DREAM_TAGS = [
     'flying', 'falling', 'chase', 'water', 'lucid',
     'nightmare', 'recurring', 'prophetic', 'vivid',

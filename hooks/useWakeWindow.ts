@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { logger } from '../services/logger';
 
 // iOS 13+ DeviceMotionEvent extension for permission API
-interface DeviceMotionEventIOS extends DeviceMotionEvent {
+interface _DeviceMotionEventIOS extends DeviceMotionEvent {
     requestPermission?: () => Promise<'granted' | 'denied'>;
 }
 
