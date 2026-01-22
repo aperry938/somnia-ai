@@ -121,6 +121,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [sleepEntries, setSleepEntries] = useLocalStorage<SleepEntry[]>('somnia_sleep_entries', []);
 
     // Pre-populate title cache with existing dream titles to prevent unnecessary API calls
+    // Mount-only effect: We intentionally read `dreams` only on initial load to seed the title cache.
+    // Re-running on dreams changes would cause unnecessary cache operations since new dreams don't
+    // have titles yet, and existing dreams are already cached.
     useEffect(() => {
         dreams.forEach(dream => {
             if (dream.aiAnalysis?.title && dream.dreamText) {
@@ -128,7 +131,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             }
         });
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // Only run on initial mount - dreams is intentionally omitted
+    }, []);
 
     // Listen for sync conflict resolution events and update React state
     // This fixes the bug where localStorage gets updated but React state stays stale
@@ -158,6 +161,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }, [setDreams]);
 
     // Migration: Convert legacy dreams (without sleepEntryId) to sleep entries
+    // Mount-only migration effect: This MUST run exactly once on app startup to migrate legacy data.
+    // We intentionally omit `dreams`, `setDreams`, and `setSleepEntries` because:
+    // (1) the migration flag ensures idempotency
+    // (2) re-running on state changes would cause infinite loops or duplicate entries
+    // (3) we need the initial localStorage values, not reactive state updates
     useEffect(() => {
         const migrationKey = 'somnia_migration_v1_complete';
         if (localStorage.getItem(migrationKey)) return; // Already migrated
@@ -222,7 +230,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
         localStorage.setItem(migrationKey, 'true');
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // Only run on initial mount - dreams, setDreams, setSleepEntries are intentionally omitted
+    }, []);
 
     // Clear stale sleep sessions when linked alarm is DELETED (not just deactivated)
     // We only clear on deletion because:
@@ -239,7 +247,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
     }, [alarms, activeSleepSession, setActiveSleepSession]);
 
-    const addAlarm = (time: string, smartWake: boolean = false, days: number[] = [], soundId: string = 'somnia', purpose: AlarmPurpose = 'sleep', label?: string): number => {
+    const addAlarm = useCallback((time: string, smartWake: boolean = false, days: number[] = [], soundId: string = 'somnia', purpose: AlarmPurpose = 'sleep', label?: string): number => {
         const newAlarm: Alarm = {
             id: generateSecureId(),
             time,
@@ -278,7 +286,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
 
         return newAlarm.id;
-    };
+    }, [setAlarms]);
 
     // Get the next active alarm (soonest time today/tomorrow)
     const getNextActiveAlarm = useCallback((): Alarm | null => {
@@ -510,37 +518,44 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return Math.max(0, dreams.length - lastSeenDreamCount);
     }, [dreams.length, lastSeenDreamCount]);
 
-    const updateAlarm = (id: number, time: string, smartWake: boolean, days: number[] = [], soundId: string = 'somnia', purpose: AlarmPurpose = 'sleep', label?: string) => {
-        setAlarms(prev => prev.map(a => {
-            if (a.id !== id) return a;
-            // Explicitly preserve isActive and merge new values
-            return { ...a, time, smartWake, days, soundId, purpose, label };
-        }));
-        // Include existing isActive in sync action
-        const existingAlarm = alarms.find(a => a.id === id);
-        enqueueAction('UPDATE_ALARM', { id, time, smartWake, days, soundId, purpose, label, isActive: existingAlarm?.isActive ?? true });
-    };
+    const updateAlarm = useCallback((id: number, time: string, smartWake: boolean, days: number[] = [], soundId: string = 'somnia', purpose: AlarmPurpose = 'sleep', label?: string) => {
+        // Use functional update to access current state and avoid stale closure issues
+        setAlarms(prev => {
+            const existingAlarm = prev.find(a => a.id === id);
+            // Enqueue sync action with current isActive value from the latest state
+            enqueueAction('UPDATE_ALARM', { id, time, smartWake, days, soundId, purpose, label, isActive: existingAlarm?.isActive ?? true });
+            return prev.map(a => {
+                if (a.id !== id) return a;
+                // Explicitly preserve isActive and merge new values
+                return { ...a, time, smartWake, days, soundId, purpose, label };
+            });
+        });
+    }, [setAlarms]);
 
-    const toggleAlarmActive = (id: number) => {
+    const toggleAlarmActive = useCallback((id: number) => {
         setAlarms(prev => prev.map(a => a.id === id ? { ...a, isActive: !a.isActive } : a));
         // Toggle is effectively an update, but simplified for sync for now
         enqueueAction('UPDATE_ALARM', { id, isActive: 'TOGGLE' });
-    };
+    }, [setAlarms]);
 
-    const deleteAlarm = (id: number) => {
+    const deleteAlarm = useCallback((id: number) => {
         setAlarms(prev => prev.filter(a => a.id !== id));
         // Clear sleep session if it was linked to this alarm
-        if (activeSleepSession?.alarmId === id) {
-            setActiveSleepSession(null);
-        }
+        // Use functional update to avoid stale closure on activeSleepSession
+        setActiveSleepSession(prev => {
+            if (prev?.alarmId === id) {
+                return null;
+            }
+            return prev;
+        });
         enqueueAction('DELETE_ALARM', { id });
         // Cancel native notification
         if (NativeAlarm.isNative) {
             NativeAlarm.cancelAlarm(id);
         }
-    };
+    }, [setAlarms, setActiveSleepSession]);
 
-    const addDream = (dreamText: string, sleepQuality: number | null, mood?: DreamMood): number => {
+    const addDream = useCallback((dreamText: string, sleepQuality: number | null, mood?: DreamMood): number => {
         // Use sleep session data if available, otherwise fall back to pendingSleepData
         const sleepData = activeSleepSession?.sleepGatewayData ?? pendingSleepData ?? {};
         const wakeData = activeSleepSession?.wakeData;
@@ -656,10 +671,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setPendingSleepData(null);
         enqueueAction('ADD_DREAM', newDream);
         return newDream.id;
-    };
+    }, [activeSleepSession, pendingSleepData, sleepEntries, setDreams, setActiveSleepSession, setPendingSleepData, setSleepEntries]);
 
     // Add a past dream with custom timestamp (for Chronicle manual logging)
-    const addPastDream = (dreamText: string, sleepQuality: number | null, mood: DreamMood | undefined, timestamp: string): number => {
+    const addPastDream = useCallback((dreamText: string, sleepQuality: number | null, mood: DreamMood | undefined, timestamp: string): number => {
         // Check global trends opt-in status for anonymous aggregation
         const trendsPrefs = getGlobalTrendsPrefs();
 
@@ -683,19 +698,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setDreams(prev => [newDream, ...prev]);
         enqueueAction('ADD_DREAM', newDream);
         return newDream.id;
-    };
+    }, [setDreams]);
 
-    const importDreams = (dreamsToImport: Dream[]) => {
+    const importDreams = useCallback((dreamsToImport: Dream[]) => {
         setDreams(prev => [...dreamsToImport, ...prev]);
         // Import is local-heavy, maybe don't sync all at once or handle batch?
         // For simple queue, let's sync them individually or create a BATCH type later.
         // For now: Skip queuing imports to prevent spamming the queue.
-    };
+    }, [setDreams]);
 
-    const deleteDream = (id: number) => {
+    const deleteDream = useCallback((id: number) => {
         setDreams(prev => prev.filter(d => d.id !== id));
         enqueueAction('DELETE_DREAM', { id });
-    };
+    }, [setDreams]);
 
     const updateDream = useCallback((updatedDreamPart: Partial<Dream> & { id: number }) => {
         setDreams(prev => prev.map(d => d.id === updatedDreamPart.id ? { ...d, ...updatedDreamPart } : d));
@@ -715,7 +730,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }, []);
 
     // ========== Sleep Entry CRUD ==========
-    const addSleepEntry = (date: string, sleepQuality: number | null, notes?: string, sleepAids?: SleepAids, alarmTime?: string, alarmSoundId?: string, wakeData?: WakeData): number => {
+    const addSleepEntry = useCallback((date: string, sleepQuality: number | null, notes?: string, sleepAids?: SleepAids, alarmTime?: string, alarmSoundId?: string, wakeData?: WakeData): number => {
         const newEntry: SleepEntry = {
             id: generateSecureId(),
             date,
@@ -730,28 +745,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         };
         setSleepEntries(prev => [newEntry, ...prev]);
         return newEntry.id;
-    };
+    }, [setSleepEntries]);
 
     const updateSleepEntry = useCallback((updatedEntry: Partial<SleepEntry> & { id: number }) => {
         setSleepEntries(prev => prev.map(e => e.id === updatedEntry.id ? { ...e, ...updatedEntry } : e));
     }, [setSleepEntries]);
 
-    const deleteSleepEntry = (id: number) => {
-        // Also delete associated dreams
-        const entry = sleepEntries.find(e => e.id === id);
-        if (entry) {
-            entry.dreamIds.forEach(dreamId => {
-                setDreams(prev => prev.filter(d => d.id !== dreamId));
-            });
-        }
-        setSleepEntries(prev => prev.filter(e => e.id !== id));
-    };
+    const deleteSleepEntry = useCallback((id: number) => {
+        // Use functional updates to avoid stale closure issues
+        // First, get the entry's dreamIds and delete associated dreams
+        setSleepEntries(prev => {
+            const entry = prev.find(e => e.id === id);
+            if (entry) {
+                // Delete associated dreams
+                entry.dreamIds.forEach(dreamId => {
+                    setDreams(prevDreams => prevDreams.filter(d => d.id !== dreamId));
+                });
+            }
+            return prev.filter(e => e.id !== id);
+        });
+    }, [setDreams, setSleepEntries]);
 
     const getSleepEntryById = useCallback((id: number) => {
         return sleepEntries.find(e => e.id === id);
     }, [sleepEntries]);
 
-    const addDreamToSleepEntry = (sleepEntryId: number, dreamText: string, mood?: DreamMood): number => {
+    const addDreamToSleepEntry = useCallback((sleepEntryId: number, dreamText: string, mood?: DreamMood): number => {
         const entry = sleepEntries.find(e => e.id === sleepEntryId);
         if (!entry) return -1;
 
@@ -787,7 +806,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
         enqueueAction('ADD_DREAM', newDream);
         return newDream.id;
-    };
+    }, [sleepEntries, setDreams, setSleepEntries]);
 
     const value: AppContextType = {
         alarms,

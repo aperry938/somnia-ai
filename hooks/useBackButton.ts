@@ -16,6 +16,7 @@ import { logger } from '../services/logger';
 // Global stack of close handlers - LIFO order
 const closeHandlerStack: Array<{ id: string; onClose: () => void; priority: number }> = [];
 let listenerRegistered = false;
+let listenerHandle: { remove: () => Promise<void> } | null = null;
 
 // Register the global listener once
 const registerGlobalListener = () => {
@@ -42,9 +43,21 @@ const registerGlobalListener = () => {
             // No modals, no history - minimize app (don't exit)
             CapacitorApp.minimizeApp();
         }
+    }).then(handle => {
+        listenerHandle = handle;
     });
 
     logger.log('[BackButton] Global listener registered');
+};
+
+// Cleanup function to remove the global listener (useful for testing or app teardown)
+export const cleanupBackButtonListener = async () => {
+    if (listenerHandle) {
+        await listenerHandle.remove();
+        listenerHandle = null;
+        listenerRegistered = false;
+        logger.log('[BackButton] Global listener removed');
+    }
 };
 
 export const useBackButton = (

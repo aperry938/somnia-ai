@@ -87,6 +87,12 @@ export const requestSleepDetectionPermissions = async (): Promise<boolean> => {
  */
 export const useSleepDetection = (onWakePrompt: (soundId: string) => void) => {
     const checkIntervalRef = useRef<number | null>(null);
+    const onWakePromptRef = useRef(onWakePrompt);
+
+    // Keep the callback ref updated
+    useEffect(() => {
+        onWakePromptRef.current = onWakePrompt;
+    }, [onWakePrompt]);
 
     // Get settings from localStorage
     const getSettings = useCallback((): SleepDetectionSettings => {
@@ -165,7 +171,7 @@ export const useSleepDetection = (onWakePrompt: (soundId: string) => void) => {
                 if (notification.notification.id === SLEEP_DETECTION_NOTIFICATION_ID) {
                     const soundId = notification.notification.extra?.soundId ?? 'somnia';
                     logger.log('[SleepDetection] Notification tapped, triggering wake prompt with sound:', soundId);
-                    onWakePrompt(soundId);
+                    onWakePromptRef.current(soundId);
                 }
             }).then(listener => {
                 notificationListener = listener;
@@ -176,7 +182,7 @@ export const useSleepDetection = (onWakePrompt: (soundId: string) => void) => {
         checkIntervalRef.current = window.setInterval(() => {
             if (document.visibilityState === 'visible' && checkInactivity()) {
                 const settings = getSettings();
-                onWakePrompt(settings.soundId);
+                onWakePromptRef.current(settings.soundId);
             }
         }, 5 * 60 * 1000);
 
@@ -188,7 +194,7 @@ export const useSleepDetection = (onWakePrompt: (soundId: string) => void) => {
 
                 if (checkInactivity()) {
                     const settings = getSettings();
-                    onWakePrompt(settings.soundId);
+                    onWakePromptRef.current(settings.soundId);
                 }
             }
         };
@@ -204,7 +210,7 @@ export const useSleepDetection = (onWakePrompt: (soundId: string) => void) => {
             }
             notificationListener?.remove();
         };
-    }, [getSettings, recordActivity, checkInactivity, onWakePrompt]);
+    }, [getSettings, recordActivity, checkInactivity]);
 
     return {
         getSettings,

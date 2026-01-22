@@ -8,7 +8,7 @@
  * - Check alarm status after returning from background
  */
 
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp, AppState } from '@capacitor/app';
 import { logger } from '../services/logger';
@@ -41,6 +41,18 @@ export function useAppLifecycle({
     const isActiveRef = useRef(true);
     const tickIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+    // Store callbacks in refs to avoid effect re-runs
+    const onForegroundRef = useRef(onForeground);
+    const onBackgroundRef = useRef(onBackground);
+    const onTickRef = useRef(onTick);
+
+    // Keep refs updated
+    useEffect(() => {
+        onForegroundRef.current = onForeground;
+        onBackgroundRef.current = onBackground;
+        onTickRef.current = onTick;
+    }, [onForeground, onBackground, onTick]);
+
     // Handle app state changes
     const handleStateChange = useCallback((state: AppState) => {
         logger.log('[AppLifecycle] State changed:', state.isActive ? 'foreground' : 'background');
@@ -48,16 +60,16 @@ export function useAppLifecycle({
         if (state.isActive && !isActiveRef.current) {
             // App returned to foreground
             isActiveRef.current = true;
-            onForeground?.();
+            onForegroundRef.current?.();
 
             // Restart tick interval
-            if (onTick && !tickIntervalRef.current) {
-                tickIntervalRef.current = setInterval(onTick, tickInterval);
+            if (onTickRef.current && !tickIntervalRef.current) {
+                tickIntervalRef.current = setInterval(() => onTickRef.current?.(), tickInterval);
             }
         } else if (!state.isActive && isActiveRef.current) {
             // App went to background
             isActiveRef.current = false;
-            onBackground?.();
+            onBackgroundRef.current?.();
 
             // Clear tick interval while in background
             if (tickIntervalRef.current) {
@@ -65,12 +77,12 @@ export function useAppLifecycle({
                 tickIntervalRef.current = null;
             }
         }
-    }, [onForeground, onBackground, onTick, tickInterval]);
+    }, [tickInterval]);
 
     useEffect(() => {
         // Start tick interval if callback provided
-        if (onTick) {
-            tickIntervalRef.current = setInterval(onTick, tickInterval);
+        if (onTickRef.current) {
+            tickIntervalRef.current = setInterval(() => onTickRef.current?.(), tickInterval);
         }
 
         if (!Capacitor.isNativePlatform()) {
@@ -111,19 +123,26 @@ export function useAppLifecycle({
                 clearInterval(tickIntervalRef.current);
             }
         };
-    }, [handleStateChange, onTick, tickInterval]);
+    }, [handleStateChange, tickInterval]);
 }
 
 /**
  * Hook to get current app state
  */
 export function useAppState(): { isActive: boolean } {
+    const [isActive, setIsActive] = useState(true);
     const isActiveRef = useRef(true);
 
     useAppLifecycle({
-        onForeground: () => { isActiveRef.current = true; },
-        onBackground: () => { isActiveRef.current = false; },
+        onForeground: () => {
+            isActiveRef.current = true;
+            setIsActive(true);
+        },
+        onBackground: () => {
+            isActiveRef.current = false;
+            setIsActive(false);
+        },
     });
 
-    return { isActive: isActiveRef.current };
+    return { isActive };
 }

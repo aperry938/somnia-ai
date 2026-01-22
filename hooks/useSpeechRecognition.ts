@@ -202,6 +202,9 @@ export const useSpeechRecognition = (onFinalTranscript: (transcript: string) => 
             // Mark that user wants to listen (for auto-restart on silence timeout)
             wantToListenRef.current = true;
 
+            // Remove any existing listeners before adding new ones to prevent accumulation
+            await CapacitorSpeechRecognition.removeAllListeners();
+
             // Set up listener for partial results
             await CapacitorSpeechRecognition.addListener('partialResults', (data: { matches: string[] }) => {
                 if (data.matches && data.matches.length > 0) {

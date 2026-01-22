@@ -25,6 +25,19 @@ interface WidgetSyncOptions {
 
 export function useWidgetSync({ alarms, dreams, sleepEntries = [] }: WidgetSyncOptions): void {
     const lastUpdateRef = useRef<string>('');
+    const hasInitializedRef = useRef(false);
+
+    // Keep refs for current values to use in initialization
+    const alarmsRef = useRef(alarms);
+    const dreamsRef = useRef(dreams);
+    const sleepEntriesRef = useRef(sleepEntries);
+
+    // Update refs when values change
+    useEffect(() => {
+        alarmsRef.current = alarms;
+        dreamsRef.current = dreams;
+        sleepEntriesRef.current = sleepEntries;
+    }, [alarms, dreams, sleepEntries]);
 
     useEffect(() => {
         if (!Capacitor.isNativePlatform()) {
@@ -51,16 +64,24 @@ export function useWidgetSync({ alarms, dreams, sleepEntries = [] }: WidgetSyncO
 
     }, [alarms, dreams, sleepEntries]);
 
-    // Initialize widget on mount
+    // Initialize widget on mount - uses refs to get current values
     useEffect(() => {
         if (!Capacitor.isNativePlatform()) {
             return;
         }
 
-        const widgetData = calculateWidgetData(alarms, dreams, sleepEntries);
+        if (hasInitializedRef.current) {
+            return;
+        }
+
+        hasInitializedRef.current = true;
+        const widgetData = calculateWidgetData(
+            alarmsRef.current,
+            dreamsRef.current,
+            sleepEntriesRef.current
+        );
         initializeWidget(widgetData);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // Only run on mount - alarms, dreams, sleepEntries are intentionally omitted
+    }, []);
 }
 
 /**

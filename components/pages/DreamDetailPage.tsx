@@ -240,7 +240,16 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
         // Check daily analysis limit (5 per day)
         const today = new Date().toDateString();
         const storedAnalysis = localStorage.getItem('somnia_daily_analysis');
-        const [lastDateAnalysis, countAnalysisStr] = storedAnalysis ? JSON.parse(storedAnalysis) : ['', '0'];
+        let lastDateAnalysis = '';
+        let countAnalysisStr = '0';
+        try {
+            const parsed = storedAnalysis ? JSON.parse(storedAnalysis) : ['', '0'];
+            [lastDateAnalysis, countAnalysisStr] = Array.isArray(parsed) ? parsed : ['', '0'];
+        } catch {
+            // Corrupted data, reset to defaults
+            lastDateAnalysis = '';
+            countAnalysisStr = '0';
+        }
         const countAnalysis = lastDateAnalysis === today ? parseInt(countAnalysisStr) : 0;
 
         if (countAnalysis >= 5) {
@@ -372,11 +381,15 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                         {[1, 2, 3, 4, 5].map(rating => (
                             <button
                                 key={rating}
-                                onClick={() => updateDream({ id: dream.id, sleepQuality: rating })}
+                                onClick={() => {
+                                    if (isReadOnly) return;
+                                    updateDream({ id: dream.id, sleepQuality: rating });
+                                }}
+                                disabled={isReadOnly}
                                 className={`text-xl p-2 min-w-[44px] min-h-[44px] transition-colors ${dream.sleepQuality && rating <= dream.sleepQuality
                                     ? 'text-amber-500'
                                     : 'text-gray-300 dark:text-gray-600 hover:text-amber-300'
-                                    }`}
+                                    } ${isReadOnly ? 'cursor-not-allowed opacity-50' : ''}`}
                                 title={`Set quality to ${rating}`}
                                 aria-label={`Set quality to ${rating} stars`}
                                 aria-pressed={dream.sleepQuality === rating}
@@ -390,9 +403,13 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                     <span className="relative inline-flex items-center">
                         <select
                             value={dream.mood || ''}
-                            onChange={(e) => updateDream({ id: dream.id, mood: e.target.value as DreamMood || undefined })}
+                            onChange={(e) => {
+                                if (isReadOnly) return;
+                                updateDream({ id: dream.id, mood: e.target.value as DreamMood || undefined });
+                            }}
+                            disabled={isReadOnly}
                             aria-label="Dream mood"
-                            className="appearance-none bg-day-accent/10 dark:bg-night-accent/10 text-day-accent dark:text-night-accent text-base min-h-[44px] rounded-full pl-4 pr-10 py-2 cursor-pointer hover:bg-day-accent/20 dark:hover:bg-night-accent/20 transition-colors border-0 focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent"
+                            className={`appearance-none bg-day-accent/10 dark:bg-night-accent/10 text-day-accent dark:text-night-accent text-base min-h-[44px] rounded-full pl-4 pr-10 py-2 cursor-pointer hover:bg-day-accent/20 dark:hover:bg-night-accent/20 transition-colors border-0 focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent ${isReadOnly ? 'cursor-not-allowed opacity-50' : ''}`}
                         >
                             <option value="">Set mood...</option>
                             {(['joyful', 'peaceful', 'neutral', 'confused', 'anxious', 'sad', 'fearful', 'nightmare'] as DreamMood[]).map(m => (
@@ -520,9 +537,13 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                     <label className="block text-sm text-day-text-secondary dark:text-night-text-secondary mb-2">Dream Tags</label>
                     <TagInput
                         tags={dream.tags || []}
-                        onChange={(newTags) => updateDream({ id: dream.id, tags: newTags })}
+                        onChange={(newTags) => {
+                            if (isReadOnly) return;
+                            updateDream({ id: dream.id, tags: newTags });
+                        }}
                         suggestions={COMMON_DREAM_TAGS}
                         placeholder="Add tags (flying, lucid, recurring...)"
+                        disabled={isReadOnly}
                     />
                 </div>
 
@@ -640,8 +661,12 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                                                 className="w-full h-48 object-cover rounded-lg"
                                             />
                                             <button
-                                                onClick={() => updateDream({ id: dream.id, imageUrl: null })}
-                                                className="absolute top-2 right-2 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                                onClick={() => {
+                                                    if (isReadOnly) return;
+                                                    updateDream({ id: dream.id, imageUrl: null });
+                                                }}
+                                                disabled={isReadOnly}
+                                                className={`absolute top-2 right-2 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity ${isReadOnly ? 'cursor-not-allowed' : ''}`}
                                                 aria-label="Remove image"
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -679,7 +704,16 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                                     {(() => {
                                         const today = new Date().toDateString();
                                         const storedPrompt = localStorage.getItem('somnia_daily_prompts');
-                                        const [lastDatePrompt, countPromptStr] = storedPrompt ? JSON.parse(storedPrompt) : ['', '0'];
+                                        let lastDatePrompt = '';
+                                        let countPromptStr = '0';
+                                        try {
+                                            const parsed = storedPrompt ? JSON.parse(storedPrompt) : ['', '0'];
+                                            [lastDatePrompt, countPromptStr] = Array.isArray(parsed) ? parsed : ['', '0'];
+                                        } catch {
+                                            // Corrupted data, reset to defaults
+                                            lastDatePrompt = '';
+                                            countPromptStr = '0';
+                                        }
                                         const promptCount = lastDatePrompt === today ? parseInt(countPromptStr) : 0;
                                         const limitReached = promptCount >= 5;
 
@@ -705,6 +739,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
 
                                                 <button
                                                     onClick={async () => {
+                                                        if (isReadOnly) return;
                                                         if (limitReached) {
                                                             showToast('Daily prompt limit reached (5/day)', 'info');
                                                             return;
@@ -723,7 +758,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                                                             setIsGeneratingPrompt(false);
                                                         }
                                                     }}
-                                                    disabled={isGeneratingPrompt || limitReached}
+                                                    disabled={isGeneratingPrompt || limitReached || isReadOnly}
                                                     className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg font-medium hover:from-purple-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                                 >
                                                     {isGeneratingPrompt ? (
@@ -761,7 +796,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                                     </details>
 
                                     {/* Import Button */}
-                                    {!dream.imageUrl && (
+                                    {!dream.imageUrl && !isReadOnly && (
                                         <label className="flex items-center justify-center gap-2 w-full px-4 py-3 border-2 border-dashed border-purple-300 dark:border-purple-700 rounded-lg cursor-pointer hover:border-purple-400 dark:hover:border-purple-600 hover:bg-purple-50/50 dark:hover:bg-purple-900/20 transition-colors">
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -769,11 +804,24 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                                             <span className="text-sm font-medium text-purple-600 dark:text-purple-400">Import Your Visualization</span>
                                             <input
                                                 type="file"
-                                                accept="image/*"
+                                                accept="image/jpeg,image/png,image/webp"
                                                 className="hidden"
                                                 onChange={(e) => {
+                                                    if (isReadOnly) return;
                                                     const file = e.target.files?.[0];
                                                     if (file) {
+                                                        // Validate file size (max 2MB)
+                                                        const MAX_IMAGE_SIZE = 2 * 1024 * 1024; // 2MB
+                                                        if (file.size > MAX_IMAGE_SIZE) {
+                                                            showToast('Image too large. Maximum size is 2MB.', 'error');
+                                                            return;
+                                                        }
+                                                        // Validate file type
+                                                        const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+                                                        if (!validTypes.includes(file.type)) {
+                                                            showToast('Invalid file type. Only JPG, PNG, and WebP are allowed.', 'error');
+                                                            return;
+                                                        }
                                                         const reader = new FileReader();
                                                         reader.onload = (event) => {
                                                             const dataUrl = event.target?.result as string;

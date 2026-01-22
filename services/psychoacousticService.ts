@@ -12,16 +12,37 @@ let audioContext: AudioContext | null = null;
 let activeNodes: { stop: () => void } | null = null;
 let masterGain: GainNode | null = null;
 
+// Track voice stream timers for Cyber-Dawn alarm cleanup
+let cyberDawnTimers: ReturnType<typeof setTimeout>[] = [];
+
 // Initialize or get audio context
 function getContext(): AudioContext {
     if (!audioContext || audioContext.state === 'closed') {
         audioContext = new AudioContext();
     }
     // Resume if suspended (mobile browsers require user interaction first)
+    // Note: We don't await here to maintain sync API, but callers should handle this
     if (audioContext.state === 'suspended') {
-        audioContext.resume();
+        audioContext.resume().catch((e) => {
+            console.warn('[PsychoacousticService] Failed to resume AudioContext:', e);
+        });
     }
     return audioContext;
+}
+
+/**
+ * Ensures audio context is ready for playback (async version)
+ */
+async function _ensureContextReady(): Promise<AudioContext> {
+    const ctx = getContext();
+    if (ctx.state === 'suspended') {
+        try {
+            await ctx.resume();
+        } catch (e) {
+            console.warn('[PsychoacousticService] Failed to resume AudioContext:', e);
+        }
+    }
+    return ctx;
 }
 
 // --- HELPER: NOISE BUFFER GENERATOR ---
@@ -340,11 +361,26 @@ export function startResonanceBreathing(volume: number = 0.5): ResonanceBreathin
 // --- 4. ALARM: CYBER-DAWN (Full-Spectrum Synthetic Dawn Chorus) ---
 // Dense, immersive dawn soundscape with multiple layers - designed to WAKE PEOPLE UP
 export function playCyberDawnAlarm(volume: number = 1.0): { stop: () => void } {
+    // Clear any previous Cyber-Dawn timers
+    cyberDawnTimers.forEach(timerId => clearTimeout(timerId));
+    cyberDawnTimers = [];
+
     const ctx = getContext();
     let isPlaying = true;
     const t = ctx.currentTime;
 
-    if (ctx.state === 'suspended') { ctx.resume(); }
+    if (ctx.state === 'suspended') {
+        ctx.resume().catch((e) => {
+            console.warn('[PsychoacousticService] Failed to resume AudioContext:', e);
+        });
+    }
+
+    // Helper to track setTimeout calls for cleanup
+    const trackedTimeout = (fn: () => void, delay: number): ReturnType<typeof setTimeout> => {
+        const timerId = setTimeout(fn, delay);
+        cyberDawnTimers.push(timerId);
+        return timerId;
+    };
 
     // Master gain - 5x louder start, reaches MAXIMUM in 60s (alarms need to wake people!)
     masterGain = ctx.createGain();
@@ -478,9 +514,9 @@ export function playCyberDawnAlarm(volume: number = 1.0): { stop: () => void } {
 
         // Double/triple chirps (spaced for longer chirp duration)
         if (!isDouble && Math.random() > 0.4) {
-            setTimeout(() => { if (isPlaying) chirp(speciesIdx, true); }, 180 + Math.random() * 80);
+            trackedTimeout(() => { if (isPlaying) chirp(speciesIdx, true); }, 180 + Math.random() * 80);
             if (Math.random() > 0.5) {
-                setTimeout(() => { if (isPlaying) chirp(speciesIdx, true); }, 350 + Math.random() * 100);
+                trackedTimeout(() => { if (isPlaying) chirp(speciesIdx, true); }, 350 + Math.random() * 100);
             }
         }
     }
@@ -495,10 +531,10 @@ export function playCyberDawnAlarm(volume: number = 1.0): { stop: () => void } {
             chirp(Math.floor(Math.random() * birdCount), false);
             // Slower acceleration (0.992 instead of 0.988)
             interval = Math.max(minInterval, interval * 0.992);
-            setTimeout(tick, interval * (0.7 + Math.random() * 0.6));
+            trackedTimeout(tick, interval * (0.7 + Math.random() * 0.6));
         }
 
-        setTimeout(tick, startDelay);
+        trackedTimeout(tick, startDelay);
     }
 
     // GRADUAL DAWN CHORUS BUILDUP
@@ -506,18 +542,18 @@ export function playCyberDawnAlarm(volume: number = 1.0): { stop: () => void } {
     createVoiceStream(0, 3000, 2500); // First bird at 3s, very slow (2.5s intervals)
 
     // Phase 2 (10-20s): A second bird joins
-    setTimeout(() => { if (isPlaying) createVoiceStream(1, 0, 2000); }, 10000);
+    trackedTimeout(() => { if (isPlaying) createVoiceStream(1, 0, 2000); }, 10000);
 
     // Phase 3 (20-35s): More birds wake up
-    setTimeout(() => { if (isPlaying) createVoiceStream(2, 0, 1500); }, 22000);
-    setTimeout(() => { if (isPlaying) createVoiceStream(3, 0, 1400); }, 30000);
+    trackedTimeout(() => { if (isPlaying) createVoiceStream(2, 0, 1500); }, 22000);
+    trackedTimeout(() => { if (isPlaying) createVoiceStream(3, 0, 1400); }, 30000);
 
     // Phase 4 (35-50s): Dawn chorus intensifies
-    setTimeout(() => { if (isPlaying) createVoiceStream(4, 0, 1000); }, 38000);
-    setTimeout(() => { if (isPlaying) createVoiceStream(5, 0, 900); }, 45000);
+    trackedTimeout(() => { if (isPlaying) createVoiceStream(4, 0, 1000); }, 38000);
+    trackedTimeout(() => { if (isPlaying) createVoiceStream(5, 0, 900); }, 45000);
 
     // Phase 5 (50s+): Full chorus
-    setTimeout(() => { if (isPlaying) createVoiceStream(6, 0, 800); }, 52000);
+    trackedTimeout(() => { if (isPlaying) createVoiceStream(6, 0, 800); }, 52000);
 
     // Introduce more species gradually (every 12s instead of 8s)
     const speciesTimer = setInterval(() => {
@@ -551,6 +587,11 @@ export function playCyberDawnAlarm(volume: number = 1.0): { stop: () => void } {
     const stopFn = () => {
         isPlaying = false;
         clearInterval(speciesTimer);
+
+        // Clear all tracked voice stream timers
+        cyberDawnTimers.forEach(timerId => clearTimeout(timerId));
+        cyberDawnTimers = [];
+
         const now = ctx.currentTime;
         if (masterGain) {
             masterGain.gain.cancelScheduledValues(now);
@@ -575,7 +616,11 @@ export function playSolarAlarm(volume: number = 1.0): { stop: () => void } {
     const t = ctx.currentTime;
     let isPlaying = true;
 
-    if (ctx.state === 'suspended') { ctx.resume(); }
+    if (ctx.state === 'suspended') {
+        ctx.resume().catch((e) => {
+            console.warn('[PsychoacousticService] Failed to resume AudioContext:', e);
+        });
+    }
 
     // Master gain - 5x louder start, reaches MAXIMUM in 60s (alarms need to wake people!)
     const master = ctx.createGain();
@@ -772,8 +817,15 @@ export function isPsychoacousticPlaying(): boolean {
 // --- CLEANUP ---
 export function cleanupPsychoacoustic(): void {
     stopPsychoacoustic();
+
+    // Clear all Cyber-Dawn timers
+    cyberDawnTimers.forEach(timerId => clearTimeout(timerId));
+    cyberDawnTimers = [];
+
     if (audioContext && audioContext.state !== 'closed') {
-        audioContext.close();
+        audioContext.close().catch((e) => {
+            console.warn('[PsychoacousticService] Error closing AudioContext:', e);
+        });
     }
     audioContext = null;
     masterGain = null;

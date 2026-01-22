@@ -7,18 +7,21 @@ interface TagInputProps {
     onChange: (tags: string[]) => void;
     suggestions?: string[];
     placeholder?: string;
+    disabled?: boolean;
 }
 
 export const TagInput: React.FC<TagInputProps> = ({
     tags,
     onChange,
     suggestions = [],
-    placeholder = 'Add tag...'
+    placeholder = 'Add tag...',
+    disabled = false
 }) => {
     const [inputValue, setInputValue] = useState('');
     const [showSuggestions, setShowSuggestions] = useState(false);
 
     const addTag = (tag: string) => {
+        if (disabled) return;
         // Sanitize and validate tag
         const sanitized = sanitizeText(tag).toLowerCase();
         const normalizedTag = sanitized.slice(0, INPUT_LIMITS.tags);
@@ -33,6 +36,7 @@ export const TagInput: React.FC<TagInputProps> = ({
     };
 
     const removeTag = (tagToRemove: string) => {
+        if (disabled) return;
         onChange(tags.filter(tag => tag !== tagToRemove));
     };
 
@@ -51,7 +55,7 @@ export const TagInput: React.FC<TagInputProps> = ({
     ).slice(0, 5);
 
     return (
-        <div className="relative">
+        <div className={`relative ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
             <div className="flex flex-wrap gap-2 p-2 bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-lg min-h-[44px]">
                 {tags.map(tag => (
                     <span
@@ -59,30 +63,34 @@ export const TagInput: React.FC<TagInputProps> = ({
                         className="inline-flex items-center gap-1 px-2 py-1 bg-day-accent/20 dark:bg-night-accent/20 text-day-accent dark:text-night-accent rounded-full text-sm"
                     >
                         <span>#{tag}</span>
-                        <button
-                            onClick={() => removeTag(tag)}
-                            aria-label={`Remove tag ${tag}`}
-                            className="p-2 -mr-1 min-h-[36px] min-w-[36px] flex items-center justify-center hover:text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors rounded-full"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                            </svg>
-                        </button>
+                        {!disabled && (
+                            <button
+                                onClick={() => removeTag(tag)}
+                                aria-label={`Remove tag ${tag}`}
+                                className="p-2 -mr-1 min-h-[36px] min-w-[36px] flex items-center justify-center hover:text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors rounded-full"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                </svg>
+                            </button>
+                        )}
                     </span>
                 ))}
                 <input
                     type="text"
                     value={inputValue}
                     onChange={(e) => {
+                        if (disabled) return;
                         setInputValue(e.target.value);
                         setShowSuggestions(true);
                     }}
                     onKeyDown={handleKeyDown}
-                    onFocus={() => setShowSuggestions(true)}
+                    onFocus={() => !disabled && setShowSuggestions(true)}
                     onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                     placeholder={tags.length === 0 ? placeholder : ''}
                     aria-label="Add tag"
-                    className="flex-1 min-w-[100px] bg-transparent outline-none text-base"
+                    disabled={disabled}
+                    className={`flex-1 min-w-[100px] bg-transparent outline-none text-base ${disabled ? 'cursor-not-allowed' : ''}`}
                 />
             </div>
 

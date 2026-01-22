@@ -44,6 +44,15 @@ const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = Re
     const longPressTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
     const isLongPress = React.useRef(false);
 
+    // Cleanup long-press timer on unmount to prevent memory leaks
+    useEffect(() => {
+        return () => {
+            if (longPressTimer.current) {
+                clearTimeout(longPressTimer.current);
+            }
+        };
+    }, []);
+
     // Format time in 12h format
     const [hourStr, minuteStr] = alarm.time.split(':');
     const hour = parseInt(hourStr ?? '0', 10);

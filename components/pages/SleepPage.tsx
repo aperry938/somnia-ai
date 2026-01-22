@@ -110,6 +110,18 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
         }
     }, []);
 
+    // Cleanup long-press timers on unmount to prevent memory leaks
+    useEffect(() => {
+        return () => {
+            if (longPressTimerRef.current) {
+                clearTimeout(longPressTimerRef.current);
+            }
+            if (progressIntervalRef.current) {
+                clearInterval(progressIntervalRef.current);
+            }
+        };
+    }, []);
+
     // Wake Window Hook
     const { isSupported: motionSupported, movementLog } = useWakeWindow(isSleeping);
 

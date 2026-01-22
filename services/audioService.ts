@@ -167,8 +167,28 @@ let soundEndedNaturally = false;
 // - Android: Foreground service in AlarmService.java
 // Killing audio on visibility change would break the core sleep sound functionality.
 
-// Cache for decoded audio files
-const audioBufferCache: Record<string, AudioBuffer> = {};
+// LRU Cache for decoded audio files
+const MAX_AUDIO_BUFFER_CACHE_SIZE = 10;
+const audioBufferCache: Map<string, AudioBuffer> = new Map();
+
+/**
+ * Adds an audio buffer to the cache with LRU eviction
+ */
+const cacheAudioBuffer = (key: string, buffer: AudioBuffer): void => {
+    // If key already exists, delete it first so it moves to the end (most recent)
+    if (audioBufferCache.has(key)) {
+        audioBufferCache.delete(key);
+    }
+    // Evict oldest entries if cache is full
+    while (audioBufferCache.size >= MAX_AUDIO_BUFFER_CACHE_SIZE) {
+        const oldestKey = audioBufferCache.keys().next().value;
+        if (oldestKey) {
+            audioBufferCache.delete(oldestKey);
+            logger.log('[AudioService] Evicted audio buffer from cache:', oldestKey);
+        }
+    }
+    audioBufferCache.set(key, buffer);
+};
 
 // ============================================================
 // AUDIO CONTEXT MANAGEMENT
@@ -178,13 +198,17 @@ const audioBufferCache: Record<string, AudioBuffer> = {};
  * Initializes the global AudioContext.
  * Must be called after a user interaction (click/touch) to resume from suspended state.
  */
-export const initAudioContext = () => {
+export const initAudioContext = async (): Promise<void> => {
     if (!audioContext) {
         const AudioContextClass = window.AudioContext || (window as unknown as WebkitWindow).webkitAudioContext;
         audioContext = new AudioContextClass();
     }
     if (audioContext.state === 'suspended') {
-        audioContext.resume();
+        try {
+            await audioContext.resume();
+        } catch (e) {
+            logger.warn('[AudioService] Failed to resume AudioContext:', e);
+        }
     }
 };
 
@@ -198,9 +222,13 @@ const getAudioContext = (): AudioContext => {
 /**
  * Ensures audio context is ready for playback
  */
-const ensureContextReady = (context: AudioContext): void => {
+const ensureContextReady = async (context: AudioContext): Promise<void> => {
     if (context.state === 'suspended') {
-        context.resume();
+        try {
+            await context.resume();
+        } catch (e) {
+            logger.warn('[AudioService] Failed to resume AudioContext:', e);
+        }
     }
 };
 
@@ -211,13 +239,13 @@ const ensureContextReady = (context: AudioContext): void => {
 /**
  * Prepares the audio context and nodes for alarm playback
  */
-const prepareAlarmNodes = (): { context: AudioContext; now: number } => {
+const prepareAlarmNodes = async (): Promise<{ context: AudioContext; now: number }> => {
     stopSleepSound();
     const context = getAudioContext();
     if (alarmOscillator) {
         stopAlarmSound();
     }
-    ensureContextReady(context);
+    await ensureContextReady(context);
 
     alarmOscillator = context.createOscillator();
     alarmGainNode = context.createGain();
@@ -230,8 +258,8 @@ const prepareAlarmNodes = (): { context: AudioContext; now: number } => {
 /**
  * Creates a simple continuous alarm with exponential ramp
  */
-const createContinuousAlarm = (config: AlarmConfig): void => {
-    const { context: _context, now } = prepareAlarmNodes();
+const createContinuousAlarm = async (config: AlarmConfig): Promise<void> => {
+    const { context: _context, now } = await prepareAlarmNodes();
 
     alarmOscillator!.type = config.type;
     alarmOscillator!.frequency.setValueAtTime(config.startFreq, now);
@@ -246,8 +274,8 @@ const createContinuousAlarm = (config: AlarmConfig): void => {
 /**
  * Creates a pulsing alarm with crescendo then sustained pulses
  */
-const createPulsingAlarm = (config: AlarmConfig): void => {
-    const { now } = prepareAlarmNodes();
+const createPulsingAlarm = async (config: AlarmConfig): Promise<void> => {
+    const { now } = await prepareAlarmNodes();
     const interval = config.pulseInterval || 2;
     const crescendoPulses = Math.floor(config.rampDuration / interval);
     const sustainPulses = Math.floor((SUSTAIN_DURATION - config.rampDuration) / interval);
@@ -278,8 +306,8 @@ const createPulsingAlarm = (config: AlarmConfig): void => {
 /**
  * Creates a beeping alarm with crescendo then sustained beeps
  */
-const createBeepingAlarm = (config: AlarmConfig): void => {
-    const { now } = prepareAlarmNodes();
+const createBeepingAlarm = async (config: AlarmConfig): Promise<void> => {
+    const { now } = await prepareAlarmNodes();
     const interval = config.pulseInterval || 1;
     const crescendoBeeps = config.rampDuration;
     const sustainBeeps = SUSTAIN_DURATION - config.rampDuration;
@@ -314,10 +342,10 @@ const createBeepingAlarm = (config: AlarmConfig): void => {
  * Plays the Somnia alarm - our signature very slow growing alarm.
  * Starts almost inaudible and very slowly builds over 60 seconds.
  */
-export const playSomniaAlarm = () => {
+export const playSomniaAlarm = async () => {
     const config = ALARM_CONFIGS.somnia;
     if (config) {
-        createContinuousAlarm(config);
+        await createContinuousAlarm(config);
     }
     logger.log('[playSomniaAlarm] Started - 60s crescendo to full volume, then sustains');
 };
@@ -326,10 +354,10 @@ export const playSomniaAlarm = () => {
  * Plays the progressive smart alarm.
  * Starts with low volume and frequency, ramping up over 30 seconds.
  */
-export const playProgressiveAlarm = () => {
+export const playProgressiveAlarm = async () => {
     const config = ALARM_CONFIGS.progressive;
     if (config) {
-        createContinuousAlarm(config);
+        await createContinuousAlarm(config);
     }
 };
 
@@ -338,68 +366,68 @@ export const playProgressiveAlarm = () => {
  * Dispatches to the correct alarm implementation based on user selection.
  * @param soundId - The alarm sound ID from alarm setup
  */
-export const playAlarmBySound = (soundId: string = 'somnia') => {
+export const playAlarmBySound = async (soundId: string = 'somnia') => {
     logger.log('[playAlarmBySound] Requested soundId:', soundId);
     switch (soundId) {
         case 'somnia':
             logger.log('[playAlarmBySound] Playing Somnia alarm');
-            playSomniaAlarm();
+            await playSomniaAlarm();
             break;
         case 'progressive':
             logger.log('[playAlarmBySound] Playing Progressive alarm');
-            playProgressiveAlarm();
+            await playProgressiveAlarm();
             break;
         case 'chimes':
             logger.log('[playAlarmBySound] Playing Chimes alarm');
-            playChimesAlarm();
+            await playChimesAlarm();
             break;
         case 'nature':
             logger.log('[playAlarmBySound] Playing Nature alarm');
-            playNatureAlarm();
+            await playNatureAlarm();
             break;
         case 'classic':
             logger.log('[playAlarmBySound] Playing Classic alarm');
-            playClassicAlarm();
+            await playClassicAlarm();
             break;
         case 'prism':
             logger.log('[playAlarmBySound] Playing Prism alarm');
-            playPrismAlarm();
+            await playPrismAlarm();
             break;
         case 'aether':
             logger.log('[playAlarmBySound] Playing Aether alarm');
-            playAetherAlarm();
+            await playAetherAlarm();
             break;
         case 'cyber-dawn':
             if (!isPremium()) {
                 logger.warn('[playAlarmBySound] Cyber-Dawn requires premium, falling back to Somnia');
-                playSomniaAlarm();
+                await playSomniaAlarm();
             } else {
                 logger.log('[playAlarmBySound] Playing Cyber-Dawn alarm');
-                playCyberDawnAlarmWrapper();
+                await playCyberDawnAlarmWrapper();
             }
             break;
         case 'solar-ascent':
             if (!isPremium()) {
                 logger.warn('[playAlarmBySound] Solar Ascent requires premium, falling back to Somnia');
-                playSomniaAlarm();
+                await playSomniaAlarm();
             } else {
                 logger.log('[playAlarmBySound] Playing Solar Ascent alarm');
-                playSolarAlarmWrapper();
+                await playSolarAlarmWrapper();
             }
             break;
         default:
             logger.log('[playAlarmBySound] Unknown soundId, defaulting to Somnia:', soundId);
-            playSomniaAlarm();
+            await playSomniaAlarm();
     }
 };
 
 /**
  * Gentle Rise alarm - soft gradual wake-up with crescendo
  */
-const _playGentleAlarm = () => {
+const _playGentleAlarm = async () => {
     const config = ALARM_CONFIGS.gentle;
     if (config) {
-        createPulsingAlarm(config);
+        await createPulsingAlarm(config);
     }
     logger.log('[playGentleAlarm] Started - 60s crescendo, then 30min sustain');
 };
@@ -407,30 +435,30 @@ const _playGentleAlarm = () => {
 /**
  * Wind Chimes alarm - peaceful chime melody
  */
-const playChimesAlarm = () => {
+const playChimesAlarm = async () => {
     const config = ALARM_CONFIGS.chimes;
     if (config) {
-        createContinuousAlarm(config);
+        await createContinuousAlarm(config);
     }
 };
 
 /**
  * Nature Dawn alarm - birds and morning sounds
  */
-const playNatureAlarm = () => {
+const playNatureAlarm = async () => {
     const config = ALARM_CONFIGS.nature;
     if (config) {
-        createContinuousAlarm(config);
+        await createContinuousAlarm(config);
     }
 };
 
 /**
  * Classic Alarm - traditional alarm tone with crescendo
  */
-const playClassicAlarm = () => {
+const playClassicAlarm = async () => {
     const config = ALARM_CONFIGS.classic;
     if (config) {
-        createBeepingAlarm(config);
+        await createBeepingAlarm(config);
     }
     logger.log('[playClassicAlarm] Started - 60s crescendo, then 30min sustain');
 };
@@ -449,7 +477,7 @@ let proceduralGainNode: GainNode | null = null;
  * Pentatonic chimes that crescendo over 60s then continue loud
  * Bulletproof: 30 minutes of chimes scheduled
  */
-const playPrismAlarm = () => {
+const playPrismAlarm = async () => {
     logger.log('[playPrismAlarm] Starting Prism alarm');
     stopSleepSound();
     const context = getAudioContext();
@@ -457,7 +485,11 @@ const playPrismAlarm = () => {
     cleanupProceduralAlarm();
 
     if (context.state === 'suspended') {
-        context.resume();
+        try {
+            await context.resume();
+        } catch (e) {
+            logger.warn('[playPrismAlarm] Failed to resume AudioContext:', e);
+        }
     }
 
     proceduralGainNode = context.createGain();
@@ -501,7 +533,7 @@ const playPrismAlarm = () => {
  * Sawtooth at 110Hz->220Hz, crescendos then continues loud
  * Bulletproof: Continuous drone plays indefinitely
  */
-const playAetherAlarm = () => {
+const playAetherAlarm = async () => {
     logger.log('[playAetherAlarm] Starting Aether alarm');
     stopSleepSound();
     const context = getAudioContext();
@@ -509,7 +541,11 @@ const playAetherAlarm = () => {
     cleanupProceduralAlarm();
 
     if (context.state === 'suspended') {
-        context.resume();
+        try {
+            await context.resume();
+        } catch (e) {
+            logger.warn('[playAetherAlarm] Failed to resume AudioContext:', e);
+        }
     }
 
     proceduralGainNode = context.createGain();
@@ -544,7 +580,7 @@ const playAetherAlarm = () => {
  * Accelerating pulse pattern, crescendos over 60s then continues loud
  * Bulletproof: 30 minutes of pulses scheduled
  */
-const _playBambooAlarm = () => {
+const _playBambooAlarm = async () => {
     logger.log('[playBambooAlarm] Starting Bamboo alarm');
     stopSleepSound();
     const context = getAudioContext();
@@ -552,7 +588,11 @@ const _playBambooAlarm = () => {
     cleanupProceduralAlarm();
 
     if (context.state === 'suspended') {
-        context.resume();
+        try {
+            await context.resume();
+        } catch (e) {
+            logger.warn('[playBambooAlarm] Failed to resume AudioContext:', e);
+        }
     }
 
     proceduralGainNode = context.createGain();
@@ -613,7 +653,7 @@ let psychoacousticAlarmStop: (() => void) | null = null;
  * CYBER-DAWN Alarm - FM Synthesis procedural birds
  * Wrapper that integrates with the audio service cleanup system
  */
-const playCyberDawnAlarmWrapper = () => {
+const playCyberDawnAlarmWrapper = async () => {
     logger.log('[playCyberDawnAlarm] Starting Cyber-Dawn alarm');
     stopSleepSound();
     if (alarmOscillator) stopAlarmSound();
@@ -629,7 +669,7 @@ const playCyberDawnAlarmWrapper = () => {
  * SOLAR ASCENT Alarm - Additive synthesis harmonic blooming
  * Wrapper that integrates with the audio service cleanup system
  */
-const playSolarAlarmWrapper = () => {
+const playSolarAlarmWrapper = async () => {
     logger.log('[playSolarAlarm] Starting Solar Ascent alarm');
     stopSleepSound();
     if (alarmOscillator) stopAlarmSound();
@@ -727,7 +767,7 @@ let currentPreviewId: string | null = null; // Track which sound is previewing
  * User taps again to stop.
  * @param soundId - The alarm sound to preview
  */
-export const playAlarmPreview = (soundId: string) => {
+export const playAlarmPreview = async (soundId: string) => {
     // Stop any current preview first
     stopAlarmPreview();
 
@@ -735,7 +775,11 @@ export const playAlarmPreview = (soundId: string) => {
     if (!ctx) return;
 
     if (ctx.state === 'suspended') {
-        ctx.resume();
+        try {
+            await ctx.resume();
+        } catch (e) {
+            logger.warn('[playAlarmPreview] Failed to resume AudioContext:', e);
+        }
     }
 
     // Track which sound is playing
@@ -1380,8 +1424,12 @@ const createSleepRampNode = (
 };
 
 const getAudioBuffer = async (context: AudioContext, src: string): Promise<AudioBuffer> => {
-    if (audioBufferCache[src]) {
-        return audioBufferCache[src];
+    const cached = audioBufferCache.get(src);
+    if (cached) {
+        // Move to end of map to mark as recently used
+        audioBufferCache.delete(src);
+        audioBufferCache.set(src, cached);
+        return cached;
     }
     const response = await fetch(src);
     if (!response.ok) {
@@ -1389,7 +1437,7 @@ const getAudioBuffer = async (context: AudioContext, src: string): Promise<Audio
     }
     const arrayBuffer = await response.arrayBuffer();
     const audioBuffer = await context.decodeAudioData(arrayBuffer);
-    audioBufferCache[src] = audioBuffer;
+    cacheAudioBuffer(src, audioBuffer);
     return audioBuffer;
 };
 
@@ -1443,7 +1491,11 @@ export const playSleepSound = async (sound: Soundscape, durationMinutes: number,
     const context = getAudioContext();
 
     if (context.state === 'suspended') {
-        await context.resume();
+        try {
+            await context.resume();
+        } catch (e) {
+            logger.warn('[playSleepSound] Failed to resume AudioContext:', e);
+        }
     }
 
     stopSleepSound(); // Stop any currently playing sleep sound
@@ -2187,4 +2239,49 @@ export const extendSleepSound = async (additionalMinutes: number): Promise<boole
 export const clearSoundEndedState = () => {
     soundEndedNaturally = false;
     // Don't clear lastPlayedSound - user might still want to restart
+};
+
+// ============================================================
+// CLEANUP / DISPOSE
+// ============================================================
+
+/**
+ * Disposes of the AudioContext and cleans up all audio resources.
+ * Call this on app unmount to properly release browser audio resources.
+ *
+ * This prevents:
+ * - Memory leaks from unclosed AudioContexts
+ * - Browser limits on concurrent AudioContexts (typically 6)
+ * - Orphaned audio nodes consuming resources
+ */
+export const disposeAudioService = async (): Promise<void> => {
+    logger.log('[AudioService] Disposing audio service...');
+
+    // Stop all active sounds
+    stopAlarmSound();
+    stopSleepSound();
+    stopAlertnessBoost();
+    stopAlarmPreview();
+
+    // Clear the audio buffer cache
+    audioBufferCache.clear();
+
+    // Close the AudioContext
+    if (audioContext && audioContext.state !== 'closed') {
+        try {
+            await audioContext.close();
+            logger.log('[AudioService] AudioContext closed successfully');
+        } catch (e) {
+            logger.warn('[AudioService] Error closing AudioContext:', e);
+        }
+    }
+    audioContext = null;
+
+    // Clean up interruption handling
+    if (interruptionCleanup) {
+        interruptionCleanup();
+        interruptionCleanup = null;
+    }
+
+    logger.log('[AudioService] Audio service disposed');
 };

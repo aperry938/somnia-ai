@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { exportDreamJournalToPDF, exportDreamsAsJSON, importDreamsFromJSON } from '../../services/exportService';
@@ -20,6 +20,11 @@ const ProfileInfoCard: React.FC = () => {
     const [localBiometrics, setLocalBiometrics] = useState<Biometrics>(biometrics);
     const [isEditing, setIsEditing] = useState(false);
 
+    // Sync localBiometrics when context biometrics changes
+    useEffect(() => {
+        setLocalBiometrics(biometrics);
+    }, [biometrics]);
+
     const handleSave = () => {
         setBiometrics(localBiometrics);
         setIsEditing(false);
@@ -27,11 +32,27 @@ const ProfileInfoCard: React.FC = () => {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
+        let processedValue: string | number | null = value;
+
+        if (name === 'age' || name === 'avgSleep' || name === 'sleepGoal') {
+            if (value === '') {
+                processedValue = null;
+            } else {
+                const numValue = parseFloat(value);
+                // Validate numeric bounds
+                if (name === 'age') {
+                    // Age must be between 1 and 120
+                    processedValue = Math.min(120, Math.max(1, numValue));
+                } else if (name === 'avgSleep' || name === 'sleepGoal') {
+                    // Sleep hours must be between 0 and 24
+                    processedValue = Math.min(24, Math.max(0, numValue));
+                }
+            }
+        }
+
         setLocalBiometrics(prev => ({
             ...prev,
-            [name]: name === 'age' || name === 'avgSleep' || name === 'sleepGoal'
-                ? (value === '' ? null : parseFloat(value))
-                : value
+            [name]: processedValue
         }));
     };
 
@@ -428,6 +449,8 @@ const SyncWearableCard: React.FC = () => {
 };
 
 // Export/Import card
+const MAX_IMPORT_SIZE = 5 * 1024 * 1024; // 5MB
+
 const DataManagementCard: React.FC = () => {
     const { dreams, importDreams } = useAppContext();
     const { showToast } = useToast();
@@ -436,12 +459,27 @@ const DataManagementCard: React.FC = () => {
     const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+
+        // Validate file size (max 5MB)
+        if (file.size > MAX_IMPORT_SIZE) {
+            showToast('File too large. Maximum size is 5MB.', 'error');
+            if (fileInputRef.current) fileInputRef.current.value = '';
+            return;
+        }
+
+        // Validate file extension
+        if (!file.name.endsWith('.json')) {
+            showToast('Please select a JSON file.', 'error');
+            if (fileInputRef.current) fileInputRef.current.value = '';
+            return;
+        }
+
         try {
             const imported = await importDreamsFromJSON(file, dreams);
             importDreams(imported);
             showToast(`Imported ${imported.length} dreams!`);
         } catch (_error) {
-            showToast('Failed to import dreams', 'error');
+            showToast('Failed to import dreams. Please check the file format.', 'error');
         }
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
