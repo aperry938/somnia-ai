@@ -80,7 +80,7 @@ const App: React.FC = () => {
         return localStorage.getItem('somnia_skipped_auth') === 'true';
     });
     const { timeString, dateString } = useClock();
-    const { ringingAlarm, stopRinging, snooze, triggerSleepDetectionAlarm, getWakeMetrics, resetWakeMetrics, resetRingStartTime, incrementSnoozeCount } = useAlarmManager();
+    const { ringingAlarm, stopRinging, snooze: _snooze, triggerSleepDetectionAlarm, getWakeMetrics, resetWakeMetrics, resetRingStartTime, incrementSnoozeCount } = useAlarmManager();
     const { isHelpOpen, closeHelp } = useKeyboardHelp();
 
     // Swipe navigation between main pages
@@ -245,7 +245,7 @@ const App: React.FC = () => {
         // but addDream is sync in AppContext logic, however the 'dreams' var from context is closure-bound.
         // We need to fetch updated dreams? Or just predict.
         // Since we know we added 1 dream, and logic is purely length based for now:
-        const predictedNewDreams = [...dreams, { id: 0, timestamp: new Date().toISOString() } as any];
+        const predictedNewDreams = [...dreams, { id: 0, timestamp: new Date().toISOString() } as Dream];
         const newStats = calculateUserStats(predictedNewDreams);
 
         if (newStats.level > oldStats.level) {

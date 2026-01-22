@@ -137,7 +137,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
     const boostEverUsedRef = React.useRef(false);
     const [quickNote, setQuickNote] = useState('');
     const [currentPrompt] = useState(() => DREAM_PROMPTS[Math.floor(Math.random() * DREAM_PROMPTS.length)]);
-    const [showInput, setShowInput] = useState(false);
+    const [_showInput, setShowInput] = useState(false);
     const [alertnessOn, setAlertnessOn] = useState(false);
     const [boostVolume, setBoostVolume] = useState(0.25);
     const [boostTimer, setBoostTimer] = useState(0);
@@ -187,7 +187,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
         setQuickNote(prev => sanitizeTextLive(prev + ' ' + text).trim().slice(0, INPUT_LIMITS.notes));
     }, []);
 
-    const { isListening, interimTranscript, startListening, stopListening, isSupported } = useSpeechRecognition(handleFinalTranscript);
+    const { isListening, interimTranscript, startListening, stopListening, isSupported: _isSupported } = useSpeechRecognition(handleFinalTranscript);
 
     // Cleanup speech recognition on unmount
     useEffect(() => {
@@ -227,7 +227,8 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                 }
             }, 50);
         };
-    }, []); // Empty deps - only run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Empty deps - only run once on mount (alarm.soundId is intentionally omitted)
 
     // Handle snooze - show countdown instead of dismissing
     const handleSnooze = useCallback(() => {
@@ -415,9 +416,9 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     // Calculate swipe progress for visual feedback
-    const swipeProgress = Math.min(Math.abs(swipeOffset) / SWIPE_THRESHOLD, 1);
-    const isSwipingRight = swipeDirection === 'right';
-    const isSwipingLeft = swipeDirection === 'left';
+    const _swipeProgress = Math.min(Math.abs(swipeOffset) / SWIPE_THRESHOLD, 1);
+    const _isSwipingRight = swipeDirection === 'right';
+    const _isSwipingLeft = swipeDirection === 'left';
 
     return (
         <div

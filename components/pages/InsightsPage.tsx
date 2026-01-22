@@ -23,7 +23,8 @@ import haptics from '../../services/hapticsService';
 
 type InsightTab = 'dreams' | 'analysis';
 
-const AnalysisCard: React.FC<{ title: string; description: string; buttonText: string; onAnalyze: () => void; isLoading: boolean; children: React.ReactNode; }> =
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _AnalysisCard: React.FC<{ title: string; description: string; buttonText: string; onAnalyze: () => void; isLoading: boolean; children: React.ReactNode; }> =
     ({ title, description, buttonText: _buttonText, onAnalyze: _onAnalyze, isLoading: _isLoading, children }) => (
         <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">
             <h2 className="font-serif text-2xl">{title}</h2>
@@ -166,7 +167,7 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
     };
 
     const chartData = useMemo(() => {
-        return dreams
+        return displayDreams
             .filter(d => d.sleepQuality !== null)
             .slice(0, 30) // Limit to last 30 entries for performance and readability
             .map(d => ({
@@ -174,9 +175,9 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                 quality: d.sleepQuality,
             }))
             .reverse();
-    }, [dreams]);
+    }, [displayDreams]);
 
-    const patterns = useMemo(() => detectRecurringPatterns(dreams), [dreams]);
+    const patterns = useMemo(() => detectRecurringPatterns(displayDreams), [displayDreams]);
 
     const handleSynthesizeDreams = async () => {
         if (!userIsPremium) return; // Premium only
@@ -185,10 +186,10 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
         setIsDreamSynthLoading(true);
         setDreamSynthError(null);
         try {
-            const result = await synthesizeDreamThemes(dreams);
+            const result = await synthesizeDreamThemes(displayDreams);
             setDreamSynthesis(result);
             localStorage.setItem(DREAM_SYNTH_KEY, Date.now().toString());
-            localStorage.setItem(DREAM_SYNTH_COUNT_KEY, dreams.length.toString()); // Track count at analysis
+            localStorage.setItem(DREAM_SYNTH_COUNT_KEY, displayDreams.length.toString()); // Track count at analysis
         } catch (_e) {
             setDreamSynthError("Failed to synthesize dream themes. Please try again.");
         } finally {
@@ -203,10 +204,10 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
         setIsHabitLoading(true);
         setHabitError(null);
         try {
-            const result = await analyzeSleepHabits(dreams);
+            const result = await analyzeSleepHabits(displayDreams);
             setHabitAnalysis(result);
             localStorage.setItem(HABIT_ANALYSIS_KEY, Date.now().toString());
-            localStorage.setItem(HABIT_ANALYSIS_COUNT_KEY, dreams.length.toString()); // Track count at analysis
+            localStorage.setItem(HABIT_ANALYSIS_COUNT_KEY, displayDreams.length.toString()); // Track count at analysis
         } catch (_e) {
             setHabitError("Failed to analyze sleep habits. Please try again.");
         } finally {
@@ -581,8 +582,8 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                         </div>
 
                         {/* Sentiment Chart */}
-                        {dreams.length >= 2 && (
-                            <SentimentChart dreams={dreams} />
+                        {displayDreams.length >= 2 && (
+                            <SentimentChart dreams={displayDreams} />
                         )}
 
                         {/* Global Trends */}
@@ -595,7 +596,7 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
 
             {/* Share Analytics Modal */}
             <ShareAnalyticsModal
-                dreams={dreams}
+                dreams={displayDreams}
                 isOpen={isShareOpen}
                 onClose={handleCloseShare}
             />

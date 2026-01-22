@@ -59,7 +59,8 @@ export function useWidgetSync({ alarms, dreams, sleepEntries = [] }: WidgetSyncO
 
         const widgetData = calculateWidgetData(alarms, dreams, sleepEntries);
         initializeWidget(widgetData);
-    }, []); // Only run on mount
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Only run on mount - alarms, dreams, sleepEntries are intentionally omitted
 }
 
 /**

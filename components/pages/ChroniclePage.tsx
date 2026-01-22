@@ -243,6 +243,7 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
                                     onChange={(e) => {
                                         if (e.target.files?.[0]) {
                                             handleSecureImportSelect(e.target.files[0]);
+                                            e.target.value = ''; // Reset to allow re-importing same file
                                         }
                                     }}
                                 />

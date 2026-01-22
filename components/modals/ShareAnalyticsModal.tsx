@@ -126,7 +126,8 @@ export const ShareAnalyticsModal: React.FC<ShareAnalyticsModalProps> = ({ dreams
         };
 
         generatePreview();
-    }, [dreams, format, theme, cardType, isOpen]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [dreams, format, theme, cardType, isOpen]); // getPeriodLabel is intentionally omitted - its result is used inside
 
     // Handle escape key to close modal
     useEffect(() => {

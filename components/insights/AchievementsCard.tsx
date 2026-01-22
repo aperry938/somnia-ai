@@ -62,7 +62,9 @@ export const AchievementsCard: React.FC<AchievementsCardProps> = ({ dreams }) =>
         checkAchievements(dreams, stats);
     }, [dreams, stats]);
 
-    const achievements = useMemo(() => getAllAchievementsWithStatus(), [dreams]);
+    // Re-compute achievements when dreams changes (triggers checkAchievements above)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const achievements = useMemo(() => getAllAchievementsWithStatus(), [dreams, stats]);
     const earnedCount = achievements.filter(a => a.earned).length;
 
     return (

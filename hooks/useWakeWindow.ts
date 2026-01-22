@@ -1,6 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { logger } from '../services/logger';
 
+// iOS 13+ DeviceMotionEvent extension for permission API
+interface DeviceMotionEventIOS extends DeviceMotionEvent {
+    requestPermission?: () => Promise<'granted' | 'denied'>;
+}
+
 interface WakeEvent {
     timestamp: number;
     magnitude: number;
@@ -23,7 +28,8 @@ export const useWakeWindow = (isActive: boolean, onWakeDetected?: (event: WakeEv
         if (typeof window !== 'undefined' && 'DeviceMotionEvent' in window) {
             setIsSupported(true);
             // Check if permission API exists (iOS 13+)
-            if (typeof (DeviceMotionEvent as any).requestPermission === 'function') {
+            const DeviceMotionEventIOS = DeviceMotionEvent as unknown as { requestPermission?: () => Promise<string> };
+            if (typeof DeviceMotionEventIOS.requestPermission === 'function') {
                 setPermissionStatus('prompt');
             } else {
                 setPermissionStatus('granted'); // Non-iOS doesn't need explicit permission prompt usually
@@ -62,9 +68,10 @@ export const useWakeWindow = (isActive: boolean, onWakeDetected?: (event: WakeEv
     }, [isActive, onWakeDetected]);
 
     const requestPermission = async () => {
-        if (typeof (DeviceMotionEvent as any).requestPermission === 'function') {
+        const DeviceMotionEventIOS = DeviceMotionEvent as unknown as { requestPermission?: () => Promise<string> };
+        if (typeof DeviceMotionEventIOS.requestPermission === 'function') {
             try {
-                const response = await (DeviceMotionEvent as any).requestPermission();
+                const response = await DeviceMotionEventIOS.requestPermission();
                 setPermissionStatus(response === 'granted' ? 'granted' : 'denied');
                 return response === 'granted';
             } catch (error) {

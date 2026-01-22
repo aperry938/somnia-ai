@@ -177,7 +177,7 @@ const AccordionItem: React.FC<{ title: string; content: string; isOpenDefault?: 
 
 // Main Dream Detail Component
 export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => void; onNavigateToDream?: (dreamId: number) => void; }> = ({ dreamId, onBack, onNavigateToDream }) => {
-    const { getDreamById, updateDream, deleteDream, biometrics, dreams, analysisPersonality, setAnalysisPersonality, artStyle: _artStyle } = useAppContext();
+    const { getDreamById, updateDream, deleteDream, biometrics, dreams, analysisPersonality, setAnalysisPersonality: _setAnalysisPersonality, artStyle: _artStyle } = useAppContext();
     const { showToast } = useToast();
     // Use calibration dream for sample, otherwise get from context
     const dream = dreamId === CALIBRATION_DREAM.id ? CALIBRATION_DREAM : (dreamId ? getDreamById(dreamId) : null);

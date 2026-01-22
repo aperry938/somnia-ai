@@ -39,7 +39,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
 
     // Swipe-to-dismiss
     const y = useMotionValue(0);
-    const backdropOpacity = useTransform(y, [0, 200], [1, 0.3]);
+    const _backdropOpacity = useTransform(y, [0, 200], [1, 0.3]);
 
     const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
         // Use same mount protection for swipe-to-dismiss
@@ -61,7 +61,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
         setDreamText(prev => (prev ? prev.trim() + ' ' : '') + transcript);
     }, []);
 
-    const { isListening, interimTranscript, startListening, stopListening, isSupported } = useSpeechRecognition(handleFinalTranscript);
+    const { isListening, interimTranscript, startListening, stopListening, isSupported: _isSupported } = useSpeechRecognition(handleFinalTranscript);
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {

@@ -39,7 +39,7 @@ const PERIODS = ['AM', 'PM'] as const;
 // Memoized component for a single alarm item - fully clickable with dynamic styling
 const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = React.memo(({ alarm, onEdit }) => {
     const { toggleAlarmActive, deleteAlarm } = useAppContext();
-    const id = `toggle-${alarm.id}`;
+    const _id = `toggle-${alarm.id}`;
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const longPressTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
     const isLongPress = React.useRef(false);
@@ -441,7 +441,8 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
         else if (frequency === 'weekly' && selectedDays.length === 0) {
             setSelectedDays([1, 2, 3, 4, 5]);
         }
-    }, [frequency]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [frequency]); // selectedDays.length is intentionally omitted to prevent infinite loop
 
     // Hardware back button closes modal
     useBackButton(true, () => { stopAlarmPreview(); onClose(); });
@@ -994,7 +995,7 @@ export const AlarmsPage: React.FC<{ timeString: string, dateString: string, onNa
 
     return (
         <>
-            <div className="flex flex-col min-h-full">
+            <div className="flex flex-col">
                 <header className="text-center mb-6">
                     <h1 className="font-serif text-6xl md:text-8xl font-bold tracking-tight">{timeString}</h1>
                     <p className="text-md mt-2 tracking-wide">{dateString}</p>

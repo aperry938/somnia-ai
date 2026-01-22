@@ -165,8 +165,7 @@ describe('Memory Audit - Audio Service', () => {
 
 describe('Memory Audit - State Growth', () => {
     beforeEach(() => {
-        // Clear localStorage
-        localStorage.clear();
+        // localStorage is cleared by the global setup
     });
 
     it('should not grow dreams array unbounded during normal usage', () => {

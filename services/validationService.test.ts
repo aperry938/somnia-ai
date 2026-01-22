@@ -114,7 +114,7 @@ describe('validationService', () => {
         });
 
         it('should handle non-string input', () => {
-            const result = validateDreamText(null as any);
+            const result = validateDreamText(null as unknown as string);
             expect(result.valid).toBe(false);
             expect(result.error).toBe('Dream text is required');
         });
@@ -208,7 +208,7 @@ describe('validationService', () => {
         });
 
         it('should handle null input', () => {
-            expect(validateSearchQuery(null as any)).toBe('');
+            expect(validateSearchQuery(null as unknown as string)).toBe('');
         });
     });
 
@@ -235,7 +235,7 @@ describe('validationService', () => {
         });
 
         it('should handle non-array input', () => {
-            expect(validateTags('not-an-array' as any)).toEqual([]);
+            expect(validateTags('not-an-array' as unknown as string[])).toEqual([]);
         });
     });
 
@@ -325,7 +325,7 @@ describe('validationService', () => {
 
         it('should return original if serialization fails', () => {
             // Create circular reference
-            const obj: any = { name: 'test' };
+            const obj: Record<string, unknown> = { name: 'test' };
             obj.self = obj;
             const result = sanitizeForJson(obj);
             expect(result).toBe(obj);

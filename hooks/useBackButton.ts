@@ -63,22 +63,25 @@ export const useBackButton = (
         // Register global listener on first use
         registerGlobalListener();
 
+        // Capture handler ID for cleanup to avoid stale ref issue
+        const currentHandlerId = handlerId.current;
+
         if (isOpen) {
             // Add to stack
             closeHandlerStack.push({
-                id: handlerId.current,
+                id: currentHandlerId,
                 onClose: stableOnClose,
                 priority,
             });
-            logger.log('[BackButton] Registered modal:', handlerId.current, 'stack size:', closeHandlerStack.length);
+            logger.log('[BackButton] Registered modal:', currentHandlerId, 'stack size:', closeHandlerStack.length);
         }
 
         return () => {
-            // Remove from stack
-            const index = closeHandlerStack.findIndex(h => h.id === handlerId.current);
+            // Remove from stack using captured value
+            const index = closeHandlerStack.findIndex(h => h.id === currentHandlerId);
             if (index !== -1) {
                 closeHandlerStack.splice(index, 1);
-                logger.log('[BackButton] Unregistered modal:', handlerId.current, 'stack size:', closeHandlerStack.length);
+                logger.log('[BackButton] Unregistered modal:', currentHandlerId, 'stack size:', closeHandlerStack.length);
             }
         };
     }, [isOpen, stableOnClose, priority]);

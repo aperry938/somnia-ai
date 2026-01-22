@@ -65,9 +65,9 @@ describe('exportService', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        vi.spyOn(document, 'createElement').mockReturnValue(mockLink as any);
-        vi.spyOn(document.body, 'appendChild').mockImplementation(() => mockLink as any);
-        vi.spyOn(document.body, 'removeChild').mockImplementation(() => mockLink as any);
+        vi.spyOn(document, 'createElement').mockReturnValue(mockLink as unknown as HTMLElement);
+        vi.spyOn(document.body, 'appendChild').mockImplementation(() => mockLink as unknown as HTMLElement);
+        vi.spyOn(document.body, 'removeChild').mockImplementation(() => mockLink as unknown as HTMLElement);
     });
 
     describe('exportDreamsAsJSON', () => {

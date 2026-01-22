@@ -21,7 +21,7 @@ interface SoundscapeModalProps {
 }
 
 export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlaying, onPlay, onStop, onClose, onFallAsleep }) => {
-    const { volume, setVolume, logSoundActivity, activeSleepSession, ensureSleepSession, createSleepEntryForSession } = useAppContext();
+    const { volume, setVolume, logSoundActivity, activeSleepSession: _activeSleepSession, ensureSleepSession, createSleepEntryForSession } = useAppContext();
     const { showToast } = useToast();
     const [duration, setDuration] = useState(30);
 
@@ -29,7 +29,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
     // const y = useMotionValue(0);
     // const backdropOpacity = useTransform(y, [0, 200], [1, 0.3]);
 
-    const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    const _handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
         if (info.offset.y > 100 || info.velocity.y > 500) {
             haptics.medium();
             handleClose();
@@ -91,7 +91,8 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, []);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // handleClose is intentionally omitted to keep listener stable
 
     // Timer countdown when playing (not when paused or ready)
     // Uses refs inside interval to avoid stale closure issues
@@ -234,7 +235,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
             setIsPaused(false);
             setPlayDuration(durationSeconds); // Ensure playDuration is in sync
             setPlayStartTime(now);
-        } catch (error) {
+        } catch (_error) {
             showToast('Failed to play soundscape. Please try again.', 'error');
             haptics.error();
             // Reset to ready state so user can retry

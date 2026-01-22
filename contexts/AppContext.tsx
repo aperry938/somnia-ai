@@ -127,7 +127,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 cacheDreamTitle(dream.dreamText, dream.aiAnalysis.title);
             }
         });
-    }, []); // Only run on initial mount
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Only run on initial mount - dreams is intentionally omitted
 
     // Listen for sync conflict resolution events and update React state
     // This fixes the bug where localStorage gets updated but React state stays stale
@@ -220,7 +221,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
 
         localStorage.setItem(migrationKey, 'true');
-    }, []); // Only run on initial mount
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Only run on initial mount - dreams, setDreams, setSleepEntries are intentionally omitted
 
     // Clear stale sleep sessions when linked alarm is DELETED (not just deactivated)
     // We only clear on deletion because:

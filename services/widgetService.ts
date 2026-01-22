@@ -229,7 +229,7 @@ export async function refreshDreamWidget(): Promise<void> {
     try {
         await WidgetPlugin.refreshDreamWidget();
         logger.log('[Widget] Dream widget refresh requested');
-    } catch (error) {
+    } catch (_error) {
         // Fallback to general refresh
         logger.warn('[Widget] Dream widget refresh not supported, using general refresh');
         await refreshWidgets();

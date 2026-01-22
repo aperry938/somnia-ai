@@ -8,6 +8,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 // Reset the module before each test to clear rate limit store
 beforeEach(async () => {
     vi.resetModules();
+    // localStorage is cleared by the global setup
 });
 
 describe('rateLimitService', () => {

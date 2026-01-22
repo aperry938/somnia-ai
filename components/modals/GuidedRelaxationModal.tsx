@@ -123,7 +123,7 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
 
     // Swipe-to-dismiss
     const y = useMotionValue(0);
-    const backdropOpacity = useTransform(y, [0, 200], [1, 0.3]);
+    const _backdropOpacity = useTransform(y, [0, 200], [1, 0.3]);
 
     const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
         if (info.offset.y > 100 || info.velocity.y > 500) {
@@ -246,7 +246,8 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
             }, 2000);
             return () => clearTimeout(readyTimer);
         }
-    }, [sessionState, relaxation.id]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [sessionState, relaxation.id]); // showToast is stable and intentionally omitted
 
     const startSession = () => {
         haptics.medium();
@@ -274,7 +275,8 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [sessionState, sessionStartTime, sessionDuration]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [sessionState, sessionStartTime, sessionDuration]); // endSession is intentionally omitted to prevent re-creating interval
 
     const endSession = () => {
         haptics.light();
@@ -322,7 +324,8 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, []);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // endSession is intentionally omitted - we want this to stay stable
 
     // Emergency cleanup on unmount - prevents audio leaks if component unmounts unexpectedly
     useEffect(() => {

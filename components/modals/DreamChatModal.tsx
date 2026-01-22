@@ -54,7 +54,8 @@ export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }
         if (history.length === 0) {
             fetchInitialResponse();
         }
-    }, []);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Only run on mount - fetchInitialResponse and history.length are intentionally omitted
 
     useEffect(() => {
         if (chatBoxRef.current) {
@@ -130,7 +131,7 @@ export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }
     };
 
     const y = useMotionValue(0);
-    const backdropOpacity = useTransform(y, [0, 200], [1, 0.3]);
+    const _backdropOpacity = useTransform(y, [0, 200], [1, 0.3]);
 
     const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
         if (info.offset.y > 100 || info.velocity.y > 500) {

@@ -396,7 +396,7 @@ export const playAlarmBySound = (soundId: string = 'somnia') => {
 /**
  * Gentle Rise alarm - soft gradual wake-up with crescendo
  */
-const playGentleAlarm = () => {
+const _playGentleAlarm = () => {
     const config = ALARM_CONFIGS.gentle;
     if (config) {
         createPulsingAlarm(config);
@@ -544,7 +544,7 @@ const playAetherAlarm = () => {
  * Accelerating pulse pattern, crescendos over 60s then continues loud
  * Bulletproof: 30 minutes of pulses scheduled
  */
-const playBambooAlarm = () => {
+const _playBambooAlarm = () => {
     logger.log('[playBambooAlarm] Starting Bamboo alarm');
     stopSleepSound();
     const context = getAudioContext();
