@@ -1,6 +1,7 @@
 // components/shared/TagInput.tsx
-import React, { useState, KeyboardEvent } from 'react';
+import React, { useState, KeyboardEvent, useCallback } from 'react';
 import { validateTags, INPUT_LIMITS, sanitizeText } from '../../services/validationService';
+import haptics from '../../services/hapticsService';
 
 interface TagInputProps {
     tags: string[];
@@ -20,25 +21,27 @@ export const TagInput: React.FC<TagInputProps> = ({
     const [inputValue, setInputValue] = useState('');
     const [showSuggestions, setShowSuggestions] = useState(false);
 
-    const addTag = (tag: string) => {
+    const addTag = useCallback((tag: string) => {
         if (disabled) return;
         // Sanitize and validate tag
         const sanitized = sanitizeText(tag).toLowerCase();
         const normalizedTag = sanitized.slice(0, INPUT_LIMITS.tags);
 
         if (normalizedTag && !tags.includes(normalizedTag) && tags.length < INPUT_LIMITS.maxTags) {
+            haptics.light();
             // Validate the full tag list
             const newTags = validateTags([...tags, normalizedTag]);
             onChange(newTags);
         }
         setInputValue('');
         setShowSuggestions(false);
-    };
+    }, [disabled, tags, onChange]);
 
-    const removeTag = (tagToRemove: string) => {
+    const removeTag = useCallback((tagToRemove: string) => {
         if (disabled) return;
+        haptics.light();
         onChange(tags.filter(tag => tag !== tagToRemove));
-    };
+    }, [disabled, tags, onChange]);
 
     const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' || e.key === ',') {
@@ -67,7 +70,7 @@ export const TagInput: React.FC<TagInputProps> = ({
                             <button
                                 onClick={() => removeTag(tag)}
                                 aria-label={`Remove tag ${tag}`}
-                                className="p-2 -mr-1 min-h-[44px] min-w-[44px] flex items-center justify-center hover:text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors rounded-full"
+                                className="p-2 -mr-1 min-h-[44px] min-w-[44px] flex items-center justify-center active:text-red-500 active:bg-red-200 hover:text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 dark:active:bg-red-800/50 transition-colors rounded-full active:scale-95"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
                                     <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -103,7 +106,7 @@ export const TagInput: React.FC<TagInputProps> = ({
                             onClick={() => addTag(suggestion)}
                             role="option"
                             aria-label={`Add tag ${suggestion}`}
-                            className="w-full text-left px-3 py-3 min-h-[44px] text-sm hover:bg-day-accent/10 dark:hover:bg-night-accent/10 transition-colors"
+                            className="w-full text-left px-3 py-3 min-h-[44px] text-sm hover:bg-day-accent/10 dark:hover:bg-night-accent/10 active:bg-day-accent/20 dark:active:bg-night-accent/20 transition-colors"
                         >
                             #{suggestion}
                         </button>

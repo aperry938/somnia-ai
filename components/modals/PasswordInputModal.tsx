@@ -1,8 +1,9 @@
 // components/modals/PasswordInputModal.tsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useBackButton } from '../../hooks/useBackButton';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
+import haptics from '../../services/hapticsService';
 
 // Animation variants
 const backdropVariants = {
@@ -92,28 +93,32 @@ export const PasswordInputModal: React.FC<PasswordInputModalProps> = ({
         }
     }, [isOpen]);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = useCallback((e: React.FormEvent) => {
         e.preventDefault();
         setValidationError(null);
 
         if (mode === 'set') {
             if (password.length < 8) {
+                haptics.warning();
                 setValidationError('Password must be at least 8 characters');
                 return;
             }
             if (password !== confirmPassword) {
+                haptics.warning();
                 setValidationError('Passwords do not match');
                 return;
             }
         }
+        haptics.success();
 
         if (!password) {
+            haptics.warning();
             setValidationError('Password is required');
             return;
         }
 
         onSubmit(password);
-    };
+    }, [mode, password, confirmPassword, onSubmit]);
 
     const title = mode === 'set' ? 'Set Backup Password' : 'Enter Backup Password';
     const description = mode === 'set'

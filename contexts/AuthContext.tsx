@@ -5,7 +5,7 @@
  * Integrates with Supabase Auth via authService.
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { logger } from '../services/logger';
 import {
@@ -214,7 +214,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     }, [isConfigured]);
 
-    const value: AuthContextType = {
+    // Memoize context value to prevent unnecessary re-renders in consumers
+    const value: AuthContextType = useMemo(() => ({
         user,
         session,
         isLoading,
@@ -225,7 +226,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         signOut,
         resetPassword,
         refreshAuth,
-    };
+    }), [user, session, isLoading, isConfigured, signUp, signIn, signOut, resetPassword, refreshAuth]);
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Dream } from '../../types';
 
 interface QuickStatsProps {
@@ -6,16 +6,37 @@ interface QuickStatsProps {
 }
 
 export const QuickStats: React.FC<QuickStatsProps> = React.memo(({ dreams }) => {
+    // Single-pass O(n) calculation instead of O(4n) from multiple filter() calls
+    // Hooks must be called before any early returns
+    const stats = useMemo(() => {
+        if (dreams.length === 0) {
+            return { thisWeek: 0, thisMonth: 0, withImages: 0, withAnalysis: 0 };
+        }
+
+        const now = Date.now();
+        const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000;
+        const oneMonthAgo = now - 30 * 24 * 60 * 60 * 1000;
+
+        let thisWeek = 0;
+        let thisMonth = 0;
+        let withImages = 0;
+        let withAnalysis = 0;
+
+        for (const dream of dreams) {
+            const timestamp = new Date(dream.timestamp).getTime();
+            if (timestamp >= oneWeekAgo) thisWeek++;
+            if (timestamp >= oneMonthAgo) thisMonth++;
+            if (dream.imageUrl) withImages++;
+            if (dream.aiAnalysis) withAnalysis++;
+        }
+
+        return { thisWeek, thisMonth, withImages, withAnalysis };
+    }, [dreams]);
+
+    // Early return after hooks
     if (dreams.length === 0) return null;
 
-    const today = new Date();
-    const oneWeekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const oneMonthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-    const thisWeek = dreams.filter(d => new Date(d.timestamp) >= oneWeekAgo).length;
-    const thisMonth = dreams.filter(d => new Date(d.timestamp) >= oneMonthAgo).length;
-    const withImages = dreams.filter(d => d.imageUrl).length;
-    const withAnalysis = dreams.filter(d => d.aiAnalysis).length;
+    const { thisWeek, thisMonth, withImages, withAnalysis } = stats;
 
     return (
         <div className="grid grid-cols-4 gap-2" role="group" aria-label="Dream journal statistics">
