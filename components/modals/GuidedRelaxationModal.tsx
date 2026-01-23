@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { motion, PanInfo, useMotionValue, useTransform } from 'framer-motion';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { motion, PanInfo, useMotionValue } from 'framer-motion';
 import { GuidedRelaxation } from '../../types';
 import { playBreathSound } from '../../services/audioService';
 import { startResonanceBreathing, ResonanceBreathingState } from '../../services/psychoacousticService';
@@ -7,6 +7,7 @@ import { useAppContext } from '../../contexts/AppContext';
 import { useToast } from '../shared/Toast';
 import haptics from '../../services/hapticsService';
 import { useBackButton } from '../../hooks/useBackButton';
+import { App as CapacitorApp } from '@capacitor/app';
 
 const CircleVisualizer = React.memo<{ animationClass: string; animKey: number; isAnimating: boolean }>(({ animationClass, animKey, isAnimating }) => (
     <div className="w-40 h-40 flex justify-center items-center">
@@ -117,18 +118,29 @@ const triggerHaptic = (duration: number) => {
 };
 
 export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onClose: () => void }> = ({ relaxation, onClose }) => {
-    const [sessionState, setSessionState] = useState<'ready' | 'starting' | 'running'>('ready');
+    const [sessionState, setSessionState] = useState<'ready' | 'starting' | 'running' | 'paused'>('ready');
     const [stepIndex, setStepIndex] = useState(0);
     const resonanceRef = useRef<ResonanceBreathingState | null>(null);
 
+    // Track elapsed time for accurate pause/resume
+    const elapsedBeforePauseRef = useRef<number>(0);
+    const pauseStartTimeRef = useRef<number | null>(null);
+
+    // Track audio errors for user feedback
+    const audioErrorCountRef = useRef<number>(0);
+
     // Swipe-to-dismiss
     const y = useMotionValue(0);
-    const _backdropOpacity = useTransform(y, [0, 200], [1, 0.3]);
+    // backdropOpacity reserved for future swipe-to-dismiss fade effect
+    // const backdropOpacity = useTransform(y, [0, 200], [1, 0.3]);
+
+    // Ref to hold endSession for use in handleDragEnd before it's defined
+    const endSessionRef = useRef<() => void>(() => {});
 
     const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
         if (info.offset.y > 100 || info.velocity.y > 500) {
             haptics.medium();
-            endSession();
+            endSessionRef.current();
         }
     };
     const [instruction, setInstruction] = useState('');
@@ -141,6 +153,11 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
     const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
     const { setActiveSleepAid, logBreathingActivity, ensureSleepSession } = useAppContext();
     const { showToast } = useToast();
+
+    // Check for reduced motion preference
+    const prefersReducedMotion = useRef(
+        typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    );
 
     const DURATION_PRESETS = [2, 5, 10]; // minutes
 
@@ -179,30 +196,46 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
         setInstruction(currentStep.text);
         setCountdown(currentStep.duration / 1000);
 
-        if (relaxation.id === '478_breathing') {
-            setAnimationClass(currentStep.anim);
-            // Only increment key (to restart animation) if it's an actual animation class
-            if (currentStep.anim.startsWith('animate-')) {
-                setAnimationKey(k => k + 1);
+        // Apply animation class (skip animations if user prefers reduced motion)
+        if (!prefersReducedMotion.current) {
+            if (relaxation.id === '478_breathing') {
+                setAnimationClass(currentStep.anim);
+                // Only increment key (to restart animation) if it's an actual animation class
+                if (currentStep.anim.startsWith('animate-')) {
+                    setAnimationKey(k => k + 1);
+                }
+            } else if (relaxation.id === 'box_breathing') {
+                setAnimationClass('animate-box-breathing-16s');
+                // Restart the box animation at the beginning of each cycle
+                if (stepIndex === 0) {
+                    setAnimationKey(k => k + 1);
+                }
+            } else if (relaxation.id === 'resonance_chamber') {
+                // Update breath phase for waveform visualizer
+                setBreathPhase(stepIndex === 0 ? 'inhale' : 'exhale');
             }
-        } else if (relaxation.id === 'box_breathing') {
-            setAnimationClass('animate-box-breathing-16s');
-            // Restart the box animation at the beginning of each cycle
-            if (stepIndex === 0) {
-                setAnimationKey(k => k + 1);
+        } else {
+            // Reduced motion: use static scale for phase indication
+            if (relaxation.id === 'resonance_chamber') {
+                setBreathPhase(stepIndex === 0 ? 'inhale' : 'exhale');
+            } else {
+                setAnimationClass(currentStep.text.includes('Inhale') ? 'scale-[1.4] opacity-100' : 'scale-[0.9] opacity-80');
             }
-        } else if (relaxation.id === 'resonance_chamber') {
-            // Update breath phase for waveform visualizer
-            setBreathPhase(stepIndex === 0 ? 'inhale' : 'exhale');
         }
 
-        // 2. Play Sound and Haptic
+        // 2. Play Sound and Haptic (with error tracking)
         if (currentStep.sound) {
             try {
                 playBreathSound(currentStep.sound, currentStep.duration / 1000);
+                // Reset error count on success
+                audioErrorCountRef.current = 0;
             } catch (error) {
                 console.error('Failed to play breath sound:', error);
-                // Don't show toast for breath sounds as they're frequent - just log silently
+                audioErrorCountRef.current += 1;
+                // Show toast only after 3 consecutive failures to avoid spam
+                if (audioErrorCountRef.current === 3) {
+                    showToast('Audio unavailable. Continuing without sound.', 'error');
+                }
             }
         }
         if (currentStep.vibrate) {
@@ -223,7 +256,7 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
             clearInterval(countdownInterval);
             clearTimeout(stepTimer);
         };
-    }, [sessionState, stepIndex, cycle, relaxation.id]);
+    }, [sessionState, stepIndex, cycle, relaxation.id, showToast]);
 
     // Effect for the "Get Ready" state
     useEffect(() => {
@@ -253,18 +286,66 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
         haptics.medium();
         // Ensure session exists so breathing activity gets logged
         ensureSleepSession();
+        // Reset pause tracking
+        elapsedBeforePauseRef.current = 0;
+        pauseStartTimeRef.current = null;
+        audioErrorCountRef.current = 0;
         setSessionStartTime(Date.now());
         setTotalTimeRemaining(sessionDuration * 60);
         setSessionState('starting');
     };
 
-    // Session timer - counts down total session time
+    // Pause session (for backgrounding)
+    const pauseSession = useCallback(() => {
+        if (sessionState !== 'running') return;
+
+        haptics.light();
+        // Track time elapsed before pause
+        if (sessionStartTime) {
+            elapsedBeforePauseRef.current += Math.floor((Date.now() - sessionStartTime) / 1000);
+        }
+        pauseStartTimeRef.current = Date.now();
+
+        // Pause resonance breathing audio
+        if (resonanceRef.current) {
+            resonanceRef.current.stop();
+            resonanceRef.current = null;
+        }
+
+        setSessionState('paused');
+        setInstruction('Paused');
+        setAnimationClass('scale-[1] opacity-50');
+    }, [sessionState, sessionStartTime]);
+
+    // Resume session
+    const resumeSession = useCallback(() => {
+        if (sessionState !== 'paused') return;
+
+        haptics.medium();
+        // Reset start time to now (elapsed time is tracked in elapsedBeforePauseRef)
+        setSessionStartTime(Date.now());
+        pauseStartTimeRef.current = null;
+
+        // Restart resonance breathing audio for resonance_chamber
+        if (relaxation.id === 'resonance_chamber') {
+            try {
+                resonanceRef.current = startResonanceBreathing(0.5);
+            } catch (error) {
+                console.error('Failed to restart resonance breathing audio:', error);
+            }
+        }
+
+        setSessionState('running');
+    }, [sessionState, relaxation.id]);
+
+    // Session timer - counts down total session time (accounts for pause)
     useEffect(() => {
         if (sessionState !== 'running' || !sessionStartTime) return;
 
         const interval = setInterval(() => {
-            const elapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
-            const remaining = Math.max(0, sessionDuration * 60 - elapsed);
+            const currentElapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
+            const totalElapsed = elapsedBeforePauseRef.current + currentElapsed;
+            const remaining = Math.max(0, sessionDuration * 60 - totalElapsed);
             setTotalTimeRemaining(remaining);
 
             // Auto-end when time runs out
@@ -278,7 +359,7 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [sessionState, sessionStartTime, sessionDuration]); // endSession is intentionally omitted to prevent re-creating interval
 
-    const endSession = () => {
+    const endSession = useCallback(() => {
         haptics.light();
         // Stop resonance breathing audio if active
         if (resonanceRef.current) {
@@ -286,12 +367,14 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
             resonanceRef.current = null;
         }
         // Log the actual duration spent in this breathing exercise
-        if (sessionStartTime) {
-            const elapsedSeconds = Math.floor((Date.now() - sessionStartTime) / 1000);
-            if (elapsedSeconds > 0) {
-                logBreathingActivity(relaxation.name, elapsedSeconds);
-            }
+        const totalElapsed = elapsedBeforePauseRef.current +
+            (sessionStartTime ? Math.floor((Date.now() - sessionStartTime) / 1000) : 0);
+        if (totalElapsed > 0) {
+            logBreathingActivity(relaxation.name, totalElapsed);
         }
+        // Reset all state
+        elapsedBeforePauseRef.current = 0;
+        pauseStartTimeRef.current = null;
         setSessionState('ready');
         setStepIndex(0);
         setCountdown(0);
@@ -301,7 +384,43 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
         setAnimationClass(relaxation.id === 'box_breathing' ? '' : 'scale-[0.8] opacity-70');
         setBreathPhase('idle');
         onClose();
-    };
+    }, [logBreathingActivity, onClose, relaxation.id, relaxation.name, sessionStartTime]);
+
+    // Keep endSessionRef in sync with endSession
+    useEffect(() => {
+        endSessionRef.current = endSession;
+    }, [endSession]);
+
+    // Background/foreground handling - pause when app goes to background
+    useEffect(() => {
+        // Handle native app state changes (Capacitor)
+        const handleAppStateChange = (state: { isActive: boolean }) => {
+            if (!state.isActive && sessionState === 'running') {
+                pauseSession();
+            }
+        };
+
+        // Handle web visibility changes (browser tab switching)
+        const handleVisibilityChange = () => {
+            if (document.hidden && sessionState === 'running') {
+                pauseSession();
+            }
+        };
+
+        // Subscribe to Capacitor app state changes
+        let appStateListener: { remove: () => void } | null = null;
+        CapacitorApp.addListener('appStateChange', handleAppStateChange)
+            .then(listener => { appStateListener = listener; })
+            .catch(() => { /* Not running in Capacitor */ });
+
+        // Subscribe to web visibility changes
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            appStateListener?.remove();
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [sessionState, pauseSession]);
 
     // Handle hardware back button (Android) - always active since modal only renders when open
     useBackButton(true, endSession);
@@ -321,11 +440,19 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.key === 'Escape') endSession();
+            // Space bar to pause/resume during session
+            if (event.key === ' ' && (sessionState === 'running' || sessionState === 'paused')) {
+                event.preventDefault();
+                if (sessionState === 'running') {
+                    pauseSession();
+                } else {
+                    resumeSession();
+                }
+            }
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // endSession is intentionally omitted - we want this to stay stable
+    }, [endSession, pauseSession, resumeSession, sessionState]);
 
     // Emergency cleanup on unmount - prevents audio leaks if component unmounts unexpectedly
     useEffect(() => {
@@ -405,17 +532,58 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
                                     : <CircleVisualizer animationClass={animationClass} animKey={animationKey} isAnimating={sessionState === 'running'} />
                             }
                         </div>
-                        <p className="text-xl font-medium h-8">
-                            {instruction}
-                            {sessionState === 'running' && ` (${countdown}s)`}
-                        </p>
+                        {/* Breathing instruction with ARIA live region for screen readers */}
+                        <div
+                            role="status"
+                            aria-live="polite"
+                            aria-atomic="true"
+                            className="text-xl font-medium h-8"
+                        >
+                            <span className={sessionState === 'paused' ? 'text-day-text-secondary dark:text-night-text-secondary' : ''}>
+                                {instruction}
+                            </span>
+                            {sessionState === 'running' && (
+                                <span className="text-day-accent dark:text-night-accent ml-1">
+                                    ({countdown}s)
+                                </span>
+                            )}
+                        </div>
                         {/* Total Time Remaining */}
-                        {sessionState === 'running' && totalTimeRemaining > 0 && (
+                        {(sessionState === 'running' || sessionState === 'paused') && totalTimeRemaining > 0 && (
                             <p className="text-sm text-day-text-secondary dark:text-night-text-secondary mt-2">
                                 {formatTime(totalTimeRemaining)} remaining
+                                {sessionState === 'paused' && ' (paused)'}
                             </p>
                         )}
-                        <button onClick={endSession} aria-label="End session" className="w-full mt-6 py-2 min-h-[44px] bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">End Session</button>
+                        {/* Session Controls */}
+                        <div className="flex gap-3 mt-6">
+                            {sessionState === 'paused' ? (
+                                <button
+                                    onClick={resumeSession}
+                                    aria-label="Resume session"
+                                    className="flex-1 py-2 min-h-[44px] bg-day-accent dark:bg-night-accent text-white font-medium rounded-full flex items-center justify-center"
+                                >
+                                    Resume
+                                </button>
+                            ) : sessionState === 'running' ? (
+                                <button
+                                    onClick={pauseSession}
+                                    aria-label="Pause session"
+                                    className="flex-1 py-2 min-h-[44px] bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center"
+                                >
+                                    Pause
+                                </button>
+                            ) : null}
+                            <button
+                                onClick={endSession}
+                                aria-label="End session"
+                                className={`py-2 min-h-[44px] rounded-full flex items-center justify-center ${
+                                    sessionState === 'starting' ? 'flex-1' : 'px-6'
+                                } ${sessionState === 'paused' ? 'bg-gray-200 dark:bg-gray-700' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'}`}
+                            >
+                                End
+                            </button>
+                        </div>
                     </div>
                 )}
             </motion.div>

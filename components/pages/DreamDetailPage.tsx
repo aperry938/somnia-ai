@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
 import { analyzeDream, generateDreamTitle, generateImagePrompt, DreamArtStyle, DREAM_ART_STYLES, generateDreamEmbedding, OfflineError } from '../../services/geminiService';
 import { DreamChatModal } from '../modals/DreamChatModal';
@@ -17,6 +17,7 @@ import { CALIBRATION_DREAM } from '../../constants/demoDreams';
 import { AIConsentModal, hasAIConsent } from '../modals/AIConsentModal';
 import { queueForAnalysis, isQueued, isOnline } from '../../services/offlineQueueService';
 import { ShareDreamModal } from '../modals/ShareDreamModal';
+import { Capacitor } from '@capacitor/core';
 
 // Evening Reflection Display Component
 const EveningReflectionDisplay: React.FC<{ aids: SleepAids }> = ({ aids }) => {
@@ -155,20 +156,29 @@ const hasCrisisContent = (text: string): boolean => {
 // Accordion Item Component
 const AccordionItem: React.FC<{ title: string; content: string; isOpenDefault?: boolean }> = ({ title, content, isOpenDefault = false }) => {
     const [isOpen, setIsOpen] = useState(isOpenDefault);
+    const buttonId = `accordion-button-${title.replace(/\s+/g, '-').toLowerCase()}`;
     const contentId = `accordion-content-${title.replace(/\s+/g, '-').toLowerCase()}`;
 
     return (
         <div className="border-b border-day-border dark:border-night-border">
-            <button
-                className="w-full flex justify-between items-center py-4 min-h-[56px] text-left font-serif text-xl focus:outline-none focus:ring-2 focus:ring-inset focus:ring-day-accent dark:focus:ring-night-accent"
-                onClick={() => setIsOpen(!isOpen)}
-                aria-expanded={isOpen}
-                aria-controls={contentId}
+            <h3>
+                <button
+                    id={buttonId}
+                    className="w-full flex justify-between items-center py-4 min-h-[56px] text-left font-serif text-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-day-accent dark:focus-visible:ring-night-accent"
+                    onClick={() => setIsOpen(!isOpen)}
+                    aria-expanded={isOpen}
+                    aria-controls={contentId}
+                >
+                    <span>{title}</span>
+                    <span className={`transform transition-transform duration-300 text-2xl leading-none ${isOpen ? 'rotate-45' : ''}`} aria-hidden="true">+</span>
+                </button>
+            </h3>
+            <div
+                id={contentId}
+                role="region"
+                aria-labelledby={buttonId}
+                className={`overflow-hidden transition-all duration-500 ease-in-out ${isOpen ? 'max-h-screen' : 'max-h-0'}`}
             >
-                <span>{title}</span>
-                <span className={`transform transition-transform duration-300 ${isOpen ? 'rotate-45' : ''}`} aria-hidden="true">+</span>
-            </button>
-            <div id={contentId} className={`overflow-hidden transition-all duration-500 ease-in-out ${isOpen ? 'max-h-screen' : 'max-h-0'}`}>
                 <p className="pb-4 text-day-text-secondary dark:text-night-text-secondary whitespace-pre-wrap">{content}</p>
             </div>
         </div>
@@ -194,6 +204,9 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
     const [dejaVuMatch, setDejaVuMatch] = useState<DejaVuMatch | null>(null);
     const [showConsentModal, setShowConsentModal] = useState(false);
     const [isShareOpen, setIsShareOpen] = useState(false);
+    const [keyboardVisible, setKeyboardVisible] = useState(false);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const abortControllerRef = useRef<AbortController | null>(null);
 
     const detectedSymbols = useMemo(() => {
         if (!dream) return [];
@@ -213,6 +226,39 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
             }
         };
     }, [isListening, stopListening]);
+
+    // Keyboard handling for native mobile using visualViewport API
+    useEffect(() => {
+        if (!Capacitor.isNativePlatform()) return;
+
+        const handleResize = () => {
+            if (window.visualViewport) {
+                const isKeyboardOpen = window.visualViewport.height < window.innerHeight * 0.75;
+                setKeyboardVisible(isKeyboardOpen);
+
+                if (isKeyboardOpen && textareaRef.current && isEditing) {
+                    setTimeout(() => {
+                        textareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 100);
+                }
+            }
+        };
+
+        window.visualViewport?.addEventListener('resize', handleResize);
+
+        return () => {
+            window.visualViewport?.removeEventListener('resize', handleResize);
+        };
+    }, [isEditing]);
+
+    // Cleanup abort controller on unmount
+    useEffect(() => {
+        return () => {
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+        };
+    }, []);
 
     const performAnalysis = useCallback(async () => {
         if (!dream || dream.aiAnalysis) {
@@ -257,32 +303,44 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
             return;
         }
 
+        // Cancel any previous in-flight request
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+        abortControllerRef.current = new AbortController();
+
         setAnalysisState('loading');
         try {
             // First perform text analysis
             const analysisData = await analyzeDream(dream.dreamText, dream.sleepAids, biometrics, analysisPersonality);
 
+            // Check if component is still mounted (abort not triggered)
+            if (abortControllerRef.current?.signal.aborted) return;
+
             // Increment analysis count
             localStorage.setItem('somnia_daily_analysis', JSON.stringify([today, countAnalysis + 1]));
 
-            // Generate embedding for semantic similarity (Déjà Vu detection)
+            // Generate embedding for semantic similarity (Deja Vu detection)
             let embedding: number[] | undefined;
             try {
                 embedding = await generateDreamEmbedding(dream.dreamText);
 
-                // Check for Déjà Vu (similar dream from 30+ days ago)
-                if (embedding && isPremium()) {
+                // Check for Deja Vu (similar dream from 30+ days ago)
+                if (embedding && isPremium() && !abortControllerRef.current?.signal.aborted) {
                     const match = await processDejaVuCheck(dream.id, embedding, dreams);
                     if (match) {
                         setDejaVuMatch(match);
                         haptics.success();
-                        showToast(`Déjà Rêvé! This echoes a dream from ${match.daysAgo} days ago`, 'info');
+                        showToast(`Deja Reve! This echoes a dream from ${match.daysAgo} days ago`, 'info');
                     }
                 }
             } catch (embeddingError) {
                 // Embedding generation is optional - don't fail the whole analysis
                 logger.error('Embedding generation failed:', embeddingError);
             }
+
+            // Final check before state update
+            if (abortControllerRef.current?.signal.aborted) return;
 
             updateDream({
                 id: dream.id,
@@ -292,6 +350,9 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
             });
             setAnalysisState('success');
         } catch (e) {
+            // Don't log abort errors
+            if (e instanceof Error && e.name === 'AbortError') return;
+
             logger.error(e);
             // If offline error, queue for later analysis
             if (e instanceof OfflineError) {
@@ -331,28 +392,30 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
         <>
             <div className="max-w-2xl mx-auto">
                 <div className="flex justify-between items-center mb-6">
-                    <button onClick={onBack} aria-label="Back to Chronicle" className="min-h-[44px] px-3 py-2 text-day-accent dark:text-night-accent flex items-center">&larr; Back to Chronicle</button>
+                    <button type="button" onClick={onBack} aria-label="Back to Chronicle" className="min-h-[44px] px-3 py-2 text-day-accent dark:text-night-accent flex items-center active:scale-95 transition-transform">&larr; Back to Chronicle</button>
                     <div className="flex gap-1">
                         {!isReadOnly && (
-                            <button onClick={() => setIsEditing(!isEditing)} aria-label={isEditing ? 'Cancel editing' : 'Edit dream'} className="min-h-[44px] min-w-[44px] px-3 py-2 text-sm text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent flex items-center">
+                            <button type="button" onClick={() => setIsEditing(!isEditing)} aria-label={isEditing ? 'Cancel editing' : 'Edit dream'} className="min-h-[44px] min-w-[44px] px-3 py-2 text-sm text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent flex items-center active:scale-95 transition-transform">
                                 {isEditing ? 'Cancel' : 'Edit'}
                             </button>
                         )}
                         <button
+                            type="button"
                             onClick={() => {
                                 haptics.medium();
                                 setIsShareOpen(true);
                             }}
                             aria-label="Share dream as card"
-                            className="min-h-[44px] min-w-[44px] px-3 py-2 text-sm text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent flex items-center gap-1"
+                            className="min-h-[44px] min-w-[44px] px-3 py-2 text-sm text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent flex items-center gap-1 active:scale-95 transition-transform"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                             </svg>
                             Share
                         </button>
                         {!isReadOnly && (
                             <button
+                                type="button"
                                 onClick={() => {
                                     if (window.confirm('Are you sure you want to delete this dream? This cannot be undone.')) {
                                         deleteDream(dream.id);
@@ -360,8 +423,8 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                                         onBack();
                                     }
                                 }}
-                                aria-label="Delete dream"
-                                className="min-h-[44px] min-w-[44px] px-3 py-2 text-sm text-red-500 hover:text-red-700 flex items-center"
+                                aria-label="Delete dream permanently"
+                                className="min-h-[44px] min-w-[44px] px-3 py-2 text-sm text-red-500 hover:text-red-700 flex items-center active:scale-95 transition-transform"
                             >
                                 Delete
                             </button>
@@ -422,8 +485,9 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                     </span>
                 </p>
                 <div className="flex items-center gap-2 mt-2 mb-4">
-                    <h2 className="font-serif text-3xl">{dream.title}</h2>
+                    <h1 className="font-serif text-3xl">{dream.title}</h1>
                     <button
+                        type="button"
                         onClick={async () => {
                             setIsRegeneratingTitle(true);
                             try {
@@ -436,39 +500,40 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                                 setIsRegeneratingTitle(false);
                             }
                         }}
-                        disabled={isRegeneratingTitle}
-                        className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent transition-colors disabled:opacity-50"
+                        disabled={isRegeneratingTitle || isReadOnly}
+                        className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent transition-colors disabled:opacity-50 active:scale-95"
                         title="Regenerate title with AI"
-                        aria-label="Regenerate title with AI"
+                        aria-label={isRegeneratingTitle ? "Regenerating title..." : "Regenerate title with AI"}
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 ${isRegeneratingTitle ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 ${isRegeneratingTitle ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
                     </button>
                 </div>
 
-                {/* Déjà Vu Alert Banner */}
+                {/* Deja Vu Alert Banner */}
                 {dejaVuMatch && (
                     <button
+                        type="button"
                         onClick={() => {
                             if (onNavigateToDream) {
                                 haptics.light();
                                 onNavigateToDream(dejaVuMatch.dreamId);
                             }
                         }}
-                        className="w-full mb-6 bg-gradient-to-r from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30 border border-purple-200 dark:border-purple-700/50 rounded-xl p-4 animate-fadeIn hover:border-purple-400 dark:hover:border-purple-500 transition-colors text-left group"
-                        aria-label={`View similar dream: ${dejaVuMatch.title}`}
+                        className="w-full mb-6 min-h-[80px] bg-gradient-to-r from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30 border border-purple-200 dark:border-purple-700/50 rounded-xl p-4 animate-fadeIn hover:border-purple-400 dark:hover:border-purple-500 active:scale-[0.98] transition-all text-left group"
+                        aria-label={`Deja Reve detected: This dream is ${Math.round(dejaVuMatch.similarity * 100)}% similar to ${dejaVuMatch.title} from ${dejaVuMatch.daysAgo} days ago. Tap to view the connected dream.`}
                     >
                         <div className="flex items-start gap-3">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center flex-shrink-0" aria-hidden="true">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" /></svg>
                             </div>
                             <div className="flex-grow">
-                                <h4 className="font-serif text-purple-800 dark:text-purple-200 font-medium">Déjà Rêvé Detected!</h4>
+                                <span className="font-serif text-purple-800 dark:text-purple-200 font-medium block">Deja Reve Detected!</span>
                                 <p className="text-sm text-purple-600 dark:text-purple-300 mt-1">
                                     This dream is <strong>{Math.round(dejaVuMatch.similarity * 100)}% similar</strong> to "<span className="underline group-hover:text-purple-800 dark:group-hover:text-purple-100">{dejaVuMatch.title}</span>" from {dejaVuMatch.daysAgo} days ago.
                                 </p>
-                                <p className="text-xs text-purple-500 dark:text-purple-400 mt-2 flex items-center gap-1">
+                                <p className="text-xs text-purple-500 dark:text-purple-400 mt-2 flex items-center gap-1" aria-hidden="true">
                                     <span className="italic">Tap to view the connected dream</span>
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -483,27 +548,35 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                 {dream.sleepAids && <SleepAidsDisplay aids={dream.sleepAids} />}
 
                 {isEditing ? (
-                    <div>
+                    <div className={`${keyboardVisible ? 'pb-4' : ''}`}>
                         <div className="relative">
+                            <label htmlFor="dream-text-editor" className="sr-only">Edit dream text</label>
                             <textarea
+                                id="dream-text-editor"
+                                ref={textareaRef}
                                 value={editedText}
                                 onChange={(e) => setEditedText(e.target.value)}
-                                className="w-full h-48 p-3 bg-white/80 dark:bg-black/30 border border-day-border dark:border-night-border rounded-md focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent pr-12"
+                                className="w-full h-48 p-3 bg-white/80 dark:bg-black/30 border border-day-border dark:border-night-border rounded-md focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent pr-14 text-base resize-none"
                                 disabled={isListening}
+                                autoComplete="off"
+                                autoCorrect="on"
+                                spellCheck="true"
+                                enterKeyHint="done"
                             />
                             {isSupported && (
                                 <button
+                                    type="button"
                                     onClick={isListening ? stopListening : startListening}
                                     className={`absolute top-2 right-2 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full transition-colors ${isListening ? 'text-red-500 bg-red-100 dark:bg-red-900/30' : 'text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent hover:bg-black/5 dark:hover:bg-white/5'}`}
                                     title={isListening ? "Stop recording" : "Dictate dream"}
-                                    aria-label={isListening ? "Stop recording" : "Dictate dream"}
+                                    aria-label={isListening ? "Stop voice recording" : "Start voice dictation for dream text"}
                                     aria-pressed={isListening}
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                                     </svg>
                                     {isListening && (
-                                        <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                                        <span className="absolute -top-1 -right-1 flex h-3 w-3" aria-hidden="true">
                                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                                             <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
                                         </span>
@@ -511,7 +584,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                                 </button>
                             )}
                         </div>
-                        <button onClick={handleSaveEdit} aria-label="Save changes" className="mt-2 px-6 py-3 min-h-[48px] bg-day-accent text-white rounded-full flex items-center justify-center">Save Changes</button>
+                        <button type="button" onClick={handleSaveEdit} className="mt-3 px-6 py-3 min-h-[48px] bg-day-accent text-white rounded-full flex items-center justify-center font-medium active:scale-95 transition-transform">Save Changes</button>
                     </div>
                 ) : (
                     <>
@@ -524,11 +597,24 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
 
                 {/* Crisis Resources Banner */}
                 {hasCrisisContent(dream.dreamText) && (
-                    <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mt-4">
+                    <div
+                        className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mt-4"
+                        role="alert"
+                        aria-live="polite"
+                    >
                         <p className="text-red-600 dark:text-red-400 text-sm font-medium">
                             If you're experiencing difficult thoughts, help is available 24/7:
-                            <a href="tel:988" className="underline ml-1 font-bold">988 Suicide & Crisis Lifeline</a>
                         </p>
+                        <a
+                            href="tel:988"
+                            className="inline-flex items-center gap-2 mt-2 px-4 py-3 min-h-[48px] bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 active:scale-95 transition-all"
+                            aria-label="Call 988 Suicide and Crisis Lifeline"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                            </svg>
+                            Call 988 Crisis Lifeline
+                        </a>
                     </div>
                 )}
 
@@ -550,26 +636,26 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                 {/* Dream Symbols Section */}
                 {detectedSymbols.length > 0 && (
                     <details className="mt-6 bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-xl group">
-                        <summary className="p-4 cursor-pointer flex items-center justify-between list-none">
-                            <h3 className="font-serif text-lg flex items-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <summary className="p-4 min-h-[56px] cursor-pointer flex items-center justify-between list-none select-none active:bg-black/5 dark:active:bg-white/5 rounded-xl transition-colors">
+                            <span className="font-serif text-lg flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                                 </svg>
                                 Detected Symbols ({detectedSymbols.length})
-                            </h3>
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-day-text-secondary dark:text-night-text-secondary transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            </span>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-day-text-secondary dark:text-night-text-secondary transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                             </svg>
                         </summary>
-                        <div className="px-4 pb-4 space-y-3">
+                        <ul className="px-4 pb-4 space-y-3" role="list" aria-label="Dream symbols and their meanings">
                             {detectedSymbols.map(symbol => (
-                                <div key={symbol.symbol} className="text-sm">
+                                <li key={symbol.symbol} className="text-sm py-1">
                                     <span className="font-medium text-day-accent dark:text-night-accent">{symbol.symbol}</span>
-                                    <span className="mx-2 text-day-text-secondary dark:text-night-text-secondary">—</span>
+                                    <span className="mx-2 text-day-text-secondary dark:text-night-text-secondary" aria-hidden="true">-</span>
                                     <span className="text-day-text-secondary dark:text-night-text-secondary">{symbol.meaning}</span>
-                                </div>
+                                </li>
                             ))}
-                        </div>
+                        </ul>
                     </details>
                 )}
 
@@ -577,8 +663,9 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                 <div className="mt-6 mb-4">
                     {isPremium() ? (
                         <button
+                            type="button"
                             onClick={() => { haptics.medium(); setIsChatOpen(true); }}
-                            className="w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold rounded-full flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all"
+                            className="w-full py-3 min-h-[48px] bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold rounded-full flex items-center justify-center gap-2 shadow-lg hover:shadow-xl active:scale-[0.98] transition-all"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -614,17 +701,29 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                     )}
                 </div>
 
-                <div className="mt-8 pt-6 border-t border-day-border dark:border-night-border">
+                <div className="mt-8 pt-6 border-t border-day-border dark:border-night-border" aria-busy={analysisState === 'loading'}>
                     {analysisState === 'loading' && (
-                        <div className="text-center text-day-accent dark:text-night-accent">
-                            <svg className="animate-spin h-8 w-8 text-current mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                            <p className="mt-2">Illuminating...</p>
+                        <div className="text-center text-day-accent dark:text-night-accent" role="status" aria-live="polite">
+                            <svg className="animate-spin h-8 w-8 text-current mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            <p className="mt-2">Analyzing your dream...</p>
+                            <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-1">This may take a few moments</p>
                         </div>
                     )}
                     {analysisState === 'error' && (
-                        <div className="text-center">
-                            <p className="text-red-500">Sorry, the analysis could not be completed.</p>
-                            <button onClick={handleRetry} aria-label="Retry dream analysis" className="mt-2 px-6 py-3 min-h-[48px] bg-day-accent text-white rounded-full flex items-center justify-center">
+                        <div className="text-center" role="alert">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-red-500 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            <p className="text-red-500 font-medium">Analysis could not be completed</p>
+                            <p className="text-sm text-day-text-secondary dark:text-night-text-secondary mt-1">Please check your connection and try again</p>
+                            <button
+                                type="button"
+                                onClick={handleRetry}
+                                className="mt-4 px-6 py-3 min-h-[48px] bg-day-accent text-white rounded-full inline-flex items-center justify-center gap-2 font-medium active:scale-95 transition-transform"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
                                 Retry Analysis
                             </button>
                         </div>
@@ -656,20 +755,24 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                                         <div className="relative group">
                                             <img
                                                 src={dream.imageUrl}
-                                                alt="Dream visualization"
+                                                alt={`Dream visualization for ${dream.title || 'this dream'}`}
                                                 loading="lazy"
                                                 className="w-full h-48 object-cover rounded-lg"
                                             />
                                             <button
+                                                type="button"
                                                 onClick={() => {
                                                     if (isReadOnly) return;
-                                                    updateDream({ id: dream.id, imageUrl: null });
+                                                    if (window.confirm('Remove this visualization image?')) {
+                                                        updateDream({ id: dream.id, imageUrl: null });
+                                                        showToast('Image removed');
+                                                    }
                                                 }}
                                                 disabled={isReadOnly}
-                                                className={`absolute top-2 right-2 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity ${isReadOnly ? 'cursor-not-allowed' : ''}`}
-                                                aria-label="Remove image"
+                                                className={`absolute top-2 right-2 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 focus:opacity-100 active:scale-95 transition-all ${isReadOnly ? 'cursor-not-allowed' : ''}`}
+                                                aria-label="Remove visualization image"
                                             >
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                                 </svg>
                                             </button>
@@ -682,13 +785,18 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                                             <div className="flex items-start justify-between gap-2 mb-2">
                                                 <span className="text-xs font-medium text-purple-600 dark:text-purple-400">Your Visualization Prompt</span>
                                                 <button
+                                                    type="button"
                                                     onClick={() => {
                                                         const prompt = generatedPrompt || dream.aiAnalysis?.imagePrompt || '';
-                                                        navigator.clipboard.writeText(prompt);
-                                                        haptics.success();
-                                                        showToast('Prompt copied to clipboard');
+                                                        navigator.clipboard.writeText(prompt).then(() => {
+                                                            haptics.success();
+                                                            showToast('Prompt copied to clipboard');
+                                                        }).catch(() => {
+                                                            showToast('Failed to copy to clipboard', 'error');
+                                                        });
                                                     }}
-                                                    className="px-3 py-2 min-h-[44px] text-xs font-medium bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors flex items-center gap-1 shrink-0"
+                                                    className="px-3 py-2 min-h-[44px] text-xs font-medium bg-purple-600 text-white rounded-full hover:bg-purple-700 active:scale-95 transition-all flex items-center gap-1 shrink-0"
+                                                    aria-label="Copy visualization prompt to clipboard"
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -721,15 +829,18 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                                             <div className="space-y-3">
                                                 <div>
                                                     <label className="text-xs font-medium text-purple-600 dark:text-purple-400 block mb-2">Choose Art Style</label>
-                                                    <div className="flex flex-wrap gap-2">
+                                                    <div className="flex flex-wrap gap-2" role="group" aria-label="Art style selection">
                                                         {(Object.keys(DREAM_ART_STYLES) as DreamArtStyle[]).map(style => (
                                                             <button
+                                                                type="button"
                                                                 key={style}
                                                                 onClick={() => setSelectedPromptStyle(style)}
-                                                                className={`px-4 py-2 text-sm rounded-full min-h-[44px] transition-colors ${selectedPromptStyle === style
+                                                                className={`px-4 py-2 text-sm rounded-full min-h-[44px] active:scale-95 transition-all ${selectedPromptStyle === style
                                                                     ? 'bg-purple-600 text-white'
                                                                     : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-800/40'
                                                                     }`}
+                                                                aria-pressed={selectedPromptStyle === style}
+                                                                aria-label={`Select ${DREAM_ART_STYLES[style].name} art style`}
                                                             >
                                                                 {DREAM_ART_STYLES[style].name}
                                                             </button>
@@ -738,6 +849,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                                                 </div>
 
                                                 <button
+                                                    type="button"
                                                     onClick={async () => {
                                                         if (isReadOnly) return;
                                                         if (limitReached) {
@@ -759,7 +871,8 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                                                         }
                                                     }}
                                                     disabled={isGeneratingPrompt || limitReached || isReadOnly}
-                                                    className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg font-medium hover:from-purple-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                                    className="w-full px-4 py-3 min-h-[48px] bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg font-medium hover:from-purple-700 hover:to-indigo-700 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                                    aria-busy={isGeneratingPrompt}
                                                 >
                                                     {isGeneratingPrompt ? (
                                                         <>
@@ -781,31 +894,32 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
 
                                     {/* Instructions */}
                                     <details className="group/details">
-                                        <summary className="text-xs text-purple-600 dark:text-purple-400 cursor-pointer hover:text-purple-700 dark:hover:text-purple-300 list-none flex items-center gap-1">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 transition-transform group-open/details:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <summary className="text-sm text-purple-600 dark:text-purple-400 cursor-pointer hover:text-purple-700 dark:hover:text-purple-300 list-none flex items-center gap-1 py-2 min-h-[44px] select-none">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 transition-transform group-open/details:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                             </svg>
                                             How to create your dream visualization
                                         </summary>
-                                        <div className="mt-3 pl-4 text-xs text-purple-600/80 dark:text-purple-300/80 space-y-2">
-                                            <p><span className="font-medium">1.</span> Pick an art style and generate your prompt above</p>
-                                            <p><span className="font-medium">2.</span> Copy and paste into ChatGPT, Midjourney, DALL·E, or Nano Banana</p>
-                                            <p><span className="font-medium">3.</span> Upload a photo of yourself for personalized results</p>
-                                            <p><span className="font-medium">4.</span> Save your creation below to keep it with this dream</p>
-                                        </div>
+                                        <ol className="mt-3 pl-5 text-xs text-purple-600/80 dark:text-purple-300/80 space-y-2 list-decimal" aria-label="Instructions for creating dream visualization">
+                                            <li>Pick an art style and generate your prompt above</li>
+                                            <li>Copy and paste into ChatGPT, Midjourney, DALL-E, or Nano Banana</li>
+                                            <li>Upload a photo of yourself for personalized results</li>
+                                            <li>Save your creation below to keep it with this dream</li>
+                                        </ol>
                                     </details>
 
                                     {/* Import Button */}
                                     {!dream.imageUrl && !isReadOnly && (
-                                        <label className="flex items-center justify-center gap-2 w-full px-4 py-3 border-2 border-dashed border-purple-300 dark:border-purple-700 rounded-lg cursor-pointer hover:border-purple-400 dark:hover:border-purple-600 hover:bg-purple-50/50 dark:hover:bg-purple-900/20 transition-colors">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <label className="flex items-center justify-center gap-2 w-full px-4 py-3 min-h-[56px] border-2 border-dashed border-purple-300 dark:border-purple-700 rounded-lg cursor-pointer hover:border-purple-400 dark:hover:border-purple-600 hover:bg-purple-50/50 dark:hover:bg-purple-900/20 active:scale-[0.98] transition-all">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                             </svg>
                                             <span className="text-sm font-medium text-purple-600 dark:text-purple-400">Import Your Visualization</span>
                                             <input
                                                 type="file"
                                                 accept="image/jpeg,image/png,image/webp"
-                                                className="hidden"
+                                                className="sr-only"
+                                                aria-label="Upload dream visualization image (JPG, PNG, or WebP, max 2MB)"
                                                 onChange={(e) => {
                                                     if (isReadOnly) return;
                                                     const file = e.target.files?.[0];
@@ -828,6 +942,9 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                                                             updateDream({ id: dream.id, imageUrl: dataUrl });
                                                             haptics.success();
                                                             showToast('Visualization saved to your dream');
+                                                        };
+                                                        reader.onerror = () => {
+                                                            showToast('Failed to read image file', 'error');
                                                         };
                                                         reader.readAsDataURL(file);
                                                     }
@@ -852,26 +969,35 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                 if (relatedDreams.length === 0) return null;
 
                 return (
-                    <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-4 rounded-xl mt-6">
-                        <h3 className="font-serif text-lg mb-3">Related Dreams</h3>
-                        <div className="space-y-2">
+                    <section className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-4 rounded-xl mt-6" aria-labelledby="related-dreams-heading">
+                        <h3 id="related-dreams-heading" className="font-serif text-lg mb-3">Related Dreams</h3>
+                        <ul className="space-y-2" role="list">
                             {relatedDreams.map(rd => {
                                 const sharedTags = rd.tags?.filter(t => dream.tags?.includes(t)) || [];
                                 return (
-                                    <div
-                                        key={rd.id}
-                                        className="p-3 bg-white/50 dark:bg-black/20 rounded-lg"
-                                    >
-                                        <p className="font-medium truncate">{rd.title || 'Untitled'}</p>
-                                        <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">
-                                            {new Date(rd.timestamp).toLocaleDateString()} •
-                                            {sharedTags.map(t => ` #${t}`).join('')}
-                                        </p>
-                                    </div>
+                                    <li key={rd.id}>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (onNavigateToDream) {
+                                                    haptics.light();
+                                                    onNavigateToDream(rd.id);
+                                                }
+                                            }}
+                                            className="w-full p-3 min-h-[56px] bg-white/50 dark:bg-black/20 rounded-lg text-left hover:bg-white/70 dark:hover:bg-black/30 active:scale-[0.98] transition-all"
+                                            aria-label={`View related dream: ${rd.title || 'Untitled'}`}
+                                        >
+                                            <p className="font-medium truncate">{rd.title || 'Untitled'}</p>
+                                            <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">
+                                                {new Date(rd.timestamp).toLocaleDateString()} •
+                                                {sharedTags.map(t => ` #${t}`).join('')}
+                                            </p>
+                                        </button>
+                                    </li>
                                 );
                             })}
-                        </div>
-                    </div>
+                        </ul>
+                    </section>
                 );
             })()}
 

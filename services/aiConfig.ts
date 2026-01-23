@@ -3,9 +3,37 @@
  *
  * Defines the AI personality, system prompts, and context builders
  * for all Gemini-powered features in the app.
+ *
+ * Mobile App Store Readiness:
+ * - Input validation for all functions
+ * - Sanitization of user input in prompts
+ * - Memory-efficient string building
+ * - No network calls (configuration only)
  */
 
 import { Dream, SleepAids, Biometrics, AnalysisPersonality, Alarm } from '../types';
+
+/** Maximum dream text length in prompts to prevent token overflow */
+const MAX_PROMPT_DREAM_TEXT = 8000;
+
+/** Maximum number of dreams in synthesis prompts */
+const MAX_SYNTHESIS_DREAMS = 50;
+
+/**
+ * Sanitize user input for inclusion in prompts
+ * Removes potential prompt injection attempts
+ */
+function sanitizeForPrompt(text: string): string {
+    if (!text || typeof text !== 'string') return '';
+
+    return text
+        .slice(0, MAX_PROMPT_DREAM_TEXT)
+        .replace(/```[\s\S]*?```/g, '[code removed]')
+        .replace(/\[INST\]/gi, '')
+        .replace(/\[\/INST\]/gi, '')
+        .replace(/<\|.*?\|>/g, '')
+        .trim();
+}
 
 // ============================================================================
 // CORE IDENTITY
@@ -257,9 +285,16 @@ export function createAnalysisPrompt(
     sleepAids?: SleepAids,
     biometrics?: Biometrics
 ): string {
-    const persona = ANALYSIS_PERSONAS[personality];
+    // Input validation with fallbacks
+    const validPersonalities: AnalysisPersonality[] = ['oneironaut', 'jungian', 'scientific'];
+    const safePersonality = validPersonalities.includes(personality) ? personality : 'oneironaut';
+
+    const persona = ANALYSIS_PERSONAS[safePersonality];
     const userContext = buildUserContext(biometrics);
     const sleepContext = buildSleepContext(sleepAids);
+
+    // Sanitize dream text to prevent prompt injection
+    const safeDreamText = sanitizeForPrompt(dreamText);
 
     return `${SOMNIA_IDENTITY}
 
@@ -286,7 +321,7 @@ FORMAT: Respond with a JSON object containing:
 
 DREAM TEXT:
 """
-${dreamText}
+${safeDreamText}
 """`;
 }
 
@@ -330,7 +365,21 @@ export function createDreamChatPrompt(
     dream: Dream,
     personality: AnalysisPersonality = 'oneironaut'
 ): string {
-    const persona = ANALYSIS_PERSONAS[personality];
+    // Input validation
+    if (!dream || !dream.dreamText) {
+        return SOMNIA_IDENTITY + '\n\nNo dream context available.';
+    }
+
+    const validPersonalities: AnalysisPersonality[] = ['oneironaut', 'jungian', 'scientific'];
+    const safePersonality = validPersonalities.includes(personality) ? personality : 'oneironaut';
+    const persona = ANALYSIS_PERSONAS[safePersonality];
+
+    // Sanitize dream text
+    const safeDreamText = sanitizeForPrompt(dream.dreamText);
+
+    // Safely access analysis data
+    const analysisTitle = dream.aiAnalysis?.title ? sanitizeForPrompt(dream.aiAnalysis.title) : '';
+    const analysisThemes = dream.aiAnalysis?.analysis?.map(a => sanitizeForPrompt(a.title || '')).filter(Boolean).join(', ') || '';
 
     return `${SOMNIA_IDENTITY}
 
@@ -343,16 +392,16 @@ CONTEXT: You're continuing a conversation about a dream the user logged.
 
 ORIGINAL DREAM:
 """
-${dream.dreamText}
+${safeDreamText}
 """
 
-${dream.aiAnalysis ? `YOUR INITIAL ANALYSIS:
-Title: ${dream.aiAnalysis.title}
-Key themes: ${dream.aiAnalysis.analysis?.map(a => a.title).join(', ')}
+${analysisTitle ? `YOUR INITIAL ANALYSIS:
+Title: ${analysisTitle}
+Key themes: ${analysisThemes}
 ` : ''}
 
-${dream.sleepQuality ? `Sleep quality that night: ${dream.sleepQuality}/5` : ''}
-${dream.mood ? `Dream mood: ${dream.mood}` : ''}
+${dream.sleepQuality && typeof dream.sleepQuality === 'number' ? `Sleep quality that night: ${dream.sleepQuality}/5` : ''}
+${dream.mood && typeof dream.mood === 'string' ? `Dream mood: ${sanitizeForPrompt(dream.mood)}` : ''}
 
 CONVERSATION GUIDELINES:
 • Build on your initial analysis - don't repeat it wholesale
@@ -368,17 +417,40 @@ Continue the conversation naturally, inviting the user to explore further.`;
  * Prompt for synthesizing multiple dreams into patterns
  */
 export function createSynthesisPrompt(dreams: Dream[]): string {
-    const dreamLog = dreams.map((d, _i) => {
+    // Input validation
+    if (!Array.isArray(dreams) || dreams.length === 0) {
+        return SOMNIA_IDENTITY + '\n\nNo dreams provided for synthesis.';
+    }
+
+    // Limit number of dreams to prevent token overflow
+    const limitedDreams = dreams.slice(0, MAX_SYNTHESIS_DREAMS);
+
+    const dreamLog = limitedDreams.map((d) => {
+        if (!d || !d.dreamText) return '';
+
+        // Safely build metadata
         const meta = [
-            d.mood ? `Mood: ${d.mood}` : null,
-            d.sleepQuality ? `Quality: ${d.sleepQuality}/5` : null,
-            d.tags?.length ? `Tags: ${d.tags.join(', ')}` : null
+            d.mood && typeof d.mood === 'string' ? `Mood: ${sanitizeForPrompt(d.mood).slice(0, 50)}` : null,
+            d.sleepQuality && typeof d.sleepQuality === 'number' ? `Quality: ${d.sleepQuality}/5` : null,
+            Array.isArray(d.tags) && d.tags.length > 0 ? `Tags: ${d.tags.slice(0, 5).map(t => sanitizeForPrompt(String(t)).slice(0, 30)).join(', ')}` : null
         ].filter(Boolean).join(' | ');
 
-        return `[Dream ${d.id}] ${new Date(d.timestamp).toLocaleDateString()}
-${meta ? `(${meta})\n` : ''}${d.dreamText.slice(0, 500)}${d.dreamText.length > 500 ? '...' : ''}
+        // Safely format date
+        let dateStr = 'Unknown date';
+        try {
+            if (d.timestamp) {
+                dateStr = new Date(d.timestamp).toLocaleDateString();
+            }
+        } catch {
+            // Keep default
+        }
+
+        const safeDreamText = sanitizeForPrompt(d.dreamText).slice(0, 500);
+
+        return `[Dream ${d.id || 'N/A'}] ${dateStr}
+${meta ? `(${meta})\n` : ''}${safeDreamText}${d.dreamText.length > 500 ? '...' : ''}
 ---`;
-    }).join('\n\n');
+    }).filter(Boolean).join('\n\n');
 
     return `${SOMNIA_IDENTITY}
 
@@ -386,7 +458,7 @@ ${meta ? `(${meta})\n` : ''}${d.dreamText.slice(0, 500)}${d.dreamText.length > 5
 CURRENT ROLE: Dream Pattern Analyst
 ---
 
-TASK: Analyze this collection of ${dreams.length} dreams from a single user. Identify:
+TASK: Analyze this collection of ${limitedDreams.length} dreams from a single user. Identify:
 
 1. RECURRING THEMES: What symbols, situations, emotions, or characters appear across multiple dreams?
 2. EMOTIONAL ARCS: Is there a trajectory? Are dreams becoming lighter/darker over time?
@@ -415,23 +487,44 @@ FORMAT: Respond with JSON:
  * Prompt for sleep habit correlation analysis
  */
 export function createHabitAnalysisPrompt(dreams: Dream[]): string {
+    // Input validation
+    if (!Array.isArray(dreams) || dreams.length === 0) {
+        return SOMNIA_IDENTITY + '\n\nNo sleep data provided for analysis.';
+    }
+
+    // Limit data and filter valid entries
     const sleepData = dreams
-        .filter(d => d.sleepQuality !== null)
+        .slice(0, 100) // Limit for token management
+        .filter(d => d && typeof d.sleepQuality === 'number' && d.sleepQuality >= 1 && d.sleepQuality <= 5)
         .map(d => {
             const aids = [
                 d.sleepAids?.sound ? formatSoundName(d.sleepAids.sound) : null,
                 d.sleepAids?.relaxation ? formatRelaxationName(d.sleepAids.relaxation) : null,
-                ...(d.sleepAids?.checklist || [])
+                ...(Array.isArray(d.sleepAids?.checklist) ? d.sleepAids.checklist.slice(0, 5).map(c => sanitizeForPrompt(String(c)).slice(0, 30)) : [])
             ].filter(Boolean);
+
+            // Safely format date
+            let dateStr = 'Unknown';
+            try {
+                if (d.timestamp) {
+                    dateStr = new Date(d.timestamp).toLocaleDateString();
+                }
+            } catch {
+                // Keep default
+            }
 
             return {
                 quality: d.sleepQuality,
-                dayRating: d.sleepAids?.dayRating,
-                dayNotes: d.sleepAids?.dayNotes,
+                dayRating: typeof d.sleepAids?.dayRating === 'number' ? d.sleepAids.dayRating : null,
+                dayNotes: d.sleepAids?.dayNotes ? sanitizeForPrompt(d.sleepAids.dayNotes).slice(0, 100) : null,
                 aids: aids.join(', ') || 'None',
-                date: new Date(d.timestamp).toLocaleDateString()
+                date: dateStr
             };
         });
+
+    if (sleepData.length === 0) {
+        return SOMNIA_IDENTITY + '\n\nNo valid sleep quality data found.';
+    }
 
     const dataLog = sleepData.map(s =>
         `${s.date}: Quality ${s.quality}/5 | Day ${s.dayRating || '?'}/5 | Aids: [${s.aids}]${s.dayNotes ? ` | Notes: "${s.dayNotes}"` : ''}`

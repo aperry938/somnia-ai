@@ -1,7 +1,8 @@
 // components/modals/RealityCheckInfoModal.tsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { REALITY_CHECKS } from '../../constants/lucidDreaming';
 import { useBackButton } from '../../hooks/useBackButton';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 interface RealityCheckInfoModalProps {
     isOpen: boolean;
@@ -11,6 +12,10 @@ interface RealityCheckInfoModalProps {
 export const RealityCheckInfoModal: React.FC<RealityCheckInfoModalProps> = ({ isOpen, onClose }) => {
     // Hardware back button support
     useBackButton(isOpen, onClose);
+
+    // Focus trap for accessibility
+    const modalRef = useRef<HTMLDivElement>(null);
+    useFocusTrap(isOpen, modalRef);
 
     // Handle Escape key to close modal
     useEffect(() => {
@@ -33,6 +38,7 @@ export const RealityCheckInfoModal: React.FC<RealityCheckInfoModalProps> = ({ is
             aria-labelledby="reality-check-title"
         >
             <div
+                ref={modalRef}
                 className="w-full max-w-md max-h-[calc(100%-2rem)] bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl shadow-2xl overflow-hidden animate-fadeIn flex flex-col"
                 onClick={(e) => e.stopPropagation()}
             >

@@ -1,10 +1,24 @@
 // Global Dream Trends Service
 // Fetches anonymized dream trends from all opted-in users
+//
+// Mobile App Store Readiness:
+// - Rate limiting for API calls
+// - Offline fallback with cached/mock data
+// - Timeout handling for network requests
+// - Input validation for all functions
 
 import { logger } from './logger';
+import { logError } from './errorService';
+import { checkRateLimit } from './rateLimitService';
 
 export type TrendPeriod = 'today' | 'week' | 'month' | 'all-time';
 export type TrendScope = 'global' | 'regional';
+
+/** Request timeout for API calls (10 seconds) */
+const API_TIMEOUT = 10000;
+
+/** Rate limit category for trends API */
+const TRENDS_RATE_LIMIT = 'api_default';
 
 export interface GlobalTrend {
     topic: string;
@@ -146,18 +160,45 @@ export const requestLocation = (): Promise<UserLocation | null> => {
 };
 
 /**
+ * Fetch with timeout wrapper
+ */
+const fetchWithTimeout = async (url: string, options: RequestInit, timeout: number): Promise<Response> => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    try {
+        const response = await fetch(url, {
+            ...options,
+            signal: controller.signal
+        });
+        return response;
+    } finally {
+        clearTimeout(timeoutId);
+    }
+};
+
+/**
  * Reverse geocode coordinates to region name
  */
 const reverseGeocode = async (lat: number, lng: number): Promise<{ region: string; country: string } | null> => {
+    // Input validation
+    if (typeof lat !== 'number' || typeof lng !== 'number' ||
+        !isFinite(lat) || !isFinite(lng) ||
+        lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+        logger.warn('[GlobalTrends] Invalid coordinates for geocoding');
+        return null;
+    }
+
     try {
         // Use a free reverse geocoding API (OpenStreetMap Nominatim)
-        const response = await fetch(
+        const response = await fetchWithTimeout(
             `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=5`,
             {
                 headers: {
                     'User-Agent': 'Somnia Dream App',
                 },
-            }
+            },
+            API_TIMEOUT
         );
 
         if (response.ok) {
@@ -169,13 +210,18 @@ const reverseGeocode = async (lat: number, lng: number): Promise<{ region: strin
             };
         }
     } catch (e) {
-        logger.warn('[GlobalTrends] Reverse geocode failed:', e);
+        if (e instanceof Error && e.name === 'AbortError') {
+            logger.warn('[GlobalTrends] Reverse geocode timed out');
+        } else {
+            logger.warn('[GlobalTrends] Reverse geocode failed:', e);
+        }
     }
     return null;
 };
 
 /**
  * Set global trends opt-in with location
+ * Includes proper error handling and timeout for backend sync
  */
 export const setGlobalTrendsOptIn = async (
     optIn: boolean,
@@ -187,11 +233,16 @@ export const setGlobalTrendsOptIn = async (
 
     // If enabling location, request it
     if (optIn && enableLocation) {
-        const location = await requestLocation();
-        if (location) {
-            prefs.location = location;
-        } else {
-            // Location denied - still opt in but without location
+        try {
+            const location = await requestLocation();
+            if (location) {
+                prefs.location = location;
+            } else {
+                // Location denied - still opt in but without location
+                prefs.locationEnabled = false;
+            }
+        } catch (error) {
+            logger.warn('[GlobalTrends] Failed to get location:', error);
             prefs.locationEnabled = false;
         }
     }
@@ -204,25 +255,33 @@ export const setGlobalTrendsOptIn = async (
 
     savePrefs(prefs);
 
-    // Sync to backend if configured
+    // Sync to backend if configured (non-blocking)
     if (SUPABASE_URL && optIn) {
         const token = localStorage.getItem('somnia_auth_token');
         if (token) {
-            await fetch(`${SUPABASE_URL}/rest/v1/rpc/set_global_trends_opt_in`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                    'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+            // Don't await - let it happen in background
+            fetchWithTimeout(
+                `${SUPABASE_URL}/rest/v1/rpc/set_global_trends_opt_in`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+                    },
+                    body: JSON.stringify({
+                        opt_in: optIn,
+                        latitude: prefs.location?.latitude,
+                        longitude: prefs.location?.longitude,
+                        region: prefs.location?.region,
+                        country: prefs.location?.country,
+                    }),
                 },
-                body: JSON.stringify({
-                    opt_in: optIn,
-                    latitude: prefs.location?.latitude,
-                    longitude: prefs.location?.longitude,
-                    region: prefs.location?.region,
-                    country: prefs.location?.country,
-                }),
-            }).catch(err => logger.warn('[GlobalTrends] Failed to sync opt-in:', err));
+                API_TIMEOUT
+            ).catch(err => {
+                logger.warn('[GlobalTrends] Failed to sync opt-in:', err);
+                // Don't throw - local prefs are already saved
+            });
         }
     }
 
@@ -262,13 +321,33 @@ const cacheTrends = (response: GlobalTrendsResponse): void => {
 
 /**
  * Fetch global trends from backend
+ * Includes rate limiting, timeout handling, and offline fallback
  */
 export const fetchGlobalTrends = async (period: TrendPeriod = 'week'): Promise<GlobalTrendsResponse> => {
+    // Validate period
+    const validPeriods: TrendPeriod[] = ['today', 'week', 'month', 'all-time'];
+    if (!validPeriods.includes(period)) {
+        period = 'week';
+    }
+
     // Check cache first
     const cached = getCachedTrends(period);
     if (cached) {
         logger.log('[GlobalTrends] Using cached data');
         return cached;
+    }
+
+    // Check if device is online
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        logger.log('[GlobalTrends] Offline, using fallback data');
+        return createFallbackResponse(period);
+    }
+
+    // Rate limit API calls
+    const rateCheck = checkRateLimit(TRENDS_RATE_LIMIT);
+    if (!rateCheck.allowed) {
+        logger.warn('[GlobalTrends] Rate limited, using fallback data');
+        return createFallbackResponse(period);
     }
 
     const prefs = getGlobalTrendsPrefs();
@@ -285,38 +364,59 @@ export const fetchGlobalTrends = async (period: TrendPeriod = 'week'): Promise<G
                 if (prefs.location.region) params.set('region', prefs.location.region);
             }
 
-            const response = await fetch(
+            const response = await fetchWithTimeout(
                 `${SUPABASE_URL}/functions/v1/global-trends?${params}`,
                 {
                     headers: {
                         'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || '',
                     },
-                }
+                },
+                API_TIMEOUT
             );
 
             if (response.ok) {
                 const json = await response.json();
-                if (json.success && json.data) {
+
+                // Validate response structure
+                if (json.success && json.data && Array.isArray(json.data.trends)) {
                     const result: GlobalTrendsResponse = {
                         trends: json.data.trends,
                         regionalTrends: json.data.regionalTrends,
                         countryTopDreams: json.data.countryTopDreams,
                         stats: json.data.stats,
                         regionalStats: json.data.regionalStats,
-                        cachedAt: json.data.cachedAt,
-                        period: json.data.period,
+                        cachedAt: json.data.cachedAt || new Date().toISOString(),
+                        period: json.data.period || period,
                     };
                     cacheTrends(result);
                     return result;
+                } else {
+                    logger.warn('[GlobalTrends] Invalid response structure from backend');
                 }
+            } else {
+                logger.warn(`[GlobalTrends] Backend returned status ${response.status}`);
             }
         } catch (e) {
-            logger.warn('[GlobalTrends] Backend fetch failed:', e);
+            if (e instanceof Error && e.name === 'AbortError') {
+                logger.warn('[GlobalTrends] Backend fetch timed out');
+            } else {
+                logger.warn('[GlobalTrends] Backend fetch failed:', e);
+            }
+            logError(e instanceof Error ? e : new Error(String(e)), 'network', { operation: 'fetchGlobalTrends' });
         }
     }
 
     // Fall back to mock data
+    return createFallbackResponse(period);
+};
+
+/**
+ * Create fallback response with mock data
+ */
+const createFallbackResponse = (period: TrendPeriod): GlobalTrendsResponse => {
     logger.log('[GlobalTrends] Using fallback data');
+    const prefs = getGlobalTrendsPrefs();
+
     const fallback: GlobalTrendsResponse = {
         trends: getMockTrends(period),
         stats: getMockStats(period),

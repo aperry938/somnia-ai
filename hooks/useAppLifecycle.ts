@@ -40,6 +40,8 @@ export function useAppLifecycle({
 }: AppLifecycleOptions = {}): void {
     const isActiveRef = useRef(true);
     const tickIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    // Track mounted state for async operations
+    const isMountedRef = useRef(true);
 
     // Store callbacks in refs to avoid effect re-runs
     const onForegroundRef = useRef(onForeground);
@@ -55,6 +57,9 @@ export function useAppLifecycle({
 
     // Handle app state changes
     const handleStateChange = useCallback((state: AppState) => {
+        // Check if still mounted
+        if (!isMountedRef.current) return;
+
         logger.log('[AppLifecycle] State changed:', state.isActive ? 'foreground' : 'background');
 
         if (state.isActive && !isActiveRef.current) {
@@ -63,8 +68,12 @@ export function useAppLifecycle({
             onForegroundRef.current?.();
 
             // Restart tick interval
-            if (onTickRef.current && !tickIntervalRef.current) {
-                tickIntervalRef.current = setInterval(() => onTickRef.current?.(), tickInterval);
+            if (onTickRef.current && !tickIntervalRef.current && isMountedRef.current) {
+                tickIntervalRef.current = setInterval(() => {
+                    if (isMountedRef.current) {
+                        onTickRef.current?.();
+                    }
+                }, tickInterval);
             }
         } else if (!state.isActive && isActiveRef.current) {
             // App went to background
@@ -80,47 +89,104 @@ export function useAppLifecycle({
     }, [tickInterval]);
 
     useEffect(() => {
+        isMountedRef.current = true;
+
         // Start tick interval if callback provided
         if (onTickRef.current) {
-            tickIntervalRef.current = setInterval(() => onTickRef.current?.(), tickInterval);
+            tickIntervalRef.current = setInterval(() => {
+                if (isMountedRef.current) {
+                    onTickRef.current?.();
+                }
+            }, tickInterval);
         }
 
         if (!Capacitor.isNativePlatform()) {
             // On web, use visibility API
             const handleVisibilityChange = () => {
-                handleStateChange({ isActive: document.visibilityState === 'visible' });
+                if (isMountedRef.current) {
+                    handleStateChange({ isActive: document.visibilityState === 'visible' });
+                }
             };
 
             document.addEventListener('visibilitychange', handleVisibilityChange);
 
             return () => {
+                isMountedRef.current = false;
                 document.removeEventListener('visibilitychange', handleVisibilityChange);
                 if (tickIntervalRef.current) {
                     clearInterval(tickIntervalRef.current);
+                    tickIntervalRef.current = null;
                 }
             };
         }
 
-        // Native: Listen for app state changes
-        const listener = CapacitorApp.addListener('appStateChange', handleStateChange);
+        // Native: Store listener handles for proper cleanup
+        let appStateListener: { remove: () => Promise<void> } | null = null;
+        let resumeListenerHandle: { remove: () => Promise<void> } | null = null;
+        let pauseListenerHandle: { remove: () => Promise<void> } | null = null;
+
+        // Helper to safely remove a listener
+        const safeRemoveListener = (
+            listener: { remove: () => Promise<void> } | null,
+            name: string
+        ) => {
+            if (listener) {
+                listener.remove().catch(err =>
+                    logger.error(`[AppLifecycle] Failed to remove ${name} listener:`, err)
+                );
+            }
+        };
+
+        // Listen for app state changes
+        CapacitorApp.addListener('appStateChange', handleStateChange)
+            .then(handle => {
+                if (isMountedRef.current) {
+                    appStateListener = handle;
+                } else {
+                    handle.remove().catch(() => {});
+                }
+            })
+            .catch(err => logger.error('[AppLifecycle] Failed to add appStateChange listener:', err));
 
         // Also handle resume events (iOS specific)
-        const resumeListener = CapacitorApp.addListener('resume', () => {
-            logger.log('[AppLifecycle] Resume event');
-            handleStateChange({ isActive: true });
-        });
+        CapacitorApp.addListener('resume', () => {
+            if (isMountedRef.current) {
+                logger.log('[AppLifecycle] Resume event');
+                handleStateChange({ isActive: true });
+            }
+        })
+            .then(handle => {
+                if (isMountedRef.current) {
+                    resumeListenerHandle = handle;
+                } else {
+                    handle.remove().catch(() => {});
+                }
+            })
+            .catch(err => logger.error('[AppLifecycle] Failed to add resume listener:', err));
 
-        const pauseListener = CapacitorApp.addListener('pause', () => {
-            logger.log('[AppLifecycle] Pause event');
-            handleStateChange({ isActive: false });
-        });
+        CapacitorApp.addListener('pause', () => {
+            if (isMountedRef.current) {
+                logger.log('[AppLifecycle] Pause event');
+                handleStateChange({ isActive: false });
+            }
+        })
+            .then(handle => {
+                if (isMountedRef.current) {
+                    pauseListenerHandle = handle;
+                } else {
+                    handle.remove().catch(() => {});
+                }
+            })
+            .catch(err => logger.error('[AppLifecycle] Failed to add pause listener:', err));
 
         return () => {
-            listener.then(l => l.remove()).catch(err => logger.error('[AppLifecycle] Failed to remove appStateChange listener:', err));
-            resumeListener.then(l => l.remove()).catch(err => logger.error('[AppLifecycle] Failed to remove resume listener:', err));
-            pauseListener.then(l => l.remove()).catch(err => logger.error('[AppLifecycle] Failed to remove pause listener:', err));
+            isMountedRef.current = false;
+            safeRemoveListener(appStateListener, 'appStateChange');
+            safeRemoveListener(resumeListenerHandle, 'resume');
+            safeRemoveListener(pauseListenerHandle, 'pause');
             if (tickIntervalRef.current) {
                 clearInterval(tickIntervalRef.current);
+                tickIntervalRef.current = null;
             }
         };
     }, [handleStateChange, tickInterval]);

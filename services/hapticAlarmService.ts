@@ -232,3 +232,80 @@ export async function triggerWakePattern(): Promise<void> {
 export function isHapticsAvailable(): boolean {
     return isNative;
 }
+
+/**
+ * Comprehensive cleanup of haptic alarm resources.
+ * Call on app termination/background to prevent orphaned timers.
+ * Critical for app store compliance - prevents battery drain.
+ */
+export function cleanupHapticAlarm(): void {
+    logger.log('[HapticAlarm] Cleaning up haptic alarm resources');
+
+    // Stop any active ramp
+    if (isRampActive) {
+        isRampActive = false;
+    }
+
+    // Clear any active interval
+    if (pulseIntervalId) {
+        clearInterval(pulseIntervalId);
+        pulseIntervalId = null;
+    }
+
+    // Reset state
+    currentPhaseIndex = 0;
+    phaseStartTime = 0;
+
+    logger.log('[HapticAlarm] Cleanup completed');
+}
+
+/**
+ * Check if device supports haptic feedback (runtime check).
+ * Some devices report isNative but don't have haptic hardware.
+ */
+export async function checkHapticSupport(): Promise<boolean> {
+    if (!isNative) return false;
+
+    try {
+        // Attempt a very light haptic to verify support
+        await Haptics.impact({ style: ImpactStyle.Light });
+        return true;
+    } catch (error) {
+        logger.warn('[HapticAlarm] Device does not support haptics:', error);
+        return false;
+    }
+}
+
+/**
+ * Pause haptic ramp temporarily (e.g., during phone call).
+ * Can be resumed with resumeHapticAlarmRamp().
+ */
+export function pauseHapticAlarmRamp(): void {
+    if (!isRampActive) return;
+
+    logger.log('[HapticAlarm] Pausing haptic alarm ramp');
+
+    if (pulseIntervalId) {
+        clearInterval(pulseIntervalId);
+        pulseIntervalId = null;
+    }
+
+    // Note: isRampActive remains true so we can resume
+}
+
+/**
+ * Resume a paused haptic ramp from current phase.
+ */
+export function resumeHapticAlarmRamp(): void {
+    if (!isRampActive || pulseIntervalId !== null) {
+        // Not paused or already running
+        return;
+    }
+
+    logger.log('[HapticAlarm] Resuming haptic alarm ramp from phase', currentPhaseIndex + 1);
+
+    const phase = HAPTIC_PHASES[currentPhaseIndex];
+    if (phase) {
+        runPhase(phase);
+    }
+}

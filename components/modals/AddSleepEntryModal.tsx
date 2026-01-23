@@ -31,16 +31,23 @@ export const AddSleepEntryModal: React.FC<AddSleepEntryModalProps> = ({
     const [sleepQuality, setSleepQuality] = useState<number | null>(null);
     const [notes, setNotes] = useState('');
     const [dayRating, setDayRating] = useState<number | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
-    const handleSave = (addDream: boolean) => {
-        haptics.success();
-        const sleepAids: SleepAids | undefined = dayRating ? { dayRating } : undefined;
-        const entryId = onSave(sleepDate, sleepQuality, notes.trim() || undefined, sleepAids);
+    const handleSave = async (addDream: boolean) => {
+        if (isSaving) return;
+        setIsSaving(true);
+        try {
+            haptics.success();
+            const sleepAids: SleepAids | undefined = dayRating ? { dayRating } : undefined;
+            const entryId = await onSave(sleepDate, sleepQuality, notes.trim() || undefined, sleepAids);
 
-        if (addDream && entryId > 0) {
-            onSaveWithDream(entryId);
-        } else {
-            onClose();
+            if (addDream && entryId > 0) {
+                onSaveWithDream(entryId);
+            } else {
+                onClose();
+            }
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -56,10 +63,11 @@ export const AddSleepEntryModal: React.FC<AddSleepEntryModalProps> = ({
 
                 {/* Date Picker */}
                 <div className="mb-4">
-                    <label className="block text-sm text-day-text-secondary dark:text-night-text-secondary mb-2">
+                    <label htmlFor="sleep-entry-date" className="block text-sm text-day-text-secondary dark:text-night-text-secondary mb-2">
                         When did you sleep?
                     </label>
                     <input
+                        id="sleep-entry-date"
                         type="date"
                         value={sleepDate}
                         onChange={(e) => setSleepDate(e.target.value)}
@@ -105,10 +113,11 @@ export const AddSleepEntryModal: React.FC<AddSleepEntryModalProps> = ({
 
                 {/* Notes */}
                 <div className="mb-6">
-                    <label className="block text-sm text-day-text-secondary dark:text-night-text-secondary mb-2">
+                    <label htmlFor="sleep-entry-notes" className="block text-sm text-day-text-secondary dark:text-night-text-secondary mb-2">
                         Notes (optional)
                     </label>
                     <textarea
+                        id="sleep-entry-notes"
                         value={notes}
                         onChange={(e) => setNotes(sanitizeText(e.target.value).slice(0, INPUT_LIMITS.notes))}
                         maxLength={INPUT_LIMITS.notes}
@@ -116,24 +125,40 @@ export const AddSleepEntryModal: React.FC<AddSleepEntryModalProps> = ({
                         aria-label="Sleep notes"
                         className="w-full h-20 p-3 text-base bg-white/50 dark:bg-black/30 border border-day-border dark:border-night-border rounded-lg focus:ring-2 focus:ring-day-accent dark:focus:ring-night-accent focus:outline-none resize-none"
                     />
+                    <div className="text-xs text-day-text-secondary dark:text-night-text-secondary text-right mt-1">
+                        {notes.length.toLocaleString()} / {INPUT_LIMITS.notes.toLocaleString()}
+                    </div>
                 </div>
 
                 <div className="flex flex-col gap-2">
                     <button
                         onClick={() => handleSave(true)}
-                        className="w-full py-3 min-h-[48px] bg-day-accent dark:bg-night-accent text-white font-bold rounded-full transition-all flex items-center justify-center"
+                        aria-label="Save sleep entry and add a dream"
+                        className="w-full py-3 min-h-[48px] bg-day-accent dark:bg-night-accent text-white font-bold rounded-full transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                        disabled={isSaving}
                     >
-                        Save & Add Dream
+                        {isSaving ? (
+                            <>
+                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                Saving...
+                            </>
+                        ) : (
+                            'Save & Add Dream'
+                        )}
                     </button>
                     <button
                         onClick={() => handleSave(false)}
-                        className="w-full py-3 min-h-[48px] bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-full transition-all flex items-center justify-center"
+                        aria-label="Save sleep entry without dreams"
+                        className="w-full py-3 min-h-[48px] bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-full transition-all flex items-center justify-center disabled:opacity-50"
+                        disabled={isSaving}
                     >
                         Save (No Dreams)
                     </button>
                     <button
                         onClick={onClose}
+                        aria-label="Cancel and close"
                         className="w-full py-3 min-h-[44px] text-day-text-secondary dark:text-night-text-secondary hover:text-day-text dark:hover:text-night-text transition-colors text-sm flex items-center justify-center"
+                        disabled={isSaving}
                     >
                         Cancel
                     </button>

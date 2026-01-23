@@ -1,13 +1,20 @@
 /**
  * Audio Session Service
  *
- * Manages iOS AVAudioSession for proper background audio playback.
+ * Manages iOS AVAudioSession and Android Audio Focus for proper background audio playback.
  * Ensures sleep sounds and alarms continue playing when:
  * - Screen locks
  * - App goes to background
  * - Phone call interrupts and then ends
  *
- * On Android, background audio is handled by the foreground service.
+ * Platform-specific handling:
+ * - iOS: AVAudioSession configuration via native plugin
+ * - Android: Audio focus management + foreground service for background playback
+ *
+ * MOBILE APP STORE COMPLIANCE:
+ * - Proper audio session lifecycle management
+ * - Respectful audio focus handling (duck/pause other apps appropriately)
+ * - Battery-efficient background audio configuration
  */
 
 import { Capacitor, registerPlugin } from '@capacitor/core';
@@ -15,6 +22,7 @@ import { logger } from './logger';
 
 const isNative = Capacitor.isNativePlatform();
 const isIOS = Capacitor.getPlatform() === 'ios';
+const isAndroid = Capacitor.getPlatform() === 'android';
 
 /**
  * Audio Session Plugin Interface (iOS only)
@@ -59,6 +67,44 @@ interface AudioSessionPlugin {
 const AudioSession = isIOS
     ? registerPlugin<AudioSessionPlugin>('AudioSession')
     : null;
+
+/**
+ * Android Audio Focus Plugin Interface
+ * Manages audio focus for proper background playback and interruption handling
+ */
+interface AndroidAudioFocusPlugin {
+    /**
+     * Request audio focus for playback
+     */
+    requestFocus(options?: {
+        duckOthers?: boolean;  // Lower other apps' volume instead of pausing them
+        usage?: 'media' | 'alarm' | 'notification';  // Audio usage type
+    }): Promise<{ granted: boolean; focusType: string }>;
+
+    /**
+     * Abandon audio focus when done playing
+     */
+    abandonFocus(): Promise<{ success: boolean }>;
+
+    /**
+     * Add listener for audio focus events
+     */
+    addListener(
+        eventName: 'focusLost' | 'focusGained' | 'focusDucked',
+        listenerFunc: (data: Record<string, unknown>) => void
+    ): Promise<{ remove: () => void }>;
+}
+
+// Register Android audio focus plugin
+const AndroidAudioFocus = isAndroid
+    ? registerPlugin<AndroidAudioFocusPlugin>('AndroidAudioFocus')
+    : null;
+
+// Track Android audio focus state
+let hasAndroidAudioFocus = false;
+let androidFocusListeners: Array<{ remove: () => void }> = [];
+let onAndroidFocusLostCallback: (() => void) | null = null;
+let onAndroidFocusGainedCallback: (() => void) | null = null;
 
 // Track if we've configured the session
 let isSessionConfigured = false;
@@ -217,4 +263,193 @@ export function requiresAudioSessionConfig(): boolean {
 export function isAudioSessionConfigured(): boolean {
     if (!isIOS) return true;
     return isSessionConfigured;
+}
+
+// ============================================================
+// ANDROID AUDIO FOCUS MANAGEMENT
+// ============================================================
+
+/**
+ * Request audio focus on Android for background playback.
+ * Call this BEFORE starting audio that should continue in background.
+ *
+ * @param options.duckOthers - Lower other apps' volume instead of pausing (default: true)
+ * @param options.usage - Audio usage type: 'media' for sleep sounds, 'alarm' for alarms
+ */
+export async function requestAndroidAudioFocus(options?: {
+    duckOthers?: boolean;
+    usage?: 'media' | 'alarm';
+}): Promise<boolean> {
+    if (!isAndroid || !AndroidAudioFocus) {
+        // Not Android, or plugin not available
+        return true;
+    }
+
+    try {
+        const result = await AndroidAudioFocus.requestFocus({
+            duckOthers: options?.duckOthers ?? true,
+            usage: options?.usage ?? 'media',
+        });
+
+        hasAndroidAudioFocus = result.granted;
+        logger.log('[AudioSession] Android audio focus requested:', result);
+        return result.granted;
+    } catch (error) {
+        logger.error('[AudioSession] Android audio focus request failed:', error);
+        // Return true to allow playback attempt - focus may still work
+        return true;
+    }
+}
+
+/**
+ * Abandon audio focus on Android when done playing.
+ * This allows other apps to resume their audio.
+ */
+export async function abandonAndroidAudioFocus(): Promise<boolean> {
+    if (!isAndroid || !AndroidAudioFocus) {
+        return true;
+    }
+
+    try {
+        const result = await AndroidAudioFocus.abandonFocus();
+        hasAndroidAudioFocus = false;
+        logger.log('[AudioSession] Android audio focus abandoned:', result);
+        return result.success;
+    } catch (error) {
+        logger.error('[AudioSession] Android abandon focus failed:', error);
+        hasAndroidAudioFocus = false;
+        return false;
+    }
+}
+
+/**
+ * Set up listeners for Android audio focus events (phone calls, other apps)
+ *
+ * @param onFocusLost - Called when focus is lost (pause your audio)
+ * @param onFocusGained - Called when focus is regained (resume audio)
+ */
+export async function setupAndroidFocusHandling(
+    onFocusLost: () => void,
+    onFocusGained: () => void
+): Promise<() => void> {
+    if (!isAndroid || !AndroidAudioFocus) {
+        return () => {}; // No-op cleanup on non-Android
+    }
+
+    onAndroidFocusLostCallback = onFocusLost;
+    onAndroidFocusGainedCallback = onFocusGained;
+
+    try {
+        // Listen for focus lost (phone call, other app takes focus)
+        const lostListener = await AndroidAudioFocus.addListener('focusLost', () => {
+            logger.log('[AudioSession] Android focus lost (phone call, other app)');
+            hasAndroidAudioFocus = false;
+            onAndroidFocusLostCallback?.();
+        });
+        androidFocusListeners.push(lostListener);
+
+        // Listen for focus regained
+        const gainedListener = await AndroidAudioFocus.addListener('focusGained', () => {
+            logger.log('[AudioSession] Android focus regained');
+            hasAndroidAudioFocus = true;
+            onAndroidFocusGainedCallback?.();
+        });
+        androidFocusListeners.push(gainedListener);
+
+        // Listen for focus ducked (temporary volume reduction)
+        const duckedListener = await AndroidAudioFocus.addListener('focusDucked', () => {
+            logger.log('[AudioSession] Android focus ducked (volume lowered temporarily)');
+            // Usually don't need to take action - system handles volume ducking
+        });
+        androidFocusListeners.push(duckedListener);
+
+    } catch (error) {
+        logger.error('[AudioSession] Failed to setup Android focus handling:', error);
+    }
+
+    // Return cleanup function
+    return () => {
+        androidFocusListeners.forEach(l => l.remove());
+        androidFocusListeners = [];
+        onAndroidFocusLostCallback = null;
+        onAndroidFocusGainedCallback = null;
+    };
+}
+
+/**
+ * Check if we currently have Android audio focus
+ */
+export function hasAudioFocus(): boolean {
+    if (isIOS) return isSessionConfigured;
+    if (isAndroid) return hasAndroidAudioFocus;
+    return true; // Web always has "focus"
+}
+
+// ============================================================
+// UNIFIED PLATFORM API
+// ============================================================
+
+/**
+ * Configure audio session for background playback (unified iOS/Android API).
+ * Handles platform differences internally.
+ */
+export async function configureForBackgroundAudio(options?: {
+    mixWithOthers?: boolean;
+    duckOthers?: boolean;
+    isAlarm?: boolean;
+}): Promise<boolean> {
+    if (isIOS) {
+        return configureAudioSession({
+            mixWithOthers: options?.mixWithOthers,
+            duckOthers: options?.duckOthers,
+        });
+    } else if (isAndroid) {
+        return requestAndroidAudioFocus({
+            duckOthers: options?.duckOthers,
+            usage: options?.isAlarm ? 'alarm' : 'media',
+        });
+    }
+    return true; // Web - always succeeds
+}
+
+/**
+ * Deactivate audio session when done playing (unified API).
+ * Releases audio focus and allows other apps to resume.
+ */
+export async function deactivateAudioSession(): Promise<boolean> {
+    if (isIOS) {
+        return setAudioSessionActive(false);
+    } else if (isAndroid) {
+        return abandonAndroidAudioFocus();
+    }
+    return true;
+}
+
+/**
+ * Setup interruption handling for both platforms (unified API).
+ * Handles phone calls, Siri (iOS), Google Assistant (Android), other apps, etc.
+ */
+export async function setupUnifiedInterruptionHandling(
+    onInterruptionBegan: () => void,
+    onInterruptionEnded: (shouldResume: boolean) => void
+): Promise<() => void> {
+    const cleanupFunctions: Array<() => void> = [];
+
+    if (isIOS) {
+        const iosCleanup = await setupInterruptionHandling(onInterruptionBegan, onInterruptionEnded);
+        cleanupFunctions.push(iosCleanup);
+    }
+
+    if (isAndroid) {
+        const androidCleanup = await setupAndroidFocusHandling(
+            onInterruptionBegan,
+            () => onInterruptionEnded(true) // Android always allows resume
+        );
+        cleanupFunctions.push(androidCleanup);
+    }
+
+    // Return combined cleanup function
+    return () => {
+        cleanupFunctions.forEach(cleanup => cleanup());
+    };
 }

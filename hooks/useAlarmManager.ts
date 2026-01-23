@@ -35,58 +35,95 @@ export const useAlarmManager = () => {
     // Track which alarms have triggered this minute to prevent double-firing
     const triggeredThisMinuteRef = useRef<Set<string>>(new Set());
     const lastMinuteRef = useRef<string>('');
+    // Track mounted state for async operations
+    const isMountedRef = useRef(true);
+    // Refs for values needed in async callbacks to avoid stale closures
+    const alarmsRef = useRef(alarms);
+    const ringingAlarmRef = useRef(ringingAlarm);
+    const isSnoozedRef = useRef(isSnoozed);
 
     // Wake metrics tracking
     const snoozeCountRef = useRef<number>(0);
     const ringStartTimeRef = useRef<number | null>(null);
     const alertnessBoostUsedRef = useRef<boolean>(false);
 
-    // Cleanup snooze timeout on unmount
+    // Cleanup snooze timeout on unmount and track mounted state
     useEffect(() => {
+        isMountedRef.current = true;
         return () => {
+            isMountedRef.current = false;
             if (snoozeTimeoutRef.current) {
                 clearTimeout(snoozeTimeoutRef.current);
             }
         };
     }, []);
 
+    // Keep refs in sync with state to avoid stale closures in async callbacks
+    useEffect(() => {
+        alarmsRef.current = alarms;
+    }, [alarms]);
+
+    useEffect(() => {
+        ringingAlarmRef.current = ringingAlarm;
+    }, [ringingAlarm]);
+
+    useEffect(() => {
+        isSnoozedRef.current = isSnoozed;
+    }, [isSnoozed]);
+
     // Check for native ringing alarm on mount and app resume (for lock screen scenarios)
     useEffect(() => {
+        let listenerHandle: { remove: () => Promise<void> } | null = null;
+
         const checkNativeRingingAlarm = async () => {
-            // Don't check if already ringing or snoozed
-            if (ringingAlarm || isSnoozed) return;
+            // Don't check if already ringing or snoozed - use refs to avoid stale closures
+            if (ringingAlarmRef.current || isSnoozedRef.current) return;
 
-            const nativeAlarm = await getRingingAlarm();
-            if (nativeAlarm?.isRinging && nativeAlarm.alarmId) {
-                logger.log('[Alarm] Detected native ringing alarm:', nativeAlarm);
+            try {
+                const nativeAlarm = await getRingingAlarm();
 
-                // Find the matching alarm in our list, or create a virtual one
-                const matchingAlarm = alarms.find(a => String(a.id) === nativeAlarm.alarmId);
+                // Check if still mounted after async operation
+                if (!isMountedRef.current) return;
+                // Re-check state after async to avoid race conditions
+                if (ringingAlarmRef.current || isSnoozedRef.current) return;
 
-                if (matchingAlarm) {
-                    // Start tracking wake metrics
-                    if (ringStartTimeRef.current === null) {
+                if (nativeAlarm?.isRinging && nativeAlarm.alarmId) {
+                    logger.log('[Alarm] Detected native ringing alarm:', nativeAlarm);
+
+                    // Find the matching alarm in our list using ref for current value
+                    const matchingAlarm = alarmsRef.current.find(a => String(a.id) === nativeAlarm.alarmId);
+
+                    if (matchingAlarm) {
+                        // Start tracking wake metrics
+                        if (ringStartTimeRef.current === null) {
+                            ringStartTimeRef.current = Date.now();
+                            snoozeCountRef.current = 0;
+                            alertnessBoostUsedRef.current = false;
+                        }
+                        if (isMountedRef.current) {
+                            setRingingAlarm(matchingAlarm);
+                        }
+                    } else {
+                        // Create a virtual alarm with the native data
+                        const virtualAlarm: Alarm = {
+                            id: parseInt(nativeAlarm.alarmId) || -2,
+                            time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+                            isActive: true,
+                            days: [],
+                            soundId: nativeAlarm.soundId || 'somnia',
+                            label: nativeAlarm.label,
+                            smartWake: false,
+                        };
                         ringStartTimeRef.current = Date.now();
                         snoozeCountRef.current = 0;
                         alertnessBoostUsedRef.current = false;
+                        if (isMountedRef.current) {
+                            setRingingAlarm(virtualAlarm);
+                        }
                     }
-                    setRingingAlarm(matchingAlarm);
-                } else {
-                    // Create a virtual alarm with the native data
-                    const virtualAlarm: Alarm = {
-                        id: parseInt(nativeAlarm.alarmId) || -2,
-                        time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
-                        isActive: true,
-                        days: [],
-                        soundId: nativeAlarm.soundId || 'somnia',
-                        label: nativeAlarm.label,
-                        smartWake: false,
-                    };
-                    ringStartTimeRef.current = Date.now();
-                    snoozeCountRef.current = 0;
-                    alertnessBoostUsedRef.current = false;
-                    setRingingAlarm(virtualAlarm);
                 }
+            } catch (error) {
+                logger.error('[AlarmManager] Failed to check native ringing alarm:', error);
             }
         };
 
@@ -94,16 +131,29 @@ export const useAlarmManager = () => {
         checkNativeRingingAlarm();
 
         // Check on app resume
-        const listener = CapacitorApp.addListener('appStateChange', ({ isActive }) => {
-            if (isActive) {
+        CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+            if (isActive && isMountedRef.current) {
                 checkNativeRingingAlarm();
             }
-        });
+        }).then(handle => {
+            if (isMountedRef.current) {
+                listenerHandle = handle;
+            } else {
+                // Component unmounted, clean up immediately
+                handle.remove().catch(err =>
+                    logger.error('[AlarmManager] Failed to remove appStateChange listener:', err)
+                );
+            }
+        }).catch(err => logger.error('[AlarmManager] Failed to add appStateChange listener:', err));
 
         return () => {
-            listener.then(l => l.remove()).catch(err => logger.error('[AlarmManager] Failed to remove appStateChange listener:', err));
+            if (listenerHandle) {
+                listenerHandle.remove().catch(err =>
+                    logger.error('[AlarmManager] Failed to remove appStateChange listener:', err)
+                );
+            }
         };
-    }, [alarms, ringingAlarm, isSnoozed]);
+    }, []); // Empty deps - use refs for current values to avoid re-subscriptions
 
     // Check for triggered alarms
     useEffect(() => {
@@ -237,7 +287,8 @@ export const useAlarmManager = () => {
 
             // Set timeout to re-trigger after snooze duration
             snoozeTimeoutRef.current = setTimeout(() => {
-                if (snoozedAlarmRef.current) {
+                // Check if still mounted before updating state
+                if (isMountedRef.current && snoozedAlarmRef.current) {
                     setRingingAlarm(snoozedAlarmRef.current);
                     setIsSnoozed(false);
                     snoozedAlarmRef.current = null;

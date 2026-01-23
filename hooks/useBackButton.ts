@@ -34,17 +34,26 @@ const registerGlobalListener = () => {
 
             if (topHandler) {
                 logger.log('[BackButton] Closing modal:', topHandler.id);
-                topHandler.onClose();
+                try {
+                    topHandler.onClose();
+                } catch (error) {
+                    logger.error('[BackButton] Error in close handler:', error);
+                }
             }
         } else if (canGoBack) {
             // No modals open - let the system handle it (browser history)
             window.history.back();
         } else {
             // No modals, no history - minimize app (don't exit)
-            CapacitorApp.minimizeApp();
+            CapacitorApp.minimizeApp().catch(err =>
+                logger.error('[BackButton] Failed to minimize app:', err)
+            );
         }
     }).then(handle => {
         listenerHandle = handle;
+    }).catch(err => {
+        logger.error('[BackButton] Failed to add backButton listener:', err);
+        listenerRegistered = false; // Allow retry
     });
 
     logger.log('[BackButton] Global listener registered');

@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useBackButton } from '../../hooks/useBackButton';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 interface AIConsentModalProps {
     onConsent: () => void;
@@ -26,6 +27,10 @@ export const AIConsentModal: React.FC<AIConsentModalProps> = ({ onConsent, onDec
     // Hardware back button support
     useBackButton(true, onDecline);
 
+    // Focus trap for accessibility
+    const modalRef = useRef<HTMLDivElement>(null);
+    useFocusTrap(true, modalRef);
+
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') onDecline();
@@ -48,6 +53,7 @@ export const AIConsentModal: React.FC<AIConsentModalProps> = ({ onConsent, onDec
             aria-labelledby="consent-title"
         >
             <div
+                ref={modalRef}
                 className="w-full max-w-sm bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl shadow-2xl overflow-hidden animate-fadeIn"
                 onClick={(e) => e.stopPropagation()}
             >

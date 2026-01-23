@@ -11,6 +11,7 @@ export type ErrorCategory =
     | 'storage'
     | 'ai'
     | 'audio'
+    | 'notification'
     | 'unknown';
 
 interface ErrorLog {

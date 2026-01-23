@@ -94,8 +94,13 @@ const ProfileInfoCard: React.FC = () => {
                                 value={localBiometrics.age || ''}
                                 onChange={handleChange}
                                 placeholder="Enter age"
+                                min="1"
+                                max="120"
+                                inputMode="numeric"
+                                aria-describedby="age-hint"
                                 className="w-full p-3 min-h-[48px] mt-1 text-base bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-md"
                             />
+                            <span id="age-hint" className="sr-only">Enter your age between 1 and 120</span>
                         </div>
                         <div>
                             <label htmlFor="profile-gender" className="text-sm text-day-text-secondary dark:text-night-text-secondary">Gender</label>
@@ -164,9 +169,14 @@ const ProfileInfoCard: React.FC = () => {
                             value={localBiometrics.avgSleep || ''}
                             onChange={handleChange}
                             placeholder="e.g., 7"
+                            min="0"
+                            max="24"
                             step="0.5"
+                            inputMode="decimal"
+                            aria-describedby="avg-sleep-hint"
                             className="w-full p-3 min-h-[48px] mt-1 text-base bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-md"
                         />
+                        <span id="avg-sleep-hint" className="sr-only">Enter hours between 0 and 24</span>
                     </div>
                     <div className="flex gap-2 pt-2">
                         <button
@@ -268,10 +278,11 @@ const MembershipCard: React.FC<{ onNavigateToTerms?: () => void }> = ({ onNaviga
                         <button
                             onClick={handleManageSubscription}
                             disabled={isManaging}
-                            className="w-full py-2 border border-day-border dark:border-night-border rounded-lg text-day-text-secondary dark:text-night-text-secondary text-sm hover:bg-white/10 dark:hover:bg-black/10 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                            aria-label="Manage subscription"
+                            className="w-full py-3 min-h-[48px] border border-day-border dark:border-night-border rounded-lg text-day-text-secondary dark:text-night-text-secondary text-sm hover:bg-white/10 dark:hover:bg-black/10 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                         >
                             {isManaging ? (
-                                <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+                                <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" aria-hidden="true" />
                             ) : null}
                             Manage Subscription
                         </button>
@@ -291,9 +302,10 @@ const MembershipCard: React.FC<{ onNavigateToTerms?: () => void }> = ({ onNaviga
                         </div>
                         <button
                             onClick={handleUpgrade}
-                            className="w-full py-2.5 bg-gradient-to-r from-amber-400 to-amber-600 text-white font-bold rounded-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+                            aria-label="Upgrade to Premium membership"
+                            className="w-full py-3 min-h-[48px] bg-gradient-to-r from-amber-400 to-amber-600 text-white font-bold rounded-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                 <path fillRule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clipRule="evenodd" />
                             </svg>
                             Upgrade to Premium
@@ -455,6 +467,35 @@ const DataManagementCard: React.FC = () => {
     const { dreams, importDreams } = useAppContext();
     const { showToast } = useToast();
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [isExportingPDF, setIsExportingPDF] = useState(false);
+    const [isExportingJSON, setIsExportingJSON] = useState(false);
+    const [isImporting, setIsImporting] = useState(false);
+
+    const handleExportPDF = async () => {
+        if (dreams.length === 0) return;
+        setIsExportingPDF(true);
+        try {
+            await exportDreamJournalToPDF(dreams);
+            showToast('Export ready!', 'success');
+        } catch (_error) {
+            showToast('Failed to export PDF. Please try again.', 'error');
+        } finally {
+            setIsExportingPDF(false);
+        }
+    };
+
+    const handleExportJSON = async () => {
+        if (dreams.length === 0) return;
+        setIsExportingJSON(true);
+        try {
+            await exportDreamsAsJSON(dreams);
+            showToast('Backup downloaded!', 'success');
+        } catch (_error) {
+            showToast('Failed to export backup. Please try again.', 'error');
+        } finally {
+            setIsExportingJSON(false);
+        }
+    };
 
     const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -474,15 +515,20 @@ const DataManagementCard: React.FC = () => {
             return;
         }
 
+        setIsImporting(true);
         try {
             const imported = await importDreamsFromJSON(file, dreams);
             importDreams(imported);
-            showToast(`Imported ${imported.length} dreams!`);
+            showToast(`Imported ${imported.length} dreams!`, 'success');
         } catch (_error) {
             showToast('Failed to import dreams. Please check the file format.', 'error');
+        } finally {
+            setIsImporting(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
         }
-        if (fileInputRef.current) fileInputRef.current.value = '';
     };
+
+    const isAnyLoading = isExportingPDF || isExportingJSON || isImporting;
 
     return (
         <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">
@@ -492,24 +538,34 @@ const DataManagementCard: React.FC = () => {
             </p>
             <div className="flex gap-3">
                 <button
-                    onClick={() => exportDreamJournalToPDF(dreams)}
-                    disabled={dreams.length === 0}
+                    onClick={handleExportPDF}
+                    disabled={dreams.length === 0 || isAnyLoading}
+                    aria-label="Export dreams as PDF"
                     className="flex-1 py-3 min-h-[48px] bg-day-accent dark:bg-night-accent text-white font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                    </svg>
-                    PDF
+                    {isExportingPDF ? (
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" aria-hidden="true" />
+                    ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                        </svg>
+                    )}
+                    {isExportingPDF ? 'Exporting...' : 'PDF'}
                 </button>
                 <button
-                    onClick={() => exportDreamsAsJSON(dreams)}
-                    disabled={dreams.length === 0}
+                    onClick={handleExportJSON}
+                    disabled={dreams.length === 0 || isAnyLoading}
+                    aria-label="Export dreams as JSON backup"
                     className="flex-1 py-3 min-h-[48px] border-2 border-day-accent dark:border-night-accent text-day-accent dark:text-night-accent font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    JSON
+                    {isExportingJSON ? (
+                        <div className="w-5 h-5 border-2 border-day-accent/30 dark:border-night-accent/30 border-t-day-accent dark:border-t-night-accent rounded-full animate-spin" aria-hidden="true" />
+                    ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                    )}
+                    {isExportingJSON ? 'Saving...' : 'JSON'}
                 </button>
             </div>
             <div className="mt-3">
@@ -518,16 +574,29 @@ const DataManagementCard: React.FC = () => {
                     accept=".json"
                     ref={fileInputRef}
                     onChange={handleImport}
+                    disabled={isAnyLoading}
+                    aria-label="Select JSON file to import"
                     className="hidden"
                 />
                 <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-full py-3 min-h-[48px] border border-dashed border-day-border dark:border-night-border text-day-text-secondary dark:text-night-text-secondary text-sm rounded-lg hover:border-day-accent dark:hover:border-night-accent transition-colors flex items-center justify-center gap-2"
+                    disabled={isAnyLoading}
+                    aria-label="Import dream backup from JSON file"
+                    className="w-full py-3 min-h-[48px] border border-dashed border-day-border dark:border-night-border text-day-text-secondary dark:text-night-text-secondary text-sm rounded-lg hover:border-day-accent dark:hover:border-night-accent transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                    </svg>
-                    Import Backup
+                    {isImporting ? (
+                        <>
+                            <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" aria-hidden="true" />
+                            Importing...
+                        </>
+                    ) : (
+                        <>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                            </svg>
+                            Import Backup
+                        </>
+                    )}
                 </button>
             </div>
         </div>
@@ -645,16 +714,21 @@ const AccountManagementCard: React.FC = () => {
                         <p className="text-red-600 dark:text-red-400 text-sm font-medium mb-2">
                             This will permanently delete all your dreams and data.
                         </p>
-                        <p className="text-red-500 dark:text-red-400 text-xs mb-3">
+                        <label htmlFor="delete-confirmation" className="text-red-500 dark:text-red-400 text-xs mb-3 block">
                             Type DELETE to confirm:
-                        </p>
+                        </label>
                         <input
+                            id="delete-confirmation"
                             type="text"
                             value={deleteInput}
                             onChange={(e) => setDeleteInput(e.target.value)}
                             placeholder="DELETE"
-                            className="w-full p-2 mb-3 bg-white dark:bg-black/30 border border-red-300 dark:border-red-700 rounded-md text-sm"
+                            autoComplete="off"
+                            autoCapitalize="characters"
+                            aria-describedby="delete-warning"
+                            className="w-full p-3 min-h-[48px] mb-3 bg-white dark:bg-black/30 border border-red-300 dark:border-red-700 rounded-md text-sm"
                         />
+                        <span id="delete-warning" className="sr-only">This action is permanent and cannot be undone</span>
                         <div className="flex gap-2">
                             <button
                                 onClick={() => { setShowDeleteConfirm(false); setDeleteInput(''); }}
@@ -751,7 +825,7 @@ export const ProfilePage: React.FC<{ onBack?: () => void; onNavigateTo?: (page: 
     };
 
     return (
-        <div className="max-w-2xl mx-auto pb-8">
+        <div className="max-w-2xl mx-auto pb-[calc(2rem+var(--safe-area-inset-bottom))]">
             {/* Header */}
             <div className="text-center mb-6">
                 <div className="w-20 h-20 mx-auto mb-3 rounded-full bg-gradient-to-br from-day-accent to-purple-500 dark:from-night-accent dark:to-purple-600 flex items-center justify-center shadow-lg">
@@ -764,7 +838,8 @@ export const ProfilePage: React.FC<{ onBack?: () => void; onNavigateTo?: (page: 
                 </h1>
                 <button
                     onClick={() => setShowLevelModal(true)}
-                    className="text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent transition-colors"
+                    aria-label={`View level guide. Currently level ${stats.level}, ${getLevelTitle(stats.level)}`}
+                    className="min-h-[44px] px-4 py-2 text-day-text-secondary dark:text-night-text-secondary hover:text-day-accent dark:hover:text-night-accent transition-colors"
                 >
                     Level {stats.level} {getLevelTitle(stats.level)}
                 </button>
@@ -790,7 +865,14 @@ export const ProfilePage: React.FC<{ onBack?: () => void; onNavigateTo?: (page: 
                         <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">Dreams</p>
                     </div>
                 </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                <div
+                    className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5"
+                    role="progressbar"
+                    aria-valuenow={Math.round(stats.nextLevelProgress)}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label={`Level progress: ${Math.round(stats.nextLevelProgress)}% to next level`}
+                >
                     <div
                         className="bg-gradient-to-r from-day-accent to-purple-500 dark:from-night-accent dark:to-purple-600 h-1.5 rounded-full transition-all duration-500"
                         style={{ width: `${stats.nextLevelProgress}%` }}

@@ -51,6 +51,7 @@ export const ManualSleepLogModal: React.FC<ManualSleepLogModalProps> = ({ onComp
     const [customActivityName, setCustomActivityName] = useState('');
     const [selectedDuration, setSelectedDuration] = useState(15);
     const [showCustom, setShowCustom] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
     // Handle Escape key to skip/close modal
     useEffect(() => {
@@ -107,14 +108,20 @@ export const ManualSleepLogModal: React.FC<ManualSleepLogModalProps> = ({ onComp
         ));
     };
 
-    const handleComplete = () => {
-        haptics.success();
-        const sleepAids: SleepAids = {
-            manualActivities: activities,
-            dayRating,
-            dayNotes: dayNotes.trim() || undefined,
-        };
-        onComplete(sleepAids);
+    const handleComplete = async () => {
+        if (isSaving) return;
+        setIsSaving(true);
+        try {
+            haptics.success();
+            const sleepAids: SleepAids = {
+                manualActivities: activities,
+                dayRating,
+                dayNotes: dayNotes.trim() || undefined,
+            };
+            await onComplete(sleepAids);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleSkip = () => {
@@ -137,12 +144,14 @@ export const ManualSleepLogModal: React.FC<ManualSleepLogModalProps> = ({ onComp
                 <div className="flex-1 overflow-y-auto p-5 space-y-5">
                     {/* Duration selector */}
                     <div>
-                        <p className="text-sm text-day-text-secondary dark:text-night-text-secondary mb-2">Default duration:</p>
-                        <div className="flex flex-wrap gap-2">
+                        <p id="duration-label" className="text-sm text-day-text-secondary dark:text-night-text-secondary mb-2">Default duration:</p>
+                        <div className="flex flex-wrap gap-2" role="group" aria-labelledby="duration-label">
                             {DURATION_OPTIONS.map(d => (
                                 <button
                                     key={d}
                                     onClick={() => setSelectedDuration(d)}
+                                    aria-label={`Set default duration to ${d} minutes`}
+                                    aria-pressed={selectedDuration === d}
                                     className={`px-3 py-1.5 min-h-[44px] rounded-lg text-sm font-medium transition-all ${selectedDuration === d
                                         ? 'bg-day-accent dark:bg-night-accent text-white'
                                         : 'bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border'
@@ -186,17 +195,22 @@ export const ManualSleepLogModal: React.FC<ManualSleepLogModalProps> = ({ onComp
                     {/* Custom activity input */}
                     {showCustom && (
                         <div className="p-3 bg-white/30 dark:bg-black/20 rounded-xl">
+                            <label htmlFor="custom-activity-input" className="sr-only">Custom activity name</label>
                             <input
+                                id="custom-activity-input"
                                 type="text"
                                 value={customActivityName}
                                 onChange={(e) => setCustomActivityName(e.target.value)}
                                 placeholder="Activity name..."
+                                maxLength={100}
+                                aria-label="Custom activity name"
                                 className="w-full p-3 min-h-[48px] bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border rounded-lg text-base mb-2"
                                 autoFocus
                             />
                             <div className="flex gap-2">
                                 <button
                                     onClick={() => setShowCustom(false)}
+                                    aria-label="Cancel adding custom activity"
                                     className="flex-1 py-2 min-h-[44px] border border-day-border dark:border-night-border rounded-lg text-sm"
                                 >
                                     Cancel
@@ -204,6 +218,7 @@ export const ManualSleepLogModal: React.FC<ManualSleepLogModalProps> = ({ onComp
                                 <button
                                     onClick={addCustomActivity}
                                     disabled={!customActivityName.trim()}
+                                    aria-label="Add custom activity"
                                     className="flex-1 py-2 min-h-[44px] bg-day-accent dark:bg-night-accent text-white rounded-lg text-sm font-medium disabled:opacity-50"
                                 >
                                     Add
@@ -284,15 +299,26 @@ export const ManualSleepLogModal: React.FC<ManualSleepLogModalProps> = ({ onComp
                 <div className="p-5 border-t border-day-border dark:border-night-border flex gap-3">
                     <button
                         onClick={handleSkip}
+                        aria-label="Skip logging sleep activities"
                         className="flex-1 py-3 min-h-[48px] border border-day-border dark:border-night-border rounded-xl text-day-text-secondary dark:text-night-text-secondary font-medium"
+                        disabled={isSaving}
                     >
                         Skip
                     </button>
                     <button
                         onClick={handleComplete}
-                        className="flex-1 py-3 min-h-[48px] bg-gradient-to-r from-day-accent to-purple-500 dark:from-night-accent dark:to-purple-600 text-white font-semibold rounded-xl shadow-lg"
+                        aria-label="Save sleep activities"
+                        className="flex-1 py-3 min-h-[48px] bg-gradient-to-r from-day-accent to-purple-500 dark:from-night-accent dark:to-purple-600 text-white font-semibold rounded-xl shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
+                        disabled={isSaving}
                     >
-                        Done
+                        {isSaving ? (
+                            <>
+                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                Saving...
+                            </>
+                        ) : (
+                            'Done'
+                        )}
                     </button>
                 </div>
             </div>

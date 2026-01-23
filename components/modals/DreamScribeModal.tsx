@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { motion, PanInfo, useMotionValue, useTransform } from 'framer-motion';
+import { motion, PanInfo, useMotionValue } from 'framer-motion';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { SleepQualityRating } from '../shared/SleepQualityRating';
 import { DreamMood } from '../../types';
 import { playAlertnessBoost, stopAlertnessBoost, setAlertnessVolume } from '../../services/audioService';
 import haptics from '../../services/hapticsService';
 import { MOOD_ICONS, MOOD_LABELS } from '../../constants/uiIcons';
-import { validateDreamText, containsScriptInjection } from '../../services/validationService';
+import { validateDreamText, containsScriptInjection, INPUT_LIMITS, sanitizeTextLive } from '../../services/validationService';
 import { useBackButton } from '../../hooks/useBackButton';
 
 const MOOD_OPTIONS: DreamMood[] = ['joyful', 'peaceful', 'neutral', 'confused', 'anxious', 'sad', 'fearful', 'nightmare'];
@@ -22,6 +22,11 @@ interface DreamScribeModalProps {
 export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onClose, initialText = '' }) => {
     const [step, setStep] = useState<ScribeStep>('record');
     const [dreamText, setDreamText] = useState(initialText);
+    const [isSaving, setIsSaving] = useState(false);
+
+    // Mount protection ref to prevent actions after unmount
+    const isMountedRef = useRef(true);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     // Mount protection: Prevents ghost clicks from previous modal from triggering backdrop close
     // This fixes the race condition where tapping "Record Full Dream" in AlarmRingModal
@@ -34,12 +39,21 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
         return () => clearTimeout(timer);
     }, []);
 
+    // Mount protection cleanup
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+        };
+    }, []);
+
     // Hardware back button closes modal
     useBackButton(true, onClose);
 
     // Swipe-to-dismiss
     const y = useMotionValue(0);
-    const _backdropOpacity = useTransform(y, [0, 200], [1, 0.3]);
+    // backdropOpacity reserved for future swipe-to-dismiss fade effect
+    // const backdropOpacity = useTransform(y, [0, 200], [1, 0.3]);
 
     const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
         // Use same mount protection for swipe-to-dismiss
@@ -54,6 +68,8 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
     const [boostActive, setBoostActive] = useState(false);
     const [boostTimer, setBoostTimer] = useState(0);
     const [boostVolume, setBoostVolume] = useState(0.5); // Boosted default volume (was 0.25)
+    const [validationError, setValidationError] = useState<string | null>(null);
+    const [statusMessage, setStatusMessage] = useState<string>('');
     const savedDataRef = useRef<{ text: string; quality: number | null; mood?: DreamMood } | null>(null);
     const dreamSavedRef = useRef(false);
 
@@ -61,7 +77,38 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
         setDreamText(prev => (prev ? prev.trim() + ' ' : '') + transcript);
     }, []);
 
-    const { isListening, interimTranscript, startListening, stopListening, isSupported: _isSupported } = useSpeechRecognition(handleFinalTranscript);
+    const { isListening, interimTranscript, startListening, stopListening, isSupported } = useSpeechRecognition(handleFinalTranscript);
+
+    // Handle recording start with haptic feedback
+    const handleStartRecording = useCallback(() => {
+        haptics.medium();
+        setStatusMessage('Recording started');
+        startListening();
+    }, [startListening]);
+
+    // Handle recording stop with haptic feedback
+    const handleStopRecording = useCallback(() => {
+        haptics.light();
+        setStatusMessage('Recording stopped');
+        stopListening();
+        // Focus textarea after stopping so user can continue editing
+        setTimeout(() => {
+            if (isMountedRef.current && textareaRef.current) {
+                textareaRef.current.focus();
+            }
+        }, 100);
+    }, [stopListening]);
+
+    // Handle dream text change with live sanitization and validation error clearing
+    const handleDreamTextChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const newText = sanitizeTextLive(e.target.value);
+        // Enforce character limit
+        if (newText.length <= INPUT_LIMITS.dreamText) {
+            setDreamText(newText);
+            // Clear validation error when user starts typing
+            setValidationError(null);
+        }
+    }, []);
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
@@ -75,30 +122,44 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
         };
     }, [onClose]);
 
-    const [validationError, setValidationError] = useState<string | null>(null);
+    const handleSave = useCallback(() => {
+        if (!dreamText.trim() || isListening || isSaving) return;
+        if (!isMountedRef.current) return;
 
-    const handleSave = () => {
-        if (!dreamText.trim() || isListening) return;
+        setIsSaving(true);
 
         // Validate and sanitize dream text
         const validation = validateDreamText(dreamText);
         if (!validation.valid) {
             setValidationError(validation.error || 'Invalid dream text');
+            setIsSaving(false);
+            haptics.error();
             return;
         }
 
         // Check for script injection attempts
         if (containsScriptInjection(dreamText)) {
             setValidationError('Invalid characters detected in dream text');
+            setIsSaving(false);
+            haptics.error();
             return;
         }
 
         setValidationError(null);
         haptics.dreamSaved();
+        setStatusMessage('Dream saved successfully');
+
         // Store the sanitized data and show boost offer
         savedDataRef.current = { text: validation.sanitized, quality: sleepQuality, mood: mood || undefined };
-        setStep('boost');
-    };
+
+        // Small delay for visual feedback
+        setTimeout(() => {
+            if (isMountedRef.current) {
+                setIsSaving(false);
+                setStep('boost');
+            }
+        }, 150);
+    }, [dreamText, isListening, isSaving, sleepQuality, mood]);
 
     const toggleBoost = () => {
         haptics.boostStart();
@@ -172,6 +233,10 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
         ? (dreamText ? dreamText + ' ' : '') + interimTranscript
         : dreamText;
 
+    // Calculate character count for display
+    const characterCount = displayText.length;
+    const isNearLimit = characterCount > INPUT_LIMITS.dreamText * 0.9;
+
     // Step 1: Record dream - Purple alarm theme
     if (step === 'record') {
         return (
@@ -181,11 +246,22 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="dream-scribe-title"
+                aria-describedby="dream-scribe-description"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
             >
+                {/* ARIA Live Region for status announcements */}
+                <div
+                    role="status"
+                    aria-live="polite"
+                    aria-atomic="true"
+                    className="sr-only"
+                >
+                    {statusMessage}
+                </div>
+
                 <motion.div
                     className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-t-2xl sm:rounded-2xl p-6 pb-10 w-full max-w-lg max-h-[90vh] sm:max-h-[88vh] overflow-y-auto text-white"
                     onClick={(e) => e.stopPropagation()}
@@ -204,26 +280,39 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                         <div className="w-10 h-1 rounded-full bg-white/30" />
                     </div>
                     <h2 id="dream-scribe-title" className="font-serif text-2xl text-center mb-2">The Dream Scribe</h2>
+                    <p id="dream-scribe-description" className="sr-only">
+                        Record your dream using voice or text input. You can also rate your sleep quality and mood.
+                    </p>
 
                     {/* Compact Voice Recording Button */}
                     <div className="mb-2 text-center">
-                        <button
-                            onClick={isListening ? stopListening : startListening}
-                            aria-label={isListening ? "Stop recording" : "Start voice recording"}
-                            aria-pressed={isListening}
-                            className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto transition-all ${isListening
-                                ? 'bg-red-500 scale-110 shadow-lg shadow-red-500/50'
-                                : 'bg-gradient-to-br from-indigo-500 to-purple-600 hover:scale-105 shadow-lg shadow-purple-500/30'
-                                }`}
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className={`h-7 w-7 text-white ${isListening ? 'animate-pulse' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                            </svg>
-                        </button>
+                        {isSupported ? (
+                            <button
+                                onClick={isListening ? handleStopRecording : handleStartRecording}
+                                aria-label={isListening ? "Stop recording" : "Start voice recording"}
+                                aria-pressed={isListening}
+                                className={`w-16 h-16 min-w-[64px] min-h-[64px] rounded-full flex items-center justify-center mx-auto transition-all ${isListening
+                                    ? 'bg-red-500 scale-110 shadow-lg shadow-red-500/50'
+                                    : 'bg-gradient-to-br from-indigo-500 to-purple-600 hover:scale-105 shadow-lg shadow-purple-500/30'
+                                    }`}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className={`h-7 w-7 text-white ${isListening ? 'animate-pulse' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                                </svg>
+                            </button>
+                        ) : (
+                            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto bg-white/10 border border-white/20">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                                </svg>
+                            </div>
+                        )}
                         <p className={`text-xs mt-1.5 ${isListening ? 'text-red-400' : 'text-white/50'}`}>
-                            {isListening ? (
+                            {!isSupported ? (
+                                'Voice input unavailable'
+                            ) : isListening ? (
                                 <span className="flex items-center justify-center gap-1.5">
-                                    <span className="w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse"></span>
+                                    <span className="w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse" aria-hidden="true"></span>
                                     Recording...
                                 </span>
                             ) : (
@@ -233,18 +322,38 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                     </div>
 
                     {/* Text area for typing/displaying transcription */}
-                    <textarea
-                        value={displayText}
-                        onChange={(e) => setDreamText(e.target.value)}
-                        className="w-full h-32 p-4 text-base bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-purple-400 focus:outline-none transition-all custom-scrollbar text-white placeholder-white/50"
-                        placeholder="Speak or write your dream here..."
-                        aria-label="Dream description"
-                        disabled={isListening}
-                    ></textarea>
+                    <div className="relative">
+                        <textarea
+                            ref={textareaRef}
+                            value={displayText}
+                            onChange={handleDreamTextChange}
+                            className="w-full h-32 p-4 text-base bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-purple-400 focus:outline-none transition-all custom-scrollbar text-white placeholder-white/50"
+                            placeholder="Speak or write your dream here..."
+                            aria-label="Dream description"
+                            aria-describedby="char-count"
+                            aria-invalid={!!validationError}
+                            disabled={isListening}
+                            maxLength={INPUT_LIMITS.dreamText}
+                        />
+                        {/* Character Counter */}
+                        <div
+                            id="char-count"
+                            className={`absolute bottom-2 right-3 text-xs ${
+                                isNearLimit ? 'text-amber-400' : 'text-white/40'
+                            }`}
+                            aria-live="polite"
+                        >
+                            {characterCount.toLocaleString()} / {INPUT_LIMITS.dreamText.toLocaleString()}
+                        </div>
+                    </div>
 
                     {/* Validation Error */}
                     {validationError && (
-                        <div className="mt-2 p-2 bg-red-500/20 border border-red-400/30 rounded-lg text-red-300 text-sm text-center">
+                        <div
+                            className="mt-2 p-2 bg-red-500/20 border border-red-400/30 rounded-lg text-red-300 text-sm text-center"
+                            role="alert"
+                            aria-live="assertive"
+                        >
                             {validationError}
                         </div>
                     )}
@@ -279,14 +388,32 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                     </div>
 
                     <div className="flex justify-center gap-4 mt-4 pb-20">
-                        <button onClick={onClose} aria-label="Cancel and close" className="py-3 px-6 min-h-[48px] bg-white/20 hover:bg-white/30 text-white rounded-full transition-all flex items-center justify-center">Cancel</button>
+                        <button
+                            onClick={onClose}
+                            aria-label="Cancel and close"
+                            className="py-3 px-6 min-w-[100px] min-h-[48px] bg-white/20 hover:bg-white/30 text-white rounded-full transition-all flex items-center justify-center"
+                            disabled={isSaving}
+                        >
+                            Cancel
+                        </button>
                         <button
                             onClick={handleSave}
-                            aria-label="Save dream and continue"
-                            className="py-3 px-6 min-h-[48px] bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold rounded-full disabled:opacity-50 transition-all flex items-center justify-center"
-                            disabled={!dreamText.trim() || isListening}
+                            aria-label={isSaving ? "Saving dream..." : "Save dream and continue"}
+                            aria-busy={isSaving}
+                            className="py-3 px-6 min-w-[140px] min-h-[48px] bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold rounded-full disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                            disabled={!dreamText.trim() || isListening || isSaving}
                         >
-                            Save & Illuminate
+                            {isSaving ? (
+                                <>
+                                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Saving...
+                                </>
+                            ) : (
+                                'Save & Illuminate'
+                            )}
                         </button>
                     </div>
                 </motion.div>

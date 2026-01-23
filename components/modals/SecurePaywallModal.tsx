@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import {
     PRICING,
     PREMIUM_FEATURES,
@@ -10,19 +10,22 @@ import {
     type Offerings,
 } from '../../services/secureSubscriptionService';
 import { useBackButton } from '../../hooks/useBackButton';
+import { haptics } from '../../services/hapticsService';
 
 interface SecurePaywallModalProps {
     isOpen: boolean;
     onClose: () => void;
     feature?: PremiumFeature;
     onNavigateToTerms?: () => void;
+    onNavigateToPrivacy?: () => void;
 }
 
 export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
     isOpen,
     onClose,
     feature,
-    onNavigateToTerms
+    onNavigateToTerms,
+    onNavigateToPrivacy
 }) => {
     const [selectedPlan, setSelectedPlan] = useState<'weekly' | 'monthly' | 'yearly'>('yearly');
     const [isProcessing, setIsProcessing] = useState(false);
@@ -31,6 +34,11 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
     const [termsAccepted, setTermsAccepted] = useState(false);
     const [offerings, setOfferings] = useState<Offerings | null>(null);
     const [isLoadingOfferings, setIsLoadingOfferings] = useState(true);
+
+    // Unique IDs for accessibility
+    const termsCheckboxId = useId();
+    const errorId = useId();
+    const priceAnnouncementId = useId();
 
     // Handle hardware back button (Android)
     useBackButton(isOpen && !isProcessing, onClose);
@@ -79,9 +87,11 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
         const pkg = getSelectedPackage();
         if (!pkg) {
             setError('Unable to load subscription options. Please try again.');
+            haptics.error();
             return;
         }
 
+        haptics.medium();
         setIsProcessing(true);
         setError(null);
 
@@ -96,16 +106,19 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
 
         if (result.error) {
             setError(result.error);
+            haptics.error();
             return;
         }
 
         if (result.success) {
             // Purchase successful - close modal
+            haptics.success();
             onClose();
         }
     };
 
     const handleRestore = async () => {
+        haptics.medium();
         setIsRestoring(true);
         setError(null);
 
@@ -115,14 +128,17 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
 
         if (result.error) {
             setError(result.error);
+            haptics.error();
             return;
         }
 
         if (result.isPremium) {
             // Restored successfully
+            haptics.success();
             onClose();
         } else {
             setError('No previous purchases found');
+            haptics.warning();
         }
     };
 
@@ -189,10 +205,10 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
 
                 {/* Free vs Premium Comparison */}
                 <div className="p-6">
-                    <div className="grid grid-cols-3 gap-2 text-sm mb-6">
-                        <div className="col-span-1"></div>
-                        <div className="text-center font-medium text-day-text-secondary dark:text-night-text-secondary py-2">Free</div>
-                        <div className="text-center font-medium py-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-t-lg text-amber-600 dark:text-amber-400">Premium</div>
+                    <div className="grid grid-cols-3 gap-2 text-sm mb-6" role="table" aria-label="Feature comparison between Free and Premium plans">
+                        <div className="col-span-1" role="columnheader"></div>
+                        <div className="text-center font-medium text-day-text-secondary dark:text-night-text-secondary py-2" role="columnheader">Free</div>
+                        <div className="text-center font-medium py-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-t-lg text-amber-600 dark:text-amber-400" role="columnheader">Premium</div>
 
                         {/* Features comparison rows */}
                         {[
@@ -206,27 +222,36 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
                             { name: 'Breathing Exercises', free: false, premium: true, last: true },
                         ].map((row, idx) => (
                             <React.Fragment key={idx}>
-                                <div className="py-2 text-day-text-secondary dark:text-night-text-secondary">{row.name}</div>
-                                <div className="text-center py-2">
+                                <div className="py-2 text-day-text-secondary dark:text-night-text-secondary" role="rowheader">{row.name}</div>
+                                <div className="text-center py-2" role="cell">
                                     {typeof row.free === 'boolean' ? (
                                         row.free ? (
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 inline" viewBox="0 0 20 20" fill="currentColor">
-                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                            </svg>
+                                            <>
+                                                <span className="sr-only">{row.name} included in Free</span>
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 inline" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                </svg>
+                                            </>
                                         ) : (
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-300 dark:text-gray-600 inline" viewBox="0 0 20 20" fill="currentColor">
-                                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                                            </svg>
+                                            <>
+                                                <span className="sr-only">{row.name} not included in Free</span>
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-300 dark:text-gray-600 inline" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                                </svg>
+                                            </>
                                         )
                                     ) : (
                                         <span className="text-xs text-day-text-secondary dark:text-night-text-secondary">{row.free}</span>
                                     )}
                                 </div>
-                                <div className={`text-center py-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10 ${row.last ? 'rounded-b-lg' : ''}`}>
+                                <div className={`text-center py-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10 ${row.last ? 'rounded-b-lg' : ''}`} role="cell">
                                     {typeof row.premium === 'boolean' ? (
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 inline" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                        </svg>
+                                        <>
+                                            <span className="sr-only">{row.name} included in Premium</span>
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 inline" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                            </svg>
+                                        </>
                                     ) : (
                                         <span className="text-xs font-medium text-amber-600 dark:text-amber-400">{row.premium}</span>
                                     )}
@@ -237,20 +262,23 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
 
                     {/* Loading State */}
                     {isLoadingOfferings ? (
-                        <div className="flex justify-center py-4">
-                            <svg className="animate-spin h-6 w-6 text-day-accent" viewBox="0 0 24 24">
+                        <div className="flex justify-center py-4" role="status" aria-live="polite" aria-busy="true">
+                            <svg className="animate-spin h-6 w-6 text-day-accent" viewBox="0 0 24 24" aria-hidden="true">
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                             </svg>
+                            <span className="sr-only">Loading subscription options...</span>
                         </div>
                     ) : (
                         <>
                             {/* Pricing Toggle */}
-                            <div className="flex justify-center gap-1 mb-4" role="group" aria-label="Subscription plan options">
+                            <div className="flex justify-center gap-1 mb-4" role="radiogroup" aria-label="Subscription plan options">
                                 <button
-                                    onClick={() => setSelectedPlan('weekly')}
-                                    aria-pressed={selectedPlan === 'weekly'}
-                                    className={`px-3 py-2 min-h-[44px] rounded-full text-sm font-medium transition-colors ${selectedPlan === 'weekly'
+                                    onClick={() => { setSelectedPlan('weekly'); haptics.selection(); }}
+                                    role="radio"
+                                    aria-checked={selectedPlan === 'weekly'}
+                                    aria-label={`Weekly plan, ${getDisplayPrice('weekly')} per week`}
+                                    className={`px-3 py-2 min-h-[44px] min-w-[44px] rounded-full text-sm font-medium transition-colors ${selectedPlan === 'weekly'
                                         ? 'bg-day-accent dark:bg-night-accent text-white'
                                         : 'bg-day-border dark:bg-night-border'
                                         }`}
@@ -258,31 +286,35 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
                                     Weekly
                                 </button>
                                 <button
-                                    onClick={() => setSelectedPlan('monthly')}
-                                    aria-pressed={selectedPlan === 'monthly'}
-                                    className={`px-3 py-2 min-h-[44px] rounded-full text-sm font-medium transition-colors ${selectedPlan === 'monthly'
+                                    onClick={() => { setSelectedPlan('monthly'); haptics.selection(); }}
+                                    role="radio"
+                                    aria-checked={selectedPlan === 'monthly'}
+                                    aria-label={`Monthly plan, ${getDisplayPrice('monthly')} per month, save ${PRICING.monthly.savingsVsWeekly}%`}
+                                    className={`px-3 py-2 min-h-[44px] min-w-[44px] rounded-full text-sm font-medium transition-colors ${selectedPlan === 'monthly'
                                         ? 'bg-day-accent dark:bg-night-accent text-white'
                                         : 'bg-day-border dark:bg-night-border'
                                         }`}
                                 >
                                     Monthly
-                                    <span className="ml-1 text-xs opacity-80">-{PRICING.monthly.savingsVsWeekly}%</span>
+                                    <span className="ml-1 text-xs opacity-80" aria-hidden="true">-{PRICING.monthly.savingsVsWeekly}%</span>
                                 </button>
                                 <button
-                                    onClick={() => setSelectedPlan('yearly')}
-                                    aria-pressed={selectedPlan === 'yearly'}
-                                    className={`px-3 py-2 min-h-[44px] rounded-full text-sm font-medium transition-colors ${selectedPlan === 'yearly'
+                                    onClick={() => { setSelectedPlan('yearly'); haptics.selection(); }}
+                                    role="radio"
+                                    aria-checked={selectedPlan === 'yearly'}
+                                    aria-label={`Yearly plan, ${getDisplayPrice('yearly')} per year, save ${PRICING.yearly.savingsVsWeekly}%`}
+                                    className={`px-3 py-2 min-h-[44px] min-w-[44px] rounded-full text-sm font-medium transition-colors ${selectedPlan === 'yearly'
                                         ? 'bg-day-accent dark:bg-night-accent text-white'
                                         : 'bg-day-border dark:bg-night-border'
                                         }`}
                                 >
                                     Yearly
-                                    <span className="ml-1 text-xs opacity-80">-{PRICING.yearly.savingsVsWeekly}%</span>
+                                    <span className="ml-1 text-xs opacity-80" aria-hidden="true">-{PRICING.yearly.savingsVsWeekly}%</span>
                                 </button>
                             </div>
 
                             {/* Price Display */}
-                            <div className="text-center mb-6">
+                            <div className="text-center mb-6" role="region" aria-live="polite" aria-atomic="true" id={priceAnnouncementId}>
                                 <div className="text-4xl font-bold">
                                     {getDisplayPrice(selectedPlan)}
                                 </div>
@@ -305,31 +337,55 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
 
                     {/* Error Display */}
                     {error && (
-                        <div className="bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 p-3 rounded-lg mb-4 text-sm text-center">
+                        <div
+                            id={errorId}
+                            role="alert"
+                            aria-live="assertive"
+                            className="bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 p-3 rounded-lg mb-4 text-sm text-center"
+                        >
                             {error}
                         </div>
                     )}
 
                     {/* Terms Checkbox */}
-                    <label className="flex items-start gap-3 mb-4 py-2 min-h-[44px] cursor-pointer">
-                        <input
-                            type="checkbox"
-                            checked={termsAccepted}
-                            onChange={(e) => setTermsAccepted(e.target.checked)}
-                            className="mt-0.5 w-5 h-5 rounded border-gray-300 text-day-accent focus:ring-day-accent"
-                        />
-                        <span className="text-sm text-day-text-secondary dark:text-night-text-secondary">
+                    <label
+                        htmlFor={termsCheckboxId}
+                        className="flex items-center gap-3 mb-4 py-3 min-h-[48px] cursor-pointer rounded-lg -mx-2 px-2 active:bg-black/5 dark:active:bg-white/5"
+                    >
+                        <div className="flex items-center justify-center w-[44px] h-[44px] -m-2">
+                            <input
+                                id={termsCheckboxId}
+                                type="checkbox"
+                                checked={termsAccepted}
+                                onChange={(e) => { setTermsAccepted(e.target.checked); haptics.selection(); }}
+                                aria-describedby={error ? errorId : undefined}
+                                className="w-6 h-6 rounded border-gray-300 text-day-accent focus:ring-day-accent focus:ring-2 focus:ring-offset-2"
+                            />
+                        </div>
+                        <span className="text-sm text-day-text-secondary dark:text-night-text-secondary flex-1">
                             I agree to the{' '}
                             {onNavigateToTerms ? (
                                 <button
                                     type="button"
-                                    onClick={(e) => { e.preventDefault(); onClose(); onNavigateToTerms(); }}
-                                    className="text-day-accent dark:text-night-accent underline hover:opacity-80"
+                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); onClose(); onNavigateToTerms(); }}
+                                    className="text-day-accent dark:text-night-accent underline hover:opacity-80 min-h-[44px] inline-flex items-center"
                                 >
                                     Terms of Service
                                 </button>
                             ) : (
                                 <span className="text-day-accent dark:text-night-accent">Terms of Service</span>
+                            )}
+                            {' '}and{' '}
+                            {onNavigateToPrivacy ? (
+                                <button
+                                    type="button"
+                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); onClose(); onNavigateToPrivacy(); }}
+                                    className="text-day-accent dark:text-night-accent underline hover:opacity-80 min-h-[44px] inline-flex items-center"
+                                >
+                                    Privacy Policy
+                                </button>
+                            ) : (
+                                <span className="text-day-accent dark:text-night-accent">Privacy Policy</span>
                             )}
                         </span>
                     </label>
@@ -338,11 +394,13 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
                     <button
                         onClick={handleSubscribe}
                         disabled={isProcessing || !termsAccepted || isLoadingOfferings}
+                        aria-busy={isProcessing}
+                        aria-label={isProcessing ? 'Processing purchase...' : !termsAccepted ? 'Accept terms to continue' : `Subscribe to ${selectedPlan} plan for ${getDisplayPrice(selectedPlan)}`}
                         className="w-full py-3 min-h-[48px] bg-gradient-to-r from-day-accent to-purple-600 text-white rounded-full font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isProcessing ? (
-                            <span className="flex items-center justify-center gap-2">
-                                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                            <span className="flex items-center justify-center gap-2" role="status">
+                                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                                 </svg>
@@ -359,6 +417,8 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
                     <button
                         onClick={handleRestore}
                         disabled={isRestoring || isProcessing}
+                        aria-busy={isRestoring}
+                        aria-label={isRestoring ? 'Restoring purchases...' : 'Restore previous purchases'}
                         className="w-full py-2 mt-3 min-h-[44px] text-day-text-secondary dark:text-night-text-secondary text-sm hover:text-day-accent dark:hover:text-night-accent transition-colors disabled:opacity-50"
                     >
                         {isRestoring ? 'Restoring...' : 'Restore Purchases'}

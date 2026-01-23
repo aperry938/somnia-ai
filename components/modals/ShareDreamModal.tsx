@@ -180,13 +180,13 @@ export const ShareDreamModal: React.FC<ShareDreamModalProps> = ({ dream, isOpen,
 
                     {/* Format Selection */}
                     <div>
-                        <label className="text-sm text-day-text-secondary dark:text-night-text-secondary mb-2 block">Format</label>
-                        <div className="grid grid-cols-2 gap-2">
+                        <label id="format-label" className="text-sm text-day-text-secondary dark:text-night-text-secondary mb-2 block">Format</label>
+                        <div className="grid grid-cols-2 gap-2" role="group" aria-labelledby="format-label">
                             {FORMATS.map((f) => (
                                 <button
                                     key={f.id}
                                     onClick={() => setFormat(f.id)}
-                                    className={`p-3 rounded-xl border-2 transition-all text-left ${format === f.id
+                                    className={`p-3 min-h-[56px] rounded-xl border-2 transition-all text-left ${format === f.id
                                         ? 'border-day-accent dark:border-night-accent bg-day-accent/10 dark:bg-night-accent/10'
                                         : 'border-day-border dark:border-night-border'
                                         }`}
@@ -202,13 +202,13 @@ export const ShareDreamModal: React.FC<ShareDreamModalProps> = ({ dream, isOpen,
 
                     {/* Theme Selection */}
                     <div>
-                        <label className="text-sm text-day-text-secondary dark:text-night-text-secondary mb-2 block">Theme</label>
-                        <div className="flex gap-2 overflow-x-auto pb-1">
+                        <label id="theme-label" className="text-sm text-day-text-secondary dark:text-night-text-secondary mb-2 block">Theme</label>
+                        <div className="flex gap-2 overflow-x-auto pb-1" role="group" aria-labelledby="theme-label">
                             {THEMES.map((t) => (
                                 <button
                                     key={t.id}
                                     onClick={() => setTheme(t.id)}
-                                    className={`flex-shrink-0 px-4 py-2 rounded-full border-2 transition-all flex items-center gap-1.5 ${theme === t.id
+                                    className={`flex-shrink-0 px-4 py-2 min-h-[44px] rounded-full border-2 transition-all flex items-center gap-1.5 ${theme === t.id
                                         ? 'border-day-accent dark:border-night-accent bg-day-accent/10 dark:bg-night-accent/10'
                                         : 'border-day-border dark:border-night-border'
                                         }`}
@@ -225,11 +225,11 @@ export const ShareDreamModal: React.FC<ShareDreamModalProps> = ({ dream, isOpen,
                     {/* Content Type */}
                     {hasAiInsight && (
                         <div>
-                            <label className="text-sm text-day-text-secondary dark:text-night-text-secondary mb-2 block">Content</label>
-                            <div className="grid grid-cols-2 gap-2">
+                            <label id="content-label" className="text-sm text-day-text-secondary dark:text-night-text-secondary mb-2 block">Content</label>
+                            <div className="grid grid-cols-2 gap-2" role="group" aria-labelledby="content-label">
                                 <button
                                     onClick={() => setContentType('ai-insight')}
-                                    className={`p-3 rounded-xl border-2 transition-all ${contentType === 'ai-insight'
+                                    className={`p-3 min-h-[56px] rounded-xl border-2 transition-all ${contentType === 'ai-insight'
                                         ? 'border-day-accent dark:border-night-accent bg-day-accent/10 dark:bg-night-accent/10'
                                         : 'border-day-border dark:border-night-border'
                                         }`}
@@ -241,7 +241,7 @@ export const ShareDreamModal: React.FC<ShareDreamModalProps> = ({ dream, isOpen,
                                 </button>
                                 <button
                                     onClick={() => setContentType('dream-excerpt')}
-                                    className={`p-3 rounded-xl border-2 transition-all ${contentType === 'dream-excerpt'
+                                    className={`p-3 min-h-[56px] rounded-xl border-2 transition-all ${contentType === 'dream-excerpt'
                                         ? 'border-day-accent dark:border-night-accent bg-day-accent/10 dark:bg-night-accent/10'
                                         : 'border-day-border dark:border-night-border'
                                         }`}
@@ -260,7 +260,8 @@ export const ShareDreamModal: React.FC<ShareDreamModalProps> = ({ dream, isOpen,
                         <button
                             onClick={handleDownload}
                             disabled={!previewUrl || isGenerating}
-                            className="flex-1 py-3 border-2 border-day-accent dark:border-night-accent text-day-accent dark:text-night-accent font-bold rounded-xl disabled:opacity-50 flex items-center justify-center gap-2"
+                            aria-label="Download share card"
+                            className="flex-1 py-3 min-h-[48px] border-2 border-day-accent dark:border-night-accent text-day-accent dark:text-night-accent font-bold rounded-xl disabled:opacity-50 flex items-center justify-center gap-2"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -270,7 +271,8 @@ export const ShareDreamModal: React.FC<ShareDreamModalProps> = ({ dream, isOpen,
                         <button
                             onClick={handleShare}
                             disabled={!previewUrl || isGenerating || isSharing}
-                            className="flex-1 py-3 bg-day-accent dark:bg-night-accent text-white font-bold rounded-xl disabled:opacity-50 flex items-center justify-center gap-2"
+                            aria-label="Share dream card"
+                            className="flex-1 py-3 min-h-[48px] bg-day-accent dark:bg-night-accent text-white font-bold rounded-xl disabled:opacity-50 flex items-center justify-center gap-2"
                         >
                             {isSharing ? (
                                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

@@ -88,11 +88,21 @@ export const requestSleepDetectionPermissions = async (): Promise<boolean> => {
 export const useSleepDetection = (onWakePrompt: (soundId: string) => void) => {
     const checkIntervalRef = useRef<number | null>(null);
     const onWakePromptRef = useRef(onWakePrompt);
+    // Track mounted state for async operations
+    const isMountedRef = useRef(true);
 
     // Keep the callback ref updated
     useEffect(() => {
         onWakePromptRef.current = onWakePrompt;
     }, [onWakePrompt]);
+
+    // Track mounted state
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+        };
+    }, []);
 
     // Get settings from localStorage
     const getSettings = useCallback((): SleepDetectionSettings => {
@@ -148,11 +158,14 @@ export const useSleepDetection = (onWakePrompt: (soundId: string) => void) => {
         const settings = getSettings();
         if (!settings.enabled) return;
 
+        // Track if this effect is still active
+        let isActive = true;
+
         // Record activity on various user interactions
         const activityEvents = ['touchstart', 'mousedown', 'keydown', 'scroll'];
 
         const handleActivity = () => {
-            if (document.visibilityState === 'visible') {
+            if (document.visibilityState === 'visible' && isMountedRef.current) {
                 recordActivity();
             }
         };
@@ -165,50 +178,66 @@ export const useSleepDetection = (onWakePrompt: (soundId: string) => void) => {
         recordActivity();
 
         // Handle notification clicks - this fires when user taps the notification
-        let notificationListener: { remove: () => void } | undefined;
+        let notificationListener: { remove: () => Promise<void> } | null = null;
         if (Capacitor.isNativePlatform()) {
             LocalNotifications.addListener('localNotificationActionPerformed', (notification) => {
+                if (!isActive || !isMountedRef.current) return;
                 if (notification.notification.id === SLEEP_DETECTION_NOTIFICATION_ID) {
                     const soundId = notification.notification.extra?.soundId ?? 'somnia';
                     logger.log('[SleepDetection] Notification tapped, triggering wake prompt with sound:', soundId);
                     onWakePromptRef.current(soundId);
                 }
             }).then(listener => {
-                notificationListener = listener;
-            });
+                if (isActive && isMountedRef.current) {
+                    notificationListener = listener;
+                } else {
+                    // Component unmounted before listener was added, clean up immediately
+                    listener.remove().catch(err =>
+                        logger.error('[SleepDetection] Failed to remove notification listener:', err)
+                    );
+                }
+            }).catch(err => logger.error('[SleepDetection] Failed to add notification listener:', err));
         }
 
         // Fallback: Check inactivity periodically when app IS active (every 5 minutes)
         checkIntervalRef.current = window.setInterval(() => {
+            if (!isMountedRef.current) return;
             if (document.visibilityState === 'visible' && checkInactivity()) {
-                const settings = getSettings();
-                onWakePromptRef.current(settings.soundId);
+                const currentSettings = getSettings();
+                onWakePromptRef.current(currentSettings.soundId);
             }
         }, 5 * 60 * 1000);
 
         // Also check when app becomes visible after being in background
         const handleVisibilityChange = () => {
+            if (!isMountedRef.current) return;
             if (document.visibilityState === 'visible') {
                 // Reschedule notification when app comes to foreground
                 recordActivity();
 
                 if (checkInactivity()) {
-                    const settings = getSettings();
-                    onWakePromptRef.current(settings.soundId);
+                    const currentSettings = getSettings();
+                    onWakePromptRef.current(currentSettings.soundId);
                 }
             }
         };
         document.addEventListener('visibilitychange', handleVisibilityChange);
 
         return () => {
+            isActive = false;
             activityEvents.forEach(event => {
                 window.removeEventListener(event, handleActivity);
             });
             document.removeEventListener('visibilitychange', handleVisibilityChange);
             if (checkIntervalRef.current) {
                 clearInterval(checkIntervalRef.current);
+                checkIntervalRef.current = null;
             }
-            notificationListener?.remove();
+            if (notificationListener) {
+                notificationListener.remove().catch(err =>
+                    logger.error('[SleepDetection] Failed to remove notification listener:', err)
+                );
+            }
         };
     }, [getSettings, recordActivity, checkInactivity]);
 

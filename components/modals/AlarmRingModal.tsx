@@ -8,11 +8,14 @@ import haptics from '../../services/hapticsService';
 import { startHapticAlarmRamp, stopHapticAlarmRamp, triggerWakePattern } from '../../services/hapticAlarmService';
 import { stopAlarm as stopNativeAlarm } from '../../services/nativeAlarmService';
 import { sanitizeTextLive, INPUT_LIMITS } from '../../services/validationService';
+import { logger } from '../../services/logger';
 
 // Minimum distance (px) to trigger a swipe action
 const SWIPE_THRESHOLD = 100;
-// Distance at which haptic feedback fires
-const HAPTIC_THRESHOLD = 60;
+// Distance at which first haptic feedback fires
+const HAPTIC_THRESHOLD_FIRST = 40;
+// Distance at which second (stronger) haptic feedback fires
+const HAPTIC_THRESHOLD_SECOND = 80;
 
 // Pulsing visual component that crescendos over 60 seconds
 const PulsingWakeVisual: React.FC<{ isActive: boolean }> = ({ isActive }) => {
@@ -147,7 +150,56 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
     const [swipeOffset, setSwipeOffset] = useState(0);
     const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
     const touchStartRef = useRef<{ x: number; y: number } | null>(null);
-    const hasTriggeredHapticRef = useRef(false);
+    // Track progressive haptic feedback stages (0 = none, 1 = first threshold, 2 = second threshold)
+    const hapticStageRef = useRef(0);
+
+    // Screen Wake Lock to keep display on during alarm
+    const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+
+    // Acquire wake lock to prevent screen from turning off during alarm
+    useEffect(() => {
+        const acquireWakeLock = async () => {
+            if ('wakeLock' in navigator) {
+                try {
+                    wakeLockRef.current = await navigator.wakeLock.request('screen');
+                    logger.log('[AlarmRingModal] Wake lock acquired');
+
+                    // Re-acquire wake lock if released (e.g., tab becomes hidden then visible)
+                    wakeLockRef.current.addEventListener('release', () => {
+                        logger.log('[AlarmRingModal] Wake lock released');
+                    });
+                } catch (err) {
+                    logger.warn('[AlarmRingModal] Wake lock request failed:', err);
+                }
+            }
+        };
+
+        acquireWakeLock();
+
+        // Re-acquire wake lock when page becomes visible again
+        const handleVisibilityChange = async () => {
+            if (document.visibilityState === 'visible' && 'wakeLock' in navigator) {
+                try {
+                    wakeLockRef.current = await navigator.wakeLock.request('screen');
+                    logger.log('[AlarmRingModal] Wake lock re-acquired on visibility change');
+                } catch (err) {
+                    logger.warn('[AlarmRingModal] Wake lock re-acquire failed:', err);
+                }
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            if (wakeLockRef.current) {
+                wakeLockRef.current.release().catch(() => {
+                    // Ignore errors on release
+                });
+                wakeLockRef.current = null;
+            }
+        };
+    }, []);
 
     // Handle touch start
     const handleTouchStart = useCallback((e: TouchEvent<HTMLDivElement>) => {
@@ -155,12 +207,12 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
         const touch = e.touches[0];
         if (!touch) return;
         touchStartRef.current = { x: touch.clientX, y: touch.clientY };
-        hasTriggeredHapticRef.current = false;
+        hapticStageRef.current = 0; // Reset haptic feedback stage
         setSwipeOffset(0);
         setSwipeDirection(null);
     }, [step]);
 
-    // Handle touch move - track swipe and provide haptic feedback
+    // Handle touch move - track swipe and provide progressive haptic feedback
     const handleTouchMove = useCallback((e: TouchEvent<HTMLDivElement>) => {
         if (step !== 'alarm' || !touchStartRef.current) return;
 
@@ -175,10 +227,15 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
         setSwipeOffset(deltaX);
         setSwipeDirection(deltaX > 0 ? 'right' : 'left');
 
-        // Haptic feedback when crossing threshold
-        if (!hasTriggeredHapticRef.current && Math.abs(deltaX) > HAPTIC_THRESHOLD) {
-            hasTriggeredHapticRef.current = true;
+        const absDelta = Math.abs(deltaX);
+
+        // Progressive haptic feedback at two thresholds
+        if (hapticStageRef.current === 0 && absDelta > HAPTIC_THRESHOLD_FIRST) {
+            hapticStageRef.current = 1;
             haptics.light();
+        } else if (hapticStageRef.current === 1 && absDelta > HAPTIC_THRESHOLD_SECOND) {
+            hapticStageRef.current = 2;
+            haptics.medium();
         }
     }, [step]);
 
@@ -205,12 +262,25 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
 
     // Track mount state for cleanup
     const isMountedRef = React.useRef(true);
+    // Track if audio failed to play (for fallback alerts)
+    const [audioFailed, setAudioFailed] = useState(false);
 
     useEffect(() => {
         isMountedRef.current = true;
 
-        // Play the user-selected alarm sound and start haptic ramp
-        playAlarmBySound(alarm.soundId || 'somnia');
+        // Play the user-selected alarm sound with error handling
+        const startAlarm = async () => {
+            try {
+                await playAlarmBySound(alarm.soundId || 'somnia');
+                logger.log('[AlarmRingModal] Audio started successfully');
+            } catch (err) {
+                logger.error('[AlarmRingModal] Audio playback failed:', err);
+                setAudioFailed(true);
+                // Haptics will still work as a fallback wake mechanism
+            }
+        };
+
+        startAlarm();
         startHapticAlarmRamp();
 
         return () => {
@@ -255,7 +325,11 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                 if (prev <= 1) {
                     // Timer done - ring again
                     setStep('alarm');
-                    playAlarmBySound(alarm.soundId || 'somnia');
+                    // Play alarm with error handling
+                    playAlarmBySound(alarm.soundId || 'somnia').catch(err => {
+                        logger.error('[AlarmRingModal] Snooze re-ring audio failed:', err);
+                        setAudioFailed(true);
+                    });
                     startHapticAlarmRamp();
                     // Trigger re-ring count change to reset timer via separate effect
                     setSnoozeReRingCount(c => c + 1);
@@ -320,6 +394,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
         setSwipeOffset(0);
         setSwipeDirection(null);
         touchStartRef.current = null;
+        hapticStageRef.current = 0;
 
         // Check if swipe threshold met
         if (Math.abs(finalOffset) >= SWIPE_THRESHOLD) {
@@ -332,6 +407,14 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
             }
         }
     }, [step, swipeOffset, swipeDirection, handleAwake, handleSnooze]);
+
+    // Handle touch cancel (e.g., phone call interrupts, notification popup)
+    const handleTouchCancel = useCallback(() => {
+        setSwipeOffset(0);
+        setSwipeDirection(null);
+        touchStartRef.current = null;
+        hapticStageRef.current = 0;
+    }, []);
 
     // Handle recording dream - advance to boost step
     const handleRecordDream = useCallback(() => {
@@ -416,9 +499,9 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     // Calculate swipe progress for visual feedback
-    const _swipeProgress = Math.min(Math.abs(swipeOffset) / SWIPE_THRESHOLD, 1);
-    const _isSwipingRight = swipeDirection === 'right';
-    const _isSwipingLeft = swipeDirection === 'left';
+    const swipeProgress = Math.min(Math.abs(swipeOffset) / SWIPE_THRESHOLD, 1);
+    const isSwipingRight = swipeDirection === 'right';
+    const isSwipingLeft = swipeDirection === 'left';
 
     return (
         <div
@@ -426,10 +509,50 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
             role="dialog"
             aria-modal="true"
             aria-label="Alarm ringing"
+            aria-live="polite"
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchCancel}
         >
+            {/* Swipe direction indicators - visual feedback during swipe */}
+            {step === 'alarm' && swipeProgress > 0.1 && (
+                <>
+                    {/* Left indicator (Snooze) */}
+                    <div
+                        className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 transition-opacity"
+                        style={{ opacity: isSwipingLeft ? swipeProgress : 0 }}
+                        aria-hidden="true"
+                    >
+                        <div
+                            className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center"
+                            style={{ transform: `scale(${0.8 + swipeProgress * 0.4})` }}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <span className="text-white font-medium">Snooze</span>
+                    </div>
+                    {/* Right indicator (Wake) */}
+                    <div
+                        className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 transition-opacity"
+                        style={{ opacity: isSwipingRight ? swipeProgress : 0 }}
+                        aria-hidden="true"
+                    >
+                        <span className="text-white font-medium">Wake</span>
+                        <div
+                            className="w-16 h-16 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center"
+                            style={{ transform: `scale(${0.8 + swipeProgress * 0.4})` }}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                        </div>
+                    </div>
+                </>
+            )}
+
             {/* Pulsing visual wake element - only active during alarm step */}
             <PulsingWakeVisual isActive={step === 'alarm'} />
 
@@ -450,6 +573,15 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                 {/* STEP 1: Alarm - Just Snooze and I'm Awake/Dismiss */}
                 {step === 'alarm' && (
                     <div className="animate-fadeIn">
+                        {/* Audio failure warning - fallback to haptics */}
+                        {audioFailed && (
+                            <div className="mb-4 p-3 bg-amber-500/20 border border-amber-500/40 rounded-xl" role="alert">
+                                <p className="text-amber-200 text-sm">
+                                    Audio unavailable - using vibration alerts
+                                </p>
+                            </div>
+                        )}
+
                         {/* DEV TOOLS: Sound Switcher - only visible in dev mode */}
                         {isDevMode() && (
                             <div className="mb-6 p-3 bg-black/30 rounded-xl border border-yellow-500/50">
@@ -513,9 +645,25 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                 {step === 'snooze' && (
                     <div className="animate-fadeIn">
                         <div className="bg-white/10 backdrop-blur rounded-2xl p-6 mb-4 border border-white/10">
-                            <p className="text-white/50 text-sm mb-2">Snoozing...</p>
-                            <p className="text-5xl font-light text-white mb-4">
+                            <p className="text-white/50 text-sm mb-2" id="snooze-label">Snoozing...</p>
+                            <p
+                                className="text-5xl font-light text-white mb-4"
+                                role="timer"
+                                aria-labelledby="snooze-label"
+                                aria-live="off"
+                                aria-atomic="true"
+                            >
                                 {Math.floor(snoozeRemaining / 60)}:{String(snoozeRemaining % 60).padStart(2, '0')}
+                            </p>
+                            {/* Screen reader friendly time announcement (less frequent) */}
+                            <p className="sr-only" aria-live="polite">
+                                {snoozeRemaining % 60 === 0 && snoozeRemaining > 0
+                                    ? `${Math.floor(snoozeRemaining / 60)} minutes remaining`
+                                    : snoozeRemaining === 30
+                                        ? '30 seconds remaining'
+                                        : snoozeRemaining === 10
+                                            ? '10 seconds remaining'
+                                            : null}
                             </p>
                             <p className="text-white/40 text-xs">Alarm will ring again</p>
                         </div>
@@ -587,6 +735,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                             {/* Record Dream Button */}
                             <button
                                 onClick={handleRecordDream}
+                                aria-label={quickNote ? "Save quick note and record full dream" : "Record full dream"}
                                 className="w-full py-3.5 min-h-[48px] bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center"
                             >
                                 {quickNote ? 'Save & Record Full Dream' : 'Record Full Dream'}
@@ -621,7 +770,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                                 onClick={toggleAlertnessBoost}
                                 aria-label={alertnessOn ? "Stop alertness boost" : "Start alertness boost"}
                                 aria-pressed={alertnessOn}
-                                className={`w-full py-4 rounded-xl font-semibold text-lg transition-all ${alertnessOn
+                                className={`w-full py-4 min-h-[56px] rounded-xl font-semibold text-lg transition-all flex items-center justify-center ${alertnessOn
                                     ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/30'
                                     : 'bg-white/20 text-white hover:bg-white/30'
                                     }`}
@@ -641,11 +790,11 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                                 </p>
                             )}
 
-                            {/* Volume Slider */}
+                            {/* Volume Slider - 44px touch target for accessibility */}
                             <div className="mt-4 px-2">
                                 <div className="flex justify-between text-xs text-white/50 mb-1">
-                                    <span>Volume</span>
-                                    <span>{Math.round(boostVolume * 100)}%</span>
+                                    <span id="volume-label">Volume</span>
+                                    <span aria-hidden="true">{Math.round(boostVolume * 100)}%</span>
                                 </div>
                                 <input
                                     type="range"
@@ -657,8 +806,13 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
                                     style={{
                                         background: `linear-gradient(to right, #fbbf24 0%, #fbbf24 ${boostVolume * 100}%, rgba(255,255,255,0.2) ${boostVolume * 100}%, rgba(255,255,255,0.2) 100%)`
                                     }}
-                                    className="w-full h-2 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-400 [&::-webkit-slider-thumb]:shadow-md [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-amber-400 [&::-moz-range-thumb]:border-0"
+                                    className="w-full h-11 rounded-full appearance-none cursor-pointer [&::-webkit-slider-runnable-track]:h-2 [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-7 [&::-webkit-slider-thumb]:h-7 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-400 [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:-mt-2.5 [&::-moz-range-track]:h-2 [&::-moz-range-track]:rounded-full [&::-moz-range-thumb]:w-7 [&::-moz-range-thumb]:h-7 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-amber-400 [&::-moz-range-thumb]:border-0"
                                     aria-label="Boost volume"
+                                    aria-labelledby="volume-label"
+                                    aria-valuemin={5}
+                                    aria-valuemax={100}
+                                    aria-valuenow={Math.round(boostVolume * 100)}
+                                    aria-valuetext={`${Math.round(boostVolume * 100)} percent`}
                                 />
                             </div>
                         </div>

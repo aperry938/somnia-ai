@@ -1,6 +1,7 @@
 // components/modals/PasswordInputModal.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useBackButton } from '../../hooks/useBackButton';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 interface PasswordInputModalProps {
     isOpen: boolean;
@@ -28,14 +29,22 @@ export const PasswordInputModal: React.FC<PasswordInputModalProps> = ({
     const [showPassword, setShowPassword] = useState(false);
     const [validationError, setValidationError] = useState<string | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+    const modalRef = useRef<HTMLDivElement>(null);
 
     // Hardware back button support
     useBackButton(isOpen, onCancel);
 
+    // Focus trap for accessibility
+    useFocusTrap(isOpen, modalRef);
+
     // Focus input on open
     useEffect(() => {
         if (isOpen && inputRef.current) {
-            inputRef.current.focus();
+            // Small delay to ensure modal is mounted and focus trap has set up
+            const timer = setTimeout(() => {
+                inputRef.current?.focus();
+            }, 50);
+            return () => clearTimeout(timer);
         }
     }, [isOpen]);
 
@@ -98,6 +107,7 @@ export const PasswordInputModal: React.FC<PasswordInputModalProps> = ({
             aria-labelledby="password-modal-title"
         >
             <div
+                ref={modalRef}
                 className="w-full max-w-md bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl shadow-2xl overflow-hidden animate-fadeIn"
                 onClick={(e) => e.stopPropagation()}
             >

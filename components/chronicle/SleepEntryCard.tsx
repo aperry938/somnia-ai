@@ -101,15 +101,16 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
     );
 
     return (
-        <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow" role="listitem">
             {/* Header Row - Always Visible */}
             <div
-                className="p-4 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                className="p-4 min-h-[72px] cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors active:bg-black/10 dark:active:bg-white/10"
                 onClick={() => { haptics.selection(); setIsExpanded(!isExpanded); }}
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); haptics.selection(); setIsExpanded(!isExpanded); } }}
                 aria-expanded={isExpanded}
+                aria-label={`${displayDate}, ${dreamCount} ${dreamCount === 1 ? 'dream' : 'dreams'}${entry.sleepQuality ? `, sleep quality ${entry.sleepQuality} of 5` : ''}. ${isExpanded ? 'Collapse' : 'Expand'} details`}
             >
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -310,11 +311,12 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
                                     {entryDreams.map(dream => (
                                         <div
                                             key={dream.id}
-                                            className="px-4 py-3 hover:bg-purple-50/50 dark:hover:bg-purple-900/10 cursor-pointer transition-colors"
+                                            className="px-4 py-3 min-h-[60px] hover:bg-purple-50/50 dark:hover:bg-purple-900/10 cursor-pointer transition-colors active:bg-purple-100/50 dark:active:bg-purple-900/20"
                                             onClick={(e) => { e.stopPropagation(); onDreamClick(dream.id); }}
                                             role="button"
                                             tabIndex={0}
                                             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onDreamClick(dream.id); } }}
+                                            aria-label={`View dream: ${dream.title || 'Untitled Dream'}${dream.mood ? `, mood: ${MOOD_LABELS[dream.mood]}` : ''}`}
                                         >
                                             <div className="flex items-start gap-3">
                                                 {dream.imageUrl ? (
@@ -354,7 +356,8 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
                             <div className="px-4 pb-3">
                                 <button
                                     onClick={(e) => { e.stopPropagation(); onAddDream(entry.id); }}
-                                    className="w-full py-2 flex items-center justify-center gap-2 text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors border border-dashed border-purple-200 dark:border-purple-800"
+                                    className="w-full py-3 min-h-[48px] flex items-center justify-center gap-2 text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 active:bg-purple-100 dark:active:bg-purple-900/30 rounded-lg transition-colors border border-dashed border-purple-200 dark:border-purple-800"
+                                    aria-label={`Add dream to ${displayDate}`}
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />

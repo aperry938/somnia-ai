@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Suspense, lazy, useCallback, useRef } from 'react';
-import { Page, DreamMood } from './types';
+import { Page, DreamMood, Dream } from './types';
 import { useClock } from './hooks/useClock';
 import { useAppContext } from './contexts/AppContext';
 import { useAuth } from './contexts/AuthContext';

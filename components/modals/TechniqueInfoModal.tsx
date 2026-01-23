@@ -1,7 +1,8 @@
 // components/modals/TechniqueInfoModal.tsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { LucidDreamTechnique } from '../../constants/lucidDreaming';
 import { useBackButton } from '../../hooks/useBackButton';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 interface TechniqueInfoModalProps {
     technique: LucidDreamTechnique | null;
@@ -51,6 +52,10 @@ export const TechniqueInfoModal: React.FC<TechniqueInfoModalProps> = ({ techniqu
     // Hardware back button support
     useBackButton(!!technique, onClose);
 
+    // Focus trap for accessibility
+    const modalRef = useRef<HTMLDivElement>(null);
+    useFocusTrap(!!technique, modalRef);
+
     // Handle Escape key to close modal
     useEffect(() => {
         if (!technique) return;
@@ -75,6 +80,7 @@ export const TechniqueInfoModal: React.FC<TechniqueInfoModalProps> = ({ techniqu
             aria-labelledby="technique-title"
         >
             <div
+                ref={modalRef}
                 className="w-full max-w-md max-h-[calc(100%-2rem)] bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl shadow-2xl overflow-hidden animate-fadeIn flex flex-col"
                 onClick={(e) => e.stopPropagation()}
             >

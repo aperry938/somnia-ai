@@ -160,6 +160,16 @@ let lastPlayedSound: { sound: Soundscape; volume: number } | null = null;
 // Track if sound ended naturally (timer expired) vs user stopped it
 let soundEndedNaturally = false;
 
+// Cross-fade configuration for smooth transitions between sounds
+const CROSSFADE_DURATION_MS = 2000;
+
+// Track pending cross-fade for cleanup
+let pendingCrossfadeNodes: {
+    gainNode: GainNode;
+    sourceNode: AudioNode;
+    compressor?: DynamicsCompressorNode;
+} | null = null;
+
 // NOTE: Intentionally NO visibilitychange handler here.
 // Sleep sounds MUST continue playing when the screen locks or app backgrounds.
 // iOS/Android background audio is handled via:
@@ -194,41 +204,102 @@ const cacheAudioBuffer = (key: string, buffer: AudioBuffer): void => {
 // AUDIO CONTEXT MANAGEMENT
 // ============================================================
 
+/** Timeout for AudioContext resume operations in milliseconds */
+const AUDIO_CONTEXT_RESUME_TIMEOUT_MS = 5000;
+
+/** Maximum retries for creating AudioContext (handles iOS audio session issues) */
+// const MAX_CONTEXT_CREATE_RETRIES = 2; // Reserved for future use
+
 /**
- * Initializes the global AudioContext.
+ * Initializes the global AudioContext with retry logic.
  * Must be called after a user interaction (click/touch) to resume from suspended state.
+ * Critical for alarm reliability - handles edge cases where context gets stuck.
  */
 export const initAudioContext = async (): Promise<void> => {
+    // If context exists but is closed, we need to recreate it
+    if (audioContext && audioContext.state === 'closed') {
+        logger.warn('[AudioService] AudioContext was closed, recreating...');
+        audioContext = null;
+    }
+
+    if (!audioContext) {
+        const AudioContextClass = window.AudioContext || (window as unknown as WebkitWindow).webkitAudioContext;
+        try {
+            audioContext = new AudioContextClass();
+            logger.log('[AudioService] AudioContext created, state:', audioContext.state);
+        } catch (e) {
+            logger.error('[AudioService] Failed to create AudioContext:', e);
+            throw new Error('Failed to initialize audio system');
+        }
+    }
+
+    if (audioContext.state === 'suspended') {
+        await resumeAudioContextWithTimeout(audioContext);
+    }
+};
+
+/**
+ * Resumes AudioContext with timeout to prevent indefinite hangs.
+ * On iOS, resume() can hang if audio session is not properly configured.
+ */
+const resumeAudioContextWithTimeout = async (context: AudioContext): Promise<void> => {
+    if (context.state !== 'suspended') return;
+
+    try {
+        const resumePromise = context.resume();
+        const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('AudioContext resume timeout')), AUDIO_CONTEXT_RESUME_TIMEOUT_MS);
+        });
+
+        await Promise.race([resumePromise, timeoutPromise]);
+        logger.log('[AudioService] AudioContext resumed successfully, state:', context.state);
+    } catch (e) {
+        logger.warn('[AudioService] Failed to resume AudioContext:', e);
+        // On timeout, try to recover by recreating the context
+        if (e instanceof Error && e.message === 'AudioContext resume timeout') {
+            logger.warn('[AudioService] Attempting context recovery after timeout...');
+            // Don't throw - let the caller handle playback with potentially suspended context
+            // iOS may resume on actual audio playback attempt
+        }
+    }
+};
+
+/**
+ * Gets the global AudioContext, creating it if necessary.
+ * Handles recovery from closed state.
+ */
+const getAudioContext = (): AudioContext => {
+    // Handle closed context (can happen after device sleep/wake cycles)
+    if (audioContext && audioContext.state === 'closed') {
+        logger.warn('[AudioService] AudioContext was closed, recreating in getAudioContext...');
+        audioContext = null;
+    }
+
     if (!audioContext) {
         const AudioContextClass = window.AudioContext || (window as unknown as WebkitWindow).webkitAudioContext;
         audioContext = new AudioContextClass();
+        logger.log('[AudioService] AudioContext created in getAudioContext, state:', audioContext.state);
     }
-    if (audioContext.state === 'suspended') {
-        try {
-            await audioContext.resume();
-        } catch (e) {
-            logger.warn('[AudioService] Failed to resume AudioContext:', e);
-        }
-    }
-};
-
-const getAudioContext = (): AudioContext => {
-    if (!audioContext) {
-        initAudioContext();
-    }
-    return audioContext!;
+    return audioContext;
 };
 
 /**
- * Ensures audio context is ready for playback
+ * Ensures audio context is ready for playback with proper error handling.
+ * Implements timeout to prevent hanging on iOS audio session issues.
  */
 const ensureContextReady = async (context: AudioContext): Promise<void> => {
+    // Handle closed context edge case
+    if (context.state === 'closed') {
+        throw new Error('AudioContext is closed and cannot be resumed');
+    }
+
     if (context.state === 'suspended') {
-        try {
-            await context.resume();
-        } catch (e) {
-            logger.warn('[AudioService] Failed to resume AudioContext:', e);
-        }
+        await resumeAudioContextWithTimeout(context);
+    }
+
+    // Verify context is now in a usable state
+    if (context.state === 'suspended') {
+        logger.warn('[AudioService] Context still suspended after resume attempt - playback may be delayed');
     }
 };
 
@@ -273,35 +344,9 @@ const createContinuousAlarm = async (config: AlarmConfig): Promise<void> => {
 
 /**
  * Creates a pulsing alarm with crescendo then sustained pulses
+ * Reserved for future alarm pattern expansion
  */
-const createPulsingAlarm = async (config: AlarmConfig): Promise<void> => {
-    const { now } = await prepareAlarmNodes();
-    const interval = config.pulseInterval || 2;
-    const crescendoPulses = Math.floor(config.rampDuration / interval);
-    const sustainPulses = Math.floor((SUSTAIN_DURATION - config.rampDuration) / interval);
-
-    alarmOscillator!.type = config.type;
-    alarmOscillator!.frequency.setValueAtTime(config.startFreq, now);
-
-    // Crescendo phase - pulses get progressively louder
-    for (let i = 0; i < crescendoPulses; i++) {
-        const t = now + i * interval;
-        const progress = i / crescendoPulses;
-        const minVol = config.startGain + progress * (config.endGain * 0.5 - config.startGain);
-        const maxVol = config.startGain * 3 + progress * (config.endGain - config.startGain * 3);
-        alarmGainNode!.gain.linearRampToValueAtTime(maxVol, t + interval * 0.5);
-        alarmGainNode!.gain.linearRampToValueAtTime(minVol, t + interval);
-    }
-
-    // Sustain phase - full volume pulses
-    for (let i = 0; i < sustainPulses; i++) {
-        const t = now + config.rampDuration + i * interval;
-        alarmGainNode!.gain.linearRampToValueAtTime(config.endGain, t + interval * 0.5);
-        alarmGainNode!.gain.linearRampToValueAtTime(config.endGain * 0.5, t + interval);
-    }
-
-    alarmOscillator!.start(now);
-};
+// const createPulsingAlarm = async (config: AlarmConfig): Promise<void> => { ... };
 
 /**
  * Creates a beeping alarm with crescendo then sustained beeps
@@ -423,14 +468,15 @@ export const playAlarmBySound = async (soundId: string = 'somnia') => {
 
 /**
  * Gentle Rise alarm - soft gradual wake-up with crescendo
+ * Reserved for future alarm type expansion
  */
-const _playGentleAlarm = async () => {
-    const config = ALARM_CONFIGS.gentle;
-    if (config) {
-        await createPulsingAlarm(config);
-    }
-    logger.log('[playGentleAlarm] Started - 60s crescendo, then 30min sustain');
-};
+// const playGentleAlarm = async () => {
+//     const config = ALARM_CONFIGS.gentle;
+//     if (config) {
+//         await createPulsingAlarm(config);
+//     }
+//     logger.log('[playGentleAlarm] Started - 60s crescendo, then 30min sustain');
+// };
 
 /**
  * Wind Chimes alarm - peaceful chime melody
@@ -579,72 +625,10 @@ const playAetherAlarm = async () => {
  * BAMBOO Alarm - Hollow wooden pulse that accelerates with crescendo
  * Accelerating pulse pattern, crescendos over 60s then continues loud
  * Bulletproof: 30 minutes of pulses scheduled
+ *
+ * Reserved for future alarm type expansion - currently using config-based alarms
  */
-const _playBambooAlarm = async () => {
-    logger.log('[playBambooAlarm] Starting Bamboo alarm');
-    stopSleepSound();
-    const context = getAudioContext();
-    if (alarmOscillator) stopAlarmSound();
-    cleanupProceduralAlarm();
-
-    if (context.state === 'suspended') {
-        try {
-            await context.resume();
-        } catch (e) {
-            logger.warn('[playBambooAlarm] Failed to resume AudioContext:', e);
-        }
-    }
-
-    proceduralGainNode = context.createGain();
-    proceduralGainNode.connect(context.destination);
-
-    const now = context.currentTime;
-
-    // Master volume crescendo over 60s to full volume - start louder
-    proceduralGainNode.gain.setValueAtTime(0.25, now);
-    proceduralGainNode.gain.linearRampToValueAtTime(1.0, now + WAKE_DURATION);
-
-    const osc = context.createOscillator();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(150, now);
-
-    const pulseGain = context.createGain();
-    pulseGain.gain.setValueAtTime(0, now);
-
-    osc.connect(pulseGain);
-    pulseGain.connect(proceduralGainNode);
-
-    // Schedule 30 minutes of pulses (1800 seconds)
-    let baseBeat = 0;
-    let interval = 1.0;
-    let pulseCount = 0;
-
-    while (baseBeat < 1800) { // 30 minutes
-        // Soft attack: start low, ramp UP over 20ms to avoid click/pop
-        pulseGain.gain.setValueAtTime(0.05, now + baseBeat);
-        pulseGain.gain.linearRampToValueAtTime(1.0, now + baseBeat + 0.02); // LOUD pulse
-        osc.frequency.setValueAtTime(300, now + baseBeat);
-
-        // Decay: ramp down but not to silence - keep some sustain
-        pulseGain.gain.exponentialRampToValueAtTime(0.15, now + baseBeat + 0.2);
-        osc.frequency.exponentialRampToValueAtTime(150, now + baseBeat + 0.2);
-
-        baseBeat += interval;
-        interval = Math.max(0.4, interval * 0.92);
-
-        // Reset acceleration every ~20 pulses to create waves
-        if (interval <= 0.4) interval = 1.0;
-        pulseCount++;
-    }
-
-    osc.start(now);
-    logger.log('[playBambooAlarm] Started - 60s crescendo,', pulseCount, 'pulses over 30min');
-
-    proceduralAlarmStop = () => {
-        logger.log('[playBambooAlarm] Stopping');
-        try { osc.stop(); } catch { /* oscillator already stopped */ }
-    };
-};
+// const playBambooAlarm = async () => { ... };
 
 // Track psychoacoustic alarm state for cleanup
 let psychoacousticAlarmStop: (() => void) | null = null;
@@ -1423,7 +1407,27 @@ const createSleepRampNode = (
     return binauralMerger;
 };
 
-const getAudioBuffer = async (context: AudioContext, src: string): Promise<AudioBuffer> => {
+/** Maximum number of retries for audio loading */
+const MAX_AUDIO_LOAD_RETRIES = 3;
+
+/** Timeout for audio fetch operations in milliseconds */
+const AUDIO_FETCH_TIMEOUT_MS = 15000;
+
+/**
+ * Fetches and decodes an audio buffer with retry logic and timeout handling.
+ * Critical for alarm reliability - must handle network failures gracefully.
+ *
+ * @param context - AudioContext to decode audio
+ * @param src - URL of audio file
+ * @param retryCount - Current retry attempt (internal use)
+ * @returns Decoded AudioBuffer
+ * @throws Error if all retries exhausted or decoding fails
+ */
+const getAudioBuffer = async (
+    context: AudioContext,
+    src: string,
+    retryCount: number = 0
+): Promise<AudioBuffer> => {
     const cached = audioBufferCache.get(src);
     if (cached) {
         // Move to end of map to mark as recently used
@@ -1431,23 +1435,77 @@ const getAudioBuffer = async (context: AudioContext, src: string): Promise<Audio
         audioBufferCache.set(src, cached);
         return cached;
     }
-    const response = await fetch(src);
-    if (!response.ok) {
-        throw new Error(`Failed to fetch audio file: ${response.statusText}`);
+
+    try {
+        // Create AbortController for fetch timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), AUDIO_FETCH_TIMEOUT_MS);
+
+        const response = await fetch(src, { signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+
+        // Validate arrayBuffer size (detect corrupted/empty downloads)
+        if (arrayBuffer.byteLength === 0) {
+            throw new Error('Audio file is empty (0 bytes)');
+        }
+
+        // Decode with error handling for codec issues
+        let audioBuffer: AudioBuffer;
+        try {
+            audioBuffer = await context.decodeAudioData(arrayBuffer);
+        } catch (decodeError) {
+            // Codec/format error - don't retry, likely unsupported format
+            logger.error(`[AudioService] Audio decode failed for ${src}:`, decodeError);
+            throw new Error(`Audio codec/format not supported: ${src}`);
+        }
+
+        cacheAudioBuffer(src, audioBuffer);
+        return audioBuffer;
+
+    } catch (error) {
+        const isAbortError = error instanceof Error && error.name === 'AbortError';
+        const isNetworkError = error instanceof TypeError && error.message.includes('fetch');
+
+        // Retry on network/timeout errors, but not on decode errors
+        if ((isAbortError || isNetworkError) && retryCount < MAX_AUDIO_LOAD_RETRIES) {
+            logger.warn(`[AudioService] Audio load retry ${retryCount + 1}/${MAX_AUDIO_LOAD_RETRIES} for ${src}`);
+            // Exponential backoff: 500ms, 1000ms, 2000ms
+            await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, retryCount)));
+            return getAudioBuffer(context, src, retryCount + 1);
+        }
+
+        // Log specific error type for debugging
+        if (isAbortError) {
+            logger.error(`[AudioService] Audio fetch timed out after ${AUDIO_FETCH_TIMEOUT_MS}ms: ${src}`);
+        } else if (isNetworkError) {
+            logger.error(`[AudioService] Network error loading audio: ${src}`);
+        }
+
+        throw error;
     }
-    const arrayBuffer = await response.arrayBuffer();
-    const audioBuffer = await context.decodeAudioData(arrayBuffer);
-    cacheAudioBuffer(src, audioBuffer);
-    return audioBuffer;
 };
 
 /**
  * Plays a sleep soundscape (white noise, binaural beats, or audio file).
- * 
+ * Implements cross-fade when switching between sounds for smooth transitions.
+ *
  * @param sound - The Soundscape configuration object
  * @param durationMinutes - Duration to play in minutes (0 for infinite)
+ * @param volume - Volume level 0-1 (default 0.5)
+ * @param enableCrossfade - Whether to cross-fade from current sound (default true)
  */
-export const playSleepSound = async (sound: Soundscape, durationMinutes: number, volume: number = 0.5) => {
+export const playSleepSound = async (
+    sound: Soundscape,
+    durationMinutes: number,
+    volume: number = 0.5,
+    enableCrossfade: boolean = true
+) => {
     stopAlarmSound(); // Ensure alarm is stopped
 
     // Track current sound for resuming after phone call interruption
@@ -1481,7 +1539,8 @@ export const playSleepSound = async (sound: Soundscape, durationMinutes: number,
                 await playSleepSound(
                     currentSleepSound.sound,
                     currentSleepSound.durationMinutes,
-                    currentSleepSound.volume
+                    currentSleepSound.volume,
+                    false // Don't cross-fade on resume
                 );
             }
             wasPlayingBeforeInterruption = false;
@@ -1498,7 +1557,46 @@ export const playSleepSound = async (sound: Soundscape, durationMinutes: number,
         }
     }
 
-    stopSleepSound(); // Stop any currently playing sleep sound
+    // Cross-fade: If a sound is currently playing, fade it out while fading new sound in
+    const shouldCrossfade = enableCrossfade && isSleepSoundPlaying() && sleepGainNode && sleepSourceNode;
+
+    if (shouldCrossfade) {
+        // Store old nodes for cross-fade cleanup
+        pendingCrossfadeNodes = {
+            gainNode: sleepGainNode!,
+            sourceNode: sleepSourceNode!,
+            compressor: sleepCompressor ?? undefined
+        };
+
+        // Start fading out the old sound
+        const now = context.currentTime;
+        pendingCrossfadeNodes.gainNode.gain.cancelScheduledValues(now);
+        pendingCrossfadeNodes.gainNode.gain.linearRampToValueAtTime(0, now + (CROSSFADE_DURATION_MS / 1000));
+
+        // Schedule cleanup of old nodes after crossfade
+        const nodesToCleanup = pendingCrossfadeNodes;
+        setTimeout(() => {
+            try {
+                nodesToCleanup.gainNode.disconnect();
+                nodesToCleanup.sourceNode.disconnect();
+                if (nodesToCleanup.compressor) {
+                    nodesToCleanup.compressor.disconnect();
+                }
+            } catch (_e) { /* Already disconnected */ }
+            if (pendingCrossfadeNodes === nodesToCleanup) {
+                pendingCrossfadeNodes = null;
+            }
+        }, CROSSFADE_DURATION_MS + 100);
+
+        // Clear references so new sound creates fresh nodes
+        sleepGainNode = null;
+        sleepSourceNode = null;
+        sleepCompressor = null;
+
+        logger.log('[AudioService] Cross-fading to new sound:', sound.name);
+    } else {
+        stopSleepSound(); // Stop any currently playing sleep sound (immediate stop)
+    }
 
     // Master Bus: Dynamics Compressor for professional sound
     sleepCompressor = context.createDynamicsCompressor();

@@ -71,8 +71,14 @@ export function useDeepLink({ onNavigate, onOpenScribe }: DeepLinkOptions): void
             return;
         }
 
+        // Track if component is still mounted for async operations
+        let isMounted = true;
+        // Store listener handle for proper cleanup
+        let appUrlOpenListener: { remove: () => Promise<void> } | null = null;
+
         // Handle deep links from Capacitor App plugin
         const handleAppUrlOpen = (event: URLOpenListenerEvent) => {
+            if (!isMounted) return;
             logger.log('[DeepLink] URL opened:', event.url);
 
             try {
@@ -86,35 +92,60 @@ export function useDeepLink({ onNavigate, onOpenScribe }: DeepLinkOptions): void
             }
         };
 
-        // Listen for app URL opens
-        CapacitorApp.addListener('appUrlOpen', handleAppUrlOpen);
+        // Listen for app URL opens - store the listener handle
+        CapacitorApp.addListener('appUrlOpen', handleAppUrlOpen)
+            .then(handle => {
+                if (isMounted) {
+                    appUrlOpenListener = handle;
+                } else {
+                    // Component unmounted before listener was added, clean up immediately
+                    handle.remove().catch(err =>
+                        logger.error('[DeepLink] Failed to remove appUrlOpen listener:', err)
+                    );
+                }
+            })
+            .catch(err => logger.error('[DeepLink] Failed to add appUrlOpen listener:', err));
 
         // Handle iOS Quick Actions (custom event from AppDelegate)
         const handleAppShortcut = (event: CustomEvent<{ route: string }>) => {
+            if (!isMounted) return;
             logger.log('[DeepLink] App shortcut triggered:', event.detail);
-            handleRoute(event.detail.route);
+            if (event.detail?.route) {
+                handleRoute(event.detail.route);
+            }
         };
 
         window.addEventListener('appShortcut', handleAppShortcut as EventListener);
 
         // Handle Android widget navigation (route extra from intent)
         const handleWidgetNav = (event: CustomEvent<{ route: string }>) => {
+            if (!isMounted) return;
             logger.log('[DeepLink] Widget navigation:', event.detail);
-            handleRoute(event.detail.route);
+            if (event.detail?.route) {
+                handleRoute(event.detail.route);
+            }
         };
 
         window.addEventListener('widgetNavigation', handleWidgetNav as EventListener);
 
         // Check for initial URL (app launched via deep link)
-        CapacitorApp.getLaunchUrl().then((result) => {
-            if (result?.url) {
-                logger.log('[DeepLink] App launched with URL:', result.url);
-                handleAppUrlOpen({ url: result.url });
-            }
-        });
+        CapacitorApp.getLaunchUrl()
+            .then((result) => {
+                if (isMounted && result?.url) {
+                    logger.log('[DeepLink] App launched with URL:', result.url);
+                    handleAppUrlOpen({ url: result.url });
+                }
+            })
+            .catch(err => logger.error('[DeepLink] Failed to get launch URL:', err));
 
         return () => {
-            CapacitorApp.removeAllListeners();
+            isMounted = false;
+            // Remove only this hook's listener, not ALL app listeners
+            if (appUrlOpenListener) {
+                appUrlOpenListener.remove().catch(err =>
+                    logger.error('[DeepLink] Failed to remove appUrlOpen listener:', err)
+                );
+            }
             window.removeEventListener('appShortcut', handleAppShortcut as EventListener);
             window.removeEventListener('widgetNavigation', handleWidgetNav as EventListener);
         };

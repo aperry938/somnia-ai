@@ -8,8 +8,8 @@ import haptics from '../../services/hapticsService';
 import { useBackButton } from '../../hooks/useBackButton';
 import { useToast } from '../shared/Toast';
 
-// Placeholder types for disabled framer-motion
-type PanInfo = { offset: { y: number }; velocity: { y: number } };
+// Placeholder types for disabled framer-motion (reserved for future swipe-to-dismiss)
+// type PanInfo = { offset: { y: number }; velocity: { y: number } };
 
 interface SoundscapeModalProps {
     sound: Soundscape;
@@ -29,12 +29,13 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
     // const y = useMotionValue(0);
     // const backdropOpacity = useTransform(y, [0, 200], [1, 0.3]);
 
-    const _handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-        if (info.offset.y > 100 || info.velocity.y > 500) {
-            haptics.medium();
-            handleClose();
-        }
-    };
+    // Swipe-to-dismiss handler (reserved for future use when framer-motion re-enabled)
+    // const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    //     if (info.offset.y > 100 || info.velocity.y > 500) {
+    //         haptics.medium();
+    //         handleClose();
+    //     }
+    // };
     const [beatFreq] = useState(sound.type === 'binaural' ? sound.params.diff || 5 : 5);
     const [isPreviewing, setIsPreviewing] = useState(false);
     const [timeRemaining, setTimeRemaining] = useState<number | null>(null); // Seconds remaining
@@ -43,6 +44,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
     const [isPaused, setIsPaused] = useState(false); // Track pause state
     const [isReadyToPlay, setIsReadyToPlay] = useState(false); // Show play screen but not started yet
     const [isSettling, setIsSettling] = useState(true); // Prevent accidental backdrop clicks on mount
+    const [volumeAnnouncement, setVolumeAnnouncement] = useState<string>(''); // For screen reader announcements
     const pausedTimeRef = useRef<number>(0); // Track time remaining when paused
     const soundStartTimeRef = useRef<number | null>(null); // Track when sound actually started (for logging)
     const accumulatedPlayTimeRef = useRef<number>(0); // Track accumulated play time across pause/resume cycles
@@ -62,7 +64,13 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
 
     // Cleanup on unmount - carefully handle different scenarios
     useEffect(() => {
+        // Capture ref for cleanup (React 19+ requirement)
+        const volumeTimeout = volumeAnnouncementTimeoutRef.current;
         return () => {
+            // Cleanup volume announcement timeout
+            if (volumeTimeout) {
+                clearTimeout(volumeTimeout);
+            }
             // NEVER stop if user clicked "Fall Asleep Now" (ref set, or persistence enabled)
             if (skipCleanupRef.current || shouldPersistSleepSound()) {
                 return;
@@ -152,17 +160,33 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
-    // Live update volume
+    // Live update volume with debounced screen reader announcement
+    const volumeAnnouncementTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const lastVolumeStepRef = useRef<number>(Math.round(volume * 20)); // Track steps for haptic tick
     const handleVolumeChange = useCallback((newVolume: number) => {
         setVolume(newVolume);
         if (isPreviewing || isPlaying) {
             setLiveVolume(newVolume);
         }
+        // Haptic tick on major step changes (every 5%)
+        const newStep = Math.round(newVolume * 20);
+        if (newStep !== lastVolumeStepRef.current) {
+            lastVolumeStepRef.current = newStep;
+            haptics.tick();
+        }
+        // Debounce screen reader announcement to avoid spam during slider drag
+        if (volumeAnnouncementTimeoutRef.current) {
+            clearTimeout(volumeAnnouncementTimeoutRef.current);
+        }
+        volumeAnnouncementTimeoutRef.current = setTimeout(() => {
+            setVolumeAnnouncement(`Volume ${Math.round(newVolume * 100)} percent`);
+        }, 300);
     }, [isPreviewing, isPlaying, setVolume]);
 
     // Toggle preview on/off
     const togglePreview = useCallback(async () => {
         if (isPreviewing) {
+            haptics.light();
             stopSleepSound(0.3);
             setIsPreviewing(false);
         } else {
@@ -170,10 +194,16 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
             if (sound.type === 'binaural') {
                 soundToPlay.params = { ...sound.params, diff: beatFreq };
             }
-            await playSleepSound(soundToPlay, 0, volume);
-            setIsPreviewing(true);
+            try {
+                await playSleepSound(soundToPlay, 0, volume);
+                haptics.light();
+                setIsPreviewing(true);
+            } catch (_error) {
+                showToast('Failed to preview sound. Please try again.', 'error');
+                haptics.error();
+            }
         }
-    }, [isPreviewing, sound, beatFreq, volume]);
+    }, [isPreviewing, sound, beatFreq, volume, showToast]);
 
     // Transition to ready-to-play state (shows Start Sound button)
     const handlePlay = async () => {
@@ -221,6 +251,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
 
         try {
             await playSleepSound(soundToPlay, remainingMinutes, volume);
+            haptics.medium(); // Haptic feedback on successful play start
 
             const now = Date.now();
             soundStartTimeRef.current = now; // Track for activity logging
@@ -275,6 +306,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
 
     // Pause the sound and timer
     const handlePause = () => {
+        haptics.light(); // Haptic feedback on pause
         stopSleepSound(0.3);
         pausedTimeRef.current = timeRemaining || 0;
         // Accumulate play time from this segment
@@ -299,21 +331,29 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
         // Resume with remaining time
         const remainingSeconds = pausedTimeRef.current;
         const remainingMinutes = remainingSeconds / 60;
-        await playSleepSound(soundToPlay, remainingMinutes, volume);
 
-        const now = Date.now();
-        // Reset start time for this segment (accumulated time preserved separately)
-        soundStartTimeRef.current = now;
+        try {
+            await playSleepSound(soundToPlay, remainingMinutes, volume);
+            haptics.medium(); // Haptic feedback on successful resume
 
-        // Sync refs for timer interval (avoids stale closures)
-        timerStartRef.current = now;
-        timerDurationRef.current = remainingSeconds;
+            const now = Date.now();
+            // Reset start time for this segment (accumulated time preserved separately)
+            soundStartTimeRef.current = now;
 
-        // Set all states together - playStartTime triggers the timer effect
-        setPlayDuration(remainingSeconds);
-        setIsReadyToPlay(false);
-        setIsPaused(false);
-        setPlayStartTime(now);
+            // Sync refs for timer interval (avoids stale closures)
+            timerStartRef.current = now;
+            timerDurationRef.current = remainingSeconds;
+
+            // Set all states together - playStartTime triggers the timer effect
+            setPlayDuration(remainingSeconds);
+            setIsReadyToPlay(false);
+            setIsPaused(false);
+            setPlayStartTime(now);
+        } catch (_error) {
+            showToast('Failed to resume sound. Please try again.', 'error');
+            haptics.error();
+            // Keep paused state so user can retry
+        }
     };
 
     // Fully stop and close (called by X button)
@@ -388,6 +428,11 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                 onClick={(e) => e.stopPropagation()}
                 onTouchEnd={(e) => e.stopPropagation()}
             >
+                {/* Screen reader announcement for volume changes */}
+                <div className="sr-only" aria-live="polite" aria-atomic="true">
+                    {volumeAnnouncement}
+                </div>
+
                 {/* Drag indicator for mobile */}
                 <div className="flex justify-center pb-2 sm:hidden cursor-grab active:cursor-grabbing">
                     <div className="w-10 h-1 rounded-full bg-day-border dark:bg-night-border" />
@@ -449,7 +494,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                         <div className="p-3 bg-white/50 dark:bg-black/20 rounded-lg text-left">
                             <div className="flex justify-between text-xs mb-1">
                                 <span className="text-day-text-secondary dark:text-night-text-secondary">Volume</span>
-                                <span className="font-mono text-day-accent dark:text-night-accent">{Math.round(volume * 100)}%</span>
+                                <span className="font-mono text-day-accent dark:text-night-accent" aria-hidden="true">{Math.round(volume * 100)}%</span>
                             </div>
                             <input
                                 type="range"
@@ -459,7 +504,11 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                                 value={volume}
                                 onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
                                 aria-label={`Volume: ${Math.round(volume * 100)}%`}
-                                className="w-full accent-day-accent dark:accent-night-accent cursor-pointer"
+                                aria-valuemin={0}
+                                aria-valuemax={100}
+                                aria-valuenow={Math.round(volume * 100)}
+                                aria-valuetext={`${Math.round(volume * 100)} percent`}
+                                className="w-full h-11 accent-day-accent dark:accent-night-accent cursor-pointer touch-pan-x"
                             />
                         </div>
 
@@ -468,7 +517,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                             <button
                                 onClick={handleStartSound}
                                 aria-label="Start sound"
-                                className="w-full py-4 bg-day-accent dark:bg-night-accent hover:brightness-110 text-white font-medium rounded-xl flex items-center justify-center gap-2 transition-all"
+                                className="w-full py-4 min-h-[48px] bg-day-accent dark:bg-night-accent hover:brightness-110 text-white font-medium rounded-xl flex items-center justify-center gap-2 transition-all"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
@@ -480,7 +529,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                             <button
                                 onClick={handleResume}
                                 aria-label="Resume sound"
-                                className="w-full py-4 bg-day-accent dark:bg-night-accent hover:brightness-110 text-white font-medium rounded-xl flex items-center justify-center gap-2 transition-all"
+                                className="w-full py-4 min-h-[48px] bg-day-accent dark:bg-night-accent hover:brightness-110 text-white font-medium rounded-xl flex items-center justify-center gap-2 transition-all"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
@@ -493,7 +542,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                                 <button
                                     onClick={handlePause}
                                     aria-label="Pause sound"
-                                    className="w-full py-4 bg-day-accent/20 dark:bg-night-accent/20 hover:bg-day-accent/30 dark:hover:bg-night-accent/30 text-day-accent dark:text-night-accent font-medium rounded-xl flex items-center justify-center gap-2 transition-colors border border-day-accent/30 dark:border-night-accent/30"
+                                    className="w-full py-4 min-h-[48px] bg-day-accent/20 dark:bg-night-accent/20 hover:bg-day-accent/30 dark:hover:bg-night-accent/30 text-day-accent dark:text-night-accent font-medium rounded-xl flex items-center justify-center gap-2 transition-colors border border-day-accent/30 dark:border-night-accent/30"
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -505,7 +554,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                                 <button
                                     onClick={handleFallAsleep}
                                     aria-label="Fall asleep now with sound playing"
-                                    className="w-full py-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg"
+                                    className="w-full py-4 min-h-[48px] bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg"
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
@@ -534,7 +583,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                         <div className="mt-4 p-3 bg-white/50 dark:bg-black/20 rounded-lg text-left">
                             <div className="flex justify-between text-xs mb-1">
                                 <span className="text-day-text-secondary dark:text-night-text-secondary">Master Volume</span>
-                                <span className="font-mono text-day-accent dark:text-night-accent">{Math.round(volume * 100)}%</span>
+                                <span className="font-mono text-day-accent dark:text-night-accent" aria-hidden="true">{Math.round(volume * 100)}%</span>
                             </div>
                             <input
                                 type="range"
@@ -544,7 +593,11 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                                 value={volume}
                                 onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
                                 aria-label={`Master volume: ${Math.round(volume * 100)}%`}
-                                className="w-full accent-day-accent dark:accent-night-accent cursor-pointer"
+                                aria-valuemin={0}
+                                aria-valuemax={100}
+                                aria-valuenow={Math.round(volume * 100)}
+                                aria-valuetext={`${Math.round(volume * 100)} percent`}
+                                className="w-full h-11 accent-day-accent dark:accent-night-accent cursor-pointer touch-pan-x"
                             />
                         </div>
 

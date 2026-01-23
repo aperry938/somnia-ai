@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useBackButton } from '../../hooks/useBackButton';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 interface HardwareSyncModalProps {
     onClose: () => void;
@@ -8,6 +9,10 @@ interface HardwareSyncModalProps {
 export const HardwareSyncModal: React.FC<HardwareSyncModalProps> = ({ onClose }) => {
     // Hardware back button support
     useBackButton(true, onClose);
+
+    // Focus trap for accessibility
+    const modalRef = useRef<HTMLDivElement>(null);
+    useFocusTrap(true, modalRef);
 
     // Handle Escape key to close modal
     useEffect(() => {
@@ -29,7 +34,7 @@ export const HardwareSyncModal: React.FC<HardwareSyncModalProps> = ({ onClose })
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 pt-4 pb-[calc(6.5rem+var(--safe-area-inset-bottom))] sm:pb-4 bg-black/60 backdrop-blur-sm animate-fadeIn" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="hardware-sync-title">
-            <div className="relative w-full max-w-md bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl shadow-2xl overflow-hidden p-6" onClick={(e) => e.stopPropagation()}>
+            <div ref={modalRef} className="relative w-full max-w-md max-h-[85vh] bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl shadow-2xl overflow-y-auto overscroll-contain p-6" onClick={(e) => e.stopPropagation()}>
                 <button onClick={onClose} className="absolute top-4 right-4 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-500 hover:text-white rounded-full transition-colors" aria-label="Close">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>

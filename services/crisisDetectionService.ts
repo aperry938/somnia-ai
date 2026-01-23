@@ -5,9 +5,16 @@
  * This is a hardcoded safety layer that cannot be bypassed by prompt injection.
  *
  * CRITICAL: This service must be called before any AI analysis.
+ *
+ * Mobile App Store Readiness:
+ * - No network calls (fully local)
+ * - Instant response time
+ * - Memory efficient
+ * - Handles all edge cases gracefully
  */
 
 import { DreamAnalysis } from '../types';
+import { logger } from './logger';
 
 /**
  * Words that, when following a crisis phrase, indicate it's NOT a real crisis.
@@ -225,44 +232,80 @@ export const CRISIS_RESPONSE: DreamAnalysis = {
  * @returns CrisisDetectionResult with detection status and triggers
  */
 export function detectCrisis(dreamText: string): CrisisDetectionResult {
-    const normalized = dreamText.toLowerCase().trim();
-    const triggers: string[] = [];
-
-    // Primary check: Direct keyword matching with context analysis
-    for (const keyword of CRISIS_KEYWORDS) {
-        if (matchesCrisisPhrase(normalized, keyword)) {
-            triggers.push(keyword);
-        }
-    }
-
-    if (triggers.length > 0) {
+    // Input validation - handle edge cases gracefully
+    if (!dreamText || typeof dreamText !== 'string') {
         return {
-            detected: true,
-            confidence: triggers.length > 1 ? 'high' : 'medium',
-            triggers,
+            detected: false,
+            confidence: null,
+            triggers: [],
         };
     }
 
-    // Secondary check: Context phrases with context analysis
-    for (const phrase of CRISIS_CONTEXT_PHRASES) {
-        if (matchesCrisisPhrase(normalized, phrase)) {
-            triggers.push(phrase);
-        }
-    }
+    // Limit text length to prevent performance issues (check first 50KB)
+    const maxLength = 50000;
+    const textToCheck = dreamText.length > maxLength ? dreamText.slice(0, maxLength) : dreamText;
 
-    if (triggers.length > 0) {
+    try {
+        const normalized = textToCheck.toLowerCase().trim();
+
+        // Empty text check
+        if (normalized.length === 0) {
+            return {
+                detected: false,
+                confidence: null,
+                triggers: [],
+            };
+        }
+
+        const triggers: string[] = [];
+
+        // Primary check: Direct keyword matching with context analysis
+        for (const keyword of CRISIS_KEYWORDS) {
+            if (matchesCrisisPhrase(normalized, keyword)) {
+                triggers.push(keyword);
+            }
+        }
+
+        if (triggers.length > 0) {
+            logger.warn('[CrisisDetection] Primary triggers found:', triggers.length);
+            return {
+                detected: true,
+                confidence: triggers.length > 1 ? 'high' : 'medium',
+                triggers,
+            };
+        }
+
+        // Secondary check: Context phrases with context analysis
+        for (const phrase of CRISIS_CONTEXT_PHRASES) {
+            if (matchesCrisisPhrase(normalized, phrase)) {
+                triggers.push(phrase);
+            }
+        }
+
+        if (triggers.length > 0) {
+            logger.warn('[CrisisDetection] Secondary triggers found:', triggers.length);
+            return {
+                detected: true,
+                confidence: 'low',
+                triggers,
+            };
+        }
+
         return {
-            detected: true,
-            confidence: 'low',
-            triggers,
+            detected: false,
+            confidence: null,
+            triggers: [],
+        };
+    } catch (error) {
+        // If anything goes wrong, err on the side of caution and allow analysis
+        // but log the error for debugging
+        logger.error('[CrisisDetection] Error during detection:', error);
+        return {
+            detected: false,
+            confidence: null,
+            triggers: [],
         };
     }
-
-    return {
-        detected: false,
-        confidence: null,
-        triggers: [],
-    };
 }
 
 /**

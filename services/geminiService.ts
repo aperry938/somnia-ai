@@ -12,6 +12,25 @@ import {
 } from './aiConfig';
 import { detectCrisis, CRISIS_RESPONSE } from './crisisDetectionService';
 
+// ============================================================================
+// CONSTANTS AND CONFIGURATION
+// ============================================================================
+
+/** Default timeout for AI API calls (30 seconds) */
+const DEFAULT_API_TIMEOUT = 30000;
+
+/** Extended timeout for complex operations like synthesis (60 seconds) */
+const EXTENDED_API_TIMEOUT = 60000;
+
+/** Maximum response size to prevent memory issues (500KB) */
+const MAX_RESPONSE_SIZE = 500 * 1024;
+
+/** Maximum dream text length to send to AI */
+const MAX_DREAM_TEXT_LENGTH = 10000;
+
+/** Maximum chat history length to prevent token overflow */
+const MAX_CHAT_HISTORY_LENGTH = 20;
+
 /**
  * Error thrown when user has no AI credits remaining
  */
@@ -33,6 +52,36 @@ export class OfflineError extends Error {
 }
 
 /**
+ * Error thrown when AI request times out
+ */
+export class AITimeoutError extends Error {
+    constructor(operation: string, timeoutMs: number) {
+        super(`AI ${operation} timed out after ${timeoutMs / 1000} seconds. Please try again.`);
+        this.name = 'AITimeoutError';
+    }
+}
+
+/**
+ * Error thrown when AI response contains inappropriate content
+ */
+export class ContentFilterError extends Error {
+    constructor() {
+        super('The AI response was filtered for safety. Please try rephrasing your dream.');
+        this.name = 'ContentFilterError';
+    }
+}
+
+/**
+ * Error thrown when AI response is too large
+ */
+export class ResponseTooLargeError extends Error {
+    constructor() {
+        super('AI response exceeded maximum size. Please try with a shorter dream description.');
+        this.name = 'ResponseTooLargeError';
+    }
+}
+
+/**
  * Check if device is online
  */
 const checkOnline = (): void => {
@@ -42,27 +91,126 @@ const checkOnline = (): void => {
 };
 
 /**
+ * Wrap a promise with a timeout
+ */
+const withTimeout = <T>(
+    promise: Promise<T>,
+    timeoutMs: number,
+    operation: string
+): Promise<T> => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => {
+            reject(new AITimeoutError(operation, timeoutMs));
+        }, timeoutMs);
+    });
+
+    return Promise.race([promise, timeoutPromise]).finally(() => {
+        clearTimeout(timeoutId);
+    });
+};
+
+/**
+ * Sanitize dream text input to prevent prompt injection and limit size
+ */
+const sanitizeDreamText = (text: string): string => {
+    // Truncate to max length
+    let sanitized = text.slice(0, MAX_DREAM_TEXT_LENGTH);
+
+    // Remove potential prompt injection patterns (but preserve legitimate content)
+    // This is a basic filter - the AI's system prompt is the primary defense
+    sanitized = sanitized
+        .replace(/```[\s\S]*?```/g, '[code block removed]')
+        .replace(/\[INST\]/gi, '')
+        .replace(/\[\/INST\]/gi, '')
+        .replace(/<\|.*?\|>/g, '');
+
+    return sanitized.trim();
+};
+
+/**
+ * Validate AI response size to prevent memory issues
+ */
+const validateResponseSize = (response: string): void => {
+    const byteSize = new Blob([response]).size;
+    if (byteSize > MAX_RESPONSE_SIZE) {
+        logger.error(`[Gemini] Response too large: ${byteSize} bytes`);
+        throw new ResponseTooLargeError();
+    }
+};
+
+/**
+ * Content filter patterns for inappropriate AI responses
+ * These are checked AFTER receiving AI response
+ */
+const INAPPROPRIATE_PATTERNS = [
+    /\b(kill|murder|harm)\s+(yourself|your\s*self|someone)\b/i,
+    /\b(how\s+to|instructions?\s+for)\s+(suicide|self[- ]?harm)/i,
+    /\billegal\s+(drugs?|substances?)\b/i,
+];
+
+/**
+ * Filter AI response for inappropriate content
+ * Returns true if content should be blocked
+ */
+const containsInappropriateContent = (text: string): boolean => {
+    for (const pattern of INAPPROPRIATE_PATTERNS) {
+        if (pattern.test(text)) {
+            logger.warn('[Gemini] Inappropriate content detected in AI response');
+            return true;
+        }
+    }
+    return false;
+};
+
+/**
  * Retry wrapper with exponential backoff for rate-limited API calls.
  * Handles 429 (Too Many Requests) errors from Gemini API.
+ * Includes timeout handling for each attempt.
  */
 async function withRetry<T>(
     fn: () => Promise<T>,
     maxRetries = 3,
-    baseDelay = 1000
+    baseDelay = 1000,
+    timeoutMs = DEFAULT_API_TIMEOUT,
+    operation = 'request'
 ): Promise<T> {
     let lastError: Error = new Error('Unknown error');
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
-            return await fn();
+            return await withTimeout(fn(), timeoutMs, operation);
         } catch (error) {
             lastError = error as Error;
             const errorMessage = lastError.message || '';
+
+            // Don't retry timeout errors on last attempt
+            if (lastError instanceof AITimeoutError && attempt === maxRetries - 1) {
+                throw lastError;
+            }
 
             // Check if this is a rate limit error (429)
             if (errorMessage.includes('429') || errorMessage.toLowerCase().includes('rate limit')) {
                 const delay = baseDelay * Math.pow(2, attempt);
                 logger.warn(`[Gemini] Rate limited, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                continue;
+            }
+
+            // Retry on timeout with longer delay
+            if (lastError instanceof AITimeoutError && attempt < maxRetries - 1) {
+                const delay = baseDelay * Math.pow(2, attempt);
+                logger.warn(`[Gemini] Timeout, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                continue;
+            }
+
+            // Check for network errors that are retryable
+            if (errorMessage.includes('network') || errorMessage.includes('ECONNRESET') ||
+                errorMessage.includes('socket') || errorMessage.includes('ETIMEDOUT')) {
+                const delay = baseDelay * Math.pow(2, attempt);
+                logger.warn(`[Gemini] Network error, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`);
                 await new Promise(resolve => setTimeout(resolve, delay));
                 continue;
             }
@@ -122,9 +270,17 @@ const getAi = (): GoogleGenAI => {
  * @throws Error if AI analysis fails
  */
 export const analyzeDream = async (dreamText: string, sleepAids?: SleepAids, biometrics?: Biometrics, personality: AnalysisPersonality = 'oneironaut'): Promise<DreamAnalysis> => {
+    // Input validation
+    if (!dreamText || typeof dreamText !== 'string' || dreamText.trim().length === 0) {
+        throw new Error('Dream text is required for analysis.');
+    }
+
+    // Sanitize input to prevent prompt injection and limit size
+    const sanitizedText = sanitizeDreamText(dreamText);
+
     // SAFETY FIRST: Check for crisis indicators BEFORE any API call
     // This is a hardcoded safety layer that cannot be bypassed by prompt injection
-    const crisisCheck = detectCrisis(dreamText);
+    const crisisCheck = detectCrisis(sanitizedText);
     if (crisisCheck.detected) {
         logger.warn('[Safety] Crisis indicators detected in dream text', {
             confidence: crisisCheck.confidence,
@@ -154,7 +310,7 @@ export const analyzeDream = async (dreamText: string, sleepAids?: SleepAids, bio
 
     try {
         const ai = getAi();
-        const prompt = createAnalysisPrompt(dreamText, personality, sleepAids, biometrics);
+        const prompt = createAnalysisPrompt(sanitizedText, personality, sleepAids, biometrics);
         const response: GenerateContentResponse = await withRetry(() => ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: [{ parts: [{ text: prompt }] }],
@@ -231,11 +387,16 @@ export const analyzeDream = async (dreamText: string, sleepAids?: SleepAids, bio
                     required: ['title', 'analysis', 'integration', 'telemetry']
                 },
             },
-        }));
+        }), 3, 1000, DEFAULT_API_TIMEOUT, 'analysis');
+
         const rawJson = response.text?.trim() ?? '';
         if (!rawJson) {
             throw new Error('AI returned empty response. Please try again.');
         }
+
+        // Validate response size
+        validateResponseSize(rawJson);
+
         let result: DreamAnalysis;
         try {
             result = JSON.parse(rawJson) as DreamAnalysis;
@@ -248,6 +409,18 @@ export const analyzeDream = async (dreamText: string, sleepAids?: SleepAids, bio
         if (!result.title || !result.analysis || !result.integration) {
             logger.error("Invalid dream analysis structure:", result);
             throw new Error("AI returned incomplete analysis. Please try again.");
+        }
+
+        // Validate analysis array
+        if (!Array.isArray(result.analysis) || result.analysis.length === 0) {
+            logger.error("Invalid dream analysis array:", result.analysis);
+            throw new Error("AI returned invalid analysis format. Please try again.");
+        }
+
+        // Check for inappropriate content in AI response
+        const fullText = `${result.title} ${result.analysis.map(a => `${a.title} ${a.content}`).join(' ')} ${result.integration.content}`;
+        if (containsInappropriateContent(fullText)) {
+            throw new ContentFilterError();
         }
 
         // Consume credit only after successful analysis
@@ -265,6 +438,14 @@ export const analyzeDream = async (dreamText: string, sleepAids?: SleepAids, bio
  * User-triggered, not automatic.
  */
 export const generateImagePrompt = async (dreamText: string, style: DreamArtStyle): Promise<string> => {
+    // Input validation
+    if (!dreamText || typeof dreamText !== 'string' || dreamText.trim().length === 0) {
+        throw new Error('Dream text is required for image prompt generation.');
+    }
+
+    // Sanitize and truncate dream text
+    const sanitizedText = sanitizeDreamText(dreamText).slice(0, 2000);
+
     // Check if device is online
     checkOnline();
 
@@ -287,7 +468,7 @@ export const generateImagePrompt = async (dreamText: string, style: DreamArtStyl
 Given this dream description, create a detailed image generation prompt (80-150 words) that would produce a stunning visualization.
 
 DREAM:
-"${dreamText}"
+"${sanitizedText}"
 
 ART STYLE TO USE:
 ${styleInfo.name}: ${styleInfo.prompt}
@@ -305,12 +486,15 @@ OUTPUT ONLY THE IMAGE PROMPT, nothing else.`;
         const response = await withRetry(() => ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: [{ parts: [{ text: prompt }] }],
-        }));
+        }), 3, 1000, DEFAULT_API_TIMEOUT, 'image prompt');
 
         const result = response.text?.trim() ?? '';
         if (!result) {
             throw new Error('Failed to generate image prompt');
         }
+
+        // Validate response size
+        validateResponseSize(result);
 
         return result;
     } catch (error) {
@@ -460,6 +644,11 @@ const createDreamChatSystemPrompt = (dream: Dream, personality: AnalysisPersonal
  * @returns Promise<string> - The AI's response
  */
 export const getDreamChatResponse = async (dream: Dream, history: ChatMessage[]): Promise<string> => {
+    // Input validation
+    if (!dream || !dream.dreamText) {
+        throw new Error('Dream context is required for chat.');
+    }
+
     // Check if device is online
     checkOnline();
 
@@ -473,18 +662,43 @@ export const getDreamChatResponse = async (dream: Dream, history: ChatMessage[])
         );
     }
 
-    const cleanHistory = history.map(({ id: _id, isError: _isError, ...rest }) => rest);
+    // Limit chat history length to prevent token overflow
+    const trimmedHistory = history.slice(-MAX_CHAT_HISTORY_LENGTH);
+
+    // Check latest user message for crisis indicators
+    const latestUserMessage = trimmedHistory.filter(m => m.role === 'user').pop();
+    if (latestUserMessage?.parts?.[0]?.text) {
+        const crisisCheck = detectCrisis(latestUserMessage.parts[0].text);
+        if (crisisCheck.detected) {
+            logger.warn('[Safety] Crisis indicators in chat message');
+            return CRISIS_RESPONSE.analysis[0]?.content || 'Please reach out to a crisis helpline. In the US, call or text 988.';
+        }
+    }
+
+    const cleanHistory = trimmedHistory.map(({ id: _id, isError: _isError, ...rest }) => rest);
     const chatHistory = [createDreamChatSystemPrompt(dream), ...cleanHistory];
+
     try {
         const ai = getAi();
         const response: GenerateContentResponse = await withRetry(() => ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: chatHistory,
-        }));
-        return response.text ?? '';
+        }), 3, 1000, DEFAULT_API_TIMEOUT, 'chat');
+
+        const text = response.text ?? '';
+
+        // Validate response size
+        validateResponseSize(text);
+
+        // Check for inappropriate content
+        if (containsInappropriateContent(text)) {
+            throw new ContentFilterError();
+        }
+
+        return text;
     } catch (error) {
         logError(error instanceof Error ? error : new Error(String(error)), 'ai', { operation: 'getDreamChatResponse' });
-        throw new Error("Failed to get AI response.");
+        throw error instanceof Error ? error : new Error("Failed to get AI response.");
     }
 };
 
@@ -501,6 +715,14 @@ export const getDreamChatResponse = async (dream: Dream, history: ChatMessage[])
  * @returns Promise<DreamSynthesis> - Structured analysis of themes and patterns
  */
 export const synthesizeDreamThemes = async (dreams: Dream[]): Promise<DreamSynthesis> => {
+    // Input validation
+    if (!Array.isArray(dreams) || dreams.length === 0) {
+        throw new Error('At least one dream is required for synthesis.');
+    }
+
+    // Limit dreams to prevent excessive token usage (max 50 dreams)
+    const limitedDreams = dreams.slice(0, 50);
+
     // Check if device is online
     checkOnline();
 
@@ -516,7 +738,8 @@ export const synthesizeDreamThemes = async (dreams: Dream[]): Promise<DreamSynth
 
     try {
         const ai = getAi();
-        const prompt = createSynthesisPrompt(dreams);
+        const prompt = createSynthesisPrompt(limitedDreams);
+        // Use extended timeout for synthesis (complex operation)
         const response: GenerateContentResponse = await withRetry(() => ai.models.generateContent({
             model: 'gemini-2.5-pro', // Pro model for complex multi-dream synthesis
             contents: [{ parts: [{ text: prompt }] }],
@@ -540,11 +763,16 @@ export const synthesizeDreamThemes = async (dreams: Dream[]): Promise<DreamSynth
                     }
                 }
             }
-        }));
+        }), 3, 1000, EXTENDED_API_TIMEOUT, 'synthesis');
+
         const rawJson = response.text?.trim() ?? '';
         if (!rawJson) {
             throw new Error('AI returned empty response. Please try again.');
         }
+
+        // Validate response size
+        validateResponseSize(rawJson);
+
         let result: DreamSynthesis;
         try {
             result = JSON.parse(rawJson) as DreamSynthesis;
@@ -557,6 +785,12 @@ export const synthesizeDreamThemes = async (dreams: Dream[]): Promise<DreamSynth
         if (!result.overallSummary && !result.recurringThemes) {
             logger.error("Invalid dream synthesis structure:", result);
             throw new Error("AI returned incomplete synthesis. Please try again.");
+        }
+
+        // Check for inappropriate content
+        const fullText = `${result.overallSummary || ''} ${(result.recurringThemes || []).map(t => `${t.theme} ${t.description}`).join(' ')}`;
+        if (containsInappropriateContent(fullText)) {
+            throw new ContentFilterError();
         }
 
         return result;
@@ -575,12 +809,30 @@ export const synthesizeDreamThemes = async (dreams: Dream[]): Promise<DreamSynth
  * @returns Promise<SleepHabitAnalysis> - Insights about correlations
  */
 export const analyzeSleepHabits = async (dreams: Dream[]): Promise<SleepHabitAnalysis> => {
+    // Input validation
+    if (!Array.isArray(dreams) || dreams.length === 0) {
+        throw new Error('Sleep data is required for habit analysis.');
+    }
+
+    // Limit dreams to prevent excessive token usage (max 100 entries)
+    const limitedDreams = dreams.slice(0, 100);
+
     // Check if device is online
     checkOnline();
 
+    // Rate limit (uses ai_analysis bucket)
+    const rateCheck = checkRateLimit('ai_analysis');
+    if (!rateCheck.allowed) {
+        throw new RateLimitError(
+            `Too many analysis requests. Try again in ${Math.ceil(rateCheck.resetIn / 1000)} seconds.`,
+            rateCheck.resetIn,
+            'ai_analysis'
+        );
+    }
+
     try {
         const ai = getAi();
-        const prompt = createHabitAnalysisPrompt(dreams);
+        const prompt = createHabitAnalysisPrompt(limitedDreams);
         const response: GenerateContentResponse = await withRetry(() => ai.models.generateContent({
             model: 'gemini-2.5-pro', // Pro model for complex habit correlation analysis
             contents: [{ parts: [{ text: prompt }] }],
@@ -607,11 +859,16 @@ export const analyzeSleepHabits = async (dreams: Dream[]): Promise<SleepHabitAna
                     }
                 }
             }
-        }));
+        }), 3, 1000, EXTENDED_API_TIMEOUT, 'habit analysis');
+
         const rawJson = response.text?.trim() ?? '';
         if (!rawJson) {
             throw new Error('AI returned empty response. Please try again.');
         }
+
+        // Validate response size
+        validateResponseSize(rawJson);
+
         let result: SleepHabitAnalysis;
         try {
             result = JSON.parse(rawJson) as SleepHabitAnalysis;
@@ -646,6 +903,11 @@ export const analyzeSleepHabits = async (dreams: Dream[]): Promise<SleepHabitAna
  * @returns Promise<number[]> - 768-dimensional vector
  */
 export const generateDreamEmbedding = async (text: string): Promise<number[]> => {
+    // Input validation
+    if (!text || typeof text !== 'string' || text.trim().length === 0) {
+        throw new Error('Text is required for embedding generation.');
+    }
+
     const cacheKey = getEmbeddingCacheKey(text);
 
     // Check cache first
@@ -657,16 +919,40 @@ export const generateDreamEmbedding = async (text: string): Promise<number[]> =>
     // Check if device is online
     checkOnline();
 
+    // Rate limit embedding requests
+    const rateCheck = checkRateLimit('ai_analysis');
+    if (!rateCheck.allowed) {
+        throw new RateLimitError(
+            `Too many requests. Try again in ${Math.ceil(rateCheck.resetIn / 1000)} seconds.`,
+            rateCheck.resetIn,
+            'ai_analysis'
+        );
+    }
+
     try {
         const ai = getAi();
-        const response = await ai.models.embedContent({
-            model: 'text-embedding-004',
-            contents: [{ parts: [{ text }] }]
-        });
+        // Truncate text to prevent token overflow
+        const truncatedText = text.slice(0, MAX_DREAM_TEXT_LENGTH);
+
+        const response = await withTimeout(
+            ai.models.embedContent({
+                model: 'text-embedding-004',
+                contents: [{ parts: [{ text: truncatedText }] }]
+            }),
+            DEFAULT_API_TIMEOUT,
+            'embedding'
+        );
 
         const embedding = response.embeddings?.[0]?.values;
         if (!embedding || embedding.length !== 768) {
             throw new Error('Invalid embedding response from API');
+        }
+
+        // Validate embedding values
+        for (const val of embedding) {
+            if (typeof val !== 'number' || !isFinite(val)) {
+                throw new Error('Invalid embedding values from API');
+            }
         }
 
         // Cache the result
@@ -765,11 +1051,31 @@ export const analyzeDreamWithMemory = async (
     biometrics?: Biometrics,
     personality: AnalysisPersonality = 'oneironaut'
 ): Promise<{ analysis: DreamAnalysis; embedding: number[]; similarDreams: SimilarDream[] }> => {
-    // 1. Generate embedding for the new dream
-    const embedding = await generateDreamEmbedding(dreamText);
+    // Input validation
+    if (!dreamText || typeof dreamText !== 'string' || dreamText.trim().length === 0) {
+        throw new Error('Dream text is required for analysis.');
+    }
 
-    // 2. Find similar past dreams (RAG retrieval)
-    const similarDreams = findSimilarDreams(embedding, pastDreams, 0.70, 3);
+    // Sanitize input
+    const sanitizedText = sanitizeDreamText(dreamText);
+
+    // Crisis detection on new dream
+    const crisisCheck = detectCrisis(sanitizedText);
+    if (crisisCheck.detected) {
+        logger.warn('[Safety] Crisis indicators detected in dream with memory');
+        return {
+            analysis: CRISIS_RESPONSE,
+            embedding: [],
+            similarDreams: []
+        };
+    }
+
+    // 1. Generate embedding for the new dream
+    const embedding = await generateDreamEmbedding(sanitizedText);
+
+    // 2. Find similar past dreams (RAG retrieval) - limit past dreams for performance
+    const limitedPastDreams = (pastDreams || []).slice(0, 500);
+    const similarDreams = findSimilarDreams(embedding, limitedPastDreams, 0.70, 3);
 
     // 3. Build context string from similar dreams with poetic synthesis instructions
     let contextString = '';
@@ -812,7 +1118,7 @@ The synthesis should:
     // 5. Run analysis with enhanced context
     try {
         const ai = getAi();
-        const basePrompt = createAnalysisPrompt(dreamText, personality, sleepAids, biometrics);
+        const basePrompt = createAnalysisPrompt(sanitizedText, personality, sleepAids, biometrics);
         const enhancedPrompt = basePrompt + contextString;
 
         const response: GenerateContentResponse = await withRetry(() => ai.models.generateContent({
@@ -878,18 +1184,39 @@ The synthesis should:
                     required: ['title', 'analysis', 'integration', 'telemetry']
                 }
             }
-        }));
+        }), 3, 1000, DEFAULT_API_TIMEOUT, 'analysis with memory');
 
         const rawJson = response.text?.trim() ?? '';
         if (!rawJson) throw new Error('AI returned empty response.');
 
-        const result = JSON.parse(rawJson) as DreamAnalysis & {
+        // Validate response size
+        validateResponseSize(rawJson);
+
+        let result: DreamAnalysis & {
             dreamConnections?: Array<{
                 pastDreamTitle: string;
                 daysAgo?: number;
                 synthesis: string;
             }>
         };
+
+        try {
+            result = JSON.parse(rawJson);
+        } catch (parseError) {
+            logger.error("Failed to parse dream with memory JSON:", parseError, "Raw:", rawJson.slice(0, 200));
+            throw new Error("Failed to parse AI response. Please try again.");
+        }
+
+        // Validate required fields
+        if (!result.title || !result.analysis || !result.integration) {
+            throw new Error("AI returned incomplete analysis. Please try again.");
+        }
+
+        // Check for inappropriate content
+        const fullText = `${result.title} ${result.analysis.map(a => `${a.title} ${a.content}`).join(' ')} ${result.integration.content}`;
+        if (containsInappropriateContent(fullText)) {
+            throw new ContentFilterError();
+        }
 
         // Consume credit after success
         consumeAiCredit();

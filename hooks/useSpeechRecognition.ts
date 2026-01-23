@@ -99,6 +99,8 @@ export const useSpeechRecognition = (onFinalTranscript: (transcript: string) => 
     // Track if user wants to continue listening (for auto-restart on silence timeout)
     const wantToListenRef = useRef(false);
     const interimTranscriptRef = useRef('');
+    // Track mounted state for async operations
+    const isMountedRef = useRef(true);
 
     // Keep callback ref updated
     useEffect(() => {
@@ -109,6 +111,24 @@ export const useSpeechRecognition = (onFinalTranscript: (transcript: string) => 
     useEffect(() => {
         interimTranscriptRef.current = interimTranscript;
     }, [interimTranscript]);
+
+    // Track mounted state
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+            // Ensure native listeners are cleaned up on unmount
+            if (isNative) {
+                wantToListenRef.current = false;
+                CapacitorSpeechRecognition.stop().catch(() => {
+                    // Ignore errors when stopping on unmount
+                });
+                CapacitorSpeechRecognition.removeAllListeners().catch(() => {
+                    // Ignore errors when removing listeners on unmount
+                });
+            }
+        };
+    }, []);
 
     // Check support on mount - for native, always mark as supported if API exists
     // Permission will be requested when user taps the mic button
@@ -191,8 +211,15 @@ export const useSpeechRecognition = (onFinalTranscript: (transcript: string) => 
     // Native start/stop functions
     const startNative = useCallback(async () => {
         try {
+            // Check if still mounted
+            if (!isMountedRef.current) return;
+
             // Request permissions first
             const permResult = await CapacitorSpeechRecognition.requestPermissions();
+
+            // Check mounted again after async operation
+            if (!isMountedRef.current) return;
+
             if (permResult.speechRecognition !== 'granted') {
                 logger.warn('[SpeechRecognition] Permission denied - user can try again or enable in Settings');
                 // Don't disable - let user try again or show settings prompt
@@ -205,8 +232,15 @@ export const useSpeechRecognition = (onFinalTranscript: (transcript: string) => 
             // Remove any existing listeners before adding new ones to prevent accumulation
             await CapacitorSpeechRecognition.removeAllListeners();
 
+            // Check mounted again after async operation
+            if (!isMountedRef.current) {
+                wantToListenRef.current = false;
+                return;
+            }
+
             // Set up listener for partial results
             await CapacitorSpeechRecognition.addListener('partialResults', (data: { matches: string[] }) => {
+                if (!isMountedRef.current) return;
                 if (data.matches && data.matches.length > 0) {
                     setInterimTranscript(data.matches[0] ?? '');
                 }
@@ -214,20 +248,24 @@ export const useSpeechRecognition = (onFinalTranscript: (transcript: string) => 
 
             // Set up listener for when recognition stops (to auto-restart on silence timeout)
             await CapacitorSpeechRecognition.addListener('listeningState', async (data: { status: string }) => {
+                if (!isMountedRef.current) return;
                 logger.log('[SpeechRecognition] Listening state changed:', data.status);
 
-                if (data.status === 'stopped' && wantToListenRef.current) {
+                if (data.status === 'stopped' && wantToListenRef.current && isMountedRef.current) {
                     // Recognition stopped (likely due to silence timeout)
                     // Save any interim results before restarting
                     const currentTranscript = interimTranscriptRef.current;
                     if (currentTranscript) {
                         onFinalTranscriptRef.current(currentTranscript);
-                        setInterimTranscript('');
+                        if (isMountedRef.current) {
+                            setInterimTranscript('');
+                        }
                     }
 
                     // Auto-restart recognition
                     logger.log('[SpeechRecognition] Auto-restarting after silence timeout');
                     try {
+                        if (!isMountedRef.current) return;
                         await CapacitorSpeechRecognition.start({
                             language: 'en-US',
                             maxResults: 5,
@@ -237,10 +275,19 @@ export const useSpeechRecognition = (onFinalTranscript: (transcript: string) => 
                     } catch (restartError) {
                         logger.error('[SpeechRecognition] Auto-restart failed:', restartError);
                         wantToListenRef.current = false;
-                        setIsListening(false);
+                        if (isMountedRef.current) {
+                            setIsListening(false);
+                        }
                     }
                 }
             });
+
+            // Check mounted before starting
+            if (!isMountedRef.current) {
+                wantToListenRef.current = false;
+                await CapacitorSpeechRecognition.removeAllListeners();
+                return;
+            }
 
             // Start recognition
             await CapacitorSpeechRecognition.start({
@@ -250,8 +297,15 @@ export const useSpeechRecognition = (onFinalTranscript: (transcript: string) => 
                 popup: false
             });
 
-            setIsListening(true);
-            logger.log('[SpeechRecognition] Native recognition started');
+            if (isMountedRef.current) {
+                setIsListening(true);
+                logger.log('[SpeechRecognition] Native recognition started');
+            } else {
+                // Component unmounted during start, clean up
+                wantToListenRef.current = false;
+                await CapacitorSpeechRecognition.stop();
+                await CapacitorSpeechRecognition.removeAllListeners();
+            }
         } catch (error) {
             logger.error('[SpeechRecognition] Native start failed:', error);
             wantToListenRef.current = false;
@@ -266,11 +320,13 @@ export const useSpeechRecognition = (onFinalTranscript: (transcript: string) => 
             await CapacitorSpeechRecognition.stop();
             await CapacitorSpeechRecognition.removeAllListeners();
 
-            setIsListening(false);
-
             // Use accumulated transcript from partial results listener
             const finalTranscript = interimTranscriptRef.current;
-            setInterimTranscript('');
+
+            if (isMountedRef.current) {
+                setIsListening(false);
+                setInterimTranscript('');
+            }
 
             if (finalTranscript) {
                 onFinalTranscriptRef.current(finalTranscript);
@@ -279,7 +335,9 @@ export const useSpeechRecognition = (onFinalTranscript: (transcript: string) => 
             logger.log('[SpeechRecognition] Native recognition stopped');
         } catch (error) {
             logger.error('[SpeechRecognition] Native stop failed:', error);
-            setIsListening(false);
+            if (isMountedRef.current) {
+                setIsListening(false);
+            }
         }
     }, []);
 

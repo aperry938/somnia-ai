@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
 import { Alarm, AlarmPurpose } from '../../types';
 import { DailyBriefingWidget } from '../widgets/DailyBriefingWidget';
@@ -7,6 +7,9 @@ import { isPremium } from '../../services/secureSubscriptionService';
 import { requestPermissions as requestAlarmPermissions } from '../../services/nativeAlarmService';
 import haptics from '../../services/hapticsService';
 import { useBackButton } from '../../hooks/useBackButton';
+
+// Minimum touch target size for mobile accessibility (Apple HIG / Material Design)
+const MIN_TOUCH_TARGET = 44;
 
 // Helper to format alarm repetition text
 const formatRepeatText = (days: number[]): string => {
@@ -39,16 +42,18 @@ const PERIODS = ['AM', 'PM'] as const;
 // Memoized component for a single alarm item - fully clickable with dynamic styling
 const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = React.memo(({ alarm, onEdit }) => {
     const { toggleAlarmActive, deleteAlarm } = useAppContext();
-    const _id = `toggle-${alarm.id}`;
+    const toggleId = `toggle-${alarm.id}`;
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-    const longPressTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-    const isLongPress = React.useRef(false);
+    const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const isLongPress = useRef(false);
+    const touchStartPos = useRef<{ x: number; y: number } | null>(null);
 
     // Cleanup long-press timer on unmount to prevent memory leaks
     useEffect(() => {
         return () => {
             if (longPressTimer.current) {
                 clearTimeout(longPressTimer.current);
+                longPressTimer.current = null;
             }
         };
     }, []);
@@ -60,39 +65,67 @@ const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = Re
     const period = hour >= 12 ? 'PM' : 'AM';
     const displayTime = `${String(displayHour).padStart(2, '0')}:${minuteStr ?? '00'}`;
 
-    const handleToggle = (e: React.MouseEvent) => {
+    const handleToggle = useCallback((e: React.MouseEvent | React.KeyboardEvent) => {
         e.stopPropagation(); // Prevent card click
+        haptics.medium();
         toggleAlarmActive(alarm.id);
-    };
+    }, [alarm.id, toggleAlarmActive]);
 
-    // Long press handlers
-    const handleTouchStart = () => {
+    // Long press handlers with touch position tracking for better gesture detection
+    const handleTouchStart = useCallback((e: React.TouchEvent) => {
         isLongPress.current = false;
+        const touch = e.touches[0];
+        if (touch) {
+            touchStartPos.current = { x: touch.clientX, y: touch.clientY };
+        }
         longPressTimer.current = setTimeout(() => {
             isLongPress.current = true;
-            haptics.medium();
+            haptics.longPress();
             setShowDeleteConfirm(true);
         }, 500); // 500ms for long press
-    };
+    }, []);
 
-    const handleTouchEnd = () => {
+    const handleTouchMove = useCallback((e: React.TouchEvent) => {
+        // Cancel long press if user moves finger more than 10px (scrolling)
+        if (longPressTimer.current && touchStartPos.current) {
+            const touch = e.touches[0];
+            if (touch) {
+                const dx = Math.abs(touch.clientX - touchStartPos.current.x);
+                const dy = Math.abs(touch.clientY - touchStartPos.current.y);
+                if (dx > 10 || dy > 10) {
+                    clearTimeout(longPressTimer.current);
+                    longPressTimer.current = null;
+                    touchStartPos.current = null;
+                }
+            }
+        }
+    }, []);
+
+    const handleTouchEnd = useCallback(() => {
         if (longPressTimer.current) {
             clearTimeout(longPressTimer.current);
             longPressTimer.current = null;
         }
-    };
+        touchStartPos.current = null;
+    }, []);
 
-    const handleClick = () => {
+    const handleClick = useCallback(() => {
         if (!isLongPress.current && !showDeleteConfirm) {
+            haptics.light();
             onEdit(alarm);
         }
-    };
+    }, [alarm, onEdit, showDeleteConfirm]);
 
-    const handleDelete = () => {
+    const handleDelete = useCallback(() => {
         haptics.warning();
         deleteAlarm(alarm.id);
         setShowDeleteConfirm(false);
-    };
+    }, [alarm.id, deleteAlarm]);
+
+    const handleCancelDelete = useCallback(() => {
+        haptics.light();
+        setShowDeleteConfirm(false);
+    }, []);
 
     return (
         <>
@@ -100,17 +133,22 @@ const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = Re
                 onClick={handleClick}
                 onTouchStart={handleTouchStart}
                 onTouchEnd={handleTouchEnd}
-                onTouchMove={handleTouchEnd}
-                onContextMenu={(e) => { e.preventDefault(); haptics.medium(); setShowDeleteConfirm(true); }}
+                onTouchMove={handleTouchMove}
+                onContextMenu={(e) => { e.preventDefault(); haptics.longPress(); setShowDeleteConfirm(true); }}
                 role="button"
                 tabIndex={0}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit(alarm); } }}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); haptics.light(); onEdit(alarm); } }}
                 aria-label={`Alarm at ${displayTime} ${period}${alarm.label ? `, ${alarm.label}` : ''}, ${formatRepeatText(alarm.days)}, ${alarm.isActive ? 'enabled' : 'disabled'}. Long press to delete.`}
-                className={`group relative bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border shadow-lg rounded-2xl p-4 cursor-pointer transition-all duration-300 flex flex-col justify-between h-32 hover:shadow-xl hover:scale-[1.02] hover:border-day-accent dark:hover:border-night-accent active:scale-[0.98] select-none ${alarm.isActive
+                aria-describedby={`alarm-details-${alarm.id}`}
+                className={`group relative bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border shadow-lg rounded-2xl p-4 cursor-pointer transition-all duration-300 flex flex-col justify-between min-h-[128px] hover:shadow-xl hover:scale-[1.02] hover:border-day-accent dark:hover:border-night-accent active:scale-[0.98] select-none ${alarm.isActive
                     ? 'ring-2 ring-day-accent/30 dark:ring-night-accent/30'
                     : 'opacity-80 hover:opacity-100'
                     }`}
             >
+                {/* Hidden description for screen readers */}
+                <span id={`alarm-details-${alarm.id}`} className="sr-only">
+                    {alarm.purpose === 'reminder' ? 'Reminder alarm' : 'Sleep alarm'}, sound: {getSoundName(alarm.soundId)}
+                </span>
                 {/* Active indicator glow */}
                 {alarm.isActive && (
                     <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-day-accent/5 to-purple-500/5 dark:from-night-accent/10 dark:to-purple-500/10 pointer-events-none" />
@@ -118,22 +156,25 @@ const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = Re
 
                 <div className="flex justify-between items-start relative z-10">
                     <div className="flex items-baseline gap-2">
-                        <p className={`text-4xl font-light transition-colors ${alarm.isActive ? 'text-day-text dark:text-night-text' : 'text-gray-400'}`}>
+                        <p className={`text-4xl font-light transition-colors ${alarm.isActive ? 'text-day-text dark:text-night-text' : 'text-gray-400'}`} aria-hidden="true">
                             {displayTime}
                         </p>
-                        <span className={`text-sm font-medium ${alarm.isActive ? 'text-day-accent dark:text-night-accent' : 'text-gray-400'}`}>
+                        <span className={`text-sm font-medium ${alarm.isActive ? 'text-day-accent dark:text-night-accent' : 'text-gray-400'}`} aria-hidden="true">
                             {period}
                         </span>
                     </div>
+                    {/* Toggle switch with proper 44x44px touch target */}
                     <div
-                        className="relative inline-flex items-center w-11 h-6 min-h-[44px] select-none"
+                        className="relative inline-flex items-center justify-center select-none"
+                        style={{ minWidth: MIN_TOUCH_TARGET, minHeight: MIN_TOUCH_TARGET }}
                         onClick={handleToggle}
                         role="switch"
                         aria-checked={alarm.isActive}
-                        aria-label={`${alarm.isActive ? 'Disable' : 'Enable'} alarm`}
+                        aria-labelledby={toggleId}
                         tabIndex={0}
-                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleToggle(e as unknown as React.MouseEvent); } }}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleToggle(e); } }}
                     >
+                        <span id={toggleId} className="sr-only">{alarm.isActive ? 'Disable' : 'Enable'} alarm at {displayTime} {period}</span>
                         {/* Track */}
                         <div className={`w-11 h-6 rounded-full transition-colors ${alarm.isActive ? 'bg-day-accent dark:bg-night-accent' : 'bg-gray-300 dark:bg-gray-700'}`} />
                         {/* Knob */}
@@ -180,22 +221,35 @@ const AlarmItem: React.FC<{ alarm: Alarm; onEdit: (alarm: Alarm) => void }> = Re
 
             {/* Delete Confirmation Popup */}
             {showDeleteConfirm && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center px-4 pt-4 pb-[calc(2rem+var(--safe-area-inset-bottom))] z-50" onClick={() => setShowDeleteConfirm(false)} role="dialog" aria-modal="true" aria-labelledby="delete-alarm-title">
+                <div
+                    className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center px-4 z-50"
+                    style={{
+                        paddingTop: 'max(1rem, var(--safe-area-inset-top))',
+                        paddingBottom: 'calc(2rem + var(--safe-area-inset-bottom))'
+                    }}
+                    onClick={handleCancelDelete}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby={`delete-alarm-title-${alarm.id}`}
+                    aria-describedby={`delete-alarm-desc-${alarm.id}`}
+                >
                     <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-xs animate-fadeIn select-none" onClick={(e) => e.stopPropagation()}>
-                        <h3 id="delete-alarm-title" className="font-serif text-lg text-center mb-2">Delete Alarm?</h3>
-                        <p className="text-sm text-center text-day-text-secondary dark:text-night-text-secondary mb-4">
+                        <h3 id={`delete-alarm-title-${alarm.id}`} className="font-serif text-lg text-center mb-2 text-day-text dark:text-night-text">Delete Alarm?</h3>
+                        <p id={`delete-alarm-desc-${alarm.id}`} className="text-sm text-center text-day-text-secondary dark:text-night-text-secondary mb-4">
                             {displayTime} {period}{alarm.label ? ` - ${alarm.label}` : ''}
                         </p>
                         <div className="flex gap-3">
                             <button
-                                onClick={() => setShowDeleteConfirm(false)}
-                                className="flex-1 py-3 min-h-[48px] bg-gray-200 dark:bg-gray-700 rounded-xl font-medium"
+                                onClick={handleCancelDelete}
+                                aria-label="Cancel deletion"
+                                className="flex-1 py-3 min-h-[48px] bg-gray-200 dark:bg-gray-700 rounded-xl font-medium text-day-text dark:text-night-text active:scale-[0.98] transition-transform"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleDelete}
-                                className="flex-1 py-3 min-h-[48px] bg-red-500 text-white rounded-xl font-medium"
+                                aria-label={`Delete alarm at ${displayTime} ${period}`}
+                                className="flex-1 py-3 min-h-[48px] bg-red-500 text-white rounded-xl font-medium active:scale-[0.98] transition-transform"
                             >
                                 Delete
                             </button>
@@ -217,17 +271,29 @@ const DrumTimePicker: React.FC<{ initialTime: string; onChange: (time: string) =
     const [minute, setMinute] = useState(() => parseInt(initialTime.split(':')[1] ?? '0', 10));
     const [period, setPeriod] = useState(() => parseInt(initialTime.split(':')[0] ?? '0', 10) >= 12 ? 'PM' : 'AM');
 
-    const hourRef = React.useRef<HTMLDivElement>(null);
-    const minuteRef = React.useRef<HTMLDivElement>(null);
-    const periodRef = React.useRef<HTMLDivElement>(null);
+    const hourRef = useRef<HTMLDivElement>(null);
+    const minuteRef = useRef<HTMLDivElement>(null);
+    const periodRef = useRef<HTMLDivElement>(null);
+    const isInitialMount = useRef(true);
 
-    const ITEM_HEIGHT = 56; // Height of each item in pixels
+    const ITEM_HEIGHT = 56; // Height of each item in pixels (meets 44px minimum touch target)
+
+    // Memoized onChange to prevent re-computation
+    const handleTimeChange = useCallback((h: number, m: number, p: string) => {
+        const finalHour = p === 'PM' && h !== 12 ? h + 12 : p === 'AM' && h === 12 ? 0 : h;
+        const timeString = `${String(finalHour).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        onChange(timeString);
+    }, [onChange]);
 
     useEffect(() => {
-        const finalHour = period === 'PM' && hour !== 12 ? hour + 12 : period === 'AM' && hour === 12 ? 0 : hour;
-        const timeString = `${String(finalHour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-        onChange(timeString);
-    }, [hour, minute, period, onChange]);
+        // Skip haptic on initial mount
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+        } else {
+            haptics.selection();
+        }
+        handleTimeChange(hour, minute, period);
+    }, [hour, minute, period, handleTimeChange]);
 
     // Scroll to selected values on mount - use requestAnimationFrame for reliable timing
     useEffect(() => {
@@ -254,7 +320,9 @@ const DrumTimePicker: React.FC<{ initialTime: string; onChange: (time: string) =
             cancelAnimationFrame(rafId1);
             if (rafId2 !== undefined) cancelAnimationFrame(rafId2);
         };
-    }, [hour, minute, period]);
+        // Only run on mount - hour/minute/period changes are handled by scroll
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Scroll handler for number-based time picker wheels (hours, minutes)
     const handleNumberScroll = (
@@ -293,31 +361,42 @@ const DrumTimePicker: React.FC<{ initialTime: string; onChange: (time: string) =
     };
 
     return (
-        <div className="flex flex-col items-center">
-            {/* Large time display */}
-            <div className="text-5xl font-light mb-4 text-day-text dark:text-night-text">
-                {String(hour).padStart(2, '0')}:{String(minute).padStart(2, '0')} <span className="text-3xl">{period}</span>
+        <div className="flex flex-col items-center" role="group" aria-label="Time picker">
+            {/* Large time display - live region for screen readers */}
+            <div
+                className="text-5xl font-light mb-4 text-day-text dark:text-night-text"
+                aria-live="polite"
+                aria-atomic="true"
+            >
+                <span aria-label={`Selected time: ${String(hour).padStart(2, '0')} ${String(minute).padStart(2, '0')} ${period}`}>
+                    {String(hour).padStart(2, '0')}:{String(minute).padStart(2, '0')} <span className="text-3xl">{period}</span>
+                </span>
             </div>
 
             {/* Drum picker container */}
             <div className="relative flex items-center justify-center gap-2 bg-gray-100 dark:bg-gray-800/50 rounded-2xl p-4">
                 {/* Selection highlight bar */}
-                <div className="absolute left-4 right-4 h-14 bg-day-accent/20 dark:bg-night-accent/20 rounded-xl pointer-events-none border-2 border-day-accent/40 dark:border-night-accent/40" style={{ top: '50%', transform: 'translateY(-50%)' }} />
+                <div className="absolute left-4 right-4 h-14 bg-day-accent/20 dark:bg-night-accent/20 rounded-xl pointer-events-none border-2 border-day-accent/40 dark:border-night-accent/40" style={{ top: '50%', transform: 'translateY(-50%)' }} aria-hidden="true" />
 
                 {/* Hour drum */}
-                <div className="relative">
+                <div className="relative" role="listbox" aria-label="Hour">
                     <div
                         ref={hourRef}
-                        className="h-44 w-20 overflow-y-auto scroll-snap-y scroll-snap-mandatory hide-scrollbar"
+                        className="h-44 w-20 overflow-y-auto scroll-snap-y scroll-snap-mandatory hide-scrollbar overscroll-contain"
                         onScroll={() => handleNumberScroll(hourRef, setHour, hours)}
-                        style={{ scrollSnapType: 'y mandatory' }}
+                        style={{ scrollSnapType: 'y mandatory', WebkitOverflowScrolling: 'touch' }}
+                        tabIndex={0}
+                        aria-activedescendant={`hour-${hour}`}
                     >
-                        <div className="h-[calc(50%-28px)]" /> {/* Top padding */}
+                        <div className="h-[calc(50%-28px)]" aria-hidden="true" /> {/* Top padding */}
                         {hours.map((h) => (
                             <div
                                 key={h}
-                                onClick={() => { setHour(h); scrollToValue(hourRef, h - 1); }}
-                                className={`h-14 flex items-center justify-center text-3xl font-medium cursor-pointer transition-all scroll-snap-align-center ${hour === h
+                                id={`hour-${h}`}
+                                role="option"
+                                aria-selected={hour === h}
+                                onClick={() => { setHour(h); scrollToValue(hourRef, h - 1); haptics.tick(); }}
+                                className={`h-14 min-h-[${MIN_TOUCH_TARGET}px] flex items-center justify-center text-3xl font-medium cursor-pointer transition-all scroll-snap-align-center ${hour === h
                                     ? 'text-day-accent dark:text-night-accent scale-110'
                                     : 'text-gray-400 dark:text-gray-500'
                                     }`}
@@ -326,26 +405,31 @@ const DrumTimePicker: React.FC<{ initialTime: string; onChange: (time: string) =
                                 {String(h).padStart(2, '0')}
                             </div>
                         ))}
-                        <div className="h-[calc(50%-28px)]" /> {/* Bottom padding */}
+                        <div className="h-[calc(50%-28px)]" aria-hidden="true" /> {/* Bottom padding */}
                     </div>
                 </div>
 
                 <span className="text-4xl font-light text-day-text dark:text-night-text">:</span>
 
                 {/* Minute drum */}
-                <div className="relative">
+                <div className="relative" role="listbox" aria-label="Minute">
                     <div
                         ref={minuteRef}
-                        className="h-44 w-20 overflow-y-auto scroll-snap-y scroll-snap-mandatory hide-scrollbar"
+                        className="h-44 w-20 overflow-y-auto scroll-snap-y scroll-snap-mandatory hide-scrollbar overscroll-contain"
                         onScroll={() => handleNumberScroll(minuteRef, setMinute, minutes)}
-                        style={{ scrollSnapType: 'y mandatory' }}
+                        style={{ scrollSnapType: 'y mandatory', WebkitOverflowScrolling: 'touch' }}
+                        tabIndex={0}
+                        aria-activedescendant={`minute-${minute}`}
                     >
-                        <div className="h-[calc(50%-28px)]" />
+                        <div className="h-[calc(50%-28px)]" aria-hidden="true" />
                         {minutes.map((m) => (
                             <div
                                 key={m}
-                                onClick={() => { setMinute(m); scrollToValue(minuteRef, m); }}
-                                className={`h-14 flex items-center justify-center text-3xl font-medium cursor-pointer transition-all scroll-snap-align-center ${minute === m
+                                id={`minute-${m}`}
+                                role="option"
+                                aria-selected={minute === m}
+                                onClick={() => { setMinute(m); scrollToValue(minuteRef, m); haptics.tick(); }}
+                                className={`h-14 min-h-[${MIN_TOUCH_TARGET}px] flex items-center justify-center text-3xl font-medium cursor-pointer transition-all scroll-snap-align-center ${minute === m
                                     ? 'text-day-accent dark:text-night-accent scale-110'
                                     : 'text-gray-400 dark:text-gray-500'
                                     }`}
@@ -354,24 +438,29 @@ const DrumTimePicker: React.FC<{ initialTime: string; onChange: (time: string) =
                                 {String(m).padStart(2, '0')}
                             </div>
                         ))}
-                        <div className="h-[calc(50%-28px)]" />
+                        <div className="h-[calc(50%-28px)]" aria-hidden="true" />
                     </div>
                 </div>
 
                 {/* AM/PM drum */}
-                <div className="relative">
+                <div className="relative" role="listbox" aria-label="AM or PM">
                     <div
                         ref={periodRef}
-                        className="h-44 w-16 overflow-y-auto scroll-snap-y scroll-snap-mandatory hide-scrollbar"
+                        className="h-44 w-16 overflow-y-auto scroll-snap-y scroll-snap-mandatory hide-scrollbar overscroll-contain"
                         onScroll={() => handleStringScroll(periodRef, setPeriod, periods)}
-                        style={{ scrollSnapType: 'y mandatory' }}
+                        style={{ scrollSnapType: 'y mandatory', WebkitOverflowScrolling: 'touch' }}
+                        tabIndex={0}
+                        aria-activedescendant={`period-${period}`}
                     >
-                        <div className="h-[calc(50%-28px)]" />
+                        <div className="h-[calc(50%-28px)]" aria-hidden="true" />
                         {periods.map((p) => (
                             <div
                                 key={p}
-                                onClick={() => { setPeriod(p); scrollToValue(periodRef, p === 'AM' ? 0 : 1); }}
-                                className={`h-14 flex items-center justify-center text-2xl font-medium cursor-pointer transition-all scroll-snap-align-center ${period === p
+                                id={`period-${p}`}
+                                role="option"
+                                aria-selected={period === p}
+                                onClick={() => { setPeriod(p); scrollToValue(periodRef, p === 'AM' ? 0 : 1); haptics.tick(); }}
+                                className={`h-14 min-h-[${MIN_TOUCH_TARGET}px] flex items-center justify-center text-2xl font-medium cursor-pointer transition-all scroll-snap-align-center ${period === p
                                     ? 'text-day-accent dark:text-night-accent scale-110'
                                     : 'text-gray-400 dark:text-gray-500'
                                     }`}
@@ -380,17 +469,18 @@ const DrumTimePicker: React.FC<{ initialTime: string; onChange: (time: string) =
                                 {p}
                             </div>
                         ))}
-                        <div className="h-[calc(50%-28px)]" />
+                        <div className="h-[calc(50%-28px)]" aria-hidden="true" />
                     </div>
                 </div>
             </div>
 
-            <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-3">Scroll or tap to select time</p>
+            <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-3" aria-hidden="true">Scroll or tap to select time</p>
 
-            {/* CSS for hiding scrollbar but keeping functionality */}
+            {/* CSS for hiding scrollbar but keeping functionality + screen reader utility */}
             <style>{`
                 .hide-scrollbar::-webkit-scrollbar { display: none; }
                 .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+                .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0; }
             `}</style>
         </div>
     );
@@ -425,10 +515,16 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
     const [showSmartWakeInfo, setShowSmartWakeInfo] = useState(false);
     const [savedAlarmId, setSavedAlarmId] = useState<number | null>(null);
     const [showSavedConfirmation, setShowSavedConfirmation] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveError, setSaveError] = useState<string | null>(null);
 
     // Alarm purpose - sleep alarms trigger dream flow, reminder alarms just dismiss
     const [purpose, setPurpose] = useState<AlarmPurpose>(alarmToEdit?.purpose || 'sleep');
     const [label, setLabel] = useState(alarmToEdit?.label || '');
+
+    // Ref for focus management
+    const modalRef = useRef<HTMLDivElement>(null);
+    const previousFocusRef = useRef<HTMLElement | null>(null);
 
     // Repetition state
     const [frequency, setFrequency] = useState<'once' | 'daily' | 'weekly'>(() => {
@@ -455,6 +551,21 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
 
     // Hardware back button closes modal
     useBackButton(true, () => { stopAlarmPreview(); onClose(); });
+
+    // Focus management for accessibility - trap focus in modal
+    useEffect(() => {
+        previousFocusRef.current = document.activeElement as HTMLElement;
+        // Focus the modal on open
+        if (modalRef.current) {
+            modalRef.current.focus();
+        }
+        // Restore focus on close
+        return () => {
+            if (previousFocusRef.current && typeof previousFocusRef.current.focus === 'function') {
+                previousFocusRef.current.focus();
+            }
+        };
+    }, []);
 
     const toggleDay = (dayIndex: number) => {
         if (frequency !== 'weekly') setFrequency('weekly');
@@ -485,28 +596,46 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
     }, []);
 
     const handleSave = async () => {
+        if (isSaving) return; // Prevent double-tap
+
+        setIsSaving(true);
+        setSaveError(null);
         stopAlarmPreview();
 
-        // Finalize days based on frequency
-        let finalDays = selectedDays;
-        if (frequency === 'once') finalDays = [];
-        if (frequency === 'daily') finalDays = [0, 1, 2, 3, 4, 5, 6];
+        try {
+            // Finalize days based on frequency
+            let finalDays = selectedDays;
+            if (frequency === 'once') finalDays = [];
+            if (frequency === 'daily') finalDays = [0, 1, 2, 3, 4, 5, 6];
 
-        let alarmId: number;
-        if (alarmToEdit) {
-            updateAlarm(alarmToEdit.id, time, false, finalDays, selectedSound, purpose, label || undefined);
-            alarmId = alarmToEdit.id;
-        } else {
-            // Request notification permissions when creating first alarm
-            await requestAlarmPermissions();
-            alarmId = addAlarm(time, false, finalDays, selectedSound, purpose, label || undefined);
+            let alarmId: number;
+            if (alarmToEdit) {
+                updateAlarm(alarmToEdit.id, time, false, finalDays, selectedSound, purpose, label || undefined);
+                alarmId = alarmToEdit.id;
+            } else {
+                // Request notification permissions when creating first alarm
+                try {
+                    await requestAlarmPermissions();
+                } catch (permError) {
+                    // Log but don't block - alarm will still work, just might not show notifications
+                    console.warn('Failed to request alarm permissions:', permError);
+                }
+                alarmId = addAlarm(time, false, finalDays, selectedSound, purpose, label || undefined);
+            }
+
+            haptics.success();
+            if (onSaveSuccess) onSaveSuccess();
+
+            // Show confirmation - only offer Sleep Gateway for sleep alarms
+            setSavedAlarmId(alarmId);
+            setShowSavedConfirmation(true);
+        } catch (error) {
+            console.error('Failed to save alarm:', error);
+            haptics.error();
+            setSaveError('Failed to save alarm. Please try again.');
+        } finally {
+            setIsSaving(false);
         }
-
-        if (onSaveSuccess) onSaveSuccess();
-
-        // Show confirmation - only offer Sleep Gateway for sleep alarms
-        setSavedAlarmId(alarmId);
-        setShowSavedConfirmation(true);
     };
 
     const handleConfigureSleepGateway = () => {
@@ -526,9 +655,15 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
 
     const handleDelete = () => {
         stopAlarmPreview();
+        haptics.warning();
         if (alarmToEdit) deleteAlarm(alarmToEdit.id);
         onClose();
     };
+
+    const handleClose = useCallback(() => {
+        stopAlarmPreview();
+        onClose();
+    }, [onClose]);
 
     // Show saved confirmation - only offer Sleep Gateway for sleep alarms
     if (showSavedConfirmation) {
@@ -582,9 +717,33 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
     }
 
     return (
-        <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center px-4 pt-4 pb-[calc(2rem+var(--safe-area-inset-bottom))] z-50" onClick={() => { stopAlarmPreview(); onClose(); }} role="dialog" aria-modal="true" aria-labelledby="alarm-modal-title">
-            <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 pb-8 w-full max-w-sm animate-fadeIn max-h-[calc(85vh-var(--safe-area-inset-bottom))] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                <h2 id="alarm-modal-title" className="font-serif text-2xl text-center mb-6">{alarmToEdit ? "Edit Alarm" : "Set Alarm"}</h2>
+        <div
+            className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-center justify-center px-4 z-50"
+            style={{
+                paddingTop: 'max(1rem, var(--safe-area-inset-top))',
+                paddingBottom: 'calc(2rem + var(--safe-area-inset-bottom))'
+            }}
+            onClick={handleClose}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="alarm-modal-title"
+        >
+            <div
+                ref={modalRef}
+                tabIndex={-1}
+                className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 pb-8 w-full max-w-sm animate-fadeIn max-h-[calc(85vh-var(--safe-area-inset-bottom))] overflow-y-auto overscroll-contain focus:outline-none"
+                style={{ WebkitOverflowScrolling: 'touch' }}
+                onClick={(e) => e.stopPropagation()}
+            >
+                <h2 id="alarm-modal-title" className="font-serif text-2xl text-center mb-6 text-day-text dark:text-night-text">{alarmToEdit ? "Edit Alarm" : "Set Alarm"}</h2>
+
+                {/* Error message */}
+                {saveError && (
+                    <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-lg text-red-700 dark:text-red-300 text-sm text-center" role="alert">
+                        {saveError}
+                    </div>
+                )}
+
                 <DrumTimePicker initialTime={time} onChange={setTime} />
 
                 {/* Alarm Purpose Selector */}
@@ -678,36 +837,45 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
                 </div>
 
                 {/* Alarm Sound Selector */}
-                <div className="mt-6">
-                    <label className="text-sm font-medium block mb-2">Alarm Sound <span className="text-xs text-day-text-secondary dark:text-night-text-secondary">(tap to preview)</span></label>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div className="mt-6" role="radiogroup" aria-label="Alarm sound selection">
+                    <label id="sound-label" className="text-sm font-medium block mb-2 text-day-text dark:text-night-text">
+                        Alarm Sound <span className="text-xs text-day-text-secondary dark:text-night-text-secondary">(tap to preview)</span>
+                    </label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3" aria-labelledby="sound-label">
                         {ALARM_SOUNDS.map(sound => {
                             const showProBadge = (sound as { isPremium?: boolean }).isPremium && !isPremium();
+                            const isSelected = selectedSound === sound.id;
                             return (
                                 <button
                                     key={sound.id}
+                                    role="radio"
+                                    aria-checked={isSelected}
+                                    aria-disabled={showProBadge}
+                                    aria-label={`${sound.name}${showProBadge ? ', Premium feature' : ''}${isSelected ? ', selected' : ''}`}
                                     onClick={() => {
                                         // Block both selection AND preview for premium sounds if user is not premium
                                         if (showProBadge) {
+                                            haptics.warning();
                                             return; // Do nothing - can see but not interact
                                         }
+                                        haptics.medium();
                                         setSelectedSound(sound.id);
                                         toggleAlarmPreview(sound.id);
                                     }}
-                                    className={`p-4 rounded-xl text-center transition-all relative ${selectedSound === sound.id
+                                    className={`p-4 min-h-[${MIN_TOUCH_TARGET}px] rounded-xl text-center transition-all relative active:scale-[0.98] ${isSelected
                                         ? 'bg-day-accent/20 dark:bg-night-accent/20 border-2 border-day-accent dark:border-night-accent'
                                         : 'bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border hover:border-day-accent/50'
                                         } ${showProBadge ? 'opacity-60 cursor-not-allowed' : ''}`}
                                 >
                                     {showProBadge && (
-                                        <span className="absolute top-1 right-1 text-[9px] bg-gradient-to-r from-amber-500 to-orange-500 text-white px-1.5 py-0.5 rounded-full font-medium flex items-center gap-0.5">
+                                        <span className="absolute top-1 right-1 text-[9px] bg-gradient-to-r from-amber-500 to-orange-500 text-white px-1.5 py-0.5 rounded-full font-medium flex items-center gap-0.5" aria-hidden="true">
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-2 w-2" fill="currentColor" viewBox="0 0 20 20">
                                                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                                             </svg>
                                             PRO
                                         </span>
                                     )}
-                                    <span className="text-sm font-medium block">{sound.name}</span>
+                                    <span className="text-sm font-medium block text-day-text dark:text-night-text">{sound.name}</span>
                                     <span className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-1 block">{sound.description}</span>
                                 </button>
                             );
@@ -721,29 +889,62 @@ const AlarmModal: React.FC<{ alarmToEdit: Alarm | null; onClose: () => void; onS
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Smart Wake</span>
-                            <span className="text-xs bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full">Coming Soon</span>
+                            <span className="text-xs bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full" aria-label="Coming soon feature">Coming Soon</span>
                         </div>
                         <button
-                            onClick={() => setShowSmartWakeInfo(!showSmartWakeInfo)}
-                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                            onClick={() => { haptics.light(); setShowSmartWakeInfo(!showSmartWakeInfo); }}
+                            aria-label={showSmartWakeInfo ? 'Hide Smart Wake information' : 'Learn more about Smart Wake'}
+                            aria-expanded={showSmartWakeInfo}
+                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-2 -m-2 flex items-center justify-center"
+                            style={{ minWidth: MIN_TOUCH_TARGET, minHeight: MIN_TOUCH_TARGET }}
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </button>
                     </div>
                     {showSmartWakeInfo && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2" id="smart-wake-info">
                             Smart Wake will use health app data to wake you during light sleep phases within a 30-minute window before your alarm. Requires Apple Health or Google Fit connection.
                         </p>
                     )}
                 </div>
 
                 <div className="flex justify-center gap-4 mt-6">
-                    <button onClick={onClose} aria-label="Cancel" className="py-3 px-6 min-h-[48px] bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">Cancel</button>
-                    <button onClick={handleSave} aria-label="Save alarm" className="py-3 px-6 min-h-[48px] bg-day-accent dark:bg-night-accent text-white font-bold rounded-full flex items-center justify-center">Save</button>
+                    <button
+                        onClick={handleClose}
+                        aria-label="Cancel"
+                        className="py-3 px-6 min-h-[48px] bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center text-day-text dark:text-night-text active:scale-[0.98] transition-transform"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        aria-label={isSaving ? 'Saving alarm...' : 'Save alarm'}
+                        aria-busy={isSaving}
+                        className={`py-3 px-6 min-h-[48px] bg-day-accent dark:bg-night-accent text-white font-bold rounded-full flex items-center justify-center active:scale-[0.98] transition-all ${isSaving ? 'opacity-70 cursor-not-allowed' : ''}`}
+                    >
+                        {isSaving ? (
+                            <>
+                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Saving...
+                            </>
+                        ) : 'Save'}
+                    </button>
                 </div>
-                {alarmToEdit && <button onClick={handleDelete} aria-label="Delete alarm" className="w-full mt-4 py-3 min-h-[48px] text-red-500">Delete Alarm</button>}
+                {alarmToEdit && (
+                    <button
+                        onClick={handleDelete}
+                        aria-label="Delete alarm"
+                        className="w-full mt-4 py-3 min-h-[48px] text-red-500 active:scale-[0.98] transition-transform"
+                    >
+                        Delete Alarm
+                    </button>
+                )}
             </div>
         </div>
     );
@@ -985,29 +1186,37 @@ export const AlarmsPage: React.FC<{ timeString: string, dateString: string, onNa
         return next && next.purpose !== 'reminder' ? next : null;
     }, [getNextActiveAlarm]);
 
-    const openModal = (alarm: Alarm | null = null) => {
+    const openModal = useCallback((alarm: Alarm | null = null) => {
+        haptics.modalOpen();
         setAlarmToEdit(alarm);
         setIsModalOpen(true);
-    };
+    }, []);
 
-    const closeModal = () => {
+    const closeModal = useCallback(() => {
         stopAlarmPreview(); // Stop any playing preview when modal closes
+        haptics.modalClose();
         setIsModalOpen(false);
         setAlarmToEdit(null);
-    };
+    }, []);
 
-    const handleConfigureSleepGateway = () => {
+    const handleConfigureSleepGateway = useCallback(() => {
         if (onNavigateToSleep) {
             onNavigateToSleep();
         }
-    };
+    }, [onNavigateToSleep]);
+
+    const handleAddAlarm = useCallback(() => {
+        openModal(null);
+    }, [openModal]);
 
     return (
         <>
-            <div className="flex flex-col">
+            <main className="flex flex-col" role="main" aria-label="Alarms page">
                 <header className="text-center mb-6">
-                    <h1 className="font-serif text-6xl md:text-8xl font-bold tracking-tight">{timeString}</h1>
-                    <p className="text-md mt-2 tracking-wide">{dateString}</p>
+                    <h1 className="font-serif text-6xl md:text-8xl font-bold tracking-tight text-day-text dark:text-night-text" aria-label={`Current time: ${timeString}`}>
+                        {timeString}
+                    </h1>
+                    <p className="text-md mt-2 tracking-wide text-day-text-secondary dark:text-night-text-secondary">{dateString}</p>
                     <div className="mt-10">
                         <DailyBriefingWidget />
                     </div>
@@ -1019,21 +1228,40 @@ export const AlarmsPage: React.FC<{ timeString: string, dateString: string, onNa
                     onOpenFullGateway={handleConfigureSleepGateway}
                 />
 
+                {/* Alarm list with iOS-style bounce scrolling */}
+                <section aria-label="Your alarms" className="pb-32">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto w-full">
+                        {alarms.length > 0 ? (
+                            alarms.map(alarm => <AlarmItem key={alarm.id} alarm={alarm} onEdit={openModal} />)
+                        ) : (
+                            <div className="text-center text-day-text-secondary dark:text-night-text-secondary md:col-span-2 py-8" role="status">
+                                <p>No alarms set.</p>
+                                <p className="text-sm mt-2">Tap the + button to create your first alarm.</p>
+                            </div>
+                        )}
+                    </div>
+                </section>
+            </main>
 
-                {/* pb-32 provides space for floating action button */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto w-full pb-32">
-                    {alarms.length > 0 ? (
-                        alarms.map(alarm => <AlarmItem key={alarm.id} alarm={alarm} onEdit={openModal} />)
-                    ) : (
-                        <p className="text-center text-day-text-secondary dark:text-night-text-secondary md:col-span-2">No alarms set.</p>
-                    )}
-                </div>
-            </div>
-            <button onClick={() => openModal()} aria-label="Add new alarm" className="fixed bottom-[calc(7rem+var(--safe-area-inset-bottom))] right-6 bg-day-accent dark:bg-night-accent text-white rounded-full p-4 shadow-lg shadow-indigo-500/30 hover:bg-indigo-600 dark:hover:bg-indigo-500 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
+            {/* Floating Action Button - 56x56px for easy tapping */}
+            <button
+                onClick={handleAddAlarm}
+                aria-label="Add new alarm"
+                className="fixed right-6 bg-day-accent dark:bg-night-accent text-white rounded-full shadow-lg shadow-indigo-500/30 hover:bg-indigo-600 dark:hover:bg-indigo-500 transition-all active:scale-[0.95] flex items-center justify-center"
+                style={{
+                    bottom: 'calc(7rem + var(--safe-area-inset-bottom))',
+                    width: 56,
+                    height: 56,
+                    minWidth: MIN_TOUCH_TARGET,
+                    minHeight: MIN_TOUCH_TARGET
+                }}
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                </svg>
             </button>
+
             {isModalOpen && <AlarmModal alarmToEdit={alarmToEdit} onClose={closeModal} onConfigureSleepGateway={handleConfigureSleepGateway} />}
-            {/* Styles moved inline - toggle-checkbox/label no longer used */}
         </>
     );
 };

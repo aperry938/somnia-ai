@@ -26,6 +26,11 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       rollupOptions: {
+        // External packages that are dynamically imported at runtime (native only)
+        external: [
+          'capacitor-native-biometric',
+          'capacitor-secure-storage-plugin'
+        ],
         output: {
           manualChunks: {
             // Charting library (heavy, only used on InsightsPage)

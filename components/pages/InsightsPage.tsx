@@ -1,40 +1,49 @@
-import React, { useState, useMemo, useCallback, useRef, useEffect as _useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useRef, Suspense, lazy } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
 import { analyzeSleepHabits, synthesizeDreamThemes } from '../../services/geminiService';
 import { DreamSynthesis, SleepHabitAnalysis } from '../../types';
 import { SleepQualityChart } from '../charts/SleepQualityChart';
 import { detectRecurringPatterns, formatPatternName } from '../../constants/dreamPatterns';
-import { WeeklyDigest } from '../insights/WeeklyDigest';
-import { GlobalTrendsCard } from '../insights/GlobalTrendsCard';
-import { SentimentChart } from '../insights/SentimentChart';
-import { DreamCalendar } from '../insights/DreamCalendar';
-import { DreamWordCloud } from '../insights/DreamWordCloud';
-import { DreamMoodTracker } from '../insights/DreamMoodTracker';
-import { DreamStreakCalendar } from '../insights/DreamStreakCalendar';
-import { RecurringThemes } from '../insights/RecurringThemes';
 import { InsightsGrid } from '../insights/InsightsGrid';
 import { PremiumBadge } from '../shared/PremiumBadge';
 import { FeatureInfoCard } from '../shared/FeatureInfoCard';
+import { ErrorBoundary } from '../shared/ErrorBoundary';
 import { canUseAiAnalysis as _canUseAiAnalysis, consumeAiCredit as _consumeAiCredit, isPremium } from '../../services/secureSubscriptionService';
 import { DreamCompareModal } from '../modals/DreamCompareModal';
 import { ShareAnalyticsModal } from '../modals/ShareAnalyticsModal';
 import { DEMO_DREAMS } from '../../constants/demoDreams';
 import haptics from '../../services/hapticsService';
+import { useOnlineStatus } from '../../hooks/useOnlineStatus';
+
+// Lazy load heavy insight components for better performance
+const WeeklyDigest = lazy(() => import('../insights/WeeklyDigest').then(m => ({ default: m.WeeklyDigest })));
+const GlobalTrendsCard = lazy(() => import('../insights/GlobalTrendsCard').then(m => ({ default: m.GlobalTrendsCard })));
+const SentimentChart = lazy(() => import('../insights/SentimentChart').then(m => ({ default: m.SentimentChart })));
+const DreamCalendar = lazy(() => import('../insights/DreamCalendar').then(m => ({ default: m.DreamCalendar })));
+const DreamWordCloud = lazy(() => import('../insights/DreamWordCloud').then(m => ({ default: m.DreamWordCloud })));
+const DreamMoodTracker = lazy(() => import('../insights/DreamMoodTracker').then(m => ({ default: m.DreamMoodTracker })));
+const DreamStreakCalendar = lazy(() => import('../insights/DreamStreakCalendar').then(m => ({ default: m.DreamStreakCalendar })));
+const RecurringThemes = lazy(() => import('../insights/RecurringThemes').then(m => ({ default: m.RecurringThemes })));
+
+// Loading skeleton for lazy-loaded insight cards
+const InsightCardSkeleton: React.FC = () => (
+    <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl animate-pulse">
+        <div className="h-6 bg-day-border dark:bg-night-border rounded w-1/3 mb-3" />
+        <div className="h-4 bg-day-border dark:bg-night-border rounded w-2/3 mb-4" />
+        <div className="h-32 bg-day-border dark:bg-night-border rounded" />
+    </div>
+);
 
 type InsightTab = 'dreams' | 'analysis';
 
-const _AnalysisCard: React.FC<{ title: string; description: string; buttonText: string; onAnalyze: () => void; isLoading: boolean; children: React.ReactNode; }> =
-    ({ title, description, buttonText: _buttonText, onAnalyze: _onAnalyze, isLoading: _isLoading, children }) => (
-        <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">
-            <h2 className="font-serif text-2xl">{title}</h2>
-            <p className="text-day-text-secondary dark:text-night-text-secondary mt-1 mb-4">{description}</p>
-            {children}
-        </div>
-    );
+// AnalysisCard component reserved for future insights tab expansion
+// interface AnalysisCardProps { title: string; description: string; buttonText: string; onAnalyze: () => void; isLoading: boolean; children: React.ReactNode; }
+// const AnalysisCard: React.FC<AnalysisCardProps> = ({ title, description, buttonText, onAnalyze, isLoading, children }) => (...);
 
 export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = ({ onDreamSelect }) => {
     const { dreams } = useAppContext();
     const userIsPremium = isPremium();
+    const isOnline = useOnlineStatus();
 
     // Free users always see demo data, premium users see their own data (or demo if < 3 dreams)
     const isUsingDemo = !userIsPremium || dreams.length < 3;
@@ -234,57 +243,82 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
 
             {/* Tab Header */}
             <div className="max-w-2xl mx-auto mb-6">
-                <div className="flex bg-day-card-bg/50 dark:bg-night-card-bg/50 backdrop-blur-sm rounded-xl p-1 border border-day-border dark:border-night-border">
+                <div
+                    className="flex bg-day-card-bg/50 dark:bg-night-card-bg/50 backdrop-blur-sm rounded-xl p-1 border border-day-border dark:border-night-border"
+                    role="tablist"
+                    aria-label="Insights navigation"
+                >
                     <button
-                        onClick={() => setActiveTab('dreams')}
-                        aria-pressed={activeTab === 'dreams'}
-                        aria-label="My Dreams tab"
+                        onClick={() => { haptics.light(); setActiveTab('dreams'); }}
+                        role="tab"
+                        id="tab-dreams"
+                        aria-selected={activeTab === 'dreams'}
+                        aria-controls="tabpanel-dreams"
+                        tabIndex={activeTab === 'dreams' ? 0 : -1}
                         className={`relative flex-1 py-3 px-4 min-h-[48px] rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-1.5 ${activeTab === 'dreams'
                             ? 'bg-day-accent dark:bg-night-accent text-white shadow-lg'
                             : 'text-day-text-secondary dark:text-night-text-secondary hover:bg-white/10 dark:hover:bg-black/10'
                             }`}
                     >
                         {!userIsPremium && (
-                            <span className="absolute -top-1 -right-1 inline-flex items-center gap-0.5 text-[8px] bg-gradient-to-r from-amber-500 to-orange-500 text-white px-1 py-0.5 rounded-full font-medium leading-none shadow-sm">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-2 w-2" viewBox="0 0 20 20" fill="currentColor">
+                            <span className="absolute -top-1 -right-1 inline-flex items-center gap-0.5 text-[8px] bg-gradient-to-r from-amber-500 to-orange-500 text-white px-1 py-0.5 rounded-full font-medium leading-none shadow-sm" aria-label="Premium feature">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-2 w-2" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                                 </svg>
                                 PRO
                             </span>
                         )}
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                         </svg>
                         <span className="text-sm">My Dreams</span>
                     </button>
                     <button
-                        onClick={() => setActiveTab('analysis')}
-                        aria-pressed={activeTab === 'analysis'}
-                        aria-label="Analysis tab"
+                        onClick={() => { haptics.light(); setActiveTab('analysis'); }}
+                        role="tab"
+                        id="tab-analysis"
+                        aria-selected={activeTab === 'analysis'}
+                        aria-controls="tabpanel-analysis"
+                        tabIndex={activeTab === 'analysis' ? 0 : -1}
                         className={`relative flex-1 py-3 px-4 min-h-[48px] rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-1.5 ${activeTab === 'analysis'
                             ? 'bg-day-accent dark:bg-night-accent text-white shadow-lg'
                             : 'text-day-text-secondary dark:text-night-text-secondary hover:bg-white/10 dark:hover:bg-black/10'
                             }`}
                     >
                         {!userIsPremium && (
-                            <span className="absolute -top-1 -right-1 inline-flex items-center gap-0.5 text-[8px] bg-gradient-to-r from-amber-500 to-orange-500 text-white px-1 py-0.5 rounded-full font-medium leading-none shadow-sm">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-2 w-2" viewBox="0 0 20 20" fill="currentColor">
+                            <span className="absolute -top-1 -right-1 inline-flex items-center gap-0.5 text-[8px] bg-gradient-to-r from-amber-500 to-orange-500 text-white px-1 py-0.5 rounded-full font-medium leading-none shadow-sm" aria-label="Premium feature">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-2 w-2" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                                 </svg>
                                 PRO
                             </span>
                         )}
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                         </svg>
                         <span className="text-sm">Analysis</span>
                     </button>
                 </div>
-                {/* Swipe indicator */}
-                <p className="text-center text-xs text-day-text-secondary dark:text-night-text-secondary mt-2 opacity-60">
+                {/* Swipe indicator - hidden from screen readers as it's a visual hint */}
+                <p className="text-center text-xs text-day-text-secondary dark:text-night-text-secondary mt-2 opacity-60" aria-hidden="true">
                     Swipe to switch tabs
                 </p>
             </div>
+
+            {/* Offline Indicator */}
+            {!isOnline && (
+                <div className="max-w-2xl mx-auto mb-4">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-amber-500/10 border border-amber-500/30 rounded-xl" role="alert">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414" />
+                        </svg>
+                        <p className="text-sm text-amber-700 dark:text-amber-300">
+                            <span className="font-medium">You're offline</span>
+                            <span className="opacity-80"> - Viewing cached data. AI features unavailable.</span>
+                        </p>
+                    </div>
+                </div>
+            )}
 
             {/* Swipeable Content */}
             <div
@@ -295,14 +329,19 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                 className="max-w-2xl mx-auto"
             >
                 {activeTab === 'dreams' ? (
-                    <div className="space-y-6 animate-fadeIn">
+                    <div
+                        className="space-y-6 animate-fadeIn"
+                        role="tabpanel"
+                        id="tabpanel-dreams"
+                        aria-labelledby="tab-dreams"
+                    >
                         {/* Sample Data Banner / Premium Upsell */}
                         {isUsingDemo && (
                             !userIsPremium ? (
                                 <PremiumBadge feature="sleep_habits" className="w-full" hideBadge>
                                     <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-xl p-4 cursor-pointer hover:border-amber-400/50 transition-colors">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center flex-shrink-0">
+                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center flex-shrink-0" aria-hidden="true">
                                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
                                                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                                                 </svg>
@@ -315,55 +354,79 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                                                     Upgrade to Premium to unlock your personal insights
                                                 </p>
                                             </div>
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                             </svg>
                                         </div>
                                     </div>
                                 </PremiumBadge>
                             ) : (
-                                <div className="flex items-center gap-3 px-4 py-3 bg-day-accent/10 dark:bg-night-accent/10 border border-day-accent/20 dark:border-night-accent/20 rounded-xl">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-day-accent dark:text-night-accent flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <div className="flex items-center gap-3 px-4 py-3 bg-day-accent/10 dark:bg-night-accent/10 border border-day-accent/20 dark:border-night-accent/20 rounded-xl" role="status">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-day-accent dark:text-night-accent flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                     <p className="text-sm text-day-accent dark:text-night-accent">
                                         <span className="font-medium">Sample data</span>
-                                        <span className="opacity-80"> — Log at least 3 dreams to see your personal insights</span>
+                                        <span className="opacity-80"> - Log at least 3 dreams to see your personal insights</span>
                                     </p>
                                 </div>
                             )
                         )}
-                        <WeeklyDigest dreams={displayDreams} />
-                        <DreamCalendar dreams={displayDreams} />
-                        <DreamWordCloud dreams={displayDreams} />
-                        <DreamMoodTracker dreams={displayDreams} />
-                        <DreamStreakCalendar dreams={displayDreams} />
-                        <RecurringThemes dreams={displayDreams} />
+                        <ErrorBoundary>
+                            <Suspense fallback={<InsightCardSkeleton />}>
+                                <WeeklyDigest dreams={displayDreams} />
+                            </Suspense>
+                        </ErrorBoundary>
+                        <ErrorBoundary>
+                            <Suspense fallback={<InsightCardSkeleton />}>
+                                <DreamCalendar dreams={displayDreams} />
+                            </Suspense>
+                        </ErrorBoundary>
+                        <ErrorBoundary>
+                            <Suspense fallback={<InsightCardSkeleton />}>
+                                <DreamWordCloud dreams={displayDreams} />
+                            </Suspense>
+                        </ErrorBoundary>
+                        <ErrorBoundary>
+                            <Suspense fallback={<InsightCardSkeleton />}>
+                                <DreamMoodTracker dreams={displayDreams} />
+                            </Suspense>
+                        </ErrorBoundary>
+                        <ErrorBoundary>
+                            <Suspense fallback={<InsightCardSkeleton />}>
+                                <DreamStreakCalendar dreams={displayDreams} />
+                            </Suspense>
+                        </ErrorBoundary>
+                        <ErrorBoundary>
+                            <Suspense fallback={<InsightCardSkeleton />}>
+                                <RecurringThemes dreams={displayDreams} />
+                            </Suspense>
+                        </ErrorBoundary>
 
                         {/* Recurring Patterns */}
                         {patterns.length > 0 && (
                             <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">
-                                <h2 className="font-serif text-2xl mb-2">Recurring Patterns</h2>
+                                <h2 className="font-serif text-2xl mb-2" id="patterns-heading">Recurring Patterns</h2>
                                 <p className="text-day-text-secondary dark:text-night-text-secondary text-sm mb-4">
                                     Themes across multiple dreams
                                 </p>
-                                <div className="flex flex-wrap gap-2">
+                                <ul className="flex flex-wrap gap-2" role="list" aria-labelledby="patterns-heading">
                                     {patterns.slice(0, 8).map(p => (
-                                        <div
+                                        <li
                                             key={p.pattern}
-                                            className="px-3 py-1.5 bg-day-accent/10 dark:bg-night-accent/10 rounded-full text-sm flex items-center gap-1.5"
+                                            className="px-4 py-2.5 min-h-[44px] bg-day-accent/10 dark:bg-night-accent/10 rounded-full text-sm flex items-center gap-1.5"
                                         >
                                             <span className="font-medium text-day-accent dark:text-night-accent">
                                                 {formatPatternName(p.pattern)}
                                             </span>
-                                            <span className="text-xs text-day-text-secondary dark:text-night-text-secondary">
-                                                ×{p.occurrences}
+                                            <span className="text-xs text-day-text-secondary dark:text-night-text-secondary" aria-label={`${p.occurrences} occurrences`}>
+                                                x{p.occurrences}
                                             </span>
-                                        </div>
+                                        </li>
                                     ))}
-                                </div>
+                                </ul>
                                 {patterns.length > 8 && (
-                                    <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-2">
+                                    <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-3">
                                         +{patterns.length - 8} more patterns
                                     </p>
                                 )}
@@ -373,10 +436,11 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                         {/* Compare Dreams */}
                         {displayDreams.length >= 2 && (
                             <button
-                                onClick={() => setIsCompareOpen(true)}
-                                className="w-full py-3 bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-medium rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                                onClick={() => { haptics.medium(); setIsCompareOpen(true); }}
+                                className="w-full py-3 min-h-[48px] bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-medium rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                                aria-label="Compare two dreams side by side"
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
                                 </svg>
                                 Compare Dreams
@@ -384,13 +448,18 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                         )}
                     </div>
                 ) : (
-                    <div className="space-y-6 animate-fadeIn">
+                    <div
+                        className="space-y-6 animate-fadeIn"
+                        role="tabpanel"
+                        id="tabpanel-analysis"
+                        aria-labelledby="tab-analysis"
+                    >
                         {/* Premium Banner for Analysis Tab */}
                         {!userIsPremium && (
                             <PremiumBadge feature="sleep_habits" className="w-full" hideBadge>
                                 <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-xl p-4 cursor-pointer hover:border-amber-400/50 transition-colors">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center flex-shrink-0">
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center flex-shrink-0" aria-hidden="true">
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
                                                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                                             </svg>
@@ -400,10 +469,10 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                                                 Premium Analytics Preview
                                             </p>
                                             <p className="text-sm text-amber-600 dark:text-amber-300/80">
-                                                Viewing sample data. Upgrade to unlock your personal sleep & dream analytics.
+                                                Viewing sample data. Upgrade to unlock your personal sleep and dream analytics.
                                             </p>
                                         </div>
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                         </svg>
                                     </div>
@@ -438,6 +507,7 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                                 ]}
                                 accentColor="purple"
                                 actionLabel={
+                                    !isOnline ? "Offline - Unavailable" :
                                     !userIsPremium ? "Upgrade to PRO" :
                                         userIsPremium && !canUseDreamSynth() && getNewDreamsSinceSynth() < MIN_NEW_LOGS
                                             ? `Need ${MIN_NEW_LOGS - getNewDreamsSinceSynth()} more dreams`
@@ -447,15 +517,17 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                                 }
                                 onAction={handleSynthesizeDreams}
                                 isLoading={isDreamSynthLoading}
-                                isDisabled={!userIsPremium || dreams.length < 3 || !canUseDreamSynth()}
+                                isDisabled={!isOnline || !userIsPremium || dreams.length < 3 || !canUseDreamSynth()}
                                 statusText={
-                                    dreams.length < 3
-                                        ? "Requires at least 3 logged dreams"
-                                        : "Available once per week after logging 3 new dreams"
+                                    !isOnline
+                                        ? "Connect to the internet to use AI features"
+                                        : dreams.length < 3
+                                            ? "Requires at least 3 logged dreams"
+                                            : "Available once per week after logging 3 new dreams"
                                 }
                             >
                                 {dreamSynthesis && (
-                                    <div className="space-y-4 pt-2 animate-fadeIn bg-white/5 rounded-xl p-4">
+                                    <div className="space-y-4 pt-2 animate-fadeIn bg-white/5 rounded-xl p-4" role="region" aria-label="Dream synthesis results">
                                         <p className="italic text-day-text-secondary dark:text-night-text-secondary">{dreamSynthesis.overallSummary}</p>
                                         {dreamSynthesis.recurringThemes.map(item => (
                                             <div key={item.theme}>
@@ -463,7 +535,12 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                                                 <p className="text-sm text-day-text-secondary dark:text-night-text-secondary">{item.description}</p>
                                                 <div className="flex flex-wrap gap-2 mt-2">
                                                     {item.exampleDreamIds.map(id => (
-                                                        <button onClick={() => onDreamSelect(id)} key={id} className="text-xs px-3 py-2 min-h-[44px] bg-purple-500/20 text-purple-300 rounded-md flex items-center hover:bg-purple-500/30 transition-colors">
+                                                        <button
+                                                            onClick={() => onDreamSelect(id)}
+                                                            key={id}
+                                                            className="text-xs px-4 py-2.5 min-h-[44px] bg-purple-500/20 text-purple-300 rounded-md flex items-center hover:bg-purple-500/30 transition-colors"
+                                                            aria-label={`View dream number ${id}`}
+                                                        >
                                                             Dream #{id}
                                                         </button>
                                                     ))}
@@ -473,9 +550,15 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                                     </div>
                                 )}
                                 {dreamSynthError && (
-                                    <div className="text-center bg-red-500/10 rounded-xl p-4">
-                                        <p className="text-red-400 mb-2">{dreamSynthError}</p>
-                                        <button onClick={handleSynthesizeDreams} className="px-4 py-2 bg-red-500 text-white text-sm rounded-lg">Retry</button>
+                                    <div className="text-center bg-red-500/10 rounded-xl p-4" role="alert">
+                                        <p className="text-red-400 mb-3">{dreamSynthError}</p>
+                                        <button
+                                            onClick={handleSynthesizeDreams}
+                                            disabled={!isOnline}
+                                            className="px-6 py-2.5 min-h-[44px] bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
+                                        >
+                                            {isOnline ? 'Retry' : 'Offline'}
+                                        </button>
                                     </div>
                                 )}
                             </FeatureInfoCard>
@@ -505,6 +588,7 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                                 ]}
                                 accentColor="emerald"
                                 actionLabel={
+                                    !isOnline ? "Offline - Unavailable" :
                                     !userIsPremium ? "Upgrade to PRO" :
                                         userIsPremium && !canUseHabitAnalysis() && getNewDreamsSinceHabit() < MIN_NEW_LOGS
                                             ? `Need ${MIN_NEW_LOGS - getNewDreamsSinceHabit()} more entries`
@@ -514,15 +598,17 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                                 }
                                 onAction={handleAnalyzeHabits}
                                 isLoading={isHabitLoading}
-                                isDisabled={!userIsPremium || dreams.filter(d => d.sleepQuality).length < 3 || !canUseHabitAnalysis()}
+                                isDisabled={!isOnline || !userIsPremium || dreams.filter(d => d.sleepQuality).length < 3 || !canUseHabitAnalysis()}
                                 statusText={
-                                    dreams.filter(d => d.sleepQuality).length < 3
-                                        ? "Requires at least 3 nights with sleep quality ratings"
-                                        : "Available once per week after logging 3 new entries"
+                                    !isOnline
+                                        ? "Connect to the internet to use AI features"
+                                        : dreams.filter(d => d.sleepQuality).length < 3
+                                            ? "Requires at least 3 nights with sleep quality ratings"
+                                            : "Available once per week after logging 3 new entries"
                                 }
                             >
                                 {habitAnalysis && (
-                                    <div className="space-y-4 pt-2 animate-fadeIn bg-white/5 rounded-xl p-4">
+                                    <div className="space-y-4 pt-2 animate-fadeIn bg-white/5 rounded-xl p-4" role="region" aria-label="Sleep habit analysis results">
                                         <div>
                                             <h4 className="font-bold font-serif text-lg text-emerald-400">Positive Correlations</h4>
                                             {habitAnalysis.positiveCorrelations?.map(item => (
@@ -541,16 +627,22 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                                         </div>
                                         <div>
                                             <h4 className="font-bold font-serif text-lg">Recommendations</h4>
-                                            <ul className="list-disc list-inside text-sm text-day-text-secondary dark:text-night-text-secondary">
+                                            <ul className="list-disc list-inside text-sm text-day-text-secondary dark:text-night-text-secondary" role="list">
                                                 {habitAnalysis.recommendations.map((rec, i) => <li key={i}>{rec}</li>)}
                                             </ul>
                                         </div>
                                     </div>
                                 )}
                                 {habitError && (
-                                    <div className="text-center bg-red-500/10 rounded-xl p-4">
-                                        <p className="text-red-400 mb-2">{habitError}</p>
-                                        <button onClick={handleAnalyzeHabits} className="px-4 py-2 bg-red-500 text-white text-sm rounded-lg">Retry</button>
+                                    <div className="text-center bg-red-500/10 rounded-xl p-4" role="alert">
+                                        <p className="text-red-400 mb-3">{habitError}</p>
+                                        <button
+                                            onClick={handleAnalyzeHabits}
+                                            disabled={!isOnline}
+                                            className="px-6 py-2.5 min-h-[44px] bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
+                                        >
+                                            {isOnline ? 'Retry' : 'Offline'}
+                                        </button>
                                     </div>
                                 )}
                             </FeatureInfoCard>
@@ -558,35 +650,47 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
 
                         {/* Dream Analysis Grid */}
                         <div>
-                            <h2 className="font-serif text-2xl text-center mb-4">Dream Analysis</h2>
-                            <InsightsGrid dreams={displayDreams} />
+                            <h2 className="font-serif text-2xl text-center mb-4" id="dream-analysis-heading">Dream Analysis</h2>
+                            <ErrorBoundary>
+                                <InsightsGrid dreams={displayDreams} />
+                            </ErrorBoundary>
                         </div>
 
                         {/* Sleep Quality Chart */}
-                        <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">
-                            <h2 className="font-serif text-2xl mb-4">Sleep Quality Trends</h2>
-                            {chartData.length > 1 ? (
-                                <div className="w-full h-48">
-                                    <SleepQualityChart data={chartData} />
-                                </div>
-                            ) : (
-                                <div className="w-full h-48 flex flex-col items-center justify-center text-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-day-text-secondary/30 dark:text-night-text-secondary/30 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                                    </svg>
-                                    <p className="text-day-text-secondary dark:text-night-text-secondary text-sm">No sleep quality data yet</p>
-                                    <p className="text-day-text-secondary/60 dark:text-night-text-secondary/60 text-xs mt-1">Rate your sleep quality when logging dreams to see trends</p>
-                                </div>
-                            )}
-                        </div>
+                        <ErrorBoundary>
+                            <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">
+                                <h2 className="font-serif text-2xl mb-4" id="sleep-quality-heading">Sleep Quality Trends</h2>
+                                {chartData.length > 1 ? (
+                                    <div className="w-full h-48" aria-labelledby="sleep-quality-heading">
+                                        <SleepQualityChart data={chartData} />
+                                    </div>
+                                ) : (
+                                    <div className="w-full h-48 flex flex-col items-center justify-center text-center" role="status">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-day-text-secondary/30 dark:text-night-text-secondary/30 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                        </svg>
+                                        <p className="text-day-text-secondary dark:text-night-text-secondary text-sm">No sleep quality data yet</p>
+                                        <p className="text-day-text-secondary/60 dark:text-night-text-secondary/60 text-xs mt-1">Rate your sleep quality when logging dreams to see trends</p>
+                                    </div>
+                                )}
+                            </div>
+                        </ErrorBoundary>
 
                         {/* Sentiment Chart */}
                         {displayDreams.length >= 2 && (
-                            <SentimentChart dreams={displayDreams} />
+                            <ErrorBoundary>
+                                <Suspense fallback={<InsightCardSkeleton />}>
+                                    <SentimentChart dreams={displayDreams} />
+                                </Suspense>
+                            </ErrorBoundary>
                         )}
 
                         {/* Global Trends */}
-                        <GlobalTrendsCard />
+                        <ErrorBoundary>
+                            <Suspense fallback={<InsightCardSkeleton />}>
+                                <GlobalTrendsCard />
+                            </Suspense>
+                        </ErrorBoundary>
                     </div>
                 )}
             </div>

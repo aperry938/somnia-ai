@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, PanInfo, useMotionValue, useTransform } from 'framer-motion';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { motion, PanInfo, useMotionValue } from 'framer-motion';
 import { useBackButton } from '../../hooks/useBackButton';
 import { getDreamChatResponse } from '../../services/geminiService';
 import { ChatMessage, Dream } from '../../types';
@@ -29,6 +29,17 @@ export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }
     // This uses comprehensive crisis detection with context-aware false positive filtering
     const showCrisisResources = hasCrisisIndicators(dream.dreamText);
 
+    // Track remaining daily messages
+    const getRemainingMessages = useCallback(() => {
+        const today = new Date().toDateString();
+        const stored = localStorage.getItem('somnia_daily_chat');
+        const [lastDate, countStr] = stored ? JSON.parse(stored) : ['', '0'];
+        const count = lastDate === today ? parseInt(countStr) : 0;
+        return Math.max(0, 50 - count);
+    }, []);
+
+    const [remainingMessages, setRemainingMessages] = useState(getRemainingMessages);
+
     const fetchInitialResponse = async () => {
         setIsLoading(true);
         try {
@@ -53,7 +64,10 @@ export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }
 
     useEffect(() => {
         if (chatBoxRef.current) {
-            chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
+            chatBoxRef.current.scrollTo({
+                top: chatBoxRef.current.scrollHeight,
+                behavior: 'smooth'
+            });
         }
     }, [history]);
 
@@ -78,7 +92,8 @@ export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }
         const DAILY_LIMIT = 50;
 
         if (count >= DAILY_LIMIT) {
-            showToast('Daily chat limit reached (50/day)', 'info');
+            showToast('Daily chat limit reached (50/day). Try again tomorrow!', 'info');
+            setRemainingMessages(0);
             return;
         }
 
@@ -100,6 +115,7 @@ export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }
             updateDream({ ...dream, chatHistory: finalHistory });
             // Increment chat count
             localStorage.setItem('somnia_daily_chat', JSON.stringify([today, count + 1]));
+            setRemainingMessages(Math.max(0, 50 - (count + 1)));
             haptics.success();
         } catch (_e) {
             const errorHistory = [...newHistory, { id: Date.now(), role: 'model' as const, parts: [{ text: "Sorry, I couldn't get a response." }], isError: true }];
@@ -125,7 +141,6 @@ export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }
     };
 
     const y = useMotionValue(0);
-    const _backdropOpacity = useTransform(y, [0, 200], [1, 0.3]);
 
     const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
         if (info.offset.y > 100 || info.velocity.y > 500) {
@@ -184,21 +199,33 @@ export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }
 
                 {/* Crisis Resources Banner */}
                 {showCrisisResources && (
-                    <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-4 flex-shrink-0">
+                    <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-4 flex-shrink-0" role="alert">
                         <p className="text-red-600 dark:text-red-400 text-sm font-medium">
                             If you're experiencing difficult thoughts, help is available 24/7:
-                            <a href="tel:988" className="underline ml-1 font-bold">988 Suicide & Crisis Lifeline</a>
                         </p>
+                        <a
+                            href="tel:988"
+                            className="inline-flex items-center justify-center mt-2 px-4 py-2 min-h-[44px] bg-red-500 text-white text-sm font-bold rounded-full hover:bg-red-600 transition-colors"
+                            aria-label="Call 988 Suicide and Crisis Lifeline"
+                        >
+                            Call 988 Lifeline
+                        </a>
                     </div>
                 )}
 
-                <div ref={chatBoxRef} className="flex-grow overflow-y-auto custom-scrollbar p-2 mb-4 border border-day-border dark:border-night-border rounded-lg">
+                <div
+                    ref={chatBoxRef}
+                    className="flex-grow overflow-y-auto custom-scrollbar p-2 mb-4 border border-day-border dark:border-night-border rounded-lg"
+                    role="log"
+                    aria-live="polite"
+                    aria-label="Chat messages"
+                >
                     {history.map((msg) => (
-                        <div key={msg.id}>
+                        <div key={msg.id} role="article" aria-label={msg.role === 'user' ? 'Your message' : 'AI response'}>
                             {msg.isError ? (
-                                <div className="text-center my-2 p-3 rounded-lg bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300">
+                                <div className="text-center my-2 p-3 rounded-lg bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300" role="alert">
                                     <p>{msg.parts[0]?.text ?? ''}</p>
-                                    <button onClick={handleRetry} aria-label="Retry sending message" className="mt-2 px-4 py-2 min-h-[44px] bg-red-500 text-white text-sm rounded-full">Retry</button>
+                                    <button onClick={handleRetry} aria-label="Retry sending message" className="mt-2 px-4 py-2 min-h-[44px] bg-red-500 text-white text-sm rounded-full hover:bg-red-600 transition-colors">Retry</button>
                                 </div>
                             ) : (
                                 <div className={`my-2 p-3 rounded-lg text-sm md:text-base ${msg.role === 'user' ? 'bg-indigo-100 dark:bg-indigo-900/50 text-right ml-auto' : 'bg-white/50 dark:bg-slate-700/50 text-left mr-auto'} max-w-[85%]`}>
@@ -207,28 +234,47 @@ export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }
                             )}
                         </div>
                     ))}
-                    {isLoading && <div className="text-center p-4 text-day-text-secondary dark:text-night-text-secondary">Thinking...</div>}
+                    {isLoading && <div className="text-center p-4 text-day-text-secondary dark:text-night-text-secondary" aria-live="polite">Thinking...</div>}
                 </div>
 
                 {/* Input area */}
-                <div className="flex gap-2 flex-shrink-0 pb-[var(--safe-area-inset-bottom)] sm:pb-0">
-                    <input
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleSend(input)}
-                        type="text"
-                        placeholder="Ask about your dream..."
-                        aria-label="Chat message input"
-                        className="flex-grow p-3 min-h-[48px] text-base border rounded-full bg-white/50 dark:bg-black/20 focus:outline-none focus:ring-2 focus:ring-day-accent border-day-border dark:border-night-border"
-                    />
-                    <button
-                        onClick={() => handleSend(input)}
-                        aria-label="Send message"
-                        className="bg-day-accent dark:bg-night-accent text-white rounded-full px-5 min-h-[48px] disabled:opacity-50"
-                        disabled={isLoading || !input.trim()}
-                    >
-                        Send
-                    </button>
+                <div className="flex flex-col gap-2 flex-shrink-0 pb-[var(--safe-area-inset-bottom)] sm:pb-0">
+                    {remainingMessages <= 10 && remainingMessages > 0 && (
+                        <p className="text-xs text-amber-600 dark:text-amber-400 text-center">
+                            {remainingMessages} message{remainingMessages !== 1 ? 's' : ''} remaining today
+                        </p>
+                    )}
+                    {remainingMessages === 0 && (
+                        <p className="text-xs text-red-600 dark:text-red-400 text-center">
+                            Daily limit reached. Try again tomorrow!
+                        </p>
+                    )}
+                    <div className="flex gap-2">
+                        <input
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                                    e.preventDefault();
+                                    handleSend(input);
+                                }
+                            }}
+                            type="text"
+                            placeholder="Ask about your dream..."
+                            aria-label="Chat message input"
+                            aria-describedby={remainingMessages <= 10 ? 'remaining-messages' : undefined}
+                            className="flex-grow p-3 min-h-[48px] text-base border rounded-full bg-white/50 dark:bg-black/20 focus:outline-none focus:ring-2 focus:ring-day-accent border-day-border dark:border-night-border"
+                            disabled={remainingMessages === 0}
+                        />
+                        <button
+                            onClick={() => handleSend(input)}
+                            aria-label="Send message"
+                            className="bg-day-accent dark:bg-night-accent text-white rounded-full px-5 min-h-[48px] min-w-[44px] disabled:opacity-50 hover:opacity-90 active:scale-95 transition-all"
+                            disabled={isLoading || !input.trim() || remainingMessages === 0}
+                        >
+                            Send
+                        </button>
+                    </div>
                 </div>
             </motion.div>
         </motion.div>

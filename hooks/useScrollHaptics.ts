@@ -33,6 +33,8 @@ export function useScrollHaptics(
     const lastScrollTime = useRef(Date.now());
     const isScrolling = useRef(false);
     const scrollTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Track mounted state to prevent state updates after unmount
+    const isMountedRef = useRef(true);
 
     const handleScroll = useCallback(() => {
         if (!enabled || !ref.current) return;
@@ -66,6 +68,8 @@ export function useScrollHaptics(
             clearTimeout(scrollTimeout.current);
         }
         scrollTimeout.current = setTimeout(() => {
+            // Check if still mounted before accessing refs
+            if (!isMountedRef.current) return;
             isScrolling.current = false;
             // Align tick position to current scroll for next scroll session
             if (ref.current) {
@@ -75,6 +79,7 @@ export function useScrollHaptics(
     }, [ref, tickInterval, minVelocity, enabled]);
 
     useEffect(() => {
+        isMountedRef.current = true;
         const element = ref.current;
         if (!element || !enabled) return;
 
@@ -85,9 +90,11 @@ export function useScrollHaptics(
         element.addEventListener('scroll', handleScroll, { passive: true });
 
         return () => {
+            isMountedRef.current = false;
             element.removeEventListener('scroll', handleScroll);
             if (scrollTimeout.current) {
                 clearTimeout(scrollTimeout.current);
+                scrollTimeout.current = null;
             }
         };
     }, [ref, handleScroll, enabled]);

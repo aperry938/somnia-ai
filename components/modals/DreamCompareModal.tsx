@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Dream } from '../../types';
 import { useBackButton } from '../../hooks/useBackButton';
+import haptics from '../../services/hapticsService';
 
 interface DreamCompareModalProps {
     dreams: Dream[];
@@ -129,7 +130,7 @@ export const DreamCompareModal: React.FC<DreamCompareModalProps> = ({ dreams, on
             >
                 <div className="p-4 border-b border-day-border dark:border-night-border flex justify-between items-center">
                     <h2 id="compare-modal-title" className="font-serif text-xl">Dream Comparison</h2>
-                    <button onClick={onClose} aria-label="Close comparison" className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-day-text-secondary dark:text-night-text-secondary hover:text-day-text-primary dark:hover:text-night-text-primary rounded-full transition-colors hover:bg-black/5 dark:hover:bg-white/5">
+                    <button onClick={() => { haptics.light(); onClose(); }} aria-label="Close comparison" className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-day-text-secondary dark:text-night-text-secondary hover:text-day-text-primary dark:hover:text-night-text-primary rounded-full transition-colors hover:bg-black/5 dark:hover:bg-white/5">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>

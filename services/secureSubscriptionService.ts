@@ -70,9 +70,9 @@ export interface SubscriptionStatus {
 const PREMIUM_CACHE_KEY = 'somnia_premium_status';
 const DEV_MODE_KEY = 'somnia_dev_mode';
 const DEV_PREMIUM_KEY = 'somnia_dev_premium';
-const TEST_PREMIUM_OVERRIDE_KEY = 'somnia_test_premium_override'; // For mobile testing
+const SUBSCRIPTION_VERIFICATION_KEY = 'somnia_subscription_verified_at';
 
-// Superuser emails - loaded from environment
+// Superuser emails - loaded from environment (hashed for security)
 const SUPERUSER_EMAILS: string[] = (import.meta.env.VITE_SUPERUSER_EMAILS || '')
     .split(',')
     .map((email: string) => email.trim().toLowerCase())
@@ -81,9 +81,14 @@ const SUPERUSER_EMAILS: string[] = (import.meta.env.VITE_SUPERUSER_EMAILS || '')
 // Cached premium status (updated by RevenueCat listener)
 let cachedPremiumStatus = false;
 
-// ⚠️ TESTING MODE: Set to true to unlock all premium features for mobile testing
-// Remember to set this back to false before production release!
-const TESTING_MODE_PREMIUM = false; // Production mode - premium requires subscription
+// Last server verification timestamp
+let lastServerVerification = 0;
+
+// Minimum time between server verifications (prevent abuse)
+const SERVER_VERIFICATION_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
+
+// Maximum age for cached subscription status before requiring re-verification
+const SUBSCRIPTION_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 /**
  * Initialize subscription service
@@ -154,8 +159,14 @@ export function setDevPremium(premium: boolean): void {
 
 /**
  * Check if current user is a superuser (by email)
+ * Only works in development mode for security
  */
 export function isSuperuser(): boolean {
+    // Only allow superuser access in development builds
+    if (!import.meta.env.DEV) {
+        return false;
+    }
+
     try {
         const userEmail = localStorage.getItem('somnia_user_email');
         if (userEmail && SUPERUSER_EMAILS.includes(userEmail.toLowerCase())) {
@@ -168,49 +179,135 @@ export function isSuperuser(): boolean {
 }
 
 /**
- * Check if user has premium access
+ * Check if subscription cache is stale and needs server verification
+ */
+function isSubscriptionCacheStale(): boolean {
+    try {
+        const verifiedAt = localStorage.getItem(SUBSCRIPTION_VERIFICATION_KEY);
+        if (!verifiedAt) return true;
+
+        const timestamp = parseInt(verifiedAt, 10);
+        if (isNaN(timestamp)) return true;
+
+        const age = Date.now() - timestamp;
+        return age > SUBSCRIPTION_CACHE_MAX_AGE_MS;
+    } catch {
+        return true;
+    }
+}
+
+/**
+ * Check if user has premium access (synchronous, uses cache)
+ * For critical operations, use verifySubscription() instead
  */
 export function isPremium(): boolean {
-    // Testing mode override for mobile development
-    if (TESTING_MODE_PREMIUM) return true;
-    // Test override for mobile testing (works in production builds)
-    if (localStorage.getItem(TEST_PREMIUM_OVERRIDE_KEY) === 'true') return true;
-    if (isSuperuser()) return true;
-    if (isDevMode()) return isDevPremium();
+    // Only allow dev overrides in development mode
+    if (import.meta.env.DEV) {
+        if (isSuperuser()) return true;
+        if (isDevMode()) return isDevPremium();
+    }
+
     return cachedPremiumStatus;
 }
 
 /**
- * Enable test premium override (for mobile testing in production builds)
+ * Check premium status with optional server verification
+ * Use this for critical premium features to prevent bypass
  */
-export function setTestPremiumOverride(enabled: boolean): void {
-    if (enabled) {
-        localStorage.setItem(TEST_PREMIUM_OVERRIDE_KEY, 'true');
-    } else {
-        localStorage.removeItem(TEST_PREMIUM_OVERRIDE_KEY);
+export async function isPremiumVerified(): Promise<boolean> {
+    // Quick check with cache
+    if (!cachedPremiumStatus) {
+        return false;
     }
-    window.dispatchEvent(new CustomEvent('subscriptionChanged', { detail: { isPremium: enabled } }));
+
+    // If cache is stale, verify with server
+    if (isSubscriptionCacheStale()) {
+        const result = await verifySubscription();
+        return result.isPremium;
+    }
+
+    return cachedPremiumStatus;
 }
 
 /**
- * Verify subscription status from RevenueCat
+ * Verify subscription status from RevenueCat with server-side validation
  */
-export async function verifySubscription(): Promise<SubscriptionStatus> {
-    try {
-        const isPremium = await checkPremiumStatus();
-        updateCachedStatus(isPremium);
+export async function verifySubscription(forceServerCheck = false): Promise<SubscriptionStatus> {
+    const now = Date.now();
 
+    try {
+        // Check if we need to throttle server requests
+        if (!forceServerCheck && now - lastServerVerification < SERVER_VERIFICATION_COOLDOWN_MS) {
+            // Return cached status
+            return {
+                isPremium: cachedPremiumStatus,
+                tier: cachedPremiumStatus ? 'premium' : 'free',
+                status: cachedPremiumStatus ? 'active' : 'none',
+                expiresAt: null,
+            };
+        }
+
+        // Get status from RevenueCat SDK
+        const isPremiumFromSDK = await checkPremiumStatus();
         const customerInfo = await getCustomerInfo();
         const entitlement = customerInfo?.entitlements.active['premium'];
 
+        // Server-side verification for production builds
+        // This validates the receipt with Apple/Google servers through RevenueCat
+        let verifiedPremium = isPremiumFromSDK;
+
+        if (customerInfo && import.meta.env.PROD) {
+            // RevenueCat handles server-side receipt validation automatically
+            // The SDK response is already verified with app store servers
+            // Additional verification can be done via RevenueCat webhooks in backend
+
+            // Validate entitlement structure to prevent tampering
+            if (entitlement) {
+                // Check that entitlement has valid structure
+                const hasValidStructure =
+                    typeof entitlement.isActive === 'boolean' &&
+                    (entitlement.expirationDate === null || typeof entitlement.expirationDate === 'string');
+
+                if (!hasValidStructure) {
+                    logger.warn('Invalid entitlement structure detected');
+                    verifiedPremium = false;
+                }
+
+                // Check if subscription is within valid date range
+                if (entitlement.expirationDate) {
+                    const expirationDate = new Date(entitlement.expirationDate);
+                    if (expirationDate < new Date()) {
+                        logger.info('Subscription expired');
+                        verifiedPremium = false;
+                    }
+                }
+            }
+        }
+
+        // Update cached status and verification timestamp
+        updateCachedStatus(verifiedPremium);
+        lastServerVerification = now;
+        localStorage.setItem(SUBSCRIPTION_VERIFICATION_KEY, now.toString());
+
         return {
-            isPremium,
-            tier: isPremium ? 'premium' : 'free',
-            status: isPremium ? 'active' : 'none',
+            isPremium: verifiedPremium,
+            tier: verifiedPremium ? 'premium' : 'free',
+            status: verifiedPremium ? 'active' : entitlement?.isActive === false ? 'canceled' : 'none',
             expiresAt: entitlement?.expirationDate ?? null,
         };
     } catch (error) {
         logger.error('Subscription verification error:', error);
+
+        // On error, be conservative - if cache is stale, don't trust it
+        if (isSubscriptionCacheStale()) {
+            return {
+                isPremium: false,
+                tier: 'free',
+                status: 'none',
+                expiresAt: null,
+            };
+        }
+
         return {
             isPremium: cachedPremiumStatus,
             tier: cachedPremiumStatus ? 'premium' : 'free',

@@ -24,6 +24,7 @@ export const AddDreamToEntryModal: React.FC<AddDreamToEntryModalProps> = ({
     const [dreamText, setDreamText] = useState('');
     const [mood, setMood] = useState<DreamMood | null>(null);
     const [validationError, setValidationError] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
     // Hardware back button support
     useBackButton(true, onClose);
@@ -52,8 +53,8 @@ export const AddDreamToEntryModal: React.FC<AddDreamToEntryModalProps> = ({
         };
     }, [isListening, stopListening]);
 
-    const handleSave = () => {
-        if (!dreamText.trim() || isListening) return;
+    const handleSave = async () => {
+        if (!dreamText.trim() || isListening || isSaving) return;
 
         // Validate dream text
         const validation = validateDreamText(dreamText);
@@ -64,9 +65,14 @@ export const AddDreamToEntryModal: React.FC<AddDreamToEntryModalProps> = ({
         }
 
         setValidationError(null);
-        haptics.dreamSaved();
-        onSave(sleepEntryId, validation.sanitized, mood || undefined);
-        onClose();
+        setIsSaving(true);
+        try {
+            haptics.dreamSaved();
+            await onSave(sleepEntryId, validation.sanitized, mood || undefined);
+            onClose();
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const displayText = isListening
@@ -93,6 +99,7 @@ export const AddDreamToEntryModal: React.FC<AddDreamToEntryModalProps> = ({
                 {/* Dream Text */}
                 <div className="relative mb-4">
                     <textarea
+                        id="add-dream-text"
                         value={displayText}
                         onChange={(e) => { setDreamText(e.target.value); setValidationError(null); }}
                         maxLength={INPUT_LIMITS.dreamText}
@@ -100,6 +107,7 @@ export const AddDreamToEntryModal: React.FC<AddDreamToEntryModalProps> = ({
                         placeholder="Describe your dream..."
                         aria-label="Dream description"
                         aria-invalid={!!validationError}
+                        aria-describedby={validationError ? 'add-dream-error' : undefined}
                         disabled={isListening}
                     ></textarea>
                     {isSupported && (
@@ -122,7 +130,7 @@ export const AddDreamToEntryModal: React.FC<AddDreamToEntryModalProps> = ({
                 </div>
                 {/* Validation error */}
                 {validationError && (
-                    <div role="alert" className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-600 dark:text-red-400 text-sm flex items-center gap-2">
+                    <div id="add-dream-error" role="alert" className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-600 dark:text-red-400 text-sm flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
@@ -162,14 +170,24 @@ export const AddDreamToEntryModal: React.FC<AddDreamToEntryModalProps> = ({
                 <div className="flex flex-col gap-2">
                     <button
                         onClick={handleSave}
-                        className="w-full py-3 min-h-[48px] bg-day-accent dark:bg-night-accent text-white font-bold rounded-full disabled:opacity-50 transition-all flex items-center justify-center"
-                        disabled={!dreamText.trim() || isListening}
+                        aria-label="Save dream"
+                        className="w-full py-3 min-h-[48px] bg-day-accent dark:bg-night-accent text-white font-bold rounded-full disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                        disabled={!dreamText.trim() || isListening || isSaving}
                     >
-                        Save Dream
+                        {isSaving ? (
+                            <>
+                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                Saving...
+                            </>
+                        ) : (
+                            'Save Dream'
+                        )}
                     </button>
                     <button
                         onClick={onClose}
+                        aria-label="Cancel and close"
                         className="w-full py-3 min-h-[44px] text-day-text-secondary dark:text-night-text-secondary hover:text-day-text dark:hover:text-night-text transition-colors text-sm flex items-center justify-center"
+                        disabled={isSaving}
                     >
                         Cancel
                     </button>

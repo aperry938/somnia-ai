@@ -4,6 +4,12 @@
  * Handles all in-app purchase operations through RevenueCat SDK.
  * Works with both Apple App Store and Google Play Store.
  *
+ * Security Features:
+ * - Receipt validation through RevenueCat servers
+ * - Entitlement verification with expiration checking
+ * - Error handling with retry logic
+ * - Network error resilience
+ *
  * Setup Requirements:
  * 1. Create RevenueCat account at https://app.revenuecat.com
  * 2. Set up products in App Store Connect and Google Play Console
@@ -13,6 +19,16 @@
 
 import { Capacitor } from '@capacitor/core';
 import { logger } from './logger';
+
+// Error retry configuration
+const RETRY_CONFIG = {
+    maxRetries: 3,
+    baseDelayMs: 1000,
+    maxDelayMs: 10000,
+};
+
+// Purchase operation timeout
+const OPERATION_TIMEOUT_MS = 30000;
 
 // Re-export SDK types for use in components
 export type {
@@ -85,7 +101,85 @@ export async function initializeRevenueCat(): Promise<boolean> {
 }
 
 /**
+ * Retry helper with exponential backoff
+ */
+async function withRetry<T>(
+    operation: () => Promise<T>,
+    operationName: string
+): Promise<T> {
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt < RETRY_CONFIG.maxRetries; attempt++) {
+        try {
+            return await operation();
+        } catch (error) {
+            lastError = error as Error;
+            const isNetworkError =
+                lastError.message?.includes('network') ||
+                lastError.message?.includes('timeout') ||
+                lastError.message?.includes('fetch');
+
+            // Only retry network errors
+            if (!isNetworkError || attempt === RETRY_CONFIG.maxRetries - 1) {
+                throw error;
+            }
+
+            // Exponential backoff with jitter
+            const delay = Math.min(
+                RETRY_CONFIG.baseDelayMs * Math.pow(2, attempt) + Math.random() * 1000,
+                RETRY_CONFIG.maxDelayMs
+            );
+
+            logger.warn(`[RevenueCat] ${operationName} failed, retrying in ${delay}ms (attempt ${attempt + 1}/${RETRY_CONFIG.maxRetries})`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+    }
+
+    throw lastError;
+}
+
+/**
+ * Timeout wrapper for operations
+ */
+async function withTimeout<T>(
+    operation: Promise<T>,
+    timeoutMs: number = OPERATION_TIMEOUT_MS
+): Promise<T> {
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => {
+            reject(new Error('Operation timed out'));
+        }, timeoutMs);
+    });
+
+    try {
+        const result = await Promise.race([operation, timeoutPromise]);
+        clearTimeout(timeoutId!);
+        return result;
+    } catch (error) {
+        clearTimeout(timeoutId!);
+        throw error;
+    }
+}
+
+/**
+ * Validate CustomerInfo structure to detect tampering
+ */
+function validateCustomerInfo(info: CustomerInfo): boolean {
+    if (!info) return false;
+
+    // Check required fields exist
+    if (typeof info.originalAppUserId !== 'string') return false;
+    if (!info.entitlements || typeof info.entitlements !== 'object') return false;
+    if (!info.entitlements.active || typeof info.entitlements.active !== 'object') return false;
+
+    return true;
+}
+
+/**
  * Get current customer info including entitlements
+ * Includes retry logic and validation
  */
 export async function getCustomerInfo(): Promise<CustomerInfo | null> {
     if (!isInitialized || !purchasesModule) {
@@ -94,8 +188,20 @@ export async function getCustomerInfo(): Promise<CustomerInfo | null> {
     }
 
     try {
-        const result = await purchasesModule.getCustomerInfo();
-        return result.customerInfo;
+        const result = await withRetry(
+            () => withTimeout(purchasesModule!.getCustomerInfo()),
+            'getCustomerInfo'
+        );
+
+        const customerInfo = result.customerInfo;
+
+        // Validate response structure
+        if (!validateCustomerInfo(customerInfo)) {
+            logger.error('[RevenueCat] Invalid customer info structure');
+            return null;
+        }
+
+        return customerInfo;
     } catch (error) {
         logger.error('[RevenueCat] Failed to get customer info:', error);
         return null;
@@ -115,6 +221,7 @@ export async function checkPremiumStatus(): Promise<boolean> {
 
 /**
  * Get available offerings (subscription packages)
+ * Includes retry logic for network resilience
  */
 export async function getOfferings(): Promise<PurchasesOfferings | null> {
     if (!isInitialized || !purchasesModule) {
@@ -122,7 +229,17 @@ export async function getOfferings(): Promise<PurchasesOfferings | null> {
     }
 
     try {
-        const offerings = await purchasesModule.getOfferings();
+        const offerings = await withRetry(
+            () => withTimeout(purchasesModule!.getOfferings()),
+            'getOfferings'
+        );
+
+        // Validate offerings structure
+        if (!offerings || typeof offerings !== 'object') {
+            logger.error('[RevenueCat] Invalid offerings structure');
+            return null;
+        }
+
         return offerings;
     } catch (error) {
         logger.error('[RevenueCat] Failed to get offerings:', error);
@@ -131,56 +248,120 @@ export async function getOfferings(): Promise<PurchasesOfferings | null> {
 }
 
 /**
- * Purchase a package
+ * Validate package before purchase
  */
-export async function purchasePackage(pkg: PurchasesPackage): Promise<{ success: boolean; customerInfo?: CustomerInfo; error?: string }> {
+function validatePackage(pkg: PurchasesPackage): boolean {
+    if (!pkg) return false;
+    if (typeof pkg.identifier !== 'string' || pkg.identifier.length === 0) return false;
+    if (!pkg.product) return false;
+    if (typeof pkg.product.identifier !== 'string') return false;
+
+    return true;
+}
+
+/**
+ * Purchase a package
+ * Includes validation and proper error handling
+ */
+export async function purchasePackage(pkg: PurchasesPackage): Promise<{ success: boolean; customerInfo?: CustomerInfo; error?: string; errorCode?: string }> {
     if (!isInitialized || !purchasesModule) {
-        return { success: false, error: 'RevenueCat not initialized' };
+        return { success: false, error: 'RevenueCat not initialized', errorCode: 'NOT_INITIALIZED' };
+    }
+
+    // Validate package
+    if (!validatePackage(pkg)) {
+        logger.error('[RevenueCat] Invalid package for purchase');
+        return { success: false, error: 'Invalid package', errorCode: 'INVALID_PACKAGE' };
     }
 
     try {
-        const result = await purchasesModule.purchasePackage({ aPackage: pkg });
+        logger.info('[RevenueCat] Starting purchase for package:', pkg.identifier);
+
+        const result = await withTimeout(
+            purchasesModule.purchasePackage({ aPackage: pkg }),
+            OPERATION_TIMEOUT_MS
+        );
+
+        // Validate result
+        if (!result.customerInfo || !validateCustomerInfo(result.customerInfo)) {
+            logger.error('[RevenueCat] Invalid customer info after purchase');
+            return { success: false, error: 'Purchase verification failed', errorCode: 'VERIFICATION_FAILED' };
+        }
 
         // Dispatch event for UI updates
         window.dispatchEvent(new CustomEvent('subscriptionChanged', {
             detail: { isPremium: checkPremiumFromInfo(result.customerInfo) }
         }));
 
+        logger.info('[RevenueCat] Purchase successful');
         return { success: true, customerInfo: result.customerInfo };
     } catch (error: unknown) {
         const err = error as { code?: string; message?: string; userCancelled?: boolean };
 
         // User cancelled is not an error
         if (err.userCancelled || err.code === 'PURCHASE_CANCELLED') {
-            return { success: false, error: 'cancelled' };
+            logger.info('[RevenueCat] Purchase cancelled by user');
+            return { success: false, error: 'cancelled', errorCode: 'CANCELLED' };
+        }
+
+        // Network errors
+        if (err.message?.includes('network') || err.message?.includes('timeout')) {
+            logger.error('[RevenueCat] Purchase network error:', error);
+            return { success: false, error: 'Network error. Please check your connection and try again.', errorCode: 'NETWORK_ERROR' };
+        }
+
+        // Store errors
+        if (err.code?.includes('STORE')) {
+            logger.error('[RevenueCat] Store error:', error);
+            return { success: false, error: 'Unable to connect to app store. Please try again later.', errorCode: 'STORE_ERROR' };
         }
 
         logger.error('[RevenueCat] Purchase failed:', error);
-        return { success: false, error: err.message || 'Purchase failed' };
+        return { success: false, error: err.message || 'Purchase failed', errorCode: 'UNKNOWN' };
     }
 }
 
 /**
  * Restore previous purchases (useful for reinstalls or device changes)
+ * Includes validation and retry logic
  */
-export async function restorePurchases(): Promise<{ success: boolean; customerInfo?: CustomerInfo; error?: string }> {
+export async function restorePurchases(): Promise<{ success: boolean; customerInfo?: CustomerInfo; error?: string; errorCode?: string }> {
     if (!isInitialized || !purchasesModule) {
-        return { success: false, error: 'RevenueCat not initialized' };
+        return { success: false, error: 'RevenueCat not initialized', errorCode: 'NOT_INITIALIZED' };
     }
 
     try {
-        const result = await purchasesModule.restorePurchases();
+        logger.info('[RevenueCat] Starting purchase restoration');
+
+        const result = await withRetry(
+            () => withTimeout(purchasesModule!.restorePurchases()),
+            'restorePurchases'
+        );
+
+        // Validate result
+        if (!result.customerInfo || !validateCustomerInfo(result.customerInfo)) {
+            logger.error('[RevenueCat] Invalid customer info after restore');
+            return { success: false, error: 'Restore verification failed', errorCode: 'VERIFICATION_FAILED' };
+        }
 
         // Dispatch event for UI updates
         window.dispatchEvent(new CustomEvent('subscriptionChanged', {
             detail: { isPremium: checkPremiumFromInfo(result.customerInfo) }
         }));
 
+        logger.info('[RevenueCat] Restore successful');
         return { success: true, customerInfo: result.customerInfo };
     } catch (error: unknown) {
-        const err = error as { message?: string };
+        const err = error as { message?: string; code?: string };
+
+        // Network errors
+        if (err.message?.includes('network') || err.message?.includes('timeout')) {
+            logger.error('[RevenueCat] Restore network error:', error);
+            return { success: false, error: 'Network error. Please check your connection and try again.', errorCode: 'NETWORK_ERROR' };
+        }
+
         logger.error('[RevenueCat] Restore failed:', error);
-        return { success: false, error: err.message || 'Restore failed' };
+        return { success: false, error: err.message || 'Restore failed', errorCode: 'UNKNOWN' };
     }
 }
 

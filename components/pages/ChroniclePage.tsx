@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
 import { Dream as _Dream, DreamMood, SleepEntry as _SleepEntry, SleepAids } from '../../types';
 import { exportDreamsAsJSON, exportDreamJournalToPDF, exportDreamsEncrypted, importDreamsEncrypted, isEncryptedBackup } from '../../services/exportService';
@@ -11,6 +11,11 @@ import { AddDreamToEntryModal } from '../modals/AddDreamToEntryModal';
 import { PasswordInputModal } from '../modals/PasswordInputModal';
 import { useToast } from '../shared/Toast';
 import { CALIBRATION_DREAM } from '../../constants/demoDreams';
+import { SkeletonDreamCard } from '../shared/LoadingStates';
+
+// Pagination constants for memory management
+const INITIAL_PAGE_SIZE = 20;
+const LOAD_MORE_SIZE = 20;
 
 
 export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = ({ onDreamSelect }) => {
@@ -38,11 +43,34 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
     const [passwordError, setPasswordError] = useState<string | undefined>(undefined);
     const [isExportImportLoading, setIsExportImportLoading] = useState(false);
 
+    // Loading and error states for data
+    const [isInitialLoading, setIsInitialLoading] = useState(true);
+    const [loadError, setLoadError] = useState<string | null>(null);
+
+    // Pagination state for memory management with large lists
+    const [displayedCount, setDisplayedCount] = useState(INITIAL_PAGE_SIZE);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const loadMoreRef = useRef<HTMLDivElement>(null);
+
     // Debounce search query
     useEffect(() => {
         const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
         return () => clearTimeout(timer);
     }, [searchQuery]);
+
+    // Simulate initial loading state (data comes from context, so we check when it's ready)
+    useEffect(() => {
+        // Small delay to ensure smooth transition
+        const timer = setTimeout(() => {
+            setIsInitialLoading(false);
+        }, 100);
+        return () => clearTimeout(timer);
+    }, []);
+
+    // Reset pagination when search changes
+    useEffect(() => {
+        setDisplayedCount(INITIAL_PAGE_SIZE);
+    }, [debouncedSearch]);
 
 
 
@@ -75,9 +103,16 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
     // Group entries by month for collapsible sections
     const [collapsedMonths, setCollapsedMonths] = useState<Set<string>>(new Set());
 
+    // Paginated entries for memory management
+    const paginatedEntries = useMemo(() => {
+        return filteredEntries.slice(0, displayedCount);
+    }, [filteredEntries, displayedCount]);
+
+    const hasMoreEntries = filteredEntries.length > displayedCount;
+
     const entriesByMonth = useMemo(() => {
-        const grouped: Record<string, typeof filteredEntries> = {};
-        filteredEntries.forEach(entry => {
+        const grouped: Record<string, typeof paginatedEntries> = {};
+        paginatedEntries.forEach(entry => {
             const date = new Date(entry.date);
             const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
             if (!grouped[monthKey]) grouped[monthKey] = [];
@@ -85,7 +120,37 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
         });
         // Sort months newest first
         return Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0]));
-    }, [filteredEntries]);
+    }, [paginatedEntries]);
+
+    // Intersection Observer for infinite scroll
+    useEffect(() => {
+        if (!hasMoreEntries || isLoadingMore) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0]?.isIntersecting) {
+                    setIsLoadingMore(true);
+                    // Simulate async load for smoother UX
+                    setTimeout(() => {
+                        setDisplayedCount(prev => prev + LOAD_MORE_SIZE);
+                        setIsLoadingMore(false);
+                    }, 300);
+                }
+            },
+            { threshold: 0.1, rootMargin: '100px' }
+        );
+
+        const currentRef = loadMoreRef.current;
+        if (currentRef) {
+            observer.observe(currentRef);
+        }
+
+        return () => {
+            if (currentRef) {
+                observer.unobserve(currentRef);
+            }
+        };
+    }, [hasMoreEntries, isLoadingMore]);
 
     const toggleMonth = useCallback((monthKey: string) => {
         setCollapsedMonths(prev => {
@@ -287,8 +352,37 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
             </div>
 
             {/* Content */}
-            <div className="space-y-4 max-w-2xl mx-auto">
-                {hasContent ? (
+            <div className="space-y-4 max-w-2xl mx-auto" role="region" aria-label="Sleep journal entries">
+                {/* Loading State */}
+                {isInitialLoading ? (
+                    <div className="space-y-4" role="status" aria-label="Loading sleep entries">
+                        <SkeletonDreamCard />
+                        <SkeletonDreamCard />
+                        <SkeletonDreamCard />
+                        <span className="sr-only">Loading your sleep journal...</span>
+                    </div>
+                ) : loadError ? (
+                    /* Error State */
+                    <div className="text-center py-12" role="alert">
+                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                        </div>
+                        <h3 className="font-serif text-xl text-day-text-primary dark:text-night-text-primary mb-2">
+                            Unable to load entries
+                        </h3>
+                        <p className="text-sm text-day-text-secondary dark:text-night-text-secondary mb-4">
+                            {loadError}
+                        </p>
+                        <button
+                            onClick={() => { setLoadError(null); setIsInitialLoading(true); }}
+                            className="px-6 py-3 min-h-[48px] bg-day-accent dark:bg-night-accent text-white rounded-full font-medium hover:opacity-90 transition-opacity"
+                        >
+                            Try Again
+                        </button>
+                    </div>
+                ) : hasContent ? (
                     <>
                         {/* Sleep Entries grouped by month */}
                         {entriesByMonth.map(([monthKey, entries]) => (
@@ -296,9 +390,10 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
                                 {/* Month Header - Collapsible */}
                                 <button
                                     onClick={() => toggleMonth(monthKey)}
-                                    className="w-full flex items-center justify-between p-3 bg-day-card-bg/50 dark:bg-night-card-bg/50 rounded-lg border border-day-border dark:border-night-border hover:bg-day-card-bg dark:hover:bg-night-card-bg transition-colors mb-2"
+                                    className="w-full flex items-center justify-between p-3 min-h-[48px] bg-day-card-bg/50 dark:bg-night-card-bg/50 rounded-lg border border-day-border dark:border-night-border hover:bg-day-card-bg dark:hover:bg-night-card-bg transition-colors mb-2 active:scale-[0.98]"
                                     aria-expanded={!collapsedMonths.has(monthKey)}
                                     aria-controls={`month-${monthKey}`}
+                                    aria-label={`${formatMonthHeader(monthKey)}, ${entries.length} ${entries.length === 1 ? 'entry' : 'entries'}. ${collapsedMonths.has(monthKey) ? 'Expand' : 'Collapse'} section`}
                                 >
                                     <div className="flex items-center gap-3">
                                         <span className="font-serif text-lg font-semibold text-day-text-primary dark:text-night-text-primary">
@@ -321,7 +416,7 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
 
                                 {/* Entries for this month */}
                                 {!collapsedMonths.has(monthKey) && (
-                                    <div id={`month-${monthKey}`} className="space-y-3 pl-2">
+                                    <div id={`month-${monthKey}`} className="space-y-3 pl-2" role="list" aria-label={`Sleep entries for ${formatMonthHeader(monthKey)}`}>
                                         {entries.map(entry => (
                                             <SleepEntryCard
                                                 key={entry.id}
@@ -340,14 +435,40 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
 
                         {/* No results message */}
                         {filteredEntries.length === 0 && debouncedSearch && (
-                            <div className="text-center py-8">
-                                <p className="text-day-text-secondary dark:text-night-text-secondary mb-2">No results found</p>
+                            <div className="text-center py-8" role="status" aria-live="polite">
+                                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-day-card-bg dark:bg-night-card-bg flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-day-text-secondary dark:text-night-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                </div>
+                                <p className="text-day-text-primary dark:text-night-text-primary font-medium mb-1">No results found</p>
+                                <p className="text-sm text-day-text-secondary dark:text-night-text-secondary mb-4">
+                                    Try searching for different keywords
+                                </p>
                                 <button
                                     onClick={() => setSearchQuery('')}
                                     className="text-day-accent dark:text-night-accent hover:underline text-sm min-h-[44px] px-4 py-2"
                                 >
                                     Clear search
                                 </button>
+                            </div>
+                        )}
+
+                        {/* Infinite scroll trigger / Load more indicator */}
+                        {hasMoreEntries && (
+                            <div ref={loadMoreRef} className="py-4 text-center">
+                                {isLoadingMore ? (
+                                    <div className="flex items-center justify-center gap-2" role="status" aria-label="Loading more entries">
+                                        <div className="w-5 h-5 border-2 border-day-accent dark:border-night-accent border-t-transparent rounded-full animate-spin" />
+                                        <span className="text-sm text-day-text-secondary dark:text-night-text-secondary">
+                                            Loading more...
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">
+                                        Showing {paginatedEntries.length} of {filteredEntries.length} entries
+                                    </p>
+                                )}
                             </div>
                         )}
                     </>

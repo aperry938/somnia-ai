@@ -277,7 +277,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
         <>
             {/* Header */}
             <div className="max-w-2xl mx-auto mb-8">
-                <h1 className="font-serif page-title text-4xl text-center">Sleep Gateway</h1>
+                <h1 className="font-serif page-title text-4xl text-center text-day-text-primary dark:text-night-text-primary">Sleep Gateway</h1>
             </div>
 
             {/* Initiate Sleep Gateway - Show when no session active */}
@@ -380,12 +380,19 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                         onMouseDown={handleLongPressStart}
                         onMouseUp={handleLongPressEnd}
                         onMouseLeave={handleLongPressEnd}
+                        role="region"
+                        aria-label="Sleep tracking active"
                     >
                         {/* Long-press progress indicator */}
                         {longPressProgress > 0 && (
                             <div
                                 className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-indigo-500/20 transition-all"
                                 style={{ width: `${longPressProgress}%` }}
+                                role="progressbar"
+                                aria-valuenow={Math.round(longPressProgress)}
+                                aria-valuemin={0}
+                                aria-valuemax={100}
+                                aria-label="Long press progress for quick dream recording"
                             />
                         )}
 
@@ -399,7 +406,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                 haptics.medium();
                                 setShowQuickDream(true);
                             }}
-                            className="relative z-10 w-full py-4 bg-gradient-to-r from-purple-500/30 to-indigo-500/30 hover:from-purple-500/50 hover:to-indigo-500/50 border border-purple-500/40 rounded-xl flex items-center justify-center gap-3 transition-all group"
+                            className="relative z-10 w-full py-4 min-h-[56px] bg-gradient-to-r from-purple-500/30 to-indigo-500/30 hover:from-purple-500/50 hover:to-indigo-500/50 border border-purple-500/40 rounded-xl flex items-center justify-center gap-3 transition-all group"
                             aria-label="Quick dream recording"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-purple-400 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -413,7 +420,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
 
                         {/* Now Playing - show if soundscape is active */}
                         {playingSoundId && selectedSound && (
-                            <div className="bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 rounded-xl p-4 animate-pulse-slow">
+                            <div className="bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 rounded-xl p-4 animate-pulse-slow" role="status" aria-live="polite" aria-label={`Now playing ${selectedSound.name}`}>
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 rounded-full bg-indigo-500/30 flex items-center justify-center text-indigo-400">
@@ -432,7 +439,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                             stopSleepSound();
                                             handleStopSound();
                                         }}
-                                        className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+                                        className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
                                         aria-label="Stop sound"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -446,7 +453,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
 
                         {/* Activity Summary */}
                         {activeSleepSession && (
-                            <div className="bg-white/30 dark:bg-black/20 rounded-lg p-4 space-y-3 text-left">
+                            <div className="bg-white/30 dark:bg-black/20 rounded-lg p-4 space-y-3 text-left" role="region" aria-label="Sleep session activity summary">
                                 {/* Linked Alarm */}
                                 {activeSleepSession.alarmTime && (
                                     <div className="flex items-center gap-2 text-sm">
@@ -555,7 +562,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                     <div className="max-w-2xl mx-auto space-y-8">
 
                         <div>
-                            <h2 className="font-serif text-2xl text-center my-6">Evening Reflection</h2>
+                            <h2 className="font-serif text-2xl text-center my-6 text-day-text-primary dark:text-night-text-primary">Evening Reflection</h2>
                             <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl space-y-4">
                                 <div>
                                     <label className="block text-center text-day-text-secondary dark:text-night-text-secondary mb-3">How was your day overall?</label>
@@ -592,7 +599,8 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                 </div>
                                 <div className="flex items-center gap-2">
                                     {isPremium() && soundscapesExpanded && (
-                                        <span
+                                        <button
+                                            type="button"
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 haptics.light();
@@ -600,13 +608,14 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                                 const randomSound = SOUNDSCAPES[randomIndex];
                                                 if (randomSound) openSoundscapeModal(randomSound);
                                             }}
-                                            className="px-3 py-2 min-h-[44px] text-xs bg-day-accent/10 dark:bg-night-accent/10 text-day-accent dark:text-night-accent rounded-full hover:bg-day-accent/20 dark:hover:bg-night-accent/20 transition-colors flex items-center gap-1"
+                                            aria-label="Play a random soundscape"
+                                            className="px-3 py-2 min-h-[44px] min-w-[44px] text-xs bg-day-accent/10 dark:bg-night-accent/10 text-day-accent dark:text-night-accent rounded-full hover:bg-day-accent/20 dark:hover:bg-night-accent/20 transition-colors flex items-center gap-1"
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                             </svg>
                                             Surprise Me
-                                        </span>
+                                        </button>
                                     )}
                                     <svg
                                         xmlns="http://www.w3.org/2000/svg"
@@ -760,9 +769,9 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                             {preparationExpanded && (
                                 <div id="sleep-checklist" className="space-y-3 mt-4 animate-fadeIn">
                                     {SLEEP_CHECKLIST_ITEMS.map(item => (
-                                        <label key={item.key} htmlFor={`check-${item.key}`} className="bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border p-4 min-h-[52px] rounded-lg flex items-center cursor-pointer">
-                                            <input type="checkbox" id={`check-${item.key}`} data-key={item.key} className="h-5 w-5 rounded text-day-accent focus:ring-day-accent border-gray-300 bg-transparent" />
-                                            <span className="ml-3 text-sm">{item.text}</span>
+                                        <label key={item.key} htmlFor={`check-${item.key}`} className="bg-white/50 dark:bg-black/20 border border-day-border dark:border-night-border p-4 min-h-[52px] rounded-lg flex items-center cursor-pointer hover:bg-white/70 dark:hover:bg-black/30 transition-colors">
+                                            <input type="checkbox" id={`check-${item.key}`} data-key={item.key} className="h-6 w-6 min-w-[24px] min-h-[24px] rounded text-day-accent focus:ring-day-accent border-gray-300 dark:border-gray-600 bg-transparent dark:bg-black/20 accent-day-accent dark:accent-night-accent" />
+                                            <span className="ml-3 text-sm text-day-text-primary dark:text-night-text-primary">{item.text}</span>
                                         </label>
                                     ))}
                                 </div>
@@ -803,7 +812,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
 
                         {/* Sleep Quality Prediction */}
                         {prediction && (
-                            <div className="bg-gradient-to-r from-indigo-900/40 to-purple-900/40 border border-indigo-500/30 p-4 rounded-xl mb-4 animate-fadeIn">
+                            <div className="bg-gradient-to-r from-indigo-900/40 to-purple-900/40 border border-indigo-500/30 p-4 rounded-xl mb-4 animate-fadeIn" role="region" aria-label="Sleep quality prediction">
                                 <div className="flex items-start gap-3">
                                     <span className="text-2xl text-indigo-300">
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -813,18 +822,18 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                     <div>
                                         <h3 className="font-serif font-bold text-lg text-indigo-300">Sleep Forecast</h3>
                                         <div className="flex items-baseline gap-2 mt-1">
-                                            <span className="text-sm opacity-80">Predicted Quality:</span>
-                                            <div className="flex text-yellow-400 gap-0.5">
+                                            <span className="text-sm opacity-80 text-day-text-secondary dark:text-night-text-secondary">Predicted Quality:</span>
+                                            <div className="flex text-yellow-400 gap-0.5" role="img" aria-label={`Predicted sleep quality: ${prediction.predictedQuality} out of 5 stars`}>
                                                 {[...Array(5)].map((_, i) => (
-                                                    <svg key={i} xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 ${i < prediction.predictedQuality ? 'fill-current' : 'text-gray-400/30 fill-current'}`} viewBox="0 0 20 20" fill="currentColor">
+                                                    <svg key={i} xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 ${i < prediction.predictedQuality ? 'fill-current' : 'text-gray-400/30 fill-current'}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                                                     </svg>
                                                 ))}
                                             </div>
                                         </div>
-                                        <p className="text-sm mt-2 italic opacity-90">"{prediction.recommendation}"</p>
+                                        <p className="text-sm mt-2 italic opacity-90 text-day-text-secondary dark:text-night-text-secondary">"{prediction.recommendation}"</p>
                                         {prediction.factors.length > 0 && (
-                                            <ul className="mt-2 text-xs opacity-70 space-y-1 list-disc pl-4">
+                                            <ul className="mt-2 text-xs opacity-70 space-y-1 list-disc pl-4 text-day-text-secondary dark:text-night-text-secondary">
                                                 {prediction.factors.map((f, i) => <li key={i}>{f}</li>)}
                                             </ul>
                                         )}
@@ -847,7 +856,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                 className="w-full flex items-center justify-between min-h-[56px] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-day-accent dark:focus:ring-night-accent rounded-lg"
                             >
                                 <div>
-                                    <h3 className="font-serif text-lg text-left">Lucid Dreaming</h3>
+                                    <h3 className="font-serif text-lg text-left text-day-text-primary dark:text-night-text-primary">Lucid Dreaming</h3>
                                     <p className="text-xs text-day-text-secondary dark:text-night-text-secondary text-left">
                                         Reality checks & induction techniques
                                     </p>
@@ -865,7 +874,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                             {lucidExpanded && (
                                 <div className="mt-4 space-y-3 animate-fadeIn">
                                     <div>
-                                        <h4 className="text-sm font-medium mb-2">Tonight's Reality Check</h4>
+                                        <h4 className="text-sm font-medium mb-2 text-day-text-primary dark:text-night-text-primary">Tonight's Reality Check</h4>
                                         <div
                                             role="button"
                                             tabIndex={0}
@@ -879,7 +888,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                         </div>
                                     </div>
                                     <div>
-                                        <h4 className="text-sm font-medium mb-2">Induction Techniques</h4>
+                                        <h4 className="text-sm font-medium mb-2 text-day-text-primary dark:text-night-text-primary">Induction Techniques</h4>
                                         <div className="space-y-2">
                                             {LUCID_TECHNIQUES.slice(0, 2).map(t => (
                                                 <div
@@ -891,7 +900,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                                     onClick={() => setSelectedTechnique(t)}
                                                 >
                                                     <div className="flex justify-between items-start">
-                                                        <span className="font-medium text-sm">{t.name}</span>
+                                                        <span className="font-medium text-sm text-day-text-primary dark:text-night-text-primary">{t.name}</span>
                                                         <span className="text-xs px-2 py-0.5 bg-day-accent/20 dark:bg-night-accent/20 text-day-accent dark:text-night-accent rounded-full">{t.difficulty}</span>
                                                     </div>
                                                     <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-1">{t.description}</p>

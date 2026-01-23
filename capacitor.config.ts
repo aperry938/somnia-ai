@@ -72,12 +72,14 @@ const config: CapacitorConfig = {
 
     // Local notifications configuration
     LocalNotifications: {
-      // Icon for notifications (Android)
-      smallIcon: 'ic_stat_icon_config_sample',
+      // Icon for notifications (Android) - uses launcher icon as fallback
+      // To customize, add ic_stat_notification.png to res/drawable-* folders
+      smallIcon: 'ic_launcher',
       // Accent color for notifications
       iconColor: '#6366f1',
-      // Sound file for notifications
-      sound: 'alarm.wav',
+      // Sound file for notifications - use default system sound
+      // To customize, add alarm.wav to android/app/src/main/res/raw/ and ios/App/App/
+      sound: undefined,
     },
 
     // Keyboard configuration

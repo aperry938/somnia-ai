@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { LEVEL_TITLES, getDreamsForLevel } from '../../constants/gamification';
 import { useBackButton } from '../../hooks/useBackButton';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 interface LevelGuideModalProps {
     isOpen: boolean;
@@ -34,6 +35,10 @@ export const LevelGuideModal: React.FC<LevelGuideModalProps> = ({ isOpen, onClos
     // Hardware back button support
     useBackButton(isOpen, onClose);
 
+    // Focus trap for accessibility
+    const modalRef = useRef<HTMLDivElement>(null);
+    useFocusTrap(isOpen, modalRef);
+
     // Handle escape key to close modal
     useEffect(() => {
         if (!isOpen) return;
@@ -59,7 +64,8 @@ export const LevelGuideModal: React.FC<LevelGuideModalProps> = ({ isOpen, onClos
             aria-labelledby="level-guide-title"
         >
             <div
-                className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border rounded-2xl p-5 w-full max-w-md max-h-[85vh] overflow-y-auto animate-fadeIn"
+                ref={modalRef}
+                className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border rounded-2xl p-5 w-full max-w-md max-h-[85vh] overflow-y-auto overscroll-contain animate-fadeIn"
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="flex items-center justify-between mb-4">
