@@ -286,6 +286,7 @@ export function startResonanceBreathing(volume: number = 0.5): ResonanceBreathin
     let cycleStartTime = t;
     let isActive = true;
     let intervalId: ReturnType<typeof setInterval> | null = null;
+    let phaseIntervalId: ReturnType<typeof setInterval> | null = null;
 
     // Schedule a single breath cycle
     function scheduleCycle(startTime: number) {
@@ -325,7 +326,7 @@ export function startResonanceBreathing(volume: number = 0.5): ResonanceBreathin
     }, CYCLE_DURATION * 1000);
 
     // Phase tracking interval
-    const phaseInterval = setInterval(() => {
+    phaseIntervalId = setInterval(() => {
         if (!isActive) return;
         const elapsed = (ctx.currentTime - cycleStartTime) % CYCLE_DURATION;
         currentPhase = elapsed < 5.5 ? 'inhale' : 'exhale';
@@ -334,7 +335,7 @@ export function startResonanceBreathing(volume: number = 0.5): ResonanceBreathin
     const stopFn = () => {
         isActive = false;
         if (intervalId) clearInterval(intervalId);
-        clearInterval(phaseInterval);
+        if (phaseIntervalId) clearInterval(phaseIntervalId);
 
         const now = ctx.currentTime;
         if (masterGain) {
@@ -836,6 +837,10 @@ export function cleanupPsychoacoustic(): void {
     // Clear all Cyber-Dawn timers
     cyberDawnTimers.forEach(timerId => clearTimeout(timerId));
     cyberDawnTimers = [];
+
+    // Clear all Solar Alarm timers
+    solarAlarmTimers.forEach(timerId => clearTimeout(timerId));
+    solarAlarmTimers = [];
 
     if (audioContext && audioContext.state !== 'closed') {
         audioContext.close().catch((e) => {

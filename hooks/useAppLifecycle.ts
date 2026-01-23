@@ -116,9 +116,9 @@ export function useAppLifecycle({
         });
 
         return () => {
-            listener.then(l => l.remove());
-            resumeListener.then(l => l.remove());
-            pauseListener.then(l => l.remove());
+            listener.then(l => l.remove()).catch(err => logger.error('[AppLifecycle] Failed to remove appStateChange listener:', err));
+            resumeListener.then(l => l.remove()).catch(err => logger.error('[AppLifecycle] Failed to remove resume listener:', err));
+            pauseListener.then(l => l.remove()).catch(err => logger.error('[AppLifecycle] Failed to remove pause listener:', err));
             if (tickIntervalRef.current) {
                 clearInterval(tickIntervalRef.current);
             }

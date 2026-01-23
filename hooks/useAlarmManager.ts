@@ -101,7 +101,7 @@ export const useAlarmManager = () => {
         });
 
         return () => {
-            listener.then(l => l.remove());
+            listener.then(l => l.remove()).catch(err => logger.error('[AlarmManager] Failed to remove appStateChange listener:', err));
         };
     }, [alarms, ringingAlarm, isSnoozed]);
 
