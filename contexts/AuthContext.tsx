@@ -21,6 +21,7 @@ import {
 import { verifySubscription, clearSubscriptionCache, linkUser, unlinkUser } from '../services/secureSubscriptionService';
 import { abortSync } from '../services/syncService';
 import { abortOfflineQueueProcessing } from '../services/offlineQueueService';
+import { clearGlobalTrendsData } from '../services/dreamTrendsService';
 
 interface AuthContextType {
     user: User | null;
@@ -185,8 +186,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             'somnia_health_connection',
             // Auth-related state that should be cleared on explicit signOut
             'somnia_skipped_auth',
+            // Dream draft (form persistence)
+            'somnia_dream_draft',
         ];
         userDataKeys.forEach(key => localStorage.removeItem(key));
+
+        // Clear any service-specific caches
+        clearGlobalTrendsData();
     }, []);
 
     const resetPassword = useCallback(async (email: string) => {

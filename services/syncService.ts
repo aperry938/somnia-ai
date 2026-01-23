@@ -180,6 +180,10 @@ export const emitSyncConflictResolved = (dreamId: number, resolution: 'server' |
  * Ensure we have a valid auth token before syncing.
  * Tokens can expire during 8+ hour sleep sessions, causing data loss.
  * This function refreshes the token if needed.
+ *
+ * SECURITY NOTE: We rely on Supabase's built-in session management which
+ * stores tokens securely. We don't store tokens separately in localStorage
+ * to avoid duplicate storage and potential security issues.
  */
 async function ensureValidToken(): Promise<string | null> {
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
@@ -206,14 +210,13 @@ async function ensureValidToken(): Promise<string | null> {
                 return null;
             }
 
-            // Store the new token
-            localStorage.setItem('somnia_auth_token', refreshData.session.access_token);
+            // SECURITY: Let Supabase manage token storage internally
+            // Don't duplicate tokens in localStorage
             logger.log('[SyncService] Token refreshed successfully');
             return refreshData.session.access_token;
         }
 
-        // Update stored token in case it was refreshed by Supabase
-        localStorage.setItem('somnia_auth_token', session.access_token);
+        // SECURITY: Return token directly from session, don't store in localStorage
         return session.access_token;
     } catch (e) {
         logger.error('[SyncService] Error checking/refreshing token:', e);
@@ -238,8 +241,63 @@ export const saveSyncQueue = (queue: SyncAction[]) => {
     }
 };
 
+/**
+ * Check if a similar action already exists in the queue (deduplication)
+ */
+const isDuplicateAction = (queue: SyncAction[], type: SyncActionType, payload: unknown): boolean => {
+    const payloadObj = payload as Record<string, unknown>;
+    const entityId = payloadObj?.id ?? payloadObj?.dreamId ?? payloadObj?.alarmId;
+
+    if (!entityId) return false;
+
+    // Check for pending actions with same type and entity ID
+    return queue.some(action => {
+        if (action.status !== 'PENDING') return false;
+        if (action.type !== type) return false;
+
+        const existingPayload = action.payload as Record<string, unknown>;
+        const existingId = existingPayload?.id ?? existingPayload?.dreamId ?? existingPayload?.alarmId;
+
+        // For ADD actions, never dedupe - each add should be synced
+        if (type.startsWith('ADD_')) return false;
+
+        // For UPDATE/DELETE, check if same entity ID
+        return entityId === existingId;
+    });
+};
+
 export const enqueueAction = (type: SyncActionType, payload: unknown) => {
     const queue = getSyncQueue();
+
+    // Deduplication: Skip if similar action already pending
+    // This prevents duplicate syncs from rapid UI interactions
+    if (isDuplicateAction(queue, type, payload)) {
+        logger.log(`[SyncService] Skipping duplicate ${type} action`);
+
+        // For UPDATE actions, replace the old payload with the new one
+        // This ensures the latest state is synced
+        const payloadObj = payload as Record<string, unknown>;
+        const entityId = payloadObj?.id ?? payloadObj?.dreamId ?? payloadObj?.alarmId;
+
+        if (type.includes('UPDATE') && entityId) {
+            const existingIndex = queue.findIndex(action => {
+                if (action.status !== 'PENDING' || action.type !== type) return false;
+                const existingPayload = action.payload as Record<string, unknown>;
+                const existingId = existingPayload?.id ?? existingPayload?.dreamId ?? existingPayload?.alarmId;
+                return existingId === entityId;
+            });
+
+            if (existingIndex !== -1) {
+                queue[existingIndex] = {
+                    ...queue[existingIndex]!,
+                    payload,
+                    timestamp: Date.now(),
+                };
+                saveSyncQueue(queue);
+            }
+        }
+        return;
+    }
 
     // Prevent unbounded queue growth - remove oldest pending actions if at limit
     const pendingCount = queue.filter(a => a.status === 'PENDING').length;

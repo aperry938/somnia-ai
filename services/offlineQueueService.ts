@@ -24,6 +24,7 @@ export interface QueuedAnalysis {
     retries: number;
     lastRetryAt?: number;
     priority?: 'high' | 'normal' | 'low';
+    version?: number; // Track version for conflict detection
 }
 
 export interface QueueProcessingResult {
@@ -193,6 +194,7 @@ export function queueForAnalysis(
         queuedAt: Date.now(),
         retries: 0,
         priority,
+        version: 1, // Initial version for conflict tracking
     });
 
     // Sort by priority (high first) then by queue time

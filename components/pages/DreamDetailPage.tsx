@@ -1,9 +1,8 @@
-import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef, Suspense, lazy } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
 import { analyzeDream, generateDreamTitle, generateImagePrompt, DreamArtStyle, DREAM_ART_STYLES, generateDreamEmbedding, OfflineError } from '../../services/geminiService';
-import { DreamChatModal } from '../modals/DreamChatModal';
 import { SleepAids, DreamMood } from '../../types';
-import { AnalysisLoading as _AnalysisLoading } from '../shared/LoadingStates';
+import { AnalysisLoading as _AnalysisLoading, ModalLoading } from '../shared/LoadingStates';
 import { TagInput, COMMON_DREAM_TAGS } from '../shared/TagInput';
 import { findDreamSymbols, DreamSymbol as _DreamSymbol } from '../../constants/dreamSymbols';
 import { useToast } from '../shared/Toast';
@@ -14,10 +13,14 @@ import haptics from '../../services/hapticsService';
 import { MOOD_ICONS, MOOD_LABELS } from '../../constants/uiIcons';
 import { processDejaVuCheck, DejaVuMatch } from '../../services/dejaVuService';
 import { CALIBRATION_DREAM } from '../../constants/demoDreams';
-import { AIConsentModal, hasAIConsent } from '../modals/AIConsentModal';
+import { hasAIConsent } from '../../services/aiConsentService';
 import { queueForAnalysis, isQueued, isOnline } from '../../services/offlineQueueService';
-import { ShareDreamModal } from '../modals/ShareDreamModal';
 import { Capacitor } from '@capacitor/core';
+
+// Lazy load heavy modals
+const DreamChatModal = lazy(() => import('../modals/DreamChatModal').then(m => ({ default: m.DreamChatModal })));
+const AIConsentModal = lazy(() => import('../modals/AIConsentModal').then(m => ({ default: m.AIConsentModal })));
+const ShareDreamModal = lazy(() => import('../modals/ShareDreamModal').then(m => ({ default: m.ShareDreamModal })));
 
 // Evening Reflection Display Component
 const EveningReflectionDisplay: React.FC<{ aids: SleepAids }> = ({ aids }) => {
@@ -1001,29 +1004,37 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                 );
             })()}
 
-            {isChatOpen && dream && <DreamChatModal dream={dream} onClose={() => setIsChatOpen(false)} />}
+            {isChatOpen && dream && (
+                <Suspense fallback={<ModalLoading />}>
+                    <DreamChatModal dream={dream} onClose={() => setIsChatOpen(false)} />
+                </Suspense>
+            )}
 
             {/* AI Consent Modal */}
             {showConsentModal && (
-                <AIConsentModal
-                    onConsent={() => {
-                        setShowConsentModal(false);
-                        // Trigger analysis after consent
-                        setAnalysisState('pending');
-                    }}
-                    onDecline={() => {
-                        setShowConsentModal(false);
-                    }}
-                />
+                <Suspense fallback={<ModalLoading />}>
+                    <AIConsentModal
+                        onConsent={() => {
+                            setShowConsentModal(false);
+                            // Trigger analysis after consent
+                            setAnalysisState('pending');
+                        }}
+                        onDecline={() => {
+                            setShowConsentModal(false);
+                        }}
+                    />
+                </Suspense>
             )}
 
             {/* Share Dream Modal */}
             {isShareOpen && dream && (
-                <ShareDreamModal
-                    dream={dream}
-                    isOpen={isShareOpen}
-                    onClose={() => setIsShareOpen(false)}
-                />
+                <Suspense fallback={<ModalLoading />}>
+                    <ShareDreamModal
+                        dream={dream}
+                        isOpen={isShareOpen}
+                        onClose={() => setIsShareOpen(false)}
+                    />
+                </Suspense>
             )}
         </>
     );

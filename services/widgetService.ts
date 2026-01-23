@@ -164,9 +164,11 @@ export async function updateWidget(data: WidgetData, force = false): Promise<voi
 
     lastUpdateTime = now;
 
+    // Capture WidgetPlugin in a const to satisfy TypeScript in the callback
+    const plugin = WidgetPlugin;
     const result = await executeWithRetry(
         async () => {
-            await WidgetPlugin!.updateWidget({
+            await plugin.updateWidget({
                 alarmTime: data.alarmTime,
                 alarmLabel: data.alarmLabel || 'Alarm',
                 avgSleep: data.avgSleep || 0,
@@ -175,8 +177,8 @@ export async function updateWidget(data: WidgetData, force = false): Promise<voi
             });
 
             // Also update shared data for iOS app groups
-            if (isIOS && WidgetPlugin!.setSharedData) {
-                await WidgetPlugin!.setSharedData({
+            if (isIOS && plugin.setSharedData) {
+                await plugin.setSharedData({
                     key: 'widgetData',
                     value: JSON.stringify({
                         ...data,
@@ -243,14 +245,15 @@ export async function updateSleepWidget(
 export async function refreshWidgets(): Promise<void> {
     if (!isNative || !WidgetPlugin) return;
 
+    const plugin = WidgetPlugin;
     const result = await executeWithRetry(
         async () => {
             // iOS: Use WidgetKit timeline reload if available
-            if (isIOS && WidgetPlugin!.reloadTimelines) {
-                await WidgetPlugin!.reloadTimelines({});
+            if (isIOS && plugin.reloadTimelines) {
+                await plugin.reloadTimelines({});
             }
             // Fallback/Android: Use general refresh
-            await WidgetPlugin!.refresh();
+            await plugin.refresh();
         },
         'refreshWidgets'
     );
@@ -267,13 +270,14 @@ export async function refreshWidgets(): Promise<void> {
 export async function reloadWidgetTimeline(kind?: string): Promise<void> {
     if (!isNative || !WidgetPlugin || !isIOS) return;
 
-    if (!WidgetPlugin.reloadTimelines) {
+    const reloadFn = WidgetPlugin.reloadTimelines;
+    if (!reloadFn) {
         logger.warn('[Widget] reloadTimelines not available on this build');
         return;
     }
 
     const result = await executeWithRetry(
-        () => WidgetPlugin!.reloadTimelines!({ kind }),
+        () => reloadFn({ kind }),
         'reloadTimeline'
     );
 
@@ -355,8 +359,9 @@ export async function updateSleepTrackingState(isSleepTracking: boolean): Promis
 export async function refreshDreamWidget(): Promise<void> {
     if (!isNative || !WidgetPlugin) return;
 
+    const plugin = WidgetPlugin;
     const result = await executeWithRetry(
-        () => WidgetPlugin!.refreshDreamWidget(),
+        () => plugin.refreshDreamWidget(),
         'refreshDreamWidget'
     );
 

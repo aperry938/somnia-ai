@@ -5,10 +5,27 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { ManualSleepActivity, SleepAids } from '../../types';
 import haptics from '../../services/hapticsService';
 import { useBackButton } from '../../hooks/useBackButton';
 import { sanitizeTextLive, INPUT_LIMITS } from '../../services/validationService';
+
+// Animation variants
+const backdropVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { duration: 0.2 } },
+};
+
+const modalVariants = {
+    hidden: { opacity: 0, scale: 0.95, y: 20 },
+    visible: {
+        opacity: 1,
+        scale: 1,
+        y: 0,
+        transition: { type: 'spring' as const, stiffness: 300, damping: 30 },
+    },
+};
 
 interface ManualSleepLogModalProps {
     onComplete: (sleepAids: SleepAids) => void;
@@ -130,8 +147,21 @@ export const ManualSleepLogModal: React.FC<ManualSleepLogModalProps> = ({ onComp
     };
 
     return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center px-4 pt-4 pb-[calc(6.5rem+var(--safe-area-inset-bottom))] sm:pb-4 z-50" role="dialog" aria-modal="true" aria-label="Log yesterday's sleep activities">
-            <div className="w-full max-w-md bg-day-card-bg dark:bg-night-card-bg rounded-2xl border border-day-border dark:border-night-border overflow-hidden shadow-xl max-h-[90vh] flex flex-col">
+        <motion.div
+            className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center px-4 pt-4 pb-[calc(6.5rem+var(--safe-area-inset-bottom))] sm:pb-4 z-50"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Log yesterday's sleep activities"
+            variants={backdropVariants}
+            initial="hidden"
+            animate="visible"
+        >
+            <motion.div
+                className="w-full max-w-md bg-day-card-bg dark:bg-night-card-bg rounded-2xl border border-day-border dark:border-night-border overflow-hidden shadow-xl max-h-[90vh] flex flex-col"
+                variants={modalVariants}
+                initial="hidden"
+                animate="visible"
+            >
                 {/* Header */}
                 <div className="p-5 border-b border-day-border dark:border-night-border">
                     <h2 className="font-serif text-xl text-center">What did you do before bed?</h2>
@@ -321,7 +351,7 @@ export const ManualSleepLogModal: React.FC<ManualSleepLogModalProps> = ({ onComp
                         )}
                     </button>
                 </div>
-            </div>
-        </div>
+            </motion.div>
+        </motion.div>
     );
 };

@@ -1,8 +1,38 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SleepEntry, Dream } from '../../types';
 import { MOOD_ICONS, MOOD_LABELS } from '../../constants/uiIcons';
 import haptics from '../../services/hapticsService';
+
+/**
+ * I18N NOTES for SleepEntryCard:
+ *
+ * HARDCODED STRINGS requiring translation:
+ * - Alarm sound names: "Classic", "Aether", "Somnia", "Gentle", "Prism", "Bamboo", "Progressive"
+ * - "Sleep tracked", "Evening Reflection", "Sleep Preparation"
+ * - "How was your day:", "Dreams", "Wake Up"
+ * - "No dreams recorded for this night", "Untitled Dream"
+ * - "Add Dream", "Delete Entry", "Delete this entry?", "Delete", "Cancel"
+ * - "Alarm at", "to wake", "snooze(s)", "Wake boost used"
+ * - Time unit abbreviations: "min", "m", "s"
+ *
+ * PLURALIZATION ISSUES:
+ * - dreamCount === 1 ? 'dream' : 'dreams' - English-only pluralization
+ * - snoozeCount !== 1 ? 's' : '' - English-only pluralization
+ * - For proper i18n, use ICU MessageFormat or react-intl's FormattedPlural
+ *
+ * DATE/TIME FORMATTING:
+ * - formatAlarmTime() hardcodes AM/PM - should use Intl.DateTimeFormat with locale
+ * - toLocaleDateString([]) uses browser locale (good)
+ *
+ * RTL CONSIDERATIONS:
+ * - Chevron icons should be mirrored in RTL (rotate-180 for RTL)
+ * - flex items may need logical properties (start/end vs left/right)
+ *
+ * TEXT OVERFLOW:
+ * - Dream title uses truncate - translated text may be longer
+ * - Time badges use fixed widths - may clip longer translations
+ */
 
 interface SleepEntryCardProps {
     entry: SleepEntry;
@@ -29,19 +59,34 @@ const getAlarmSoundName = (soundId?: string): string => {
     return ALARM_SOUND_NAMES[soundId] || soundId;
 };
 
-// Format time from HH:MM to display format
+/**
+ * Format time from HH:MM to locale-aware display format.
+ * Uses Intl.DateTimeFormat to respect user's 12h/24h preference based on locale.
+ *
+ * @param time - Time string in HH:MM format (24-hour)
+ * @returns Locale-formatted time string (e.g., "7:30 AM" or "07:30")
+ */
 const formatAlarmTime = (time?: string): string => {
     if (!time) return '';
     const parts = time.split(':').map(Number);
     const hours = parts[0];
     const minutes = parts[1];
     if (hours === undefined || minutes === undefined) return '';
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
-    return `${displayHours}:${String(minutes).padStart(2, '0')} ${ampm}`;
+
+    // Create a date object with the given time for locale-aware formatting
+    const date = new Date();
+    date.setHours(hours, minutes, 0, 0);
+
+    // Use Intl.DateTimeFormat for locale-aware 12h/24h formatting
+    // Empty locale array [] uses the browser's default locale
+    return date.toLocaleTimeString([], {
+        hour: 'numeric',
+        minute: '2-digit',
+    });
 };
 
-export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
+// Memoized component to prevent unnecessary re-renders in list
+const SleepEntryCardComponent: React.FC<SleepEntryCardProps> = ({
     entry,
     dreams,
     _onEntryClick: _unused_onEntryClick,
@@ -60,11 +105,56 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
     const dreamCount = entryDreams.length;
 
     // Format date nicely
-    const displayDate = new Date(entry.date + 'T12:00:00').toLocaleDateString([], {
+    const displayDate = useMemo(() => new Date(entry.date + 'T12:00:00').toLocaleDateString([], {
         weekday: 'short',
         month: 'short',
         day: 'numeric'
-    });
+    }), [entry.date]);
+
+    // Memoized handlers to prevent unnecessary re-renders
+    const handleToggleExpand = useCallback(() => {
+        haptics.selection();
+        setIsExpanded(prev => !prev);
+    }, []);
+
+    const handleKeyToggle = useCallback((e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            haptics.selection();
+            setIsExpanded(prev => !prev);
+        }
+    }, []);
+
+    const handleAddDreamClick = useCallback((e: React.MouseEvent) => {
+        e.stopPropagation();
+        onAddDream(entry.id);
+    }, [onAddDream, entry.id]);
+
+    const handleDeleteClick = useCallback((e: React.MouseEvent) => {
+        e.stopPropagation();
+        setShowDeleteConfirm(true);
+    }, []);
+
+    const handleConfirmDelete = useCallback(() => {
+        onDeleteEntry(entry.id);
+    }, [onDeleteEntry, entry.id]);
+
+    const handleCancelDelete = useCallback(() => {
+        setShowDeleteConfirm(false);
+    }, []);
+
+    // Handler for individual dream click - stable reference for list items
+    const handleDreamClick = useCallback((e: React.MouseEvent, dreamId: number) => {
+        e.stopPropagation();
+        onDreamClick(dreamId);
+    }, [onDreamClick]);
+
+    const handleDreamKeyDown = useCallback((e: React.KeyboardEvent, dreamId: number) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onDreamClick(dreamId);
+        }
+    }, [onDreamClick]);
 
     // Render quality stars
     const renderQuality = () => {
@@ -105,10 +195,10 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
             {/* Header Row - Always Visible */}
             <div
                 className="p-4 min-h-[72px] cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors active:bg-black/10 dark:active:bg-white/10"
-                onClick={() => { haptics.selection(); setIsExpanded(!isExpanded); }}
+                onClick={handleToggleExpand}
                 role="button"
                 tabIndex={0}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); haptics.selection(); setIsExpanded(!isExpanded); } }}
+                onKeyDown={handleKeyToggle}
                 aria-expanded={isExpanded}
                 aria-label={`${displayDate}, ${dreamCount} ${dreamCount === 1 ? 'dream' : 'dreams'}${entry.sleepQuality ? `, sleep quality ${entry.sleepQuality} of 5` : ''}. ${isExpanded ? 'Collapse' : 'Expand'} details`}
             >
@@ -190,15 +280,18 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
                                 </div>
 
                                 <div className="space-y-2">
-                                    {entry.sleepAids?.dayRating && (
+                                    {entry.sleepAids?.dayRating != null && (
                                         <div className="flex items-center gap-2">
                                             <span className="text-sm text-day-text-secondary dark:text-night-text-secondary">How was your day:</span>
                                             <div className="flex items-center gap-0.5">
-                                                {[1, 2, 3, 4, 5].map(i => (
-                                                    <svg key={i} className={`w-4 h-4 ${i <= entry.sleepAids!.dayRating! ? 'text-amber-500' : 'text-gray-300 dark:text-gray-600'}`} fill={i <= entry.sleepAids!.dayRating! ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                                                    </svg>
-                                                ))}
+                                                {[1, 2, 3, 4, 5].map(i => {
+                                                    const rating = entry.sleepAids?.dayRating ?? 0;
+                                                    return (
+                                                        <svg key={i} className={`w-4 h-4 ${i <= rating ? 'text-amber-500' : 'text-gray-300 dark:text-gray-600'}`} fill={i <= rating ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                                        </svg>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     )}
@@ -312,10 +405,10 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
                                         <div
                                             key={dream.id}
                                             className="px-4 py-3 min-h-[60px] hover:bg-purple-50/50 dark:hover:bg-purple-900/10 cursor-pointer transition-colors active:bg-purple-100/50 dark:active:bg-purple-900/20"
-                                            onClick={(e) => { e.stopPropagation(); onDreamClick(dream.id); }}
+                                            onClick={(e) => handleDreamClick(e, dream.id)}
                                             role="button"
                                             tabIndex={0}
-                                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onDreamClick(dream.id); } }}
+                                            onKeyDown={(e) => handleDreamKeyDown(e, dream.id)}
                                             aria-label={`View dream: ${dream.title || 'Untitled Dream'}${dream.mood ? `, mood: ${MOOD_LABELS[dream.mood]}` : ''}`}
                                         >
                                             <div className="flex items-start gap-3">
@@ -355,7 +448,7 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
                             {/* Add Dream Button */}
                             <div className="px-4 pb-3">
                                 <button
-                                    onClick={(e) => { e.stopPropagation(); onAddDream(entry.id); }}
+                                    onClick={handleAddDreamClick}
                                     className="w-full py-3 min-h-[48px] flex items-center justify-center gap-2 text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 active:bg-purple-100 dark:active:bg-purple-900/30 rounded-lg transition-colors border border-dashed border-purple-200 dark:border-purple-800"
                                     aria-label={`Add dream to ${displayDate}`}
                                 >
@@ -423,7 +516,7 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
                         <div className="p-3 flex items-center justify-end">
                             {!showDeleteConfirm ? (
                                 <button
-                                    onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(true); }}
+                                    onClick={handleDeleteClick}
                                     className="px-3 py-2 min-h-[44px] text-xs text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors flex items-center gap-1"
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -435,13 +528,13 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
                                 <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                                     <span className="text-xs text-gray-500 mr-2">Delete this entry?</span>
                                     <button
-                                        onClick={() => { onDeleteEntry(entry.id); }}
+                                        onClick={handleConfirmDelete}
                                         className="px-4 py-2 min-h-[44px] text-xs bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
                                     >
                                         Delete
                                     </button>
                                     <button
-                                        onClick={() => setShowDeleteConfirm(false)}
+                                        onClick={handleCancelDelete}
                                         className="px-4 py-2 min-h-[44px] text-xs bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                                     >
                                         Cancel
@@ -455,3 +548,7 @@ export const SleepEntryCard: React.FC<SleepEntryCardProps> = ({
         </div>
     );
 };
+
+// Memoize the component to prevent unnecessary re-renders when parent re-renders
+// Uses shallow comparison of props by default
+export const SleepEntryCard = React.memo(SleepEntryCardComponent);

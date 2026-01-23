@@ -1,3 +1,39 @@
+/**
+ * I18N NOTES for DreamScribeModal:
+ *
+ * HARDCODED STRINGS requiring translation:
+ * - "The Dream Scribe" (modal title)
+ * - "Record your dream using voice or text input..."
+ * - "Voice input unavailable", "Recording...", "Tap to speak"
+ * - "Speak or write your dream here..." (placeholder)
+ * - "How was your sleep?", "How did the dream feel?"
+ * - "Cancel", "Save & Illuminate", "Saving..."
+ * - "Good Morning", "Wake Up Boost"
+ * - "12Hz Beta waves for gentle alertness and cognitive readiness"
+ * - "Start Wake Up Boost", "Boost Active - Tap to Stop"
+ * - "Volume", "Start My Day"
+ * - Status messages: "Recording started", "Recording stopped", "Dream saved successfully"
+ * - Error messages from validation
+ *
+ * PLURALIZATION: None in this file
+ *
+ * NUMBER FORMATTING:
+ * - Character count: toLocaleString() used (good)
+ * - Volume percentage: Math.round(boostVolume * 100) + '%' - should use formatPercent()
+ *
+ * DATE/TIME FORMATTING:
+ * - Timer format: formatTimer() uses mm:ss format - OK for most locales
+ *
+ * RTL CONSIDERATIONS:
+ * - Button text alignment
+ * - Volume slider direction
+ * - Modal swipe-to-dismiss direction
+ *
+ * TEXT OVERFLOW:
+ * - Modal title "The Dream Scribe" - may need wider container
+ * - Button text "Save & Illuminate" - may overflow
+ * - "Boost Active - Tap to Stop" - long translated text may clip
+ */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, PanInfo, useMotionValue } from 'framer-motion';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
@@ -8,8 +44,64 @@ import haptics from '../../services/hapticsService';
 import { MOOD_ICONS, MOOD_LABELS } from '../../constants/uiIcons';
 import { validateDreamText, containsScriptInjection, INPUT_LIMITS, sanitizeTextLive } from '../../services/validationService';
 import { useBackButton } from '../../hooks/useBackButton';
+import { logger } from '../../services/logger';
 
 const MOOD_OPTIONS: DreamMood[] = ['joyful', 'peaceful', 'neutral', 'confused', 'anxious', 'sad', 'fearful', 'nightmare'];
+
+// Draft persistence storage key
+const DREAM_DRAFT_KEY = 'somnia_dream_draft';
+const DRAFT_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+interface DreamDraft {
+    text: string;
+    quality: number | null;
+    mood: DreamMood | null;
+    savedAt: number;
+}
+
+/**
+ * Save dream draft to localStorage for crash recovery
+ */
+const saveDreamDraft = (draft: DreamDraft): void => {
+    try {
+        localStorage.setItem(DREAM_DRAFT_KEY, JSON.stringify(draft));
+    } catch {
+        // Ignore storage errors
+    }
+};
+
+/**
+ * Load dream draft from localStorage
+ */
+const loadDreamDraft = (): DreamDraft | null => {
+    try {
+        const stored = localStorage.getItem(DREAM_DRAFT_KEY);
+        if (!stored) return null;
+
+        const draft = JSON.parse(stored) as DreamDraft;
+
+        // Check if draft is expired
+        if (Date.now() - draft.savedAt > DRAFT_EXPIRY_MS) {
+            clearDreamDraft();
+            return null;
+        }
+
+        return draft;
+    } catch {
+        return null;
+    }
+};
+
+/**
+ * Clear dream draft from localStorage
+ */
+const clearDreamDraft = (): void => {
+    try {
+        localStorage.removeItem(DREAM_DRAFT_KEY);
+    } catch {
+        // Ignore storage errors
+    }
+};
 
 type ScribeStep = 'record' | 'boost';
 
@@ -21,7 +113,18 @@ interface DreamScribeModalProps {
 
 export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onClose, initialText = '' }) => {
     const [step, setStep] = useState<ScribeStep>('record');
-    const [dreamText, setDreamText] = useState(initialText);
+
+    // Load draft on mount (for crash recovery)
+    const [dreamText, setDreamText] = useState(() => {
+        if (initialText) return initialText;
+        const draft = loadDreamDraft();
+        if (draft?.text) {
+            logger.log('[DreamScribe] Recovered draft from previous session');
+            return draft.text;
+        }
+        return '';
+    });
+
     const [isSaving, setIsSaving] = useState(false);
 
     // Mount protection ref to prevent actions after unmount
@@ -69,6 +172,10 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
     const [boostTimer, setBoostTimer] = useState(0);
     const [boostVolume, setBoostVolume] = useState(0.5); // Boosted default volume (was 0.25)
     const [validationError, setValidationError] = useState<string | null>(null);
+    const [showDraftRecovery, setShowDraftRecovery] = useState(() => {
+        const draft = loadDreamDraft();
+        return draft !== null && draft.text.length > 0 && !initialText;
+    });
     const [statusMessage, setStatusMessage] = useState<string>('');
     const savedDataRef = useRef<{ text: string; quality: number | null; mood?: DreamMood } | null>(null);
     const dreamSavedRef = useRef(false);
@@ -107,7 +214,32 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
             setDreamText(newText);
             // Clear validation error when user starts typing
             setValidationError(null);
+            // Dismiss draft recovery banner once user starts editing
+            setShowDraftRecovery(false);
         }
+    }, []);
+
+    // Auto-save draft to localStorage for crash recovery (debounced)
+    useEffect(() => {
+        if (!dreamText.trim()) return;
+
+        const timeoutId = setTimeout(() => {
+            saveDreamDraft({
+                text: dreamText,
+                quality: sleepQuality,
+                mood,
+                savedAt: Date.now(),
+            });
+        }, 1000); // Debounce 1 second
+
+        return () => clearTimeout(timeoutId);
+    }, [dreamText, sleepQuality, mood]);
+
+    // Clear draft when dream is successfully saved
+    const handleDiscardDraft = useCallback(() => {
+        clearDreamDraft();
+        setDreamText('');
+        setShowDraftRecovery(false);
     }, []);
 
     useEffect(() => {
@@ -188,6 +320,8 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
         // User is done - boost keeps playing if active, just close modal
         if (savedDataRef.current && !dreamSavedRef.current) {
             dreamSavedRef.current = true;
+            // Clear draft on successful save
+            clearDreamDraft();
             onSave(savedDataRef.current.text, savedDataRef.current.quality, savedDataRef.current.mood);
         }
     };
@@ -283,6 +417,22 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                     <p id="dream-scribe-description" className="sr-only">
                         Record your dream using voice or text input. You can also rate your sleep quality and mood.
                     </p>
+
+                    {/* Draft Recovery Banner */}
+                    {showDraftRecovery && (
+                        <div className="mb-3 p-3 bg-amber-500/20 border border-amber-400/30 rounded-lg flex items-center justify-between">
+                            <span className="text-amber-200 text-sm">
+                                Recovered unsaved dream draft
+                            </span>
+                            <button
+                                onClick={handleDiscardDraft}
+                                className="text-amber-300 text-sm underline hover:text-amber-100"
+                                aria-label="Discard recovered draft"
+                            >
+                                Discard
+                            </button>
+                        </div>
+                    )}
 
                     {/* Compact Voice Recording Button */}
                     <div className="mb-2 text-center">

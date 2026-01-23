@@ -1,4 +1,16 @@
 // hooks/useAlarmManager.ts
+/**
+ * I18N NOTES for useAlarmManager:
+ *
+ * DATE/TIME FORMATTING:
+ * - Lines 110, 362: toLocaleTimeString('en-US', ...) uses hardcoded 'en-US'
+ *   However, this is used for internal time comparison (24-hour format), not display
+ *   The hardcoded locale ensures consistent HH:MM format for alarm matching
+ *   This is intentional and should NOT be changed for i18n
+ *
+ * The alarm time storage format (HH:MM in 24-hour) is an internal format,
+ * not user-facing. Display formatting should happen in UI components.
+ */
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Alarm, WakeData } from '../types';
 import { useClock } from './useClock';

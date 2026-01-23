@@ -1,3 +1,22 @@
+/**
+ * UI Icons and Labels Constants
+ *
+ * I18N NOTES:
+ * These label constants contain English strings that MUST be translated.
+ * When implementing i18n, replace these with translation keys:
+ *
+ * Example transformation:
+ *   Before: MOOD_LABELS: { joyful: 'Joyful', ... }
+ *   After:  MOOD_LABELS: { joyful: t('mood.joyful'), ... }
+ *
+ * Or use a function that returns translated values:
+ *   getMoodLabel(mood: DreamMood): string => t(`mood.${mood}`)
+ *
+ * STRINGS REQUIRING TRANSLATION:
+ * - MOOD_LABELS: "Joyful", "Peaceful", "Neutral", "Confused", "Anxious",
+ *                "Sad", "Fearful", "Nostalgic", "Hopeful", "Nightmare"
+ * - DAY_RATING_LABELS: "Rough", "Meh", "Okay", "Good", "Great"
+ */
 import React from 'react';
 import { DreamMood } from '../types';
 

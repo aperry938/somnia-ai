@@ -111,6 +111,142 @@ export const AIErrorBoundary: React.FC<{ children: ReactNode }> = ({ children })
     );
 };
 
+// Page-level error boundary with full-page recovery UI
+export const PageErrorBoundary: React.FC<{
+    children: ReactNode;
+    pageName?: string;
+    onNavigateHome?: () => void;
+}> = ({ children, pageName = 'page', onNavigateHome }) => {
+    return (
+        <ErrorBoundary
+            fallback={
+                <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center">
+                    <div className="w-20 h-20 mb-6 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-10 w-10 text-red-500 dark:text-red-400"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                            />
+                        </svg>
+                    </div>
+                    <h2 className="font-serif text-2xl text-day-text-primary dark:text-night-text-primary mb-2">
+                        Unable to load {pageName}
+                    </h2>
+                    <p className="text-sm text-day-text-secondary dark:text-night-text-secondary mb-6 max-w-sm">
+                        Something went wrong while loading this page. Please try refreshing or navigate elsewhere.
+                    </p>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="px-6 py-3 min-h-[48px] bg-day-accent dark:bg-night-accent text-white rounded-full font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            Refresh Page
+                        </button>
+                        {onNavigateHome && (
+                            <button
+                                onClick={onNavigateHome}
+                                className="px-6 py-3 min-h-[48px] bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border text-day-text-primary dark:text-night-text-primary rounded-full font-medium hover:opacity-90 transition-opacity"
+                            >
+                                Go Home
+                            </button>
+                        )}
+                    </div>
+                </div>
+            }
+        >
+            {children}
+        </ErrorBoundary>
+    );
+};
+
+// Card-level error boundary for individual content cards (minimal UI)
+export const CardErrorBoundary: React.FC<{ children: ReactNode; cardName?: string }> = ({ children, cardName }) => {
+    return (
+        <ErrorBoundary
+            fallback={
+                <div className="flex flex-col items-center justify-center p-4 text-center bg-day-card-bg/50 dark:bg-night-card-bg/50 rounded-xl border border-day-border/50 dark:border-night-border/50 min-h-[100px]">
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-6 w-6 text-day-text-secondary/50 dark:text-night-text-secondary/50 mb-2"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                    >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                    </svg>
+                    <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">
+                        {cardName ? `Unable to load ${cardName}` : 'Content unavailable'}
+                    </p>
+                </div>
+            }
+        >
+            {children}
+        </ErrorBoundary>
+    );
+};
+
+// Modal error boundary with close capability
+export const ModalErrorBoundary: React.FC<{ children: ReactNode; onClose?: () => void }> = ({ children, onClose }) => {
+    return (
+        <ErrorBoundary
+            fallback={
+                <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm">
+                    <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 max-w-sm w-full shadow-2xl text-center">
+                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-8 w-8 text-red-500 dark:text-red-400"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                                />
+                            </svg>
+                        </div>
+                        <h3 className="font-serif text-xl text-day-text-primary dark:text-night-text-primary mb-2">
+                            Something went wrong
+                        </h3>
+                        <p className="text-sm text-day-text-secondary dark:text-night-text-secondary mb-4">
+                            This dialog encountered an error. Please close and try again.
+                        </p>
+                        {onClose && (
+                            <button
+                                onClick={onClose}
+                                className="px-6 py-3 min-h-[48px] bg-day-accent dark:bg-night-accent text-white rounded-full font-medium hover:opacity-90 transition-opacity"
+                            >
+                                Close
+                            </button>
+                        )}
+                    </div>
+                </div>
+            }
+        >
+            {children}
+        </ErrorBoundary>
+    );
+};
+
 // Test Component for verifying Error Boundary
 export const BuggyButton: React.FC = () => {
     const [shouldError, setShouldError] = React.useState(false);

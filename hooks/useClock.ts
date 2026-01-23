@@ -16,6 +16,17 @@ const CLOCK_UPDATE_INTERVAL = 1000; // 1 second
  * - Smooth theme transitions
  * - Second-level accuracy with drift correction
  * - Memory-efficient time formatting
+ *
+ * I18N NOTES:
+ * - Uses toLocaleTimeString/toLocaleDateString with empty locale [] to use browser default
+ * - Time format (12h vs 24h) is determined by the browser's locale setting
+ * - Date format (month/day order, weekday names) adapts to locale
+ * - For full i18n support, consider using Intl.DateTimeFormat directly with user preference
+ *
+ * TODO: i18n improvements:
+ * - Allow user to override 12h/24h preference
+ * - Add support for different calendar systems (Hijri, Hebrew, etc.)
+ * - Use getUserLocale() from i18nUtils.ts for consistent locale handling
  */
 export const useClock = () => {
     const { themeOverride } = useAppContext();

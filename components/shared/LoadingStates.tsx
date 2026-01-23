@@ -1,16 +1,20 @@
 // components/shared/LoadingStates.tsx
 import React from 'react';
+import { motion } from 'framer-motion';
 
-// Base skeleton with shimmer animation
-export const Skeleton: React.FC<{ className?: string; style?: React.CSSProperties }> = ({ className = '', style }) => (
+// Base skeleton with shimmer animation - memoized since it's frequently used
+export const Skeleton: React.FC<{ className?: string; style?: React.CSSProperties; 'aria-label'?: string }> = React.memo(({ className = '', style, 'aria-label': ariaLabel }) => (
     <div
-        className={`animate-pulse bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700 bg-[length:200%_100%] rounded ${className}`}
-        style={{ animation: 'shimmer 1.5s infinite', ...style }}
+        className={`bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700 bg-[length:200%_100%] rounded animate-shimmer ${className}`}
+        style={style}
+        role="status"
+        aria-label={ariaLabel || 'Loading content'}
+        aria-busy="true"
     />
-);
+));
 
 // Text skeleton - mimics a line of text
-export const SkeletonText: React.FC<{ lines?: number; className?: string }> = ({
+export const SkeletonText: React.FC<{ lines?: number; className?: string }> = React.memo(({
     lines = 1,
     className = ''
 }) => (
@@ -22,39 +26,64 @@ export const SkeletonText: React.FC<{ lines?: number; className?: string }> = ({
             />
         ))}
     </div>
-);
+));
 
-// Card skeleton for dream entries
-export const SkeletonDreamCard: React.FC = () => (
-    <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-4 rounded-lg flex gap-4">
-        <Skeleton className="w-20 h-20 rounded-md flex-shrink-0" />
+// Card skeleton for dream entries - memoized since props don't change
+export const SkeletonDreamCard: React.FC = React.memo(() => (
+    <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-4 rounded-lg flex gap-4" role="status" aria-label="Loading dream entry" aria-busy="true">
+        <Skeleton className="w-20 h-20 rounded-md flex-shrink-0" aria-label="Loading dream image" />
         <div className="flex-1 space-y-2">
-            <Skeleton className="h-3 w-24" />
-            <Skeleton className="h-5 w-3/4" />
-            <Skeleton className="h-3 w-full" />
-            <Skeleton className="h-3 w-2/3" />
+            <Skeleton className="h-3 w-24" aria-label="Loading date" />
+            <Skeleton className="h-5 w-3/4" aria-label="Loading title" />
+            <Skeleton className="h-3 w-full" aria-label="Loading description" />
+            <Skeleton className="h-3 w-2/3" aria-label="Loading tags" />
         </div>
     </div>
-);
+));
 
 // Analysis loading state with thematic message
 export const AnalysisLoading: React.FC = () => (
-    <div className="flex flex-col items-center justify-center py-12 px-4 text-center" role="status" aria-label="Analyzing dream content">
+    <motion.div
+        className="flex flex-col items-center justify-center py-12 px-4 text-center"
+        role="status"
+        aria-label="Analyzing dream content"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+    >
         <div className="relative w-20 h-20 mb-6">
             {/* Outer ring */}
             <div className="absolute inset-0 rounded-full border-4 border-day-accent/20 dark:border-night-accent/20" />
             {/* Spinning ring */}
-            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-day-accent dark:border-t-night-accent animate-spin" />
+            <motion.div
+                className="absolute inset-0 rounded-full border-4 border-transparent border-t-day-accent dark:border-t-night-accent"
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+            />
             {/* Inner glow */}
-            <div className="absolute inset-4 rounded-full bg-day-accent/10 dark:bg-night-accent/10 animate-pulse" />
+            <motion.div
+                className="absolute inset-4 rounded-full bg-day-accent/10 dark:bg-night-accent/10"
+                animate={{ scale: [1, 1.1, 1], opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            />
         </div>
-        <h3 className="font-serif text-xl text-day-text-primary dark:text-night-text-primary mb-2">
+        <motion.h3
+            className="font-serif text-xl text-day-text-primary dark:text-night-text-primary mb-2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.1 }}
+        >
             Somnia is analyzing...
-        </h3>
-        <p className="text-sm text-day-text-secondary dark:text-night-text-secondary max-w-xs">
+        </motion.h3>
+        <motion.p
+            className="text-sm text-day-text-secondary dark:text-night-text-secondary max-w-xs"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+        >
             Finding meaning in your dream's symbols and patterns.
-        </p>
-    </div>
+        </motion.p>
+    </motion.div>
 );
 
 // Image generation loading state
@@ -80,33 +109,42 @@ export const ImageGenerationLoading: React.FC = () => (
     </div>
 );
 
-// Insights chart loading skeleton
-export const SkeletonChart: React.FC = () => (
-    <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">
-        <Skeleton className="h-6 w-40 mb-2" />
-        <Skeleton className="h-4 w-64 mb-4" />
-        <div className="h-48 flex items-end justify-around gap-2 px-4">
+// Insights chart loading skeleton - memoized for performance
+export const SkeletonChart: React.FC = React.memo(() => (
+    <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl" role="status" aria-label="Loading chart" aria-busy="true">
+        <Skeleton className="h-6 w-40 mb-2" aria-label="Loading chart title" />
+        <Skeleton className="h-4 w-64 mb-4" aria-label="Loading chart description" />
+        <div className="h-48 flex items-end justify-around gap-2 px-4" aria-hidden="true">
             {[0.4, 0.7, 0.5, 0.8, 0.6, 0.9, 0.7].map((h, i) => (
                 <Skeleton
                     key={i}
                     className="flex-1 rounded-t"
                     style={{ height: `${h * 100}%` }}
+                    aria-label="Loading chart bar"
                 />
             ))}
         </div>
     </div>
-);
+));
 
-// Full page loading overlay
-export const PageLoading: React.FC<{ message?: string }> = ({ message = 'Loading...' }) => (
+// Full page loading overlay - memoized since message rarely changes
+export const PageLoading: React.FC<{ message?: string }> = React.memo(({ message = 'Loading...' }) => (
     <div className="fixed inset-0 bg-day-bg-start/80 dark:bg-night-bg-start/80 backdrop-blur-sm flex items-center justify-center z-50" role="status" aria-live="polite">
         <div className="text-center">
             <img
                 src="/logo.png"
                 alt="Somnia"
+                loading="lazy"
                 className="w-20 h-20 mx-auto mb-4 animate-pulse drop-shadow-[0_0_15px_rgba(139,92,246,0.5)]"
             />
             <p className="text-day-text-secondary dark:text-night-text-secondary">{message}</p>
         </div>
     </div>
-);
+));
+
+// Modal loading fallback - minimal spinner for lazy-loaded modals
+export const ModalLoading: React.FC = React.memo(() => (
+    <div className="fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-sm flex items-center justify-center z-50" role="status" aria-label="Loading modal">
+        <div className="w-12 h-12 rounded-full border-4 border-day-accent/20 dark:border-night-accent/20 border-t-day-accent dark:border-t-night-accent animate-spin" />
+    </div>
+));

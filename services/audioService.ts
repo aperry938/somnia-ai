@@ -307,10 +307,19 @@ const ensureContextReady = async (context: AudioContext): Promise<void> => {
 // ALARM HELPERS
 // ============================================================
 
+/** Return type for prepareAlarmNodes - guarantees nodes are created */
+interface AlarmNodesReady {
+    context: AudioContext;
+    now: number;
+    oscillator: OscillatorNode;
+    gainNode: GainNode;
+}
+
 /**
- * Prepares the audio context and nodes for alarm playback
+ * Prepares the audio context and nodes for alarm playback.
+ * Returns the created nodes directly to avoid non-null assertions.
  */
-const prepareAlarmNodes = async (): Promise<{ context: AudioContext; now: number }> => {
+const prepareAlarmNodes = async (): Promise<AlarmNodesReady> => {
     stopSleepSound();
     const context = getAudioContext();
     if (alarmOscillator) {
@@ -318,28 +327,32 @@ const prepareAlarmNodes = async (): Promise<{ context: AudioContext; now: number
     }
     await ensureContextReady(context);
 
-    alarmOscillator = context.createOscillator();
-    alarmGainNode = context.createGain();
-    alarmOscillator.connect(alarmGainNode);
-    alarmGainNode.connect(context.destination);
+    const oscillator = context.createOscillator();
+    const gainNode = context.createGain();
+    oscillator.connect(gainNode);
+    gainNode.connect(context.destination);
 
-    return { context, now: context.currentTime };
+    // Store in module-level vars for stop/cleanup
+    alarmOscillator = oscillator;
+    alarmGainNode = gainNode;
+
+    return { context, now: context.currentTime, oscillator, gainNode };
 };
 
 /**
  * Creates a simple continuous alarm with exponential ramp
  */
 const createContinuousAlarm = async (config: AlarmConfig): Promise<void> => {
-    const { context: _context, now } = await prepareAlarmNodes();
+    const { now, oscillator, gainNode } = await prepareAlarmNodes();
 
-    alarmOscillator!.type = config.type;
-    alarmOscillator!.frequency.setValueAtTime(config.startFreq, now);
-    alarmGainNode!.gain.setValueAtTime(config.startGain, now);
+    oscillator.type = config.type;
+    oscillator.frequency.setValueAtTime(config.startFreq, now);
+    gainNode.gain.setValueAtTime(config.startGain, now);
 
-    alarmGainNode!.gain.exponentialRampToValueAtTime(config.endGain, now + config.rampDuration);
-    alarmOscillator!.frequency.exponentialRampToValueAtTime(config.endFreq, now + config.rampDuration);
+    gainNode.gain.exponentialRampToValueAtTime(config.endGain, now + config.rampDuration);
+    oscillator.frequency.exponentialRampToValueAtTime(config.endFreq, now + config.rampDuration);
 
-    alarmOscillator!.start(now);
+    oscillator.start(now);
 };
 
 /**
@@ -352,31 +365,31 @@ const createContinuousAlarm = async (config: AlarmConfig): Promise<void> => {
  * Creates a beeping alarm with crescendo then sustained beeps
  */
 const createBeepingAlarm = async (config: AlarmConfig): Promise<void> => {
-    const { now } = await prepareAlarmNodes();
+    const { now, oscillator, gainNode } = await prepareAlarmNodes();
     const interval = config.pulseInterval || 1;
     const crescendoBeeps = config.rampDuration;
     const sustainBeeps = SUSTAIN_DURATION - config.rampDuration;
 
-    alarmOscillator!.type = config.type;
-    alarmOscillator!.frequency.setValueAtTime(config.startFreq, now);
+    oscillator.type = config.type;
+    oscillator.frequency.setValueAtTime(config.startFreq, now);
 
     // Crescendo phase
     for (let i = 0; i < crescendoBeeps; i++) {
         const t = now + i * interval;
         const progress = i / crescendoBeeps;
         const volume = config.startGain + progress * (config.endGain - config.startGain);
-        alarmGainNode!.gain.setValueAtTime(volume, t);
-        alarmGainNode!.gain.setValueAtTime(0, t + 0.5);
+        gainNode.gain.setValueAtTime(volume, t);
+        gainNode.gain.setValueAtTime(0, t + 0.5);
     }
 
     // Sustain phase
     for (let i = 0; i < sustainBeeps; i++) {
         const t = now + config.rampDuration + i * interval;
-        alarmGainNode!.gain.setValueAtTime(config.endGain, t);
-        alarmGainNode!.gain.setValueAtTime(0, t + 0.5);
+        gainNode.gain.setValueAtTime(config.endGain, t);
+        gainNode.gain.setValueAtTime(0, t + 0.5);
     }
 
-    alarmOscillator!.start(now);
+    oscillator.start(now);
 };
 
 // ============================================================

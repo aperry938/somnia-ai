@@ -59,10 +59,11 @@ describe('authService', () => {
             });
 
             const { signUp } = await import('./authService');
-            const result = await signUp('test@example.com', 'password123');
+            const result = await signUp('test@example.com', 'Password123!');
 
             expect(result.success).toBe(false);
-            expect(result.error).toBe('Email already registered');
+            // Service maps error to user-friendly message
+            expect(result.error).toBe('An account with this email already exists');
         });
     });
 
@@ -93,7 +94,8 @@ describe('authService', () => {
             const result = await signIn('test@example.com', 'wrongpassword');
 
             expect(result.success).toBe(false);
-            expect(result.error).toBe('Invalid login credentials');
+            // Service uses generic error for security (doesn't reveal if email exists)
+            expect(result.error).toBe('Invalid email or password');
         });
     });
 

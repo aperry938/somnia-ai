@@ -19,6 +19,20 @@
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="Somnia.ai">
     <meta name="twitter:description" content="AI-powered dream journal and sleep wellness app">
+    <!-- Content Security Policy - Restricts resource loading for XSS protection -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com;
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+        font-src 'self' https://fonts.gstatic.com;
+        img-src 'self' data: blob: https:;
+        connect-src 'self' https://*.supabase.co https://*.googleapis.com https://generativelanguage.googleapis.com https://nominatim.openstreetmap.org https://api.revenuecat.com;
+        media-src 'self' blob: data:;
+        object-src 'none';
+        base-uri 'self';
+        form-action 'self';
+        frame-ancestors 'none';
+    ">
     <link rel="icon" type="image/png" href="/favicon.png">
     <link rel="apple-touch-icon" href="/icons/icon-192.svg">
     <link rel="manifest" href="/manifest.json">
@@ -27,6 +41,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Preload critical fonts for better LCP -->
+    <link rel="preload" href="https://fonts.gstatic.com/s/inter/v13/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa1ZL7.woff2" as="font" type="font/woff2" crossorigin>
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&family=Quattrocento:wght@400;700&display=swap"
         rel="stylesheet">

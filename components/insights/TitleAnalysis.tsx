@@ -5,21 +5,26 @@ interface TitleAnalysisProps {
     dreams: Dream[];
 }
 
+/** Type guard to narrow Dream to one with a valid title */
+function hasTitle(d: Dream): d is Dream & { title: string } {
+    return typeof d.title === 'string' && d.title.trim().length > 0;
+}
+
 export const TitleAnalysis: React.FC<TitleAnalysisProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
-        const titled = dreams.filter(d => d.title && d.title.trim().length > 0);
+        const titled = dreams.filter(hasTitle);
         if (titled.length < 3) return null;
 
-        const avgTitleLen = titled.reduce((s, d) => s + d.title!.length, 0) / titled.length;
-        const longestTitle = titled.reduce((max, d) => d.title!.length > max.title!.length ? d : max);
-        const titleWords = titled.reduce((s, d) => s + d.title!.split(/\s+/).length, 0) / titled.length;
+        const avgTitleLen = titled.reduce((s, d) => s + d.title.length, 0) / titled.length;
+        const longestTitle = titled.reduce((max, d) => d.title.length > max.title.length ? d : max);
+        const titleWords = titled.reduce((s, d) => s + d.title.split(/\s+/).length, 0) / titled.length;
 
         return {
             titled: titled.length,
             untitled: dreams.length - titled.length,
             avgTitleLen: Math.round(avgTitleLen),
             avgTitleWords: titleWords.toFixed(1),
-            longestTitle: longestTitle.title!.slice(0, 30) + (longestTitle.title!.length > 30 ? '...' : '')
+            longestTitle: longestTitle.title.slice(0, 30) + (longestTitle.title.length > 30 ? '...' : '')
         };
     }, [dreams]);
 

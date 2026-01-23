@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext, ReactNode, useCallback } from 'react';
+import React, { createContext, useState, useEffect, useContext, ReactNode, useCallback, useMemo } from 'react';
 import { Alarm, Dream, SleepAids, Biometrics, Theme, CoachPersonality, AnalysisPersonality, DreamMood, SleepSession, AlarmPurpose, SleepEntry, WakeData } from '../types';
 
 export type ArtStyle = 'surreal' | 'watercolor' | 'oil-painting' | 'anime' | 'photorealistic' | 'abstract' | 'fantasy' | 'minimalist';
@@ -81,32 +81,126 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const useLocalStorage = <T,>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] => {
+/**
+ * Enhanced useLocalStorage hook with:
+ * - Storage quota handling
+ * - JSON parse error recovery
+ * - Data corruption detection
+ * - Schema validation callback
+ */
+const useLocalStorage = <T,>(
+    key: string,
+    initialValue: T,
+    validator?: (data: unknown) => data is T
+): [T, React.Dispatch<React.SetStateAction<T>>] => {
     const [storedValue, setStoredValue] = useState<T>(() => {
         try {
             const item = window.localStorage.getItem(key);
-            return item ? JSON.parse(item) : initialValue;
+            if (item === null) return initialValue;
+
+            let parsed: unknown;
+            try {
+                parsed = JSON.parse(item);
+            } catch (parseError) {
+                // JSON parse failed - data is corrupted
+                logger.error(`[Storage] Corrupted data for key ${key}, resetting to default`, parseError);
+                // Backup corrupted data for potential recovery
+                try {
+                    window.localStorage.setItem(`${key}_corrupted_${Date.now()}`, item);
+                } catch {
+                    // Ignore backup failure
+                }
+                return initialValue;
+            }
+
+            // Validate schema if validator provided
+            if (validator && !validator(parsed)) {
+                logger.warn(`[Storage] Schema validation failed for key ${key}, using default value`);
+                return initialValue;
+            }
+
+            return parsed as T;
         } catch (error) {
-            logger.error(error);
+            logger.error(`[Storage] Error reading ${key}:`, error);
             return initialValue;
         }
     });
 
     useEffect(() => {
         try {
-            window.localStorage.setItem(key, JSON.stringify(storedValue));
+            const serialized = JSON.stringify(storedValue);
+            window.localStorage.setItem(key, serialized);
         } catch (error) {
-            logger.error(error);
+            // Handle storage quota exceeded
+            if (error instanceof DOMException && (
+                error.code === 22 || // Chrome
+                error.code === 1014 || // Firefox
+                error.name === 'QuotaExceededError' ||
+                error.name === 'NS_ERROR_DOM_QUOTA_REACHED'
+            )) {
+                logger.error(`[Storage] Quota exceeded for key ${key}, attempting cleanup`);
+                // Attempt to free space by removing old backups
+                try {
+                    const keysToRemove: string[] = [];
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const storageKey = localStorage.key(i);
+                        if (storageKey && (
+                            storageKey.includes('_corrupted_') ||
+                            storageKey.startsWith('somnia_backup_')
+                        )) {
+                            keysToRemove.push(storageKey);
+                        }
+                    }
+                    keysToRemove.forEach(k => localStorage.removeItem(k));
+                    // Retry save after cleanup
+                    window.localStorage.setItem(key, JSON.stringify(storedValue));
+                } catch (retryError) {
+                    logger.error(`[Storage] Failed to save ${key} even after cleanup:`, retryError);
+                }
+            } else {
+                logger.error(`[Storage] Error saving ${key}:`, error);
+            }
         }
     }, [key, storedValue]);
 
     return [storedValue, setStoredValue];
 };
 
+/**
+ * Type guard validators for localStorage data
+ */
+const isAlarmArray = (data: unknown): data is Alarm[] => {
+    return Array.isArray(data) && data.every(item =>
+        typeof item === 'object' && item !== null &&
+        typeof (item as Alarm).id === 'number' &&
+        typeof (item as Alarm).time === 'string'
+    );
+};
+
+const isDreamArray = (data: unknown): data is Dream[] => {
+    return Array.isArray(data) && data.every(item =>
+        typeof item === 'object' && item !== null &&
+        typeof (item as Dream).id === 'number' &&
+        typeof (item as Dream).dreamText === 'string'
+    );
+};
+
+const isSleepEntryArray = (data: unknown): data is SleepEntry[] => {
+    return Array.isArray(data) && data.every(item =>
+        typeof item === 'object' && item !== null &&
+        typeof (item as SleepEntry).id === 'number' &&
+        typeof (item as SleepEntry).date === 'string'
+    );
+};
+
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [alarms, setAlarms] = useLocalStorage<Alarm[]>('somnia_alarms', []);
-    const [dreams, setDreams] = useLocalStorage<Dream[]>('somnia_dreams', []);
+    // Core data with schema validation
+    const [alarms, setAlarms] = useLocalStorage<Alarm[]>('somnia_alarms', [], isAlarmArray);
+    const [dreams, setDreams] = useLocalStorage<Dream[]>('somnia_dreams', [], isDreamArray);
+    const [sleepEntries, setSleepEntries] = useLocalStorage<SleepEntry[]>('somnia_sleep_entries', [], isSleepEntryArray);
+
+    // User preferences (no validation needed - simple types)
     const [biometrics, setBiometrics] = useLocalStorage<Biometrics>('somnia_biometrics', { age: null, gender: '', avgSleep: null });
     const [activeSleepAids, setActiveSleepAids] = useState<SleepAids>({});
     const [pendingSleepData, setPendingSleepData] = useLocalStorage<SleepAids | null>('somnia_pending_sleep_data', null);
@@ -118,7 +212,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [activeSleepSession, setActiveSleepSession] = useLocalStorage<SleepSession | null>('somnia_active_sleep_session', null);
     const [lastSeenDreamCount, setLastSeenDreamCount] = useLocalStorage<number>('somnia_last_seen_dream_count', 0);
     const [artStyle, setArtStyle] = useLocalStorage<ArtStyle>('somnia_art_style', 'surreal');
-    const [sleepEntries, setSleepEntries] = useLocalStorage<SleepEntry[]>('somnia_sleep_entries', []);
 
     // Pre-populate title cache with existing dream titles to prevent unnecessary API calls
     // Mount-only effect: We intentionally read `dreams` only on initial load to seed the title cache.
@@ -808,7 +901,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return newDream.id;
     }, [sleepEntries, setDreams, setSleepEntries]);
 
-    const value: AppContextType = {
+    // Memoize context value to prevent unnecessary re-renders in consuming components
+    // Only re-create value object when actual dependencies change
+    const value: AppContextType = useMemo(() => ({
         alarms,
         dreams,
         biometrics,
@@ -861,7 +956,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         deleteSleepEntry,
         getSleepEntryById,
         addDreamToSleepEntry,
-    };
+    }), [
+        // Data state
+        alarms, dreams, biometrics, activeSleepAids, pendingSleepData,
+        activeSleepSession, themeOverride, coachPersonality, volume,
+        analysisPersonality, isScribeOpen, lastSeenDreamCount, artStyle, sleepEntries,
+        // Callbacks (memoized with useCallback, so these are stable references)
+        startSleepSession, ensureSleepSession, updateSleepSessionData, logSoundActivity,
+        logBreathingActivity, saveWakeData, finalizeSleepSession, createSleepEntryForSession,
+        clearSleepSession, getNextActiveAlarm, addAlarm, updateAlarm, toggleAlarmActive,
+        deleteAlarm, addDream, addPastDream, updateDream, getDreamById, deleteDream,
+        importDreams, setActiveSleepAid, clearActiveSleepAids, setPendingSleepData,
+        setBiometrics, setThemeOverride, setCoachPersonality, setVolume, setAnalysisPersonality,
+        markDreamsAsSeen, getUnreadDreamCount, setArtStyle, addSleepEntry, updateSleepEntry,
+        deleteSleepEntry, getSleepEntryById, addDreamToSleepEntry,
+    ]);
 
     return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

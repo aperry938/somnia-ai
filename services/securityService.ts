@@ -157,26 +157,134 @@ export async function secureClear(): Promise<boolean> {
 }
 
 // Device-specific key for localStorage encryption fallback
+// SECURITY: Key is stored in IndexedDB with extractable=false for better security
 let deviceKey: CryptoKey | null = null;
+
+// IndexedDB database name and store
+const DB_NAME = 'somnia_secure_db';
+const KEY_STORE = 'crypto_keys';
+const DEVICE_KEY_ID = 'device_encryption_key';
+
+/**
+ * Open IndexedDB for secure key storage
+ * IndexedDB is more secure than localStorage for crypto keys because:
+ * 1. Keys can be stored as non-extractable CryptoKey objects
+ * 2. Less accessible to XSS attacks than localStorage
+ */
+async function openSecureDB(): Promise<IDBDatabase> {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, 1);
+
+        request.onerror = () => reject(new Error('Failed to open secure database'));
+
+        request.onupgradeneeded = () => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains(KEY_STORE)) {
+                db.createObjectStore(KEY_STORE, { keyPath: 'id' });
+            }
+        };
+
+        request.onsuccess = () => resolve(request.result);
+    });
+}
+
+/**
+ * Store CryptoKey in IndexedDB (non-extractable keys supported)
+ */
+async function storeKeyInDB(id: string, key: CryptoKey): Promise<void> {
+    const db = await openSecureDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(KEY_STORE, 'readwrite');
+        const store = transaction.objectStore(KEY_STORE);
+        const request = store.put({ id, key });
+
+        request.onerror = () => {
+            db.close();
+            reject(new Error('Failed to store key'));
+        };
+        request.onsuccess = () => {
+            db.close();
+            resolve();
+        };
+    });
+}
+
+/**
+ * Retrieve CryptoKey from IndexedDB
+ */
+async function getKeyFromDB(id: string): Promise<CryptoKey | null> {
+    try {
+        const db = await openSecureDB();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction(KEY_STORE, 'readonly');
+            const store = transaction.objectStore(KEY_STORE);
+            const request = store.get(id);
+
+            request.onerror = () => {
+                db.close();
+                reject(new Error('Failed to retrieve key'));
+            };
+            request.onsuccess = () => {
+                db.close();
+                const result = request.result;
+                resolve(result?.key ?? null);
+            };
+        });
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Generate a non-extractable device key for enhanced security
+ * Non-extractable keys cannot be exported, making them more secure
+ */
+async function generateNonExtractableKey(): Promise<CryptoKey> {
+    return window.crypto.subtle.generateKey(
+        {
+            name: "AES-GCM",
+            length: 256
+        },
+        false, // SECURITY: non-extractable - key cannot be exported
+        ["encrypt", "decrypt"]
+    );
+}
 
 async function getDeviceKey(): Promise<CryptoKey> {
     if (deviceKey) return deviceKey;
 
-    // Try to load existing key
-    const storedKey = localStorage.getItem('device_key');
-    if (storedKey) {
+    // Try to load existing key from IndexedDB
+    try {
+        const storedKey = await getKeyFromDB(DEVICE_KEY_ID);
+        if (storedKey) {
+            deviceKey = storedKey;
+            return deviceKey;
+        }
+    } catch {
+        // Key not found or corrupted, generate new one
+    }
+
+    // MIGRATION: Check for legacy localStorage key and migrate
+    const legacyKey = localStorage.getItem('device_key');
+    if (legacyKey) {
         try {
-            deviceKey = await importKey(storedKey);
+            // Import legacy key, use it, then remove from localStorage
+            deviceKey = await importKey(legacyKey);
+            // Store in IndexedDB (as extractable since we imported it)
+            await storeKeyInDB(DEVICE_KEY_ID, deviceKey);
+            // SECURITY: Remove plaintext key from localStorage
+            localStorage.removeItem('device_key');
+            logger.info('Migrated device key from localStorage to IndexedDB');
             return deviceKey;
         } catch {
-            // Key corrupted, generate new one
+            // Legacy key corrupted, remove it
+            localStorage.removeItem('device_key');
         }
     }
 
-    // Generate new device key
-    deviceKey = await generateKey();
-    const exported = await exportKey(deviceKey);
-    localStorage.setItem('device_key', exported);
+    // Generate new non-extractable device key
+    deviceKey = await generateNonExtractableKey();
+    await storeKeyInDB(DEVICE_KEY_ID, deviceKey);
 
     return deviceKey;
 }

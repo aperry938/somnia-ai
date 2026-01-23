@@ -375,3 +375,64 @@ body.modal-open {
     position: fixed;
     width: 100%;
 }
+
+/* Smooth theme transitions */
+html {
+    transition: background-color 0.3s ease;
+}
+
+html:not(.no-transition) * {
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-duration: 0.2s;
+    transition-timing-function: ease;
+}
+
+/* Disable theme transition during initial load to prevent flash */
+html.no-transition * {
+    transition: none !important;
+}
+
+/* Animated underline for active tabs */
+.active-indicator {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--day-accent), var(--night-accent));
+    transform-origin: left;
+}
+
+/* Smooth card hover lift effect */
+.card-hover {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+.dark .card-hover:hover {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+/* Button press feedback */
+.btn-press {
+    transition: transform 0.1s ease, opacity 0.1s ease;
+}
+
+.btn-press:active {
+    transform: scale(0.97);
+    opacity: 0.9;
+}
+
+/* Subtle pulse animation for attention */
+@keyframes subtle-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.animate-subtle-pulse {
+    animation: subtle-pulse 2s ease-in-out infinite;
+}

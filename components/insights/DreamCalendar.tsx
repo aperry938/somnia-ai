@@ -9,6 +9,29 @@ interface DreamCalendarProps {
 /**
  * Heatmap-style calendar showing dream frequency by day.
  * Shows the last 3 months of activity.
+ *
+ * I18N NOTES:
+ *
+ * HARDCODED STRINGS requiring translation:
+ * - "Dream Activity" (title)
+ * - Day abbreviations: "S", "M", "T", "W", "T", "F", "S" - need locale-aware weekday names
+ * - ", today" suffix in aria-label
+ *
+ * PLURALIZATION ISSUES:
+ * - `${count} dream${count !== 1 ? 's' : ''}` - English-only pluralization
+ * - Use ICU MessageFormat or react-intl's FormattedPlural
+ *
+ * DATE/TIME FORMATTING:
+ * - toLocaleDateString(undefined, { month: 'short' }) - good, uses browser locale
+ * - toLocaleDateString() for title attribute - good, uses browser locale
+ *
+ * RTL CONSIDERATIONS:
+ * - Calendar grid layout (weeks) may need to start from right in RTL
+ * - Day abbreviations order should match locale (some cultures start week on Monday)
+ *
+ * CALENDAR CONSIDERATIONS:
+ * - Week start day varies by locale (Sunday vs Monday)
+ * - Consider using Intl.Locale for proper week start day
  */
 export const DreamCalendar: React.FC<DreamCalendarProps> = React.memo(({ dreams, onDayClick }) => {
     const { weeks, dreamsByDate, months } = useMemo(() => {
@@ -23,8 +46,12 @@ export const DreamCalendar: React.FC<DreamCalendarProps> = React.memo(({ dreams,
         const dreamsByDate = new Map<string, Dream[]>();
         dreams.forEach(d => {
             const dateKey = new Date(d.timestamp).toDateString();
-            if (!dreamsByDate.has(dateKey)) dreamsByDate.set(dateKey, []);
-            dreamsByDate.get(dateKey)!.push(d);
+            const existing = dreamsByDate.get(dateKey);
+            if (existing) {
+                existing.push(d);
+            } else {
+                dreamsByDate.set(dateKey, [d]);
+            }
         });
 
         // Build weeks grid

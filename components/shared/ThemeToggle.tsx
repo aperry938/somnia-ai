@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAppContext } from '../../contexts/AppContext';
 import { Theme } from '../../types';
 
@@ -69,23 +70,44 @@ export const ThemeToggle: React.FC = () => {
 
     return (
         <>
-            <button
+            <motion.button
                 onClick={cycleTheme}
                 aria-label={`Toggle theme, currently ${themeOverride}`}
-                className="fixed top-[calc(0.5rem+var(--safe-area-inset-top))] left-4 z-40 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-black/5 dark:bg-black/20 backdrop-blur-md border border-black/10 dark:border-white/10 text-day-text-primary dark:text-night-text-primary shadow-lg hover:bg-black/10 dark:hover:bg-white/10 transition-all"
+                className="fixed top-[calc(0.5rem+var(--safe-area-inset-top))] left-4 z-40 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-black/5 dark:bg-black/20 backdrop-blur-md border border-black/10 dark:border-white/10 text-day-text-primary dark:text-night-text-primary shadow-lg"
                 title={`Theme: ${themeOverride.charAt(0).toUpperCase() + themeOverride.slice(1)}`}
+                whileHover={{ scale: 1.05, backgroundColor: 'rgba(0,0,0,0.1)' }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 17 }}
             >
-                {getIcon()}
-            </button>
+                <AnimatePresence mode="wait">
+                    <motion.span
+                        key={themeOverride}
+                        initial={{ rotate: -90, opacity: 0 }}
+                        animate={{ rotate: 0, opacity: 1 }}
+                        exit={{ rotate: 90, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        {getIcon()}
+                    </motion.span>
+                </AnimatePresence>
+            </motion.button>
 
             {/* Floating Label */}
-            {showLabel && (
-                <div className="fixed top-[calc(3.5rem+var(--safe-area-inset-top))] left-4 z-40 px-3 py-1.5 rounded-full bg-white/90 dark:bg-black/80 backdrop-blur-sm border border-black/10 dark:border-white/10 shadow-lg animate-fadeIn">
-                    <span className="text-sm font-medium text-day-text-primary dark:text-night-text-primary">
-                        {labelText}
-                    </span>
-                </div>
-            )}
+            <AnimatePresence>
+                {showLabel && (
+                    <motion.div
+                        className="fixed top-[calc(3.5rem+var(--safe-area-inset-top))] left-4 z-40 px-3 py-1.5 rounded-full bg-white/90 dark:bg-black/80 backdrop-blur-sm border border-black/10 dark:border-white/10 shadow-lg"
+                        initial={{ opacity: 0, y: -10, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.9 }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                    >
+                        <span className="text-sm font-medium text-day-text-primary dark:text-night-text-primary">
+                            {labelText}
+                        </span>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </>
     );
 };

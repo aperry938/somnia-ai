@@ -1,5 +1,22 @@
 import React, { useMemo, useState } from 'react';
-import { Dream, type DreamTelemetry as _DreamTelemetry } from '../../types';
+import { Dream, DreamTelemetry } from '../../types';
+
+/** Dream with validated telemetry data */
+interface DreamWithTelemetry extends Dream {
+    aiAnalysis: NonNullable<Dream['aiAnalysis']> & {
+        telemetry: DreamTelemetry;
+    };
+}
+
+/** Type guard to narrow Dream to one with valid telemetry */
+function hasTelemetry(d: Dream): d is DreamWithTelemetry {
+    return (
+        d.aiAnalysis !== null &&
+        d.aiAnalysis.telemetry !== undefined &&
+        typeof d.aiAnalysis.telemetry.valence === 'number' &&
+        typeof d.aiAnalysis.telemetry.arousal === 'number'
+    );
+}
 
 interface TelemetryScatterPlotProps {
     dreams: Dream[];
@@ -40,11 +57,7 @@ export const TelemetryScatterPlot: React.FC<TelemetryScatterPlotProps> = React.m
 
     // Filter dreams that have telemetry data
     const dreamsWithTelemetry = useMemo(() => {
-        return dreams.filter(d =>
-            d.aiAnalysis?.telemetry &&
-            typeof d.aiAnalysis.telemetry.valence === 'number' &&
-            typeof d.aiAnalysis.telemetry.arousal === 'number'
-        );
+        return dreams.filter(hasTelemetry);
     }, [dreams]);
 
     // Calculate quadrant stats
@@ -57,8 +70,8 @@ export const TelemetryScatterPlot: React.FC<TelemetryScatterPlotProps> = React.m
         };
 
         dreamsWithTelemetry.forEach(d => {
-            const telemetry = d.aiAnalysis!.telemetry!;
-            const quadrant = getQuadrant(telemetry.valence, telemetry.arousal);
+            const { valence, arousal } = d.aiAnalysis.telemetry;
+            const quadrant = getQuadrant(valence, arousal);
             stats[quadrant]++;
         });
 
@@ -69,8 +82,8 @@ export const TelemetryScatterPlot: React.FC<TelemetryScatterPlotProps> = React.m
     const filteredDreams = useMemo(() => {
         if (!selectedQuadrant) return dreamsWithTelemetry;
         return dreamsWithTelemetry.filter(d => {
-            const telemetry = d.aiAnalysis!.telemetry!;
-            return getQuadrant(telemetry.valence, telemetry.arousal) === selectedQuadrant;
+            const { valence, arousal } = d.aiAnalysis.telemetry;
+            return getQuadrant(valence, arousal) === selectedQuadrant;
         });
     }, [dreamsWithTelemetry, selectedQuadrant]);
 
@@ -180,9 +193,9 @@ export const TelemetryScatterPlot: React.FC<TelemetryScatterPlotProps> = React.m
 
                 {/* Data Points */}
                 {filteredDreams.map(dream => {
-                    const telemetry = dream.aiAnalysis!.telemetry!;
-                    const coords = toPlotCoords(telemetry.valence, telemetry.arousal);
-                    const color = getPointColor(telemetry.valence, telemetry.arousal);
+                    const { valence, arousal } = dream.aiAnalysis.telemetry;
+                    const coords = toPlotCoords(valence, arousal);
+                    const color = getPointColor(valence, arousal);
                     const isHovered = hoveredDream?.id === dream.id;
 
                     return (

@@ -39,6 +39,34 @@ export default {
           '0%': { opacity: '0', transform: 'translateY(10px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
+        fadeOut: {
+          '0%': { opacity: '1', transform: 'translateY(0)' },
+          '100%': { opacity: '0', transform: 'translateY(-10px)' },
+        },
+        shimmer: {
+          '0%': { backgroundPosition: '200% 0' },
+          '100%': { backgroundPosition: '-200% 0' },
+        },
+        scaleIn: {
+          '0%': { opacity: '0', transform: 'scale(0.95)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
+        slideInUp: {
+          '0%': { opacity: '0', transform: 'translateY(20px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        slideInDown: {
+          '0%': { opacity: '0', transform: 'translateY(-20px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        bounce: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-5px)' },
+        },
+        wiggle: {
+          '0%, 100%': { transform: 'rotate(-3deg)' },
+          '50%': { transform: 'rotate(3deg)' },
+        },
         inhale: {
           'from': { transform: 'scale(0.8)', opacity: '0.7' },
           'to': { transform: 'scale(1.6)', opacity: '1' }
@@ -72,7 +100,14 @@ export default {
         }
       },
       animation: {
-        fadeIn: 'fadeIn 0.5s ease-in-out',
+        fadeIn: 'fadeIn 0.3s ease-out',
+        fadeOut: 'fadeOut 0.2s ease-in',
+        shimmer: 'shimmer 2s infinite',
+        scaleIn: 'scaleIn 0.2s ease-out',
+        slideInUp: 'slideInUp 0.3s ease-out',
+        slideInDown: 'slideInDown 0.3s ease-out',
+        bounce: 'bounce 0.5s ease-in-out',
+        wiggle: 'wiggle 0.3s ease-in-out',
         'inhale-4s': 'inhale 4s linear forwards',
         'inhale-5s': 'inhale 5.5s linear forwards',
         'exhale-8s': 'exhale 8s linear forwards',

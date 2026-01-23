@@ -114,14 +114,20 @@ describe('syncService', () => {
     });
 
     describe('offline handling', () => {
-        it('should check navigator.onLine before processing', async () => {
+        it('should return zeros when there are no pending items', async () => {
             mockOnline = false;
 
             const { processSyncQueue } = await import('./syncService');
             const result = await processSyncQueue();
 
-            // Should return early when offline
-            expect(result).toEqual({ success: 0, failed: 0, conflictsResolved: 0 });
+            // Should return zeros when no pending items (caller checks navigator.onLine)
+            expect(result).toEqual({
+                success: 0,
+                failed: 0,
+                conflictsResolved: 0,
+                rateLimited: 0,
+                validationFailed: 0
+            });
         });
     });
 });

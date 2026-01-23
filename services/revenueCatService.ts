@@ -187,9 +187,11 @@ export async function getCustomerInfo(): Promise<CustomerInfo | null> {
         return getMockCustomerInfo();
     }
 
+    // Capture in local const for TypeScript narrowing in callback
+    const purchases = purchasesModule;
     try {
         const result = await withRetry(
-            () => withTimeout(purchasesModule!.getCustomerInfo()),
+            () => withTimeout(purchases.getCustomerInfo()),
             'getCustomerInfo'
         );
 
@@ -228,9 +230,10 @@ export async function getOfferings(): Promise<PurchasesOfferings | null> {
         return getMockOfferings();
     }
 
+    const purchases = purchasesModule;
     try {
         const offerings = await withRetry(
-            () => withTimeout(purchasesModule!.getOfferings()),
+            () => withTimeout(purchases.getOfferings()),
             'getOfferings'
         );
 
@@ -330,11 +333,12 @@ export async function restorePurchases(): Promise<{ success: boolean; customerIn
         return { success: false, error: 'RevenueCat not initialized', errorCode: 'NOT_INITIALIZED' };
     }
 
+    const purchases = purchasesModule;
     try {
         logger.info('[RevenueCat] Starting purchase restoration');
 
         const result = await withRetry(
-            () => withTimeout(purchasesModule!.restorePurchases()),
+            () => withTimeout(purchases.restorePurchases()),
             'restorePurchases'
         );
 

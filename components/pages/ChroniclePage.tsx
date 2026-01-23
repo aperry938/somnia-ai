@@ -1,5 +1,39 @@
-
+/**
+ * I18N NOTES for ChroniclePage:
+ *
+ * HARDCODED STRINGS requiring translation:
+ * - "Chronicle" (page title)
+ * - "Search dreams...", "No results for", "Clear search"
+ * - "Add Night", "Add Dream Entry"
+ * - Export menu items: "Download PDF", "Export Backup", "Export Encrypted", "Import Dreams"
+ * - Month header format (formatMonthHeader function)
+ * - "1 entry"/"X entries" count display
+ * - Empty state: "Your dream journey begins here", "Log your first night's sleep..."
+ * - Error messages: "Failed to export...", "Failed to import..."
+ * - Toast messages: "dreams imported", "Backup exported"
+ * - Password modal labels
+ *
+ * PLURALIZATION ISSUES:
+ * - entries.length === 1 ? 'entry' : 'entries' - English-only
+ * - "X dreams imported" in toast - English-only
+ * - Use ICU MessageFormat for proper pluralization
+ *
+ * DATE/TIME FORMATTING:
+ * - formatMonthHeader() uses toLocaleDateString('en-US', ...) - hardcoded locale!
+ *   Should use getUserLocale() from i18nUtils.ts
+ * - Month/year grouping format varies by locale
+ *
+ * RTL CONSIDERATIONS:
+ * - Search input text direction
+ * - Export menu alignment (right-0)
+ * - Month header expand/collapse icons
+ *
+ * TEXT OVERFLOW:
+ * - Search results count badge
+ * - Export menu items
+ */
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { useAppContext } from '../../contexts/AppContext';
 import { Dream as _Dream, DreamMood, SleepEntry as _SleepEntry, SleepAids } from '../../types';
 import { exportDreamsAsJSON, exportDreamJournalToPDF, exportDreamsEncrypted, importDreamsEncrypted, isEncryptedBackup } from '../../services/exportService';
@@ -164,10 +198,15 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
         });
     }, []);
 
+    /**
+     * Format month header using locale-aware date formatting.
+     * Uses browser's locale instead of hardcoded 'en-US' for i18n support.
+     */
     const formatMonthHeader = (monthKey: string) => {
         const [year, month] = monthKey.split('-');
         const date = new Date(parseInt(year ?? '2024'), parseInt(month ?? '1') - 1);
-        return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        // Use empty array [] to use browser's default locale instead of hardcoded 'en-US'
+        return date.toLocaleDateString([], { month: 'long', year: 'numeric' });
     };
 
 
@@ -556,16 +595,21 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
             </div>
 
             {/* Floating Action Button */}
-            <button
+            <motion.button
                 onClick={() => setIsAddSleepModalOpen(true)}
-                className="fixed bottom-[calc(6rem+var(--safe-area-inset-bottom))] right-6 w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center z-40"
+                className="fixed bottom-[calc(6rem+var(--safe-area-inset-bottom))] right-6 w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-full shadow-lg flex items-center justify-center z-40"
                 title="Log sleep"
                 aria-label="Log sleep"
+                whileHover={{ scale: 1.1, boxShadow: '0 10px 40px rgba(99, 102, 241, 0.4)' }}
+                whileTap={{ scale: 0.95 }}
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 17 }}
             >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                 </svg>
-            </button>
+            </motion.button>
 
             {/* Add Sleep Entry Modal */}
             {isAddSleepModalOpen && (

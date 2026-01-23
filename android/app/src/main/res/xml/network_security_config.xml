@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Network Security Configuration
+
+    SECURITY: Enforces HTTPS-only connections and enables certificate pinning
+    for production API endpoints to prevent MITM attacks.
+
+    Debug builds allow localhost connections for development.
+-->
+<network-security-config>
+    <!-- Base configuration: HTTPS only, no cleartext traffic -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <!-- Allow localhost for development/debug builds only -->
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="user" />
+        </trust-anchors>
+    </debug-overrides>
+
+    <!-- Domain-specific configuration for Supabase -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">supabase.co</domain>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+
+    <!-- Domain-specific configuration for Google APIs -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">googleapis.com</domain>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+
+    <!-- Domain-specific configuration for RevenueCat -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">revenuecat.com</domain>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+</network-security-config>

@@ -1,7 +1,31 @@
 // components/modals/PasswordInputModal.tsx
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useBackButton } from '../../hooks/useBackButton';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
+
+// Animation variants
+const backdropVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { duration: 0.2 } },
+    exit: { opacity: 0, transition: { duration: 0.15 } },
+};
+
+const modalVariants = {
+    hidden: { opacity: 0, scale: 0.95, y: 20 },
+    visible: {
+        opacity: 1,
+        scale: 1,
+        y: 0,
+        transition: { type: 'spring' as const, stiffness: 300, damping: 30 },
+    },
+    exit: {
+        opacity: 0,
+        scale: 0.95,
+        y: 20,
+        transition: { duration: 0.15 },
+    },
+};
 
 interface PasswordInputModalProps {
     isOpen: boolean;
@@ -91,26 +115,34 @@ export const PasswordInputModal: React.FC<PasswordInputModalProps> = ({
         onSubmit(password);
     };
 
-    if (!isOpen) return null;
-
     const title = mode === 'set' ? 'Set Backup Password' : 'Enter Backup Password';
     const description = mode === 'set'
         ? 'Create a strong password to encrypt your dream backup. You will need this password to restore your data.'
         : 'Enter the password you used when creating this encrypted backup.';
 
     return (
-        <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4 pt-4 pb-[calc(6.5rem+var(--safe-area-inset-bottom))] sm:pb-4 z-50"
-            onClick={onCancel}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="password-modal-title"
-        >
-            <div
-                ref={modalRef}
-                className="w-full max-w-md bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl shadow-2xl overflow-hidden animate-fadeIn"
-                onClick={(e) => e.stopPropagation()}
-            >
+        <AnimatePresence>
+            {isOpen && (
+                <motion.div
+                    className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4 pt-4 pb-[calc(6.5rem+var(--safe-area-inset-bottom))] sm:pb-4 z-50"
+                    onClick={onCancel}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="password-modal-title"
+                    variants={backdropVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                >
+                    <motion.div
+                        ref={modalRef}
+                        className="w-full max-w-md bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl shadow-2xl overflow-hidden"
+                        onClick={(e) => e.stopPropagation()}
+                        variants={modalVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                    >
                 {/* Header */}
                 <div className="p-5 bg-gradient-to-r from-indigo-600/20 to-purple-600/20 border-b border-day-border dark:border-night-border">
                     <div className="flex items-center gap-3">
@@ -231,7 +263,9 @@ export const PasswordInputModal: React.FC<PasswordInputModalProps> = ({
                         </button>
                     </div>
                 </form>
-            </div>
-        </div>
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
     );
 };

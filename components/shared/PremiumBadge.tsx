@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { PremiumFeature, isPremium, PREMIUM_FEATURES } from '../../services/secureSubscriptionService';
 import { SecurePaywallModal } from '../modals/SecurePaywallModal';
 import { useTermsNavigation } from '../../contexts/NavigationContext';
@@ -17,8 +17,9 @@ interface PremiumBadgeProps {
  * Badge that indicates a premium feature.
  * When clicked, opens the paywall modal.
  * If user is premium, badge is not shown.
+ * Memoized to prevent unnecessary re-renders in lists and complex UI.
  */
-export const PremiumBadge: React.FC<PremiumBadgeProps> = ({
+const PremiumBadgeComponent: React.FC<PremiumBadgeProps> = ({
     feature,
     children,
     className = '',
@@ -29,26 +30,40 @@ export const PremiumBadge: React.FC<PremiumBadgeProps> = ({
     const [showPaywall, setShowPaywall] = useState(false);
     const contextTermsNav = useTermsNavigation();
     const termsNav = onNavigateToTerms || contextTermsNav;
+    const userIsPremium = isPremium();
+
+    // Memoize class computation - must be before any early return
+    const buttonClasses = useMemo(() => {
+        const needsFlexLayout = className.includes('h-') || className.includes('w-full');
+        const baseClasses = needsFlexLayout ? '' : 'inline-flex items-center gap-1';
+        return `${baseClasses} ${className}`.trim();
+    }, [className]);
+
+    // Memoize feature info lookup
+    const featureInfo = useMemo(() => PREMIUM_FEATURES[feature], [feature]);
+
+    // Memoized handlers
+    const handleClick = useCallback((e: React.MouseEvent) => {
+        e.stopPropagation();
+        setShowPaywall(true);
+    }, []);
+
+    const handleClosePaywall = useCallback(() => {
+        setShowPaywall(false);
+    }, []);
 
     // Don't show badge if user is premium
-    if (isPremium()) {
+    if (userIsPremium) {
         return <>{children}</>;
     }
-
-    // Check if className contains height/width classes that need flex layout
-    const needsFlexLayout = className.includes('h-') || className.includes('w-full');
-    const baseClasses = needsFlexLayout ? '' : 'inline-flex items-center gap-1';
 
     return (
         <>
             <button
-                onClick={(e) => {
-                    e.stopPropagation();
-                    setShowPaywall(true);
-                }}
-                className={`${baseClasses} ${className}`.trim()}
-                title={`Premium: ${PREMIUM_FEATURES[feature].name}`}
-                aria-label={`Unlock premium feature: ${PREMIUM_FEATURES[feature].name}`}
+                onClick={handleClick}
+                className={buttonClasses}
+                title={`Premium: ${featureInfo.name}`}
+                aria-label={`Unlock premium feature: ${featureInfo.name}`}
             >
                 {children}
                 {!hideBadge && (
@@ -62,13 +77,15 @@ export const PremiumBadge: React.FC<PremiumBadgeProps> = ({
             </button>
             <SecurePaywallModal
                 isOpen={showPaywall}
-                onClose={() => setShowPaywall(false)}
+                onClose={handleClosePaywall}
                 feature={feature}
                 onNavigateToTerms={termsNav}
             />
         </>
     );
 };
+
+export const PremiumBadge = React.memo(PremiumBadgeComponent);
 
 /**
  * Wrapper component that gates content behind premium.
@@ -81,7 +98,7 @@ interface PremiumGateProps {
     onNavigateToTerms?: () => void; // Navigation callback for Terms link
 }
 
-export const PremiumGate: React.FC<PremiumGateProps> = ({
+const PremiumGateComponent: React.FC<PremiumGateProps> = ({
     feature,
     children,
     fallback,
@@ -92,11 +109,21 @@ export const PremiumGate: React.FC<PremiumGateProps> = ({
     const contextTermsNav = useTermsNavigation();
     const termsNav = onNavigateToTerms || contextTermsNav;
 
+    // Memoize feature info lookup
+    const featureInfo = useMemo(() => PREMIUM_FEATURES[feature], [feature]);
+
+    // Memoized handlers
+    const handleShowPaywall = useCallback(() => {
+        setShowPaywall(true);
+    }, []);
+
+    const handleClosePaywall = useCallback(() => {
+        setShowPaywall(false);
+    }, []);
+
     if (userIsPremium) {
         return <>{children}</>;
     }
-
-    const featureInfo = PREMIUM_FEATURES[feature];
 
     return (
         <>
@@ -112,7 +139,7 @@ export const PremiumGate: React.FC<PremiumGateProps> = ({
                         {featureInfo.description}
                     </p>
                     <button
-                        onClick={() => setShowPaywall(true)}
+                        onClick={handleShowPaywall}
                         className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-day-accent to-purple-600 text-white rounded-full font-medium hover:opacity-90 transition-opacity"
                         aria-label={`Unlock ${featureInfo.name} - Premium feature`}
                     >
@@ -125,10 +152,12 @@ export const PremiumGate: React.FC<PremiumGateProps> = ({
             )}
             <SecurePaywallModal
                 isOpen={showPaywall}
-                onClose={() => setShowPaywall(false)}
+                onClose={handleClosePaywall}
                 feature={feature}
                 onNavigateToTerms={termsNav}
             />
         </>
     );
 };
+
+export const PremiumGate = React.memo(PremiumGateComponent);

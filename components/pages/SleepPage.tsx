@@ -1,12 +1,15 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, Suspense, lazy } from 'react';
 import { GUIDED_RELAXATIONS, SLEEP_CHECKLIST_ITEMS, SOUNDSCAPES } from '../../constants';
 import { GuidedRelaxation, Soundscape, SleepAids } from '../../types';
-import { SoundscapeModal } from '../modals/SoundscapeModal';
-import { GuidedRelaxationModal } from '../modals/GuidedRelaxationModal';
-import { HardwareSyncModal } from '../modals/HardwareSyncModal';
-import { TechniqueInfoModal } from '../modals/TechniqueInfoModal';
-import { RealityCheckInfoModal } from '../modals/RealityCheckInfoModal';
-import { DreamScribeModal } from '../modals/DreamScribeModal';
+import { ModalLoading } from '../shared/LoadingStates';
+
+// Lazy load heavy modals for better code splitting
+const SoundscapeModal = lazy(() => import('../modals/SoundscapeModal').then(m => ({ default: m.SoundscapeModal })));
+const GuidedRelaxationModal = lazy(() => import('../modals/GuidedRelaxationModal').then(m => ({ default: m.GuidedRelaxationModal })));
+const HardwareSyncModal = lazy(() => import('../modals/HardwareSyncModal').then(m => ({ default: m.HardwareSyncModal })));
+const TechniqueInfoModal = lazy(() => import('../modals/TechniqueInfoModal').then(m => ({ default: m.TechniqueInfoModal })));
+const RealityCheckInfoModal = lazy(() => import('../modals/RealityCheckInfoModal').then(m => ({ default: m.RealityCheckInfoModal })));
+const DreamScribeModal = lazy(() => import('../modals/DreamScribeModal').then(m => ({ default: m.DreamScribeModal })));
 
 import { useAppContext } from '../../contexts/AppContext';
 import { stopSleepSound, stopSleepSoundIfNotPersisting, setSleepSoundPersist } from '../../services/audioService';
@@ -924,42 +927,58 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                 )
             }
             {activeModal === 'soundscape' && selectedSound && (
-                <SoundscapeModal
-                    sound={selectedSound}
-                    onClose={closeModal}
-                    onPlay={handlePlaySound}
-                    onStop={handleStopSound}
-                    isPlaying={playingSoundId === selectedSound.id}
-                    onFallAsleep={handleFallAsleep}
-                />
+                <Suspense fallback={<ModalLoading />}>
+                    <SoundscapeModal
+                        sound={selectedSound}
+                        onClose={closeModal}
+                        onPlay={handlePlaySound}
+                        onStop={handleStopSound}
+                        isPlaying={playingSoundId === selectedSound.id}
+                        onFallAsleep={handleFallAsleep}
+                    />
+                </Suspense>
             )}
-            {
-                activeModal === 'relaxation' && selectedRelaxation && (
+            {activeModal === 'relaxation' && selectedRelaxation && (
+                <Suspense fallback={<ModalLoading />}>
                     <GuidedRelaxationModal
                         relaxation={selectedRelaxation}
                         onClose={closeModal}
                     />
-                )
-            }
-            {activeModal === 'sync' && <HardwareSyncModal onClose={closeModal} />}
-            <TechniqueInfoModal
-                technique={selectedTechnique}
-                onClose={() => setSelectedTechnique(null)}
-            />
-            <RealityCheckInfoModal
-                isOpen={showRealityCheckModal}
-                onClose={() => setShowRealityCheckModal(false)}
-            />
+                </Suspense>
+            )}
+            {activeModal === 'sync' && (
+                <Suspense fallback={<ModalLoading />}>
+                    <HardwareSyncModal onClose={closeModal} />
+                </Suspense>
+            )}
+            {selectedTechnique && (
+                <Suspense fallback={<ModalLoading />}>
+                    <TechniqueInfoModal
+                        technique={selectedTechnique}
+                        onClose={() => setSelectedTechnique(null)}
+                    />
+                </Suspense>
+            )}
+            {showRealityCheckModal && (
+                <Suspense fallback={<ModalLoading />}>
+                    <RealityCheckInfoModal
+                        isOpen={showRealityCheckModal}
+                        onClose={() => setShowRealityCheckModal(false)}
+                    />
+                </Suspense>
+            )}
 
             {/* Quick Dream Recording Modal */}
             {showQuickDream && (
-                <DreamScribeModal
-                    onSave={(dreamText, sleepQuality, mood) => {
-                        addDream(dreamText, sleepQuality, mood);
-                        setShowQuickDream(false);
-                    }}
-                    onClose={() => setShowQuickDream(false)}
-                />
+                <Suspense fallback={<ModalLoading />}>
+                    <DreamScribeModal
+                        onSave={(dreamText, sleepQuality, mood) => {
+                            addDream(dreamText, sleepQuality, mood);
+                            setShowQuickDream(false);
+                        }}
+                        onClose={() => setShowQuickDream(false)}
+                    />
+                </Suspense>
             )}
         </>
     );

@@ -20,9 +20,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 import { AlarmsPage } from './components/pages/AlarmsPage';
 import { BottomNav } from './components/BottomNav';
-import { AlarmRingModal } from './components/modals/AlarmRingModal';
-import { DreamScribeModal } from './components/modals/DreamScribeModal';
-import { PageLoading } from './components/shared/LoadingStates';
+import { PageLoading, ModalLoading } from './components/shared/LoadingStates';
+import { PageErrorBoundary, ModalErrorBoundary } from './components/shared/ErrorBoundary';
 import { KeyboardShortcutsHelp, useKeyboardHelp } from './components/shared/KeyboardHelp';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { ThemeToggle } from './components/shared/ThemeToggle';
@@ -51,6 +50,10 @@ const ProfilePage = lazy(() => import('./components/pages/ProfilePage').then(m =
 const AuthPage = lazy(() => import('./components/pages/AuthPage').then(m => ({ default: m.AuthPage })));
 const SuccessPage = lazy(() => import('./components/pages/SuccessPage').then(m => ({ default: m.SuccessPage })));
 const AdminPage = lazy(() => import('./components/pages/AdminPage').then(m => ({ default: m.AdminPage })));
+
+// Lazy load heavy modals - only loaded when triggered
+const AlarmRingModal = lazy(() => import('./components/modals/AlarmRingModal').then(m => ({ default: m.AlarmRingModal })));
+const DreamScribeModal = lazy(() => import('./components/modals/DreamScribeModal').then(m => ({ default: m.DreamScribeModal })));
 
 
 
@@ -302,55 +305,80 @@ const App: React.FC = () => {
     };
 
     const renderPage = () => {
+        const navigateHome = () => setCurrentPage('alarms');
         const pageContent = (() => {
             switch (currentPage) {
                 case 'alarms':
                     return <AlarmsPage timeString={timeString} dateString={dateString} onNavigateToSleep={navigateToSleep} />;
                 case 'sleep':
-                    return <SleepPage onNavigateToAlarms={navigateToAlarms} />;
+                    return (
+                        <PageErrorBoundary pageName="Sleep" onNavigateHome={navigateHome}>
+                            <SleepPage onNavigateToAlarms={navigateToAlarms} />
+                        </PageErrorBoundary>
+                    );
                 case 'chronicle':
-                    return <ChroniclePage onDreamSelect={navigateToDreamDetail} />;
+                    return (
+                        <PageErrorBoundary pageName="Chronicle" onNavigateHome={navigateHome}>
+                            <ChroniclePage onDreamSelect={navigateToDreamDetail} />
+                        </PageErrorBoundary>
+                    );
                 case 'insights':
                     return (
-                        <Suspense fallback={<PageLoading message="Loading insights..." />}>
-                            <InsightsPage onDreamSelect={navigateToDreamDetail} />
-                        </Suspense>
+                        <PageErrorBoundary pageName="Insights" onNavigateHome={navigateHome}>
+                            <Suspense fallback={<PageLoading message="Loading insights..." />}>
+                                <InsightsPage onDreamSelect={navigateToDreamDetail} />
+                            </Suspense>
+                        </PageErrorBoundary>
                     );
                 case 'dream-detail':
-                    return <DreamDetailPage dreamId={selectedDreamId} onBack={() => setCurrentPage('chronicle')} onNavigateToDream={navigateToDreamDetail} />;
+                    return (
+                        <PageErrorBoundary pageName="Dream Details" onNavigateHome={navigateHome}>
+                            <DreamDetailPage dreamId={selectedDreamId} onBack={() => setCurrentPage('chronicle')} onNavigateToDream={navigateToDreamDetail} />
+                        </PageErrorBoundary>
+                    );
                 case 'privacy':
                     return (
-                        <Suspense fallback={<PageLoading message="Loading..." />}>
-                            <PrivacyPage onBack={() => setCurrentPage('profile')} />
-                        </Suspense>
+                        <PageErrorBoundary pageName="Privacy Policy" onNavigateHome={navigateHome}>
+                            <Suspense fallback={<PageLoading message="Loading..." />}>
+                                <PrivacyPage onBack={() => setCurrentPage('profile')} />
+                            </Suspense>
+                        </PageErrorBoundary>
                     );
                 case 'terms':
                     return (
-                        <Suspense fallback={<PageLoading message="Loading..." />}>
-                            <TermsPage onBack={() => setCurrentPage('profile')} />
-                        </Suspense>
+                        <PageErrorBoundary pageName="Terms of Service" onNavigateHome={navigateHome}>
+                            <Suspense fallback={<PageLoading message="Loading..." />}>
+                                <TermsPage onBack={() => setCurrentPage('profile')} />
+                            </Suspense>
+                        </PageErrorBoundary>
                     );
                 case 'profile':
                     return (
-                        <Suspense fallback={<PageLoading message="Loading profile..." />}>
-                            <ProfilePage onNavigateTo={(page) => setCurrentPage(page)} />
-                        </Suspense>
+                        <PageErrorBoundary pageName="Profile" onNavigateHome={navigateHome}>
+                            <Suspense fallback={<PageLoading message="Loading profile..." />}>
+                                <ProfilePage onNavigateTo={(page) => setCurrentPage(page)} />
+                            </Suspense>
+                        </PageErrorBoundary>
                     );
                 case 'success':
                     return (
-                        <Suspense fallback={<PageLoading message="Processing..." />}>
-                            <SuccessPage onBack={() => {
-                                // Clear URL params and navigate to alarms
-                                window.history.replaceState({}, '', '/');
-                                setCurrentPage('alarms');
-                            }} />
-                        </Suspense>
+                        <PageErrorBoundary pageName="Success" onNavigateHome={navigateHome}>
+                            <Suspense fallback={<PageLoading message="Processing..." />}>
+                                <SuccessPage onBack={() => {
+                                    // Clear URL params and navigate to alarms
+                                    window.history.replaceState({}, '', '/');
+                                    setCurrentPage('alarms');
+                                }} />
+                            </Suspense>
+                        </PageErrorBoundary>
                     );
                 case 'admin':
                     return (
-                        <Suspense fallback={<PageLoading message="Loading admin..." />}>
-                            <AdminPage onBack={() => setCurrentPage('profile')} />
-                        </Suspense>
+                        <PageErrorBoundary pageName="Admin" onNavigateHome={navigateHome}>
+                            <Suspense fallback={<PageLoading message="Loading admin..." />}>
+                                <AdminPage onBack={() => setCurrentPage('profile')} />
+                            </Suspense>
+                        </PageErrorBoundary>
                     );
                 default:
                     return <AlarmsPage timeString={timeString} dateString={dateString} onNavigateToSleep={navigateToSleep} />;
@@ -423,22 +451,37 @@ const App: React.FC = () => {
                     </AnimatePresence>
                     {/* Page indicator dots for swipe navigation */}
                     {currentIndex !== -1 && (
-                        <div className="flex justify-center gap-2 py-1">
+                        <nav className="flex justify-center gap-2 py-1" role="navigation" aria-label="Page indicators">
                             {Array.from({ length: totalPages }).map((_, i) => (
-                                <div
+                                <span
                                     key={i}
+                                    role="img"
+                                    aria-label={`Page ${i + 1} of ${totalPages}${i === currentIndex ? ', current page' : ''}`}
+                                    aria-current={i === currentIndex ? 'page' : undefined}
                                     className={`w-2 h-2 rounded-full transition-all duration-300 ${i === currentIndex
                                         ? 'bg-day-accent dark:bg-night-accent w-6'
                                         : 'bg-gray-300 dark:bg-gray-600'
                                         }`}
                                 />
                             ))}
-                        </div>
+                        </nav>
                     )}
                 </main>
                 <BottomNav currentPage={currentPage} setCurrentPage={setCurrentPage} />
-                {ringingAlarm && <AlarmRingModal alarm={ringingAlarm} onSnooze={incrementSnoozeCount} onAwake={handleAwake} onRecordDream={handleRecordDream} onFinalize={finalizeSleepSession} onCaptureWakeMetrics={handleCaptureWakeMetrics} onSnoozeReRing={resetRingStartTime} />}
-                {isScribeOpen && <DreamScribeModal onSave={handleScribeSave} onClose={() => { setIsScribeOpen(false); setWakeQuickNote(''); }} initialText={wakeQuickNote} />}
+                {ringingAlarm && (
+                    <ModalErrorBoundary onClose={handleAwake}>
+                        <Suspense fallback={<ModalLoading />}>
+                            <AlarmRingModal alarm={ringingAlarm} onSnooze={incrementSnoozeCount} onAwake={handleAwake} onRecordDream={handleRecordDream} onFinalize={finalizeSleepSession} onCaptureWakeMetrics={handleCaptureWakeMetrics} onSnoozeReRing={resetRingStartTime} />
+                        </Suspense>
+                    </ModalErrorBoundary>
+                )}
+                {isScribeOpen && (
+                    <ModalErrorBoundary onClose={() => { setIsScribeOpen(false); setWakeQuickNote(''); }}>
+                        <Suspense fallback={<ModalLoading />}>
+                            <DreamScribeModal onSave={handleScribeSave} onClose={() => { setIsScribeOpen(false); setWakeQuickNote(''); }} initialText={wakeQuickNote} />
+                        </Suspense>
+                    </ModalErrorBoundary>
+                )}
                 <KeyboardShortcutsHelp isOpen={isHelpOpen} onClose={closeHelp} />
 
                 <StreakNotificationManager />

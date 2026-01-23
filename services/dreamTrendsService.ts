@@ -555,3 +555,17 @@ export const getCountryTopDreams = (): CountryTopDream[] => {
     const cached = getCachedTrends('week');
     return cached?.countryTopDreams || getMockCountryTopDreams();
 };
+
+/**
+ * Clear all global trends data (call on user logout)
+ * This prevents data leakage between users on shared devices
+ */
+export const clearGlobalTrendsData = (): void => {
+    try {
+        localStorage.removeItem(PREFS_KEY);
+        localStorage.removeItem(CACHE_KEY);
+        logger.log('[GlobalTrends] Cleared all trends data');
+    } catch {
+        // Ignore storage errors
+    }
+};

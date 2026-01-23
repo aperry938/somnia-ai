@@ -1,10 +1,27 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { useBackButton } from '../../hooks/useBackButton';
 import { DreamMood } from '../../types';
 import haptics from '../../services/hapticsService';
 import { MOOD_ICONS, MOOD_LABELS } from '../../constants/uiIcons';
 import { validateDreamText, INPUT_LIMITS } from '../../services/validationService';
+
+// Animation variants with 'as const' to preserve literal types for Framer Motion
+const backdropVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { duration: 0.2 } },
+} as const;
+
+const modalVariants = {
+    hidden: { opacity: 0, scale: 0.95, y: 20 },
+    visible: {
+        opacity: 1,
+        scale: 1,
+        y: 0,
+        transition: { type: 'spring' as const, stiffness: 300, damping: 30 },
+    },
+};
 
 const MOOD_OPTIONS: DreamMood[] = ['joyful', 'peaceful', 'neutral', 'confused', 'anxious', 'sad', 'fearful', 'nightmare'];
 
@@ -86,10 +103,22 @@ export const AddDreamToEntryModal: React.FC<AddDreamToEntryModalProps> = ({
     });
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4 pt-4 pb-[calc(2rem+var(--safe-area-inset-bottom))] z-50" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="add-dream-entry-title">
-            <div
-                className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-lg animate-fadeIn max-h-[calc(90vh-var(--safe-area-inset-bottom))] overflow-y-auto"
+        <motion.div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4 pt-4 pb-[calc(2rem+var(--safe-area-inset-bottom))] z-50"
+            onClick={onClose}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="add-dream-entry-title"
+            variants={backdropVariants}
+            initial="hidden"
+            animate="visible"
+        >
+            <motion.div
+                className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-lg max-h-[calc(90vh-var(--safe-area-inset-bottom))] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
+                variants={modalVariants}
+                initial="hidden"
+                animate="visible"
             >
                 <h2 id="add-dream-entry-title" className="font-serif text-2xl text-center mb-2">Add Dream</h2>
                 <p className="text-center text-day-text-secondary dark:text-night-text-secondary text-sm mb-4">
@@ -168,31 +197,39 @@ export const AddDreamToEntryModal: React.FC<AddDreamToEntryModalProps> = ({
                 </div>
 
                 <div className="flex flex-col gap-2">
-                    <button
+                    <motion.button
                         onClick={handleSave}
                         aria-label="Save dream"
                         className="w-full py-3 min-h-[48px] bg-day-accent dark:bg-night-accent text-white font-bold rounded-full disabled:opacity-50 transition-all flex items-center justify-center gap-2"
                         disabled={!dreamText.trim() || isListening || isSaving}
+                        whileHover={!isSaving && dreamText.trim() ? { scale: 1.02 } : undefined}
+                        whileTap={!isSaving && dreamText.trim() ? { scale: 0.98 } : undefined}
+                        transition={{ type: 'spring', stiffness: 400, damping: 17 }}
                     >
                         {isSaving ? (
                             <>
-                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                <motion.div
+                                    className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
+                                    animate={{ rotate: 360 }}
+                                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                                />
                                 Saving...
                             </>
                         ) : (
                             'Save Dream'
                         )}
-                    </button>
-                    <button
+                    </motion.button>
+                    <motion.button
                         onClick={onClose}
                         aria-label="Cancel and close"
                         className="w-full py-3 min-h-[44px] text-day-text-secondary dark:text-night-text-secondary hover:text-day-text dark:hover:text-night-text transition-colors text-sm flex items-center justify-center"
                         disabled={isSaving}
+                        whileTap={{ scale: 0.98 }}
                     >
                         Cancel
-                    </button>
+                    </motion.button>
                 </div>
-            </div>
-        </div>
+            </motion.div>
+        </motion.div>
     );
 };
