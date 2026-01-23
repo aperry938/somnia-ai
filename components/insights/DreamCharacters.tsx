@@ -16,7 +16,7 @@ const CHARACTER_TYPES = {
     'Animals': ['dog', 'cat', 'bird', 'snake', 'horse', 'animal', 'pet', 'wolf', 'bear']
 };
 
-export const DreamCharacters: React.FC<DreamCharactersProps> = ({ dreams }) => {
+export const DreamCharacters: React.FC<DreamCharactersProps> = React.memo(({ dreams }) => {
     const characters = useMemo(() => {
         if (dreams.length < 3) return [];
 
@@ -60,4 +60,4 @@ export const DreamCharacters: React.FC<DreamCharactersProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

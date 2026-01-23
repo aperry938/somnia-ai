@@ -83,7 +83,7 @@ const extractWords = (dreams: Dream[]): Map<string, number> => {
     return wordCounts;
 };
 
-export const DreamWordCloud: React.FC<WordCloudProps> = ({ dreams }) => {
+export const DreamWordCloud: React.FC<WordCloudProps> = React.memo(({ dreams }) => {
     const words = useMemo(() => {
         if (dreams.length === 0) return [];
 
@@ -150,4 +150,4 @@ export const DreamWordCloud: React.FC<WordCloudProps> = ({ dreams }) => {
             </p>
         </div>
     );
-};
+});

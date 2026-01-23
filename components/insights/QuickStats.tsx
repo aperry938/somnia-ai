@@ -5,7 +5,7 @@ interface QuickStatsProps {
     dreams: Dream[];
 }
 
-export const QuickStats: React.FC<QuickStatsProps> = ({ dreams }) => {
+export const QuickStats: React.FC<QuickStatsProps> = React.memo(({ dreams }) => {
     if (dreams.length === 0) return null;
 
     const today = new Date();
@@ -32,4 +32,4 @@ export const QuickStats: React.FC<QuickStatsProps> = ({ dreams }) => {
             ))}
         </div>
     );
-};
+});

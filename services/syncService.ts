@@ -138,7 +138,10 @@ export const enqueueAction = (type: SyncActionType, payload: unknown) => {
 
     // Trigger sync if online
     if (navigator.onLine) {
-        processSyncQueue().catch(() => {});
+        processSyncQueue().catch((e) => {
+            // Log sync errors for debugging - don't surface to user as sync will retry
+            console.warn('[SyncService] Background sync failed:', e);
+        });
     }
 };
 
@@ -393,7 +396,10 @@ export const retryFailedActions = (): void => {
         a.status === 'FAILED' ? { ...a, status: 'PENDING' as const, retryCount: 0 } : a
     );
     saveSyncQueue(updated);
-    processSyncQueue().catch(() => {});
+    processSyncQueue().catch((e) => {
+        // Log retry errors for debugging - don't surface to user as sync will retry
+        console.warn('[SyncService] Retry sync failed:', e);
+    });
 };
 
 // Listen for online/offline events

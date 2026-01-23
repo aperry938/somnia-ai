@@ -45,7 +45,7 @@ const analyzeMood = (dreamText: string): Record<string, number> => {
     return moods;
 };
 
-export const DreamMoodTracker: React.FC<MoodTrackerProps> = ({ dreams }) => {
+export const DreamMoodTracker: React.FC<MoodTrackerProps> = React.memo(({ dreams }) => {
     const moodData = useMemo(() => {
         if (dreams.length === 0) return { moods: {}, total: 0, dominant: null };
 
@@ -113,4 +113,4 @@ export const DreamMoodTracker: React.FC<MoodTrackerProps> = ({ dreams }) => {
             </p>
         </div>
     );
-};
+});

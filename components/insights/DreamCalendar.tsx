@@ -10,7 +10,7 @@ interface DreamCalendarProps {
  * Heatmap-style calendar showing dream frequency by day.
  * Shows the last 3 months of activity.
  */
-export const DreamCalendar: React.FC<DreamCalendarProps> = ({ dreams, onDayClick }) => {
+export const DreamCalendar: React.FC<DreamCalendarProps> = React.memo(({ dreams, onDayClick }) => {
     const { weeks, dreamsByDate, months } = useMemo(() => {
         const now = new Date();
         const daysToShow = 91; // ~3 months
@@ -138,4 +138,4 @@ export const DreamCalendar: React.FC<DreamCalendarProps> = ({ dreams, onDayClick
             </div>
         </div>
     );
-};
+});

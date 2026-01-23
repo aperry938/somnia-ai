@@ -7,19 +7,12 @@ import { useAppContext } from '../../contexts/AppContext';
 import haptics from '../../services/hapticsService';
 import { sanitizeText, INPUT_LIMITS, containsScriptInjection } from '../../services/validationService';
 import { useToast } from '../shared/Toast';
+import { hasCrisisIndicators } from '../../services/crisisDetectionService';
 
 interface DreamChatModalProps {
     dream: Dream;
     onClose: () => void;
 }
-
-// Crisis keywords that trigger mental health resource display
-const CRISIS_KEYWORDS = ['suicide', 'self-harm', 'hurting myself', 'ending it', 'kill myself', 'want to die'];
-
-const hasCrisisContent = (text: string): boolean => {
-    const lowerText = text.toLowerCase();
-    return CRISIS_KEYWORDS.some(keyword => lowerText.includes(keyword));
-};
 
 export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }) => {
     const { updateDream } = useAppContext();
@@ -32,8 +25,9 @@ export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }
     // Hardware back button support
     useBackButton(true, onClose);
 
-    // Check if dream content contains crisis-related keywords
-    const showCrisisResources = hasCrisisContent(dream.dreamText);
+    // Check if dream content contains crisis-related keywords using the proper service
+    // This uses comprehensive crisis detection with context-aware false positive filtering
+    const showCrisisResources = hasCrisisIndicators(dream.dreamText);
 
     const fetchInitialResponse = async () => {
         setIsLoading(true);

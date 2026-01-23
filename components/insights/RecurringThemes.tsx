@@ -19,7 +19,7 @@ const THEME_KEYWORDS: Record<string, string[]> = {
     'Animals': ['animal', 'dog', 'cat', 'snake', 'bird', 'wolf', 'bear', 'spider', 'insect']
 };
 
-export const RecurringThemes: React.FC<RecurringThemesProps> = ({ dreams }) => {
+export const RecurringThemes: React.FC<RecurringThemesProps> = React.memo(({ dreams }) => {
     const themes = React.useMemo(() => {
         if (dreams.length < 3) return [];
 
@@ -73,4 +73,4 @@ export const RecurringThemes: React.FC<RecurringThemesProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

@@ -5,7 +5,7 @@ interface TopTagsProps {
     dreams: Dream[];
 }
 
-export const TopTags: React.FC<TopTagsProps> = ({ dreams }) => {
+export const TopTags: React.FC<TopTagsProps> = React.memo(({ dreams }) => {
     const tags = useMemo(() => {
         const tagCounts: Record<string, number> = {};
 
@@ -37,4 +37,4 @@ export const TopTags: React.FC<TopTagsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

@@ -15,6 +15,9 @@ let masterGain: GainNode | null = null;
 // Track voice stream timers for Cyber-Dawn alarm cleanup
 let cyberDawnTimers: ReturnType<typeof setTimeout>[] = [];
 
+// Track timers for Solar Ascent alarm cleanup
+let solarAlarmTimers: ReturnType<typeof setTimeout>[] = [];
+
 // Initialize or get audio context
 function getContext(): AudioContext {
     if (!audioContext || audioContext.state === 'closed') {
@@ -616,6 +619,10 @@ export function playSolarAlarm(volume: number = 1.0): { stop: () => void } {
     const t = ctx.currentTime;
     let isPlaying = true;
 
+    // Clear any previous solar alarm timers
+    solarAlarmTimers.forEach(timerId => clearTimeout(timerId));
+    solarAlarmTimers = [];
+
     if (ctx.state === 'suspended') {
         ctx.resume().catch((e) => {
             console.warn('[PsychoacousticService] Failed to resume AudioContext:', e);
@@ -731,12 +738,14 @@ export function playSolarAlarm(volume: number = 1.0): { stop: () => void } {
         // Schedule next chime - progressively faster
         if (isPlaying) {
             chimeInterval = Math.max(600, chimeInterval * 0.95); // Speed up, min 600ms
-            setTimeout(playChime, chimeInterval);
+            const nextChimeTimer = setTimeout(playChime, chimeInterval);
+            solarAlarmTimers.push(nextChimeTimer);
         }
     }
 
     // Start chime pattern after 1 second
-    setTimeout(playChime, 1000);
+    const initialChimeTimer = setTimeout(playChime, 1000);
+    solarAlarmTimers.push(initialChimeTimer);
 
     // === BRIGHTNESS SWEEP (Filter automation) ===
     const brightnessFilter = ctx.createBiquadFilter();
@@ -754,7 +763,7 @@ export function playSolarAlarm(volume: number = 1.0): { stop: () => void } {
     brightnessFilter.connect(master);
 
     // === PULSE/SWELL for urgency (starts after 20s) ===
-    setTimeout(() => {
+    const pulseTimer = setTimeout(() => {
         if (!isPlaying || !masterGain) return;
 
         const pulseLfo = ctx.createOscillator();
@@ -768,9 +777,15 @@ export function playSolarAlarm(volume: number = 1.0): { stop: () => void } {
         // Speed up pulse over time
         pulseLfo.frequency.linearRampToValueAtTime(2.0, ctx.currentTime + 30);
     }, 20000);
+    solarAlarmTimers.push(pulseTimer);
 
     const stopFn = () => {
         isPlaying = false;
+
+        // Clear all tracked solar alarm timers to prevent leaks
+        solarAlarmTimers.forEach(timerId => clearTimeout(timerId));
+        solarAlarmTimers = [];
+
         const now = ctx.currentTime;
         if (masterGain) {
             masterGain.gain.cancelScheduledValues(now);

@@ -71,7 +71,7 @@ const periodLabels: Record<TrendPeriod, string> = {
     'all-time': 'All Time'
 };
 
-export const GlobalTrendsCard: React.FC = () => {
+export const GlobalTrendsCard: React.FC = React.memo(() => {
     const [period, setPeriod] = useState<TrendPeriod>('week');
     const [isOptedIn, setIsOptedIn] = useState(isGlobalTrendsOptedIn);
     const [hasLocation, setHasLocation] = useState(isLocationEnabled);
@@ -398,4 +398,4 @@ export const GlobalTrendsCard: React.FC = () => {
             )}
         </div>
     );
-};
+});

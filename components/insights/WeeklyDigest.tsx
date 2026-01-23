@@ -5,7 +5,7 @@ interface WeeklyDigestProps {
     dreams: Dream[];
 }
 
-export const WeeklyDigest: React.FC<WeeklyDigestProps> = ({ dreams }) => {
+export const WeeklyDigest: React.FC<WeeklyDigestProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         const now = new Date();
         const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -71,4 +71,4 @@ export const WeeklyDigest: React.FC<WeeklyDigestProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

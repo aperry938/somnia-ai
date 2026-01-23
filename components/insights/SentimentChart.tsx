@@ -21,7 +21,7 @@ const MOOD_SENTIMENT: Record<DreamMood, number> = {
     nightmare: -80
 };
 
-export const SentimentChart: React.FC<SentimentChartProps> = ({ dreams }) => {
+export const SentimentChart: React.FC<SentimentChartProps> = React.memo(({ dreams }) => {
     const { theme } = useTheme();
 
     const data = useMemo(() => {
@@ -143,4 +143,4 @@ export const SentimentChart: React.FC<SentimentChartProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});
