@@ -349,10 +349,17 @@ html.sleep .dark\:border-night-border {
     }
 }
 
-/* Mobile touch optimization */
+/* Mobile touch optimization - remove 300ms tap delay on all interactive elements */
 button,
 a,
-[role="button"] {
+input,
+textarea,
+select,
+[role="button"],
+[role="tab"],
+[role="option"],
+[role="menuitem"],
+[tabindex] {
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
 }

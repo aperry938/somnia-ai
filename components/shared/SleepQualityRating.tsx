@@ -1,5 +1,6 @@
 // components/shared/SleepQualityRating.tsx
 import React, { useState, useCallback } from 'react';
+import haptics from '../../services/hapticsService';
 
 const QUALITY_LABELS = ['Poor', 'Fair', 'Good', 'Great', 'Excellent'];
 
@@ -27,7 +28,7 @@ export const SleepQualityRating: React.FC<SleepQualityRatingProps> = ({ rating, 
             <button
                 key={starValue}
                 type="button"
-                onClick={() => onRate(starValue)}
+                onClick={() => { haptics.selection(); onRate(starValue); }}
                 onKeyDown={(e) => handleKeyDown(e, starValue)}
                 onMouseEnter={() => setHoverRating(starValue)}
                 onMouseLeave={() => setHoverRating(0)}

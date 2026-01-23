@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useBackButton } from '../../hooks/useBackButton';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { Dream } from '../../types';
 import {
     ShareCardFormat,
@@ -71,6 +72,9 @@ export const ShareDreamModal: React.FC<ShareDreamModalProps> = ({ dream, isOpen,
     // Hardware back button support
     useBackButton(isOpen, onClose);
 
+    // Focus trap for accessibility
+    const focusTrapRef = useFocusTrap(isOpen);
+
     // Generate preview when options change
     useEffect(() => {
         if (!isOpen) return;
@@ -137,6 +141,7 @@ export const ShareDreamModal: React.FC<ShareDreamModalProps> = ({ dream, isOpen,
             aria-labelledby="share-dream-title"
         >
             <motion.div
+                ref={focusTrapRef}
                 className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}

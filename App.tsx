@@ -116,22 +116,34 @@ const App: React.FC = () => {
         document.addEventListener('click', resumeAudio);
         document.addEventListener('keydown', resumeAudio);
 
-        // Check data integrity
-        checkAndMigrateData();
+        // Check data integrity - wrapped in try/catch to prevent app crash
+        try {
+            checkAndMigrateData();
+        } catch (error) {
+            logger.error('[App] Data migration failed:', error);
+        }
 
-        // Initialize subscription service (RevenueCat)
-        initializeSubscriptions();
+        // Initialize subscription service (RevenueCat) - wrapped in try/catch
+        try {
+            initializeSubscriptions();
+        } catch (error) {
+            logger.error('[App] Subscription initialization failed:', error);
+        }
 
         // Initialize native alarms (iOS/Android) - permissions are requested on first alarm creation
         const initNativeAlarms = async () => {
-            const { isNative, registerAlarmActions, initializeAlarmListeners } = await import('./services/nativeAlarmService');
-            if (isNative) {
-                await registerAlarmActions();
-                initializeAlarmListeners(
-                    (alarmId) => logger.log('[Native] Alarm received:', alarmId),
-                    (alarmId, actionId) => logger.log('[Native] Action:', alarmId, actionId)
-                );
-                logger.log('[Native] Alarm service initialized');
+            try {
+                const { isNative, registerAlarmActions, initializeAlarmListeners } = await import('./services/nativeAlarmService');
+                if (isNative) {
+                    await registerAlarmActions();
+                    await initializeAlarmListeners(
+                        (alarmId) => logger.log('[Native] Alarm received:', alarmId),
+                        (alarmId, actionId) => logger.log('[Native] Action:', alarmId, actionId)
+                    );
+                    logger.log('[Native] Alarm service initialized');
+                }
+            } catch (error) {
+                logger.error('[App] Native alarm initialization failed:', error);
             }
         };
         initNativeAlarms();

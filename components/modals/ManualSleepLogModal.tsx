@@ -9,6 +9,7 @@ import { motion } from 'framer-motion';
 import { ManualSleepActivity, SleepAids } from '../../types';
 import haptics from '../../services/hapticsService';
 import { useBackButton } from '../../hooks/useBackButton';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { sanitizeTextLive, INPUT_LIMITS } from '../../services/validationService';
 
 // Animation variants
@@ -69,6 +70,9 @@ export const ManualSleepLogModal: React.FC<ManualSleepLogModalProps> = ({ onComp
     const [selectedDuration, setSelectedDuration] = useState(15);
     const [showCustom, setShowCustom] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+
+    // Focus trap for accessibility
+    const focusTrapRef = useFocusTrap(true);
 
     // Handle Escape key to skip/close modal
     useEffect(() => {
@@ -157,6 +161,7 @@ export const ManualSleepLogModal: React.FC<ManualSleepLogModalProps> = ({ onComp
             animate="visible"
         >
             <motion.div
+                ref={focusTrapRef}
                 className="w-full max-w-md bg-day-card-bg dark:bg-night-card-bg rounded-2xl border border-day-border dark:border-night-border overflow-hidden shadow-xl max-h-[90vh] flex flex-col"
                 variants={modalVariants}
                 initial="hidden"

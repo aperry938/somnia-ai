@@ -46,7 +46,9 @@ import { PasswordInputModal } from '../modals/PasswordInputModal';
 import { useToast } from '../shared/Toast';
 import { CALIBRATION_DREAM } from '../../constants/demoDreams';
 import { SkeletonDreamCard } from '../shared/LoadingStates';
+import { PullToRefresh } from '../shared/PullToRefresh';
 import haptics from '../../services/hapticsService';
+import { processSyncQueue } from '../../services/syncService';
 
 // Pagination constants for memory management
 const INITIAL_PAGE_SIZE = 20;
@@ -222,9 +224,13 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
     }, []);
 
     const handleAddDreamToEntry = useCallback((sleepEntryId: number, dreamText: string, mood?: DreamMood) => {
-        addDreamToSleepEntry(sleepEntryId, dreamText, mood);
+        const dreamId = addDreamToSleepEntry(sleepEntryId, dreamText, mood);
+        if (dreamId === -1) {
+            // Sleep entry was deleted or doesn't exist - show error
+            showToast('Could not save dream: sleep entry no longer exists', 'error');
+        }
         setAddDreamToEntryId(null);
-    }, [addDreamToSleepEntry]);
+    }, [addDreamToSleepEntry, showToast]);
 
     const currentEntryForModal = addDreamToEntryId ? getSleepEntryById(addDreamToEntryId) : null;
 
@@ -298,6 +304,19 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
         setPendingImportFile(null);
         setPasswordError(undefined);
     }, []);
+
+    // Handle pull-to-refresh - triggers sync queue processing
+    const handleRefresh = useCallback(async () => {
+        try {
+            const result = await processSyncQueue();
+            if (result.success > 0 || result.conflictsResolved > 0) {
+                showToast(`Synced ${result.success + result.conflictsResolved} items`, 'success');
+            }
+        } catch (error) {
+            // Sync failed silently - data is still local
+            console.error('[Chronicle] Refresh sync failed:', error);
+        }
+    }, [showToast]);
 
     return (
         <div>
@@ -392,7 +411,7 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
             </div>
 
             {/* Content */}
-            <div className="space-y-4 max-w-2xl mx-auto" role="region" aria-label="Sleep journal entries">
+            <PullToRefresh onRefresh={handleRefresh} enabled={hasContent && !isInitialLoading} className="space-y-4 max-w-2xl mx-auto" role="region" aria-label="Sleep journal entries">
                 {/* Loading State */}
                 {isInitialLoading ? (
                     <div className="space-y-4" role="status" aria-label="Loading sleep entries">
@@ -593,7 +612,7 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
                         </div>
                     </div>
                 )}
-            </div>
+            </PullToRefresh>
 
             {/* Floating Action Button */}
             <motion.button

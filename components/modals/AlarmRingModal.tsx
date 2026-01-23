@@ -8,14 +8,16 @@ import haptics from '../../services/hapticsService';
 import { startHapticAlarmRamp, stopHapticAlarmRamp, triggerWakePattern } from '../../services/hapticAlarmService';
 import { stopAlarm as stopNativeAlarm } from '../../services/nativeAlarmService';
 import { sanitizeTextLive, INPUT_LIMITS } from '../../services/validationService';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { logger } from '../../services/logger';
 
 // Minimum distance (px) to trigger a swipe action
-const SWIPE_THRESHOLD = 100;
+// NOTE: Higher threshold (150px) to avoid conflicts with page navigation swipe (50px)
+const SWIPE_THRESHOLD = 150;
 // Distance at which first haptic feedback fires
-const HAPTIC_THRESHOLD_FIRST = 40;
+const HAPTIC_THRESHOLD_FIRST = 50;
 // Distance at which second (stronger) haptic feedback fires
-const HAPTIC_THRESHOLD_SECOND = 80;
+const HAPTIC_THRESHOLD_SECOND = 100;
 
 // Pulsing visual component that crescendos over 60 seconds
 const PulsingWakeVisual: React.FC<{ isActive: boolean }> = ({ isActive }) => {
@@ -135,6 +137,9 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
     // For reminder alarms, skip straight to dismiss - no dream prompts
     const isSleepAlarm = alarm.purpose !== 'reminder';
 
+    // Focus trap for accessibility
+    const focusTrapRef = useFocusTrap(true);
+
     const [step, setStep] = useState<WakeStep>('alarm');
     // Track if boost was ever used (for logging to sleep entry)
     const boostEverUsedRef = React.useRef(false);
@@ -204,6 +209,8 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
     // Handle touch start
     const handleTouchStart = useCallback((e: TouchEvent<HTMLDivElement>) => {
         if (step !== 'alarm') return;
+        // Stop propagation to prevent page navigation swipe from triggering
+        e.stopPropagation();
         const touch = e.touches[0];
         if (!touch) return;
         touchStartRef.current = { x: touch.clientX, y: touch.clientY };
@@ -215,6 +222,8 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
     // Handle touch move - track swipe and provide progressive haptic feedback
     const handleTouchMove = useCallback((e: TouchEvent<HTMLDivElement>) => {
         if (step !== 'alarm' || !touchStartRef.current) return;
+        // Stop propagation to prevent page navigation swipe from triggering
+        e.stopPropagation();
 
         const touch = e.touches[0];
         if (!touch) return;
@@ -505,6 +514,7 @@ export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordD
 
     return (
         <div
+            ref={focusTrapRef}
             className="fixed inset-0 bg-gradient-to-b from-indigo-900/95 to-purple-900/95 backdrop-blur-md flex items-center justify-center px-4 pt-4 pb-[calc(2rem+var(--safe-area-inset-bottom))] z-50 overflow-y-auto touch-pan-y"
             role="dialog"
             aria-modal="true"

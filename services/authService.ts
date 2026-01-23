@@ -9,6 +9,8 @@
 import { createClient, User, Session } from '@supabase/supabase-js';
 import { logger } from './logger';
 import { validateEmail, validatePassword } from './validationService';
+import { abortSync, clearSyncQueue } from './syncService';
+import { abortOfflineQueueProcessing, clearQueue as clearOfflineQueue } from './offlineQueueService';
 
 // Supabase configuration
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
@@ -370,8 +372,16 @@ export async function signInWithGoogle(): Promise<AuthResult> {
 
 /**
  * Sign out the current user
+ * SECURITY: Clears all user-specific queues to prevent cross-user data exposure
  */
 export async function signOut(): Promise<AuthResult> {
+    // SECURITY (ISS-006): Abort in-flight operations and clear queues BEFORE sign out
+    // This prevents any pending sync operations from completing with the wrong user's data
+    abortSync();
+    abortOfflineQueueProcessing();
+    clearSyncQueue();
+    clearOfflineQueue();
+
     if (!supabase) {
         return { success: false, error: 'Authentication service not configured' };
     }

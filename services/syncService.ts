@@ -242,6 +242,18 @@ export const saveSyncQueue = (queue: SyncAction[]) => {
 };
 
 /**
+ * Clear the sync queue completely.
+ * SECURITY: Call this on logout to prevent cross-user data exposure (ISS-006).
+ */
+export const clearSyncQueue = (): void => {
+    try {
+        localStorage.removeItem(SYNC_QUEUE_KEY);
+    } catch {
+        // Silently fail
+    }
+};
+
+/**
  * Check if a similar action already exists in the queue (deduplication)
  */
 const isDuplicateAction = (queue: SyncAction[], type: SyncActionType, payload: unknown): boolean => {

@@ -255,17 +255,19 @@ export const useAlarmManager = () => {
     }, [date, alarms, ringingAlarm, isSnoozed]);
 
     const stopRinging = useCallback(() => {
-        if (ringingAlarm) {
+        // Use ref for current value to avoid stale closure issues
+        const currentRingingAlarm = ringingAlarmRef.current;
+        if (currentRingingAlarm) {
             // Stop the native AlarmService (stops vibration)
             stopNativeAlarm();
 
             // Sleep detection alarms (id=-1) don't need to be deactivated in storage
-            if (ringingAlarm.id !== -1) {
+            if (currentRingingAlarm.id !== -1) {
                 // Only deactivate one-time alarms (no days specified)
                 // Repeating alarms stay active for the next scheduled day
-                const isOneTimeAlarm = !ringingAlarm.days || ringingAlarm.days.length === 0;
+                const isOneTimeAlarm = !currentRingingAlarm.days || currentRingingAlarm.days.length === 0;
                 if (isOneTimeAlarm) {
-                    toggleAlarmActive(ringingAlarm.id);
+                    toggleAlarmActive(currentRingingAlarm.id);
                 }
                 // For repeating alarms, just dismiss - they'll trigger again on the next scheduled day
             }
@@ -280,10 +282,12 @@ export const useAlarmManager = () => {
                 snoozeTimeoutRef.current = null;
             }
         }
-    }, [ringingAlarm, toggleAlarmActive]);
+    }, [toggleAlarmActive]); // Only toggleAlarmActive needed - uses refs for other values
 
     const snooze = useCallback(() => {
-        if (ringingAlarm) {
+        // Use ref for current value to avoid stale closure issues
+        const currentRingingAlarm = ringingAlarmRef.current;
+        if (currentRingingAlarm) {
             // Stop the native AlarmService (stops vibration)
             stopNativeAlarm();
 
@@ -291,11 +295,16 @@ export const useAlarmManager = () => {
             snoozeCountRef.current += 1;
 
             // Store the alarm for re-triggering
-            snoozedAlarmRef.current = ringingAlarm;
+            snoozedAlarmRef.current = currentRingingAlarm;
 
             // Dismiss the current ring
             setRingingAlarm(null);
             setIsSnoozed(true);
+
+            // Clear any existing snooze timeout to avoid double-triggering
+            if (snoozeTimeoutRef.current) {
+                clearTimeout(snoozeTimeoutRef.current);
+            }
 
             // Set timeout to re-trigger after snooze duration
             snoozeTimeoutRef.current = setTimeout(() => {
@@ -307,7 +316,7 @@ export const useAlarmManager = () => {
                 }
             }, SNOOZE_DURATION_MS);
         }
-    }, [ringingAlarm]);
+    }, []); // Empty deps - uses refs for current values to avoid stale closures
 
     /**
      * Increment snooze count (for UI-driven snooze that doesn't use hook's snooze logic)
@@ -330,14 +339,16 @@ export const useAlarmManager = () => {
         if (ringStartTimeRef.current === null) return undefined;
 
         const timeToSilence = Math.round((Date.now() - ringStartTimeRef.current) / 1000);
+        // Use ref for current value to avoid stale closures
+        const currentRingingAlarm = ringingAlarmRef.current;
 
         return {
             snoozeCount: snoozeCountRef.current,
             timeToSilence,
             alertnessBoostUsed: alertnessBoostUsedRef.current,
-            alarmType: ringingAlarm?.id === -1 ? 'smart' : 'manual',
+            alarmType: currentRingingAlarm?.id === -1 ? 'smart' : 'manual',
         };
-    }, [ringingAlarm]);
+    }, []); // Empty deps - uses refs for current values
 
     /**
      * Reset wake metrics (call after alarm is fully dismissed)
@@ -361,8 +372,8 @@ export const useAlarmManager = () => {
      * Creates a temporary alarm object with the specified sound.
      */
     const triggerSleepDetectionAlarm = useCallback((soundId: string) => {
-        // Don't trigger if an alarm is already ringing
-        if (ringingAlarm || isSnoozed) return;
+        // Don't trigger if an alarm is already ringing - use refs to avoid stale closures
+        if (ringingAlarmRef.current || isSnoozedRef.current) return;
 
         // Start tracking wake metrics
         ringStartTimeRef.current = Date.now();
@@ -378,7 +389,7 @@ export const useAlarmManager = () => {
             smartWake: false,
         };
         setRingingAlarm(virtualAlarm);
-    }, [ringingAlarm, isSnoozed]);
+    }, []); // Empty deps - uses refs for current values to avoid stale closures
 
     return {
         ringingAlarm,

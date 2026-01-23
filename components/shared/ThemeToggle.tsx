@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppContext } from '../../contexts/AppContext';
 import { Theme } from '../../types';
+import haptics from '../../services/hapticsService';
 
 export const ThemeToggle: React.FC = () => {
     const { themeOverride, setThemeOverride } = useAppContext();
@@ -19,6 +20,7 @@ export const ThemeToggle: React.FC = () => {
     };
 
     const cycleTheme = () => {
+        haptics.light();
         let nextTheme: Theme | 'auto';
         if (themeOverride === 'auto') nextTheme = 'day';
         else if (themeOverride === 'day') nextTheme = 'night';

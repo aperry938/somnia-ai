@@ -235,9 +235,33 @@ export const cleanupExpiredEntries = (): void => {
     }
 };
 
-// Cleanup expired entries every 5 minutes
+// Track cleanup interval for proper disposal
+let cleanupIntervalId: ReturnType<typeof setInterval> | null = null;
+
+/**
+ * Start the automatic cleanup interval
+ * Call this once at app startup
+ */
+export const startRateLimitCleanup = (): void => {
+    if (cleanupIntervalId !== null) {
+        return; // Already running
+    }
+    cleanupIntervalId = setInterval(cleanupExpiredEntries, 5 * 60 * 1000);
+    cleanupExpiredEntries(); // Initial cleanup
+};
+
+/**
+ * Stop the automatic cleanup interval
+ * Call this for cleanup during testing or app unmount
+ */
+export const stopRateLimitCleanup = (): void => {
+    if (cleanupIntervalId !== null) {
+        clearInterval(cleanupIntervalId);
+        cleanupIntervalId = null;
+    }
+};
+
+// Auto-start cleanup in browser environment
 if (typeof window !== 'undefined') {
-    setInterval(cleanupExpiredEntries, 5 * 60 * 1000);
-    // Also cleanup on page load
-    cleanupExpiredEntries();
+    startRateLimitCleanup();
 }

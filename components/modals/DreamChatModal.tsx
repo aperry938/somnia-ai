@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, PanInfo, useMotionValue } from 'framer-motion';
 import { useBackButton } from '../../hooks/useBackButton';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { getDreamChatResponse } from '../../services/geminiService';
 import { ChatMessage, Dream } from '../../types';
 import { useAppContext } from '../../contexts/AppContext';
@@ -24,6 +25,9 @@ export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }
 
     // Hardware back button support
     useBackButton(true, onClose);
+
+    // Focus trap for accessibility
+    const focusTrapRef = useFocusTrap(true);
 
     // Check if dream content contains crisis-related keywords using the proper service
     // This uses comprehensive crisis detection with context-aware false positive filtering
@@ -161,6 +165,7 @@ export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }
             exit={{ opacity: 0 }}
         >
             <motion.div
+                ref={focusTrapRef}
                 className="bg-white/95 dark:bg-slate-800/95 border border-day-border dark:border-night-border rounded-t-2xl sm:rounded-2xl p-6 w-full max-w-lg flex flex-col h-[90vh] sm:h-[80vh]"
                 onClick={(e) => e.stopPropagation()}
                 style={{ y }}

@@ -845,19 +845,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }, [setSleepEntries]);
 
     const deleteSleepEntry = useCallback((id: number) => {
-        // Use functional updates to avoid stale closure issues
-        // First, get the entry's dreamIds and delete associated dreams
-        setSleepEntries(prev => {
-            const entry = prev.find(e => e.id === id);
-            if (entry) {
-                // Delete associated dreams
-                entry.dreamIds.forEach(dreamId => {
-                    setDreams(prevDreams => prevDreams.filter(d => d.id !== dreamId));
-                });
-            }
-            return prev.filter(e => e.id !== id);
-        });
-    }, [setDreams, setSleepEntries]);
+        // Get the entry first to find associated dream IDs
+        // NOTE: We read from current sleepEntries state, then batch both updates
+        const entry = sleepEntries.find(e => e.id === id);
+        const dreamIdsToDelete = entry?.dreamIds ?? [];
+
+        // Delete the sleep entry
+        setSleepEntries(prev => prev.filter(e => e.id !== id));
+
+        // Delete associated dreams (separate state update to avoid side effects in updater)
+        if (dreamIdsToDelete.length > 0) {
+            setDreams(prev => prev.filter(d => !dreamIdsToDelete.includes(d.id)));
+        }
+    }, [sleepEntries, setDreams, setSleepEntries]);
 
     const getSleepEntryById = useCallback((id: number) => {
         return sleepEntries.find(e => e.id === id);

@@ -354,6 +354,16 @@ export async function scheduleAlarm(
         return false;
     }
 
+    // Validate time values are within valid ranges
+    const [parsedHours, parsedMinutes] = time.split(':').map(Number);
+    if (parsedHours === undefined || parsedMinutes === undefined ||
+        isNaN(parsedHours) || isNaN(parsedMinutes) ||
+        parsedHours < 0 || parsedHours > 23 ||
+        parsedMinutes < 0 || parsedMinutes > 59) {
+        logger.error(`[NativeAlarm] Invalid time values: ${time}. Hours must be 0-23, minutes must be 0-59`);
+        return false;
+    }
+
     try {
         if (isAndroid && NativeAlarm) {
             // Use native AlarmManager on Android - this WILL wake the phone
@@ -377,11 +387,11 @@ export async function scheduleAlarm(
 
         } else if (isIOS) {
             // iOS uses Local Notifications with high priority
-            // Parse time to get next occurrence
-            const [hours, minutes] = time.split(':').map(Number);
+            // Parse time to get next occurrence (already validated above)
+            const [hours, minutes] = time.split(':').map(Number) as [number, number];
             const now = new Date();
             const scheduleDate = new Date();
-            scheduleDate.setHours(hours ?? 0, minutes ?? 0, 0, 0);
+            scheduleDate.setHours(hours, minutes, 0, 0);
 
             // If time has passed today, schedule for tomorrow
             if (scheduleDate <= now) {

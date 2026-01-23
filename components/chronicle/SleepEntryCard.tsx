@@ -1,8 +1,10 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+// Note: framer-motion removed in favor of CSS grid animations for better performance
 import { SleepEntry, Dream } from '../../types';
 import { MOOD_ICONS, MOOD_LABELS } from '../../constants/uiIcons';
 import haptics from '../../services/hapticsService';
+import { useLongPress } from '../../hooks/useLongPress';
+import { ContextMenu } from '../shared/ContextMenu';
 
 /**
  * I18N NOTES for SleepEntryCard:
@@ -96,6 +98,7 @@ const SleepEntryCardComponent: React.FC<SleepEntryCardProps> = ({
 }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [showContextMenu, setShowContextMenu] = useState(false);
 
     // Get dreams for this entry (memoized to avoid filtering on every render)
     const entryDreams = useMemo(() =>
@@ -142,6 +145,39 @@ const SleepEntryCardComponent: React.FC<SleepEntryCardProps> = ({
     const handleCancelDelete = useCallback(() => {
         setShowDeleteConfirm(false);
     }, []);
+
+    // Long-press handler for context menu
+    const longPressHandlers = useLongPress({
+        onLongPress: () => setShowContextMenu(true),
+        onPress: () => {
+            haptics.light();
+            setIsExpanded(prev => !prev);
+        }
+    });
+
+    // Context menu items
+    const contextMenuItems = useMemo(() => [
+        {
+            label: 'Add Dream',
+            icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+            ),
+            onClick: () => onAddDream(entry.id),
+            variant: 'primary' as const
+        },
+        {
+            label: 'Delete Entry',
+            icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            ),
+            onClick: () => setShowDeleteConfirm(true),
+            variant: 'danger' as const
+        }
+    ], [entry.id, onAddDream]);
 
     // Handler for individual dream click - stable reference for list items
     const handleDreamClick = useCallback((e: React.MouseEvent, dreamId: number) => {
@@ -194,13 +230,17 @@ const SleepEntryCardComponent: React.FC<SleepEntryCardProps> = ({
         <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow" role="listitem">
             {/* Header Row - Always Visible */}
             <div
-                className="p-4 min-h-[72px] cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors active:bg-black/10 dark:active:bg-white/10"
+                className="p-4 min-h-[72px] cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors active:bg-black/10 dark:active:bg-white/10 select-none"
                 onClick={handleToggleExpand}
+                onTouchStart={longPressHandlers.onTouchStart}
+                onTouchMove={longPressHandlers.onTouchMove}
+                onTouchEnd={longPressHandlers.onTouchEnd}
+                onContextMenu={longPressHandlers.onContextMenu}
                 role="button"
                 tabIndex={0}
                 onKeyDown={handleKeyToggle}
                 aria-expanded={isExpanded}
-                aria-label={`${displayDate}, ${dreamCount} ${dreamCount === 1 ? 'dream' : 'dreams'}${entry.sleepQuality ? `, sleep quality ${entry.sleepQuality} of 5` : ''}. ${isExpanded ? 'Collapse' : 'Expand'} details`}
+                aria-label={`${displayDate}, ${dreamCount} ${dreamCount === 1 ? 'dream' : 'dreams'}${entry.sleepQuality ? `, sleep quality ${entry.sleepQuality} of 5` : ''}. ${isExpanded ? 'Collapse' : 'Expand'} details. Long press for more options.`}
             >
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -259,15 +299,12 @@ const SleepEntryCardComponent: React.FC<SleepEntryCardProps> = ({
             </div>
 
             {/* Expanded Content - Timeline Layout */}
-            <AnimatePresence initial={false}>
-                {isExpanded && (
-                    <motion.div
-                        className="border-t border-day-border dark:border-night-border overflow-hidden"
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                    >
+            {/* Using CSS grid for GPU-accelerated expand/collapse */}
+            <div
+                className="border-t border-day-border dark:border-night-border overflow-hidden transition-[grid-template-rows] duration-300 ease-out"
+                style={{ display: 'grid', gridTemplateRows: isExpanded ? '1fr' : '0fr' }}
+            >
+                <div className="overflow-hidden">
 
                         {/* Section 1: Evening Reflection */}
                         {(entry.sleepAids?.dayRating || entry.sleepAids?.dayNotes || entry.notes) && (
@@ -542,9 +579,16 @@ const SleepEntryCardComponent: React.FC<SleepEntryCardProps> = ({
                                 </div>
                             )}
                         </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                </div>
+            </div>
+
+            {/* Context Menu */}
+            <ContextMenu
+                isOpen={showContextMenu}
+                onClose={() => setShowContextMenu(false)}
+                items={contextMenuItems}
+                title={displayDate}
+            />
         </div>
     );
 };

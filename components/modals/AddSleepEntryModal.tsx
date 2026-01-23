@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { SleepQualityRating } from '../shared/SleepQualityRating';
 import { useBackButton } from '../../hooks/useBackButton';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { SleepAids } from '../../types';
 import haptics from '../../services/hapticsService';
 import { sanitizeText, INPUT_LIMITS } from '../../services/validationService';
@@ -35,6 +36,9 @@ export const AddSleepEntryModal: React.FC<AddSleepEntryModalProps> = ({
 }) => {
     // Hardware back button support
     useBackButton(true, onClose);
+
+    // Focus trap for accessibility
+    const focusTrapRef = useFocusTrap(true);
 
     // Handle Escape key to close modal
     useEffect(() => {
@@ -82,6 +86,7 @@ export const AddSleepEntryModal: React.FC<AddSleepEntryModalProps> = ({
             animate="visible"
         >
             <motion.div
+                ref={focusTrapRef}
                 className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl p-6 w-full max-w-lg max-h-[calc(90vh-var(--safe-area-inset-bottom))] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
                 variants={modalVariants}

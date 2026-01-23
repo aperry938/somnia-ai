@@ -10,6 +10,7 @@ import {
     type Offerings,
 } from '../../services/secureSubscriptionService';
 import { useBackButton } from '../../hooks/useBackButton';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { haptics } from '../../services/hapticsService';
 
 interface SecurePaywallModalProps {
@@ -42,6 +43,9 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
 
     // Handle hardware back button (Android)
     useBackButton(isOpen && !isProcessing, onClose);
+
+    // Focus trap for accessibility
+    const focusTrapRef = useFocusTrap(isOpen);
 
     // Load offerings on mount
     useEffect(() => {
@@ -173,6 +177,7 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
             aria-labelledby="paywall-title"
         >
             <div
+                ref={focusTrapRef}
                 className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl max-w-md w-full max-h-[calc(90vh-var(--safe-area-inset-bottom))] overflow-y-auto shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
             >

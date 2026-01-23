@@ -148,3 +148,129 @@ export const ModalLoading: React.FC = React.memo(() => (
         <div className="w-12 h-12 rounded-full border-4 border-day-accent/20 dark:border-night-accent/20 border-t-day-accent dark:border-t-night-accent animate-spin" />
     </div>
 ));
+
+// Spinner component - reusable across all buttons and loading states
+interface SpinnerProps {
+    size?: 'sm' | 'md' | 'lg';
+    className?: string;
+    light?: boolean; // Use white color for dark backgrounds
+}
+
+export const Spinner: React.FC<SpinnerProps> = React.memo(({ size = 'md', className = '', light = false }) => {
+    const sizeClasses = {
+        sm: 'w-4 h-4 border-2',
+        md: 'w-5 h-5 border-2',
+        lg: 'w-8 h-8 border-3',
+    };
+
+    const colorClasses = light
+        ? 'border-white/30 border-t-white'
+        : 'border-day-accent/30 dark:border-night-accent/30 border-t-day-accent dark:border-t-night-accent';
+
+    return (
+        <div
+            className={`rounded-full animate-spin ${sizeClasses[size]} ${colorClasses} ${className}`}
+            role="status"
+            aria-label="Loading"
+        />
+    );
+});
+
+// Loading button - standardized button with loading state
+interface LoadingButtonProps {
+    onClick?: () => void;
+    isLoading?: boolean;
+    disabled?: boolean;
+    loadingText?: string;
+    children: React.ReactNode;
+    className?: string;
+    type?: 'button' | 'submit';
+    variant?: 'primary' | 'secondary' | 'ghost';
+    'aria-label'?: string;
+}
+
+export const LoadingButton: React.FC<LoadingButtonProps> = ({
+    onClick,
+    isLoading = false,
+    disabled = false,
+    loadingText,
+    children,
+    className = '',
+    type = 'button',
+    variant = 'primary',
+    'aria-label': ariaLabel,
+}) => {
+    const baseClasses = 'min-h-[48px] px-6 rounded-full font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-50';
+
+    const variantClasses = {
+        primary: 'bg-day-accent dark:bg-night-accent text-white hover:opacity-90 active:scale-95',
+        secondary: 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600',
+        ghost: 'bg-transparent hover:bg-black/5 dark:hover:bg-white/5 text-day-text-secondary dark:text-night-text-secondary',
+    };
+
+    const isLight = variant === 'primary';
+
+    return (
+        <button
+            type={type}
+            onClick={onClick}
+            disabled={isLoading || disabled}
+            aria-label={ariaLabel}
+            aria-busy={isLoading}
+            className={`${baseClasses} ${variantClasses[variant]} ${className}`}
+        >
+            {isLoading ? (
+                <>
+                    <Spinner size="sm" light={isLight} />
+                    {loadingText || 'Loading...'}
+                </>
+            ) : (
+                children
+            )}
+        </button>
+    );
+};
+
+// Empty state component - consistent design for empty lists/content
+interface EmptyStateProps {
+    icon?: React.ReactNode;
+    title: string;
+    description?: string;
+    action?: {
+        label: string;
+        onClick: () => void;
+    };
+    className?: string;
+}
+
+export const EmptyState: React.FC<EmptyStateProps> = ({
+    icon,
+    title,
+    description,
+    action,
+    className = '',
+}) => (
+    <div className={`flex flex-col items-center justify-center py-12 px-6 text-center ${className}`}>
+        {icon && (
+            <div className="w-16 h-16 mb-4 text-day-text-secondary/50 dark:text-night-text-secondary/50">
+                {icon}
+            </div>
+        )}
+        <h3 className="font-serif text-lg text-day-text-primary dark:text-night-text-primary mb-2">
+            {title}
+        </h3>
+        {description && (
+            <p className="text-sm text-day-text-secondary dark:text-night-text-secondary max-w-xs mb-4">
+                {description}
+            </p>
+        )}
+        {action && (
+            <button
+                onClick={action.onClick}
+                className="px-4 py-2 min-h-[44px] bg-day-accent dark:bg-night-accent text-white rounded-full text-sm font-medium hover:opacity-90 active:scale-95 transition-all"
+            >
+                {action.label}
+            </button>
+        )}
+    </div>
+);

@@ -4,6 +4,7 @@ import { Page } from '../types';
 import { useAppContext } from '../contexts/AppContext';
 import { isPremium } from '../services/secureSubscriptionService';
 import { useTheme } from '../hooks/useTheme';
+import haptics from '../services/hapticsService';
 
 interface BottomNavProps {
     currentPage: Page;
@@ -43,6 +44,7 @@ const BottomNavComponent: React.FC<BottomNavProps> = ({ currentPage, setCurrentP
 
     // Memoized handler to prevent recreation on each render
     const handleNavClick = useCallback((page: Page) => {
+        haptics.light();
         // Mark dreams as seen when Chronicle tab is clicked
         if (page === 'chronicle') {
             markDreamsAsSeen();

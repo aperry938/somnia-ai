@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useBackButton } from '../../hooks/useBackButton';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { Dream } from '../../types';
 import { ShareCardFormat, ShareCardTheme } from '../../services/shareCardService';
 import {
@@ -92,6 +93,9 @@ export const ShareAnalyticsModal: React.FC<ShareAnalyticsModalProps> = ({ dreams
     const [isGenerating, setIsGenerating] = useState(false);
     const [isSharing, setIsSharing] = useState(false);
 
+    // Focus trap for accessibility
+    const focusTrapRef = useFocusTrap(isOpen);
+
     // Get period label based on card type
     const getPeriodLabel = () => {
         const now = new Date();
@@ -174,6 +178,7 @@ export const ShareAnalyticsModal: React.FC<ShareAnalyticsModalProps> = ({ dreams
             aria-labelledby="share-analytics-title"
         >
             <motion.div
+                ref={focusTrapRef}
                 className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}

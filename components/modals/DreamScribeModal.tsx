@@ -44,6 +44,7 @@ import haptics from '../../services/hapticsService';
 import { MOOD_ICONS, MOOD_LABELS } from '../../constants/uiIcons';
 import { validateDreamText, containsScriptInjection, INPUT_LIMITS, sanitizeTextLive } from '../../services/validationService';
 import { useBackButton } from '../../hooks/useBackButton';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { logger } from '../../services/logger';
 
 const MOOD_OPTIONS: DreamMood[] = ['joyful', 'peaceful', 'neutral', 'confused', 'anxious', 'sad', 'fearful', 'nightmare'];
@@ -113,6 +114,9 @@ interface DreamScribeModalProps {
 
 export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onClose, initialText = '' }) => {
     const [step, setStep] = useState<ScribeStep>('record');
+
+    // Focus trap for accessibility
+    const focusTrapRef = useFocusTrap(true);
 
     // Load draft on mount (for crash recovery)
     const [dreamText, setDreamText] = useState(() => {
@@ -397,6 +401,7 @@ export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onCl
                 </div>
 
                 <motion.div
+                    ref={focusTrapRef}
                     className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-t-2xl sm:rounded-2xl p-6 pb-10 w-full max-w-lg max-h-[90vh] sm:max-h-[88vh] overflow-y-auto text-white"
                     onClick={(e) => e.stopPropagation()}
                     style={{ y }}

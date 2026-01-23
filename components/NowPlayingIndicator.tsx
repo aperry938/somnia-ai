@@ -257,10 +257,10 @@ export const NowPlayingIndicator: React.FC<NowPlayingIndicatorProps> = ({ onNavi
                             aria-label="Toggle volume controls"
                         >
                             <div className="flex items-end gap-0.5 h-4">
-                                <div className="w-1 bg-white rounded-full animate-soundwave-1" style={{ height: '60%' }} />
-                                <div className="w-1 bg-white rounded-full animate-soundwave-2" style={{ height: '100%' }} />
-                                <div className="w-1 bg-white rounded-full animate-soundwave-3" style={{ height: '40%' }} />
-                                <div className="w-1 bg-white rounded-full animate-soundwave-2" style={{ height: '80%' }} />
+                                <div className="w-1 h-full bg-white rounded-full animate-soundwave-1 origin-bottom" />
+                                <div className="w-1 h-full bg-white rounded-full animate-soundwave-2 origin-bottom" />
+                                <div className="w-1 h-full bg-white rounded-full animate-soundwave-3 origin-bottom" />
+                                <div className="w-1 h-full bg-white rounded-full animate-soundwave-2 origin-bottom" />
                             </div>
                         </button>
 

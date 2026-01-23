@@ -7,6 +7,7 @@ import { useAppContext } from '../../contexts/AppContext';
 import { useToast } from '../shared/Toast';
 import haptics from '../../services/hapticsService';
 import { useBackButton } from '../../hooks/useBackButton';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { App as CapacitorApp } from '@capacitor/app';
 
 const CircleVisualizer = React.memo<{ animationClass: string; animKey: number; isAnimating: boolean }>(({ animationClass, animKey, isAnimating }) => (
@@ -121,6 +122,9 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
     const [sessionState, setSessionState] = useState<'ready' | 'starting' | 'running' | 'paused'>('ready');
     const [stepIndex, setStepIndex] = useState(0);
     const resonanceRef = useRef<ResonanceBreathingState | null>(null);
+
+    // Focus trap for accessibility
+    const focusTrapRef = useFocusTrap(true);
 
     // Track elapsed time for accurate pause/resume
     const elapsedBeforePauseRef = useRef<number>(0);
@@ -476,6 +480,7 @@ export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onC
             exit={{ opacity: 0 }}
         >
             <motion.div
+                ref={focusTrapRef}
                 className="bg-white/95 dark:bg-slate-800/95 border border-day-border dark:border-night-border rounded-t-2xl sm:rounded-2xl p-6 pb-[calc(1.5rem+var(--safe-area-inset-bottom))] sm:pb-6 w-full max-w-sm text-center"
                 onClick={(e) => e.stopPropagation()}
                 style={{ y }}

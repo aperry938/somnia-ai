@@ -147,13 +147,27 @@ export const getUserFriendlyMessage = (error: Error | string, category?: ErrorCa
     }
 };
 
+// Track initialization to prevent duplicate listeners
+let globalErrorHandlersInitialized = false;
+
+// Store handler references for cleanup
+let unhandledRejectionHandler: ((event: PromiseRejectionEvent) => void) | null = null;
+let globalErrorHandler: ((event: ErrorEvent) => void) | null = null;
+
 /**
  * Initialize global error handlers
  * Call this once at app startup
+ * Returns cleanup function to remove handlers (for testing or hot reload)
  */
-export const initGlobalErrorHandlers = (): void => {
+export const initGlobalErrorHandlers = (): (() => void) => {
+    // Prevent duplicate initialization
+    if (globalErrorHandlersInitialized) {
+        return cleanupGlobalErrorHandlers;
+    }
+    globalErrorHandlersInitialized = true;
+
     // Handle unhandled promise rejections
-    window.addEventListener('unhandledrejection', (event) => {
+    unhandledRejectionHandler = (event: PromiseRejectionEvent) => {
         const error = event.reason instanceof Error
             ? event.reason
             : new Error(String(event.reason));
@@ -162,10 +176,11 @@ export const initGlobalErrorHandlers = (): void => {
 
         // Prevent default browser logging
         event.preventDefault();
-    });
+    };
+    window.addEventListener('unhandledrejection', unhandledRejectionHandler);
 
     // Handle global errors
-    window.addEventListener('error', (event) => {
+    globalErrorHandler = (event: ErrorEvent) => {
         logError(
             event.error || new Error(event.message),
             'unknown',
@@ -176,7 +191,26 @@ export const initGlobalErrorHandlers = (): void => {
                 colno: event.colno,
             }
         );
-    });
+    };
+    window.addEventListener('error', globalErrorHandler);
+
+    return cleanupGlobalErrorHandlers;
+};
+
+/**
+ * Remove global error handlers
+ * Call this for cleanup during testing or app unmount
+ */
+export const cleanupGlobalErrorHandlers = (): void => {
+    if (unhandledRejectionHandler) {
+        window.removeEventListener('unhandledrejection', unhandledRejectionHandler);
+        unhandledRejectionHandler = null;
+    }
+    if (globalErrorHandler) {
+        window.removeEventListener('error', globalErrorHandler);
+        globalErrorHandler = null;
+    }
+    globalErrorHandlersInitialized = false;
 };
 
 /**

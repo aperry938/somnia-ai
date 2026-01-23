@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Dream } from '../../types';
 import { useBackButton } from '../../hooks/useBackButton';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 import haptics from '../../services/hapticsService';
 
 interface DreamCompareModalProps {
@@ -95,6 +96,9 @@ export const DreamCompareModal: React.FC<DreamCompareModalProps> = ({ dreams, on
     // Hardware back button support
     useBackButton(true, onClose);
 
+    // Focus trap for accessibility
+    const focusTrapRef = useFocusTrap(true);
+
     // Handle Escape key to close modal
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -125,6 +129,7 @@ export const DreamCompareModal: React.FC<DreamCompareModalProps> = ({ dreams, on
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4 pt-4 pb-[calc(2rem+var(--safe-area-inset-bottom))]" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="compare-modal-title">
             <div
+                ref={focusTrapRef}
                 className="w-full max-w-4xl max-h-[calc(90vh-var(--safe-area-inset-bottom))] bg-day-bg-end dark:bg-night-bg-end rounded-2xl shadow-2xl overflow-hidden animate-fadeIn"
                 onClick={e => e.stopPropagation()}
             >
