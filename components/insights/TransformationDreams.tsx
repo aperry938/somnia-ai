@@ -5,15 +5,18 @@ interface TransformationDreamsProps {
     dreams: Dream[];
 }
 
-const TRANSFORM = ['transform', 'change', 'morph', 'become', 'turn into', 'evolve', 'grow', 'shrink', 'shapeshif', 'metamorphos'];
+const TRANSFORM = ['transform', 'change', 'morph', 'become', 'turn into', 'evolve', 'grow', 'shrink', 'shapeshift', 'metamorphosis'];
 
 export const TransformationDreams: React.FC<TransformationDreamsProps> = ({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
-        const transformDreams = dreams.filter(d =>
-            TRANSFORM.some(t => d.dreamText.toLowerCase().includes(t))
-        );
+        const transformDreams = dreams.filter(d => {
+            const text = d.dreamText?.toLowerCase() ?? '';
+            return text && TRANSFORM.some(t => text.includes(t));
+        });
+
+        if (transformDreams.length === 0) return null;
 
         return {
             count: transformDreams.length,

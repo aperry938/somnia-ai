@@ -15,16 +15,24 @@ export const SleepAidImpact: React.FC<SleepAidImpactProps> = ({ dreams }) => {
         const avgWithAids = withAids.reduce((s, d) => s + (d.dreamText?.split(/\s+/).length || 0), 0) / withAids.length;
         const avgWithoutAids = withoutAids.reduce((s, d) => s + (d.dreamText?.split(/\s+/).length || 0), 0) / withoutAids.length;
 
-        const qualityWith = withAids.filter(d => d.sleepQuality).reduce((s, d) => s + (d.sleepQuality || 0), 0);
-        const qualityWithout = withoutAids.filter(d => d.sleepQuality).reduce((s, d) => s + (d.sleepQuality || 0), 0);
+        const withAidsQuality = withAids.filter(d => d.sleepQuality !== null && d.sleepQuality !== undefined);
+        const withoutAidsQuality = withoutAids.filter(d => d.sleepQuality !== null && d.sleepQuality !== undefined);
 
-        const avgQualityWith = qualityWith / withAids.filter(d => d.sleepQuality).length || 0;
-        const avgQualityWithout = qualityWithout / withoutAids.filter(d => d.sleepQuality).length || 0;
+        const qualityWith = withAidsQuality.reduce((s, d) => s + (d.sleepQuality || 0), 0);
+        const qualityWithout = withoutAidsQuality.reduce((s, d) => s + (d.sleepQuality || 0), 0);
+
+        const avgQualityWith = withAidsQuality.length > 0 ? qualityWith / withAidsQuality.length : 0;
+        const avgQualityWithout = withoutAidsQuality.length > 0 ? qualityWithout / withoutAidsQuality.length : 0;
+
+        // Protect against division by zero for length difference percentage
+        const lengthDiff = avgWithoutAids > 0
+            ? Math.round(((avgWithAids - avgWithoutAids) / avgWithoutAids) * 100)
+            : 0;
 
         return {
             withAids: withAids.length,
             withoutAids: withoutAids.length,
-            lengthDiff: Math.round(((avgWithAids - avgWithoutAids) / avgWithoutAids) * 100),
+            lengthDiff,
             qualityDiff: (avgQualityWith - avgQualityWithout).toFixed(1)
         };
     }, [dreams]);

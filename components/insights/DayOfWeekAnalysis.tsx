@@ -13,7 +13,10 @@ export const DayOfWeekAnalysis: React.FC<DayOfWeekAnalysisProps> = ({ dreams }) 
 
         const counts = [0, 0, 0, 0, 0, 0, 0];
         dreams.forEach(d => {
-            const day = new Date(d.timestamp).getDay();
+            if (!d.timestamp) return;
+            const date = new Date(d.timestamp);
+            if (isNaN(date.getTime())) return;
+            const day = date.getDay();
             counts[day] = (counts[day] ?? 0) + 1;
         });
 

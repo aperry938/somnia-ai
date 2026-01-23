@@ -10,15 +10,18 @@ export const RecentDreamSummary: React.FC<RecentDreamSummaryProps> = ({ dreams }
         if (dreams.length < 3) return null;
 
         const recent = dreams.slice(0, 7);
-        const avgWords = recent.reduce((s, d) => s + d.dreamText.split(/\s+/).length, 0) / recent.length;
+        const avgWords = recent.reduce((s, d) => s + (d.dreamText || '').split(/\s+/).filter(w => w.length > 0).length, 0) / recent.length;
         const withAnalysis = recent.filter(d => d.aiAnalysis).length;
-        const avgQuality = recent.filter(d => d.sleepQuality).reduce((s, d) => s + (d.sleepQuality || 0), 0) / (recent.filter(d => d.sleepQuality).length || 1);
+        const dreamsWithQuality = recent.filter(d => d.sleepQuality != null && d.sleepQuality > 0);
+        const avgQuality = dreamsWithQuality.length > 0
+            ? dreamsWithQuality.reduce((s, d) => s + (d.sleepQuality || 0), 0) / dreamsWithQuality.length
+            : null;
 
         return {
             count: recent.length,
             avgWords: Math.round(avgWords),
             analyzed: withAnalysis,
-            avgQuality: avgQuality.toFixed(1)
+            avgQuality: avgQuality !== null ? avgQuality.toFixed(1) : '-'
         };
     }, [dreams]);
 

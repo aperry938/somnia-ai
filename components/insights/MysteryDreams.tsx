@@ -12,7 +12,7 @@ export const MysteryDreams: React.FC<MysteryDreamsProps> = ({ dreams }) => {
         if (dreams.length < 5) return null;
 
         const mysteryDreams = dreams.filter(d =>
-            MYSTERY.some(m => d.dreamText.toLowerCase().includes(m))
+            d.dreamText && MYSTERY.some(m => d.dreamText.toLowerCase().includes(m))
         );
 
         return {

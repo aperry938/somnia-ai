@@ -11,9 +11,12 @@ export const DeathDreams: React.FC<DeathDreamsProps> = ({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
-        const deathDreams = dreams.filter(d =>
-            DEATH.some(t => d.dreamText.toLowerCase().includes(t))
-        );
+        const deathDreams = dreams.filter(d => {
+            const text = d.dreamText?.toLowerCase() ?? '';
+            return text && DEATH.some(t => text.includes(t));
+        });
+
+        if (deathDreams.length === 0) return null;
 
         return {
             count: deathDreams.length,

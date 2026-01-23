@@ -32,7 +32,10 @@ export const MoonPhaseInsight: React.FC<MoonPhaseInsightProps> = ({ dreams }) =>
         PHASES.forEach(p => phaseCounts[p] = 0);
 
         dreams.forEach(d => {
-            const phase = getMoonPhase(new Date(d.timestamp));
+            if (!d.timestamp) return;
+            const date = new Date(d.timestamp);
+            if (isNaN(date.getTime())) return;
+            const phase = getMoonPhase(date);
             phaseCounts[phase] = (phaseCounts[phase] ?? 0) + 1;
         });
 

@@ -12,7 +12,8 @@ export const ExclamationIntensity: React.FC<ExclamationIntensityProps> = ({ drea
         let totalExclamations = 0;
 
         dreams.forEach(d => {
-            totalExclamations += (d.dreamText.match(/!/g) || []).length;
+            const text = d.dreamText || '';
+            totalExclamations += (text.match(/!/g) || []).length;
         });
 
         const perDream = totalExclamations / dreams.length;

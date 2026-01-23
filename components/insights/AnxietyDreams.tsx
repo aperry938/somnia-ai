@@ -9,15 +9,19 @@ const ANXIETY = ['anxiety', 'anxious', 'worry', 'stress', 'nervous', 'panic', 'o
 
 export const AnxietyDreams: React.FC<AnxietyDreamsProps> = ({ dreams }) => {
     const stats = useMemo(() => {
-        if (dreams.length < 5) return null;
+        if (!dreams || dreams.length < 5) return null;
 
         const anxietyDreams = dreams.filter(d =>
-            ANXIETY.some(a => d.dreamText.toLowerCase().includes(a))
+            d.dreamText && ANXIETY.some(a => d.dreamText.toLowerCase().includes(a))
         );
+
+        const percentage = dreams.length > 0
+            ? Math.round((anxietyDreams.length / dreams.length) * 100)
+            : 0;
 
         return {
             count: anxietyDreams.length,
-            percentage: Math.round((anxietyDreams.length / dreams.length) * 100)
+            percentage
         };
     }, [dreams]);
 

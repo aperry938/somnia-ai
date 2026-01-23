@@ -16,7 +16,7 @@ export const FirstDreamLastDream: React.FC<FirstDreamLastDreamProps> = ({ dreams
         if (!first || !last) return null;
 
         const daysSince = Math.floor((Date.now() - new Date(first.timestamp).getTime()) / (1000 * 60 * 60 * 24));
-        const dreamsPerMonth = dreams.length / (daysSince / 30) || 0;
+        const dreamsPerMonth = daysSince > 0 ? dreams.length / (daysSince / 30) : 0;
 
         return {
             first: { title: first.title || 'Untitled', date: new Date(first.timestamp).toLocaleDateString() },

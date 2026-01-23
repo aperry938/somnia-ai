@@ -14,7 +14,7 @@ export const AnimalDreams: React.FC<AnimalDreamsProps> = ({ dreams }) => {
         const animalCounts: Record<string, number> = {};
 
         dreams.forEach(d => {
-            const text = d.dreamText.toLowerCase();
+            const text = (d.dreamText || '').toLowerCase();
             ANIMALS.forEach(animal => {
                 if (text.includes(animal)) {
                     animalCounts[animal] = (animalCounts[animal] || 0) + 1;

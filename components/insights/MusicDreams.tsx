@@ -12,7 +12,7 @@ export const MusicDreams: React.FC<MusicDreamsProps> = ({ dreams }) => {
         if (dreams.length < 5) return null;
 
         const musicDreams = dreams.filter(d =>
-            MUSIC.some(m => d.dreamText.toLowerCase().includes(m))
+            MUSIC.some(m => (d.dreamText || '').toLowerCase().includes(m))
         );
 
         return {

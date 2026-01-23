@@ -11,9 +11,12 @@ export const PowerDreams: React.FC<PowerDreamsProps> = ({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
-        const powerDreams = dreams.filter(d =>
-            POWER.some(p => d.dreamText.toLowerCase().includes(p))
-        );
+        const powerDreams = dreams.filter(d => {
+            const text = d.dreamText?.toLowerCase() ?? '';
+            return text && POWER.some(p => text.includes(p));
+        });
+
+        if (powerDreams.length === 0) return null;
 
         return {
             count: powerDreams.length,

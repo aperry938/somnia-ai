@@ -12,7 +12,7 @@ export const TechnologyDreams: React.FC<TechnologyDreamsProps> = ({ dreams }) =>
         if (dreams.length < 5) return null;
 
         const techDreams = dreams.filter(d =>
-            TECH.some(t => d.dreamText.toLowerCase().includes(t))
+            TECH.some(t => (d.dreamText || '').toLowerCase().includes(t))
         );
 
         return {

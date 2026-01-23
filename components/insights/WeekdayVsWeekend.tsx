@@ -13,7 +13,10 @@ export const WeekdayVsWeekend: React.FC<WeekdayVsWeekendProps> = ({ dreams }) =>
         let weekdayWords = 0, weekendWords = 0;
 
         dreams.forEach(d => {
-            const day = new Date(d.timestamp).getDay();
+            if (!d.timestamp || !d.dreamText) return;
+            const date = new Date(d.timestamp);
+            if (isNaN(date.getTime())) return;
+            const day = date.getDay();
             const words = d.dreamText.split(/\s+/).length;
             if (day === 0 || day === 6) {
                 weekendCount++;
@@ -39,6 +42,8 @@ export const WeekdayVsWeekend: React.FC<WeekdayVsWeekendProps> = ({ dreams }) =>
     if (!stats) return null;
 
     const total = stats.weekdayCount + stats.weekendCount;
+
+    if (total === 0) return null;
 
     return (
         <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-xl p-4">

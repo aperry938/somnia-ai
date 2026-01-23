@@ -15,7 +15,7 @@ export const AverageRecallTime: React.FC<AverageRecallTimeProps> = ({ dreams }) 
         dreams.forEach(d => {
             const hour = new Date(d.timestamp).getHours();
             hourCounts[hour] = (hourCounts[hour] ?? 0) + 1;
-            hourTotals[hour] = (hourTotals[hour] ?? 0) + d.dreamText.split(/\s+/).length;
+            hourTotals[hour] = (hourTotals[hour] ?? 0) + (d.dreamText || '').split(/\s+/).filter(w => w).length;
         });
 
         // Find peak recall hour
@@ -33,7 +33,8 @@ export const AverageRecallTime: React.FC<AverageRecallTimeProps> = ({ dreams }) 
         const afternoonAvg = hourTotals.slice(12, 17).reduce((a, b) => a + b, 0) / (hourCounts.slice(12, 17).reduce((a, b) => a + b, 0) || 1);
         const nightAvg = hourTotals.slice(17, 24).reduce((a, b) => a + b, 0) / (hourCounts.slice(17, 24).reduce((a, b) => a + b, 0) || 1);
 
-        const peakTime = `${peakHour > 12 ? peakHour - 12 : peakHour}:00 ${peakHour >= 12 ? 'PM' : 'AM'}`;
+        const displayHour = peakHour === 0 ? 12 : peakHour > 12 ? peakHour - 12 : peakHour;
+        const peakTime = `${displayHour}:00 ${peakHour >= 12 ? 'PM' : 'AM'}`;
 
         return { peakTime, peakHour, morningAvg: Math.round(morningAvg), afternoonAvg: Math.round(afternoonAvg), nightAvg: Math.round(nightAvg) };
     }, [dreams]);

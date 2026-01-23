@@ -9,15 +9,19 @@ const ANGER = ['anger', 'angry', 'rage', 'furious', 'mad', 'hate', 'frustrat', '
 
 export const AngerDreams: React.FC<AngerDreamsProps> = ({ dreams }) => {
     const stats = useMemo(() => {
-        if (dreams.length < 5) return null;
+        if (!dreams || dreams.length < 5) return null;
 
         const angerDreams = dreams.filter(d =>
-            ANGER.some(a => d.dreamText.toLowerCase().includes(a))
+            d.dreamText && ANGER.some(a => d.dreamText.toLowerCase().includes(a))
         );
+
+        const percentage = dreams.length > 0
+            ? Math.round((angerDreams.length / dreams.length) * 100)
+            : 0;
 
         return {
             count: angerDreams.length,
-            percentage: Math.round((angerDreams.length / dreams.length) * 100)
+            percentage
         };
     }, [dreams]);
 

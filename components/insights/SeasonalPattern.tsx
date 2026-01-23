@@ -21,16 +21,21 @@ export const SeasonalPattern: React.FC<SeasonalPatternProps> = ({ dreams }) => {
         const seasonWords = [0, 0, 0, 0];
 
         dreams.forEach(d => {
-            const month = new Date(d.timestamp).getMonth();
+            if (!d.timestamp || !d.dreamText) return;
+            const date = new Date(d.timestamp);
+            if (isNaN(date.getTime())) return;
+            const month = date.getMonth();
             const season = getSeasonFromMonth(month);
             seasonCounts[season] = (seasonCounts[season] ?? 0) + 1;
             seasonWords[season] = (seasonWords[season] ?? 0) + d.dreamText.split(/\s+/).length;
         });
 
         const seasonAvgWords = seasonCounts.map((c, i) => c > 0 ? Math.round((seasonWords[i] ?? 0) / c) : 0);
-        const maxIndex = seasonAvgWords.indexOf(Math.max(...seasonAvgWords));
+        const maxAvg = Math.max(...seasonAvgWords);
+        // Only report most vivid season if there's actually data
+        const maxIndex = maxAvg > 0 ? seasonAvgWords.indexOf(maxAvg) : -1;
 
-        return { seasonCounts, seasonAvgWords, mostVividSeason: SEASONS[maxIndex] ?? 'Unknown' };
+        return { seasonCounts, seasonAvgWords, mostVividSeason: maxIndex >= 0 ? (SEASONS[maxIndex] ?? 'Unknown') : null };
     }, [dreams]);
 
     if (!stats) return null;
@@ -58,9 +63,11 @@ export const SeasonalPattern: React.FC<SeasonalPatternProps> = ({ dreams }) => {
                 ))}
             </div>
 
-            <p className="text-xs text-center text-day-text-secondary dark:text-night-text-secondary mt-3">
-                Most vivid dreams in <span className="font-bold text-day-accent dark:text-night-accent">{stats.mostVividSeason}</span>
-            </p>
+            {stats.mostVividSeason && (
+                <p className="text-xs text-center text-day-text-secondary dark:text-night-text-secondary mt-3">
+                    Most vivid dreams in <span className="font-bold text-day-accent dark:text-night-accent">{stats.mostVividSeason}</span>
+                </p>
+            )}
         </div>
     );
 };

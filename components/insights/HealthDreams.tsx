@@ -12,7 +12,7 @@ export const HealthDreams: React.FC<HealthDreamsProps> = ({ dreams }) => {
         if (dreams.length < 5) return null;
 
         const healthDreams = dreams.filter(d =>
-            HEALTH.some(h => d.dreamText.toLowerCase().includes(h))
+            HEALTH.some(h => (d.dreamText?.toLowerCase() ?? '').includes(h))
         );
 
         return {

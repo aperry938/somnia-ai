@@ -11,9 +11,12 @@ export const TimeTravelDreams: React.FC<TimeTravelDreamsProps> = ({ dreams }) =>
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
-        const timeDreams = dreams.filter(d =>
-            TIME_KEYWORDS.some(kw => d.dreamText.toLowerCase().includes(kw))
-        );
+        const timeDreams = dreams.filter(d => {
+            const text = d.dreamText?.toLowerCase() ?? '';
+            return text && TIME_KEYWORDS.some(kw => text.includes(kw));
+        });
+
+        if (timeDreams.length === 0) return null;
 
         return {
             count: timeDreams.length,

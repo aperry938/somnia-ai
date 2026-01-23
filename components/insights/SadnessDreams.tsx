@@ -9,15 +9,19 @@ const SADNESS = ['sad', 'cry', 'crying', 'tears', 'grief', 'mourn', 'loss', 'mis
 
 export const SadnessDreams: React.FC<SadnessDreamsProps> = ({ dreams }) => {
     const stats = useMemo(() => {
-        if (dreams.length < 5) return null;
+        if (!dreams || dreams.length < 5) return null;
 
         const sadDreams = dreams.filter(d =>
-            SADNESS.some(s => d.dreamText.toLowerCase().includes(s))
+            d.dreamText && SADNESS.some(s => d.dreamText.toLowerCase().includes(s))
         );
+
+        const percentage = dreams.length > 0
+            ? Math.round((sadDreams.length / dreams.length) * 100)
+            : 0;
 
         return {
             count: sadDreams.length,
-            percentage: Math.round((sadDreams.length / dreams.length) * 100)
+            percentage
         };
     }, [dreams]);
 

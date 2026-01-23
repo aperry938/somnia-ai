@@ -15,17 +15,20 @@ export const ControlVsChaos: React.FC<ControlVsChaosProps> = ({ dreams }) => {
         let control = 0, chaos = 0;
 
         dreams.forEach(d => {
-            const text = d.dreamText.toLowerCase();
+            const text = (d.dreamText || '').toLowerCase();
             if (CONTROL_KEYWORDS.some(kw => text.includes(kw))) control++;
             if (CHAOS_KEYWORDS.some(kw => text.includes(kw))) chaos++;
         });
 
-        const total = control + chaos || 1;
+        const total = control + chaos;
+
+        // When no keywords found, show 50/50 split as "Balanced"
+        const controlPct = total === 0 ? 50 : Math.round((control / total) * 100);
 
         return {
             control,
             chaos,
-            controlPct: Math.round((control / total) * 100),
+            controlPct,
             style: control > chaos ? 'In Control' : chaos > control ? 'Chaotic' : 'Balanced'
         };
     }, [dreams]);

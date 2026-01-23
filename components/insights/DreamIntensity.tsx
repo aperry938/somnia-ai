@@ -18,18 +18,28 @@ export const DreamIntensity: React.FC<DreamIntensityProps> = ({ dreams }) => {
         let high = 0, medium = 0, low = 0;
 
         dreams.forEach(d => {
-            const text = d.dreamText.toLowerCase();
+            const text = (d.dreamText || '').toLowerCase();
             if (INTENSITY_KEYWORDS.high.some(kw => text.includes(kw))) high++;
             else if (INTENSITY_KEYWORDS.low.some(kw => text.includes(kw))) low++;
             else medium++;
         });
 
         const total = dreams.length;
+        const highPct = Math.round((high / total) * 100);
+        const lowPct = Math.round((low / total) * 100);
+        // Ensure percentages sum to 100 by calculating medium as remainder
+        const mediumPct = 100 - highPct - lowPct;
+
+        // Determine dominant: compare raw counts, not percentages
+        let dominant: 'High' | 'Medium' | 'Low' = 'Medium';
+        if (high >= medium && high >= low) dominant = 'High';
+        else if (low >= medium && low >= high) dominant = 'Low';
+
         return {
-            high: Math.round((high / total) * 100),
-            medium: Math.round((medium / total) * 100),
-            low: Math.round((low / total) * 100),
-            dominant: high > medium && high > low ? 'High' : low > medium ? 'Low' : 'Medium'
+            high: highPct,
+            medium: Math.max(0, mediumPct), // Ensure non-negative due to rounding
+            low: lowPct,
+            dominant
         };
     }, [dreams]);
 

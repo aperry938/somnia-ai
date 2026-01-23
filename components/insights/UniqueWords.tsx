@@ -13,13 +13,13 @@ export const UniqueWords: React.FC<UniqueWordsProps> = ({ dreams }) => {
         let totalWords = 0;
 
         dreams.forEach(d => {
-            const words = d.dreamText.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+            const words = (d.dreamText || '').toLowerCase().split(/\s+/).filter(w => w.length > 3);
             words.forEach(w => wordSet.add(w));
             totalWords += words.length;
         });
 
         const uniqueWords = wordSet.size;
-        const vocabularyRichness = (uniqueWords / totalWords) * 100;
+        const vocabularyRichness = totalWords > 0 ? (uniqueWords / totalWords) * 100 : 0;
 
         return { uniqueWords, totalWords, vocabularyRichness: vocabularyRichness.toFixed(1) };
     }, [dreams]);

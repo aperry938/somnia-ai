@@ -21,7 +21,7 @@ export const LucidDreamProgress: React.FC<LucidProgressProps> = ({ dreams }) => 
         const lucidDreams: { date: Date; title: string }[] = [];
 
         dreams.forEach(dream => {
-            const text = dream.dreamText.toLowerCase();
+            const text = (dream.dreamText || '').toLowerCase();
             const tags = dream.tags?.map(t => t.toLowerCase()) || [];
 
             const isLucid = LUCID_INDICATORS.some(ind => text.includes(ind)) ||

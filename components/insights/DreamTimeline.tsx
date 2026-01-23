@@ -49,9 +49,11 @@ export const DreamTimeline: React.FC<DreamTimelineProps> = ({ dreams, onDreamCli
                                 <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">
                                     {new Date(dream.timestamp).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
                                 </p>
+                                {dream.dreamText && (
                                 <p className="text-sm text-day-text-secondary dark:text-night-text-secondary line-clamp-1 mt-1">
-                                    {dream.dreamText.slice(0, 80)}...
+                                    {dream.dreamText.length > 80 ? `${dream.dreamText.slice(0, 80)}...` : dream.dreamText}
                                 </p>
+                            )}
                             </div>
                         </button>
                     ))}

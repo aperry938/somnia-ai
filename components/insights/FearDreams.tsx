@@ -9,15 +9,19 @@ const FEAR = ['fear', 'afraid', 'scary', 'scare', 'terrify', 'horror', 'monster'
 
 export const FearDreams: React.FC<FearDreamsProps> = ({ dreams }) => {
     const stats = useMemo(() => {
-        if (dreams.length < 5) return null;
+        if (!dreams || dreams.length < 5) return null;
 
         const fearDreams = dreams.filter(d =>
-            FEAR.some(f => d.dreamText.toLowerCase().includes(f))
+            d.dreamText && FEAR.some(f => d.dreamText.toLowerCase().includes(f))
         );
+
+        const percentage = dreams.length > 0
+            ? Math.round((fearDreams.length / dreams.length) * 100)
+            : 0;
 
         return {
             count: fearDreams.length,
-            percentage: Math.round((fearDreams.length / dreams.length) * 100)
+            percentage
         };
     }, [dreams]);
 

@@ -23,7 +23,7 @@ export const TitleAnalysis: React.FC<TitleAnalysisProps> = ({ dreams }) => {
         };
     }, [dreams]);
 
-    if (!stats) return null;
+    if (!stats || dreams.length === 0) return null;
 
     const titleRate = Math.round((stats.titled / dreams.length) * 100);
 

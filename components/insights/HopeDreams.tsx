@@ -9,15 +9,19 @@ const HOPE = ['hope', 'wish', 'dream', 'future', 'better', 'improve', 'goal', 'a
 
 export const HopeDreams: React.FC<HopeDreamsProps> = ({ dreams }) => {
     const stats = useMemo(() => {
-        if (dreams.length < 5) return null;
+        if (!dreams || dreams.length < 5) return null;
 
         const hopeDreams = dreams.filter(d =>
-            HOPE.some(h => d.dreamText.toLowerCase().includes(h))
+            d.dreamText && HOPE.some(h => d.dreamText.toLowerCase().includes(h))
         );
+
+        const percentage = dreams.length > 0
+            ? Math.round((hopeDreams.length / dreams.length) * 100)
+            : 0;
 
         return {
             count: hopeDreams.length,
-            percentage: Math.round((hopeDreams.length / dreams.length) * 100)
+            percentage
         };
     }, [dreams]);
 

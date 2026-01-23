@@ -12,7 +12,7 @@ export const DreamLengthInsights: React.FC<DreamLengthInsightsProps> = ({ dreams
     const stats = useMemo(() => {
         if (dreams.length < 3) return null;
 
-        const lengths = dreams.map(d => d.dreamText.split(/\s+/).filter(w => w).length);
+        const lengths = dreams.map(d => (d.dreamText || '').split(/\s+/).filter(w => w).length);
         const total = lengths.reduce((sum, l) => sum + l, 0);
         const avg = Math.round(total / lengths.length);
         const max = Math.max(...lengths);

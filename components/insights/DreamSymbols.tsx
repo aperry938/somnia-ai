@@ -25,7 +25,7 @@ export const DreamSymbols: React.FC<DreamSymbolsProps> = ({ dreams }) => {
         Object.entries(DREAM_SYMBOLS).forEach(([symbol, { keywords, meaning }]) => {
             let count = 0;
             dreams.forEach(d => {
-                const text = d.dreamText.toLowerCase();
+                const text = (d.dreamText || '').toLowerCase();
                 if (keywords.some(kw => text.includes(kw))) count++;
             });
             if (count > 0) found.push({ symbol, count, meaning });

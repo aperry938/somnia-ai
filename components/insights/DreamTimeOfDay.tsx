@@ -21,6 +21,7 @@ export const DreamTimeOfDay: React.FC<DreamTimeOfDayProps> = ({ dreams }) => {
         Object.entries(TIME_KEYWORDS).forEach(([time, { keywords, gradient }]) => {
             let count = 0;
             dreams.forEach(d => {
+                if (!d.dreamText) return;
                 const text = d.dreamText.toLowerCase();
                 if (keywords.some(kw => text.includes(kw))) count++;
             });
@@ -33,6 +34,8 @@ export const DreamTimeOfDay: React.FC<DreamTimeOfDayProps> = ({ dreams }) => {
     if (times.length === 0) return null;
 
     const total = times.reduce((s, t) => s + t.count, 0);
+
+    if (total === 0) return null;
 
     return (
         <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-xl p-4">

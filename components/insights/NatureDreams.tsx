@@ -12,7 +12,7 @@ export const NatureDreams: React.FC<NatureDreamsProps> = ({ dreams }) => {
         if (dreams.length < 5) return null;
 
         const natureDreams = dreams.filter(d =>
-            NATURE.some(n => d.dreamText.toLowerCase().includes(n))
+            NATURE.some(n => (d.dreamText || '').toLowerCase().includes(n))
         );
 
         return {

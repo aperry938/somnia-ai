@@ -13,10 +13,14 @@ export const SentenceComplexity: React.FC<SentenceComplexityProps> = ({ dreams }
         let totalWords = 0;
 
         dreams.forEach(d => {
-            const sentences = d.dreamText.split(/[.!?]+/).filter(s => s.trim().length > 0);
+            const text = d.dreamText || '';
+            const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
             totalSentences += sentences.length;
-            totalWords += d.dreamText.split(/\s+/).length;
+            totalWords += text.split(/\s+/).filter(w => w).length;
         });
+
+        // Guard against division by zero when no sentences are found
+        if (totalSentences === 0) return null;
 
         const avgWordsPerSentence = totalWords / totalSentences;
         const complexity = avgWordsPerSentence > 20 ? 'Complex' : avgWordsPerSentence > 12 ? 'Moderate' : 'Simple';

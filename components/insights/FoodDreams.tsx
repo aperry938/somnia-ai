@@ -12,7 +12,7 @@ export const FoodDreams: React.FC<FoodDreamsProps> = ({ dreams }) => {
         if (dreams.length < 5) return null;
 
         const foodDreams = dreams.filter(d =>
-            FOODS.some(f => d.dreamText.toLowerCase().includes(f))
+            FOODS.some(f => (d.dreamText || '').toLowerCase().includes(f))
         );
 
         return {

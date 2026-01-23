@@ -47,7 +47,7 @@ const ACHIEVEMENTS = [
     { id: 'week_streak', name: 'Week Warrior', condition: (d: Dream[]) => d.length >= 7, iconType: 'fire' },
     { id: 'dream_master', name: 'Dream Master', condition: (d: Dream[]) => d.length >= 30, iconType: 'crown' },
     { id: 'centurion', name: 'Centurion', condition: (d: Dream[]) => d.length >= 100, iconType: 'badge' },
-    { id: 'wordsmith', name: 'Wordsmith', condition: (d: Dream[]) => d.reduce((s, x) => s + x.dreamText.split(/\s+/).length, 0) > 10000, iconType: 'pencil' },
+    { id: 'wordsmith', name: 'Wordsmith', condition: (d: Dream[]) => d.reduce((s, x) => s + (x.dreamText || '').split(/\s+/).filter(w => w.length > 0).length, 0) > 10000, iconType: 'pencil' },
     { id: 'ai_explorer', name: 'AI Explorer', condition: (d: Dream[]) => d.filter(x => x.aiAnalysis).length >= 10, iconType: 'sparkles' },
 ];
 

@@ -15,7 +15,7 @@ export const IndoorVsOutdoor: React.FC<IndoorVsOutdoorProps> = ({ dreams }) => {
         let indoor = 0, outdoor = 0;
 
         dreams.forEach(d => {
-            const text = d.dreamText.toLowerCase();
+            const text = d.dreamText?.toLowerCase() ?? '';
             if (INDOOR.some(kw => text.includes(kw))) indoor++;
             if (OUTDOOR.some(kw => text.includes(kw))) outdoor++;
         });

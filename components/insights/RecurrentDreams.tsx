@@ -10,16 +10,27 @@ export const RecurrentDreams: React.FC<RecurrentDreamsProps> = ({ dreams }) => {
         if (dreams.length < 10) return [];
 
         // Find similar dreams based on word overlap
-        const groups: { representative: Dream; count: number; ids: number[] }[] = [];
+        // Cache word sets for each dream to avoid recomputation (O(n) instead of O(n^2))
+        const dreamWordSets = new Map<number, Set<string>>();
+        const getWordSet = (dream: Dream): Set<string> => {
+            let wordSet = dreamWordSets.get(dream.id);
+            if (!wordSet) {
+                const text = (dream.dreamText || '').toLowerCase();
+                wordSet = new Set(text.split(/\s+/).filter(w => w.length > 4));
+                dreamWordSets.set(dream.id, wordSet);
+            }
+            return wordSet;
+        };
+
+        const groups: { representative: Dream; count: number; ids: number[]; wordSet: Set<string> }[] = [];
 
         dreams.forEach(dream => {
-            const words = new Set(dream.dreamText.toLowerCase().split(/\s+/).filter(w => w.length > 4));
+            const words = getWordSet(dream);
 
             let matched = false;
             for (const group of groups) {
-                const repWords = new Set(group.representative.dreamText.toLowerCase().split(/\s+/).filter(w => w.length > 4));
                 let overlap = 0;
-                words.forEach(w => { if (repWords.has(w)) overlap++; });
+                words.forEach(w => { if (group.wordSet.has(w)) overlap++; });
 
                 if (overlap >= 5) {
                     group.count++;
@@ -30,7 +41,7 @@ export const RecurrentDreams: React.FC<RecurrentDreamsProps> = ({ dreams }) => {
             }
 
             if (!matched) {
-                groups.push({ representative: dream, count: 1, ids: [dream.id] });
+                groups.push({ representative: dream, count: 1, ids: [dream.id], wordSet: words });
             }
         });
 

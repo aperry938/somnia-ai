@@ -10,7 +10,7 @@ export const DreamLengthTrend: React.FC<DreamLengthTrendProps> = ({ dreams }) =>
         if (dreams.length < 10) return null;
 
         const recent10 = dreams.slice(0, 10);
-        const lengths = recent10.map(d => d.dreamText.split(/\s+/).length).reverse();
+        const lengths = recent10.map(d => (d.dreamText || '').split(/\s+/).filter(w => w).length).reverse();
         const avgFirst5 = lengths.slice(0, 5).reduce((a, b) => a + b, 0) / 5;
         const avgLast5 = lengths.slice(5).reduce((a, b) => a + b, 0) / 5;
 

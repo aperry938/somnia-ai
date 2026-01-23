@@ -23,8 +23,8 @@ export const DreamSupernatural: React.FC<DreamSupernaturalProps> = ({ dreams }) 
         Object.entries(SUPERNATURAL_KEYWORDS).forEach(([type, keywords]) => {
             let count = 0;
             dreams.forEach(d => {
-                const text = d.dreamText.toLowerCase();
-                if (keywords.some(kw => text.includes(kw))) count++;
+                const text = d.dreamText?.toLowerCase() ?? '';
+                if (text && keywords.some(kw => text.includes(kw))) count++;
             });
             if (count > 0) counts.push({ type, count });
         });

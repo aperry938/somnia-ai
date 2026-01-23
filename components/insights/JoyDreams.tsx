@@ -9,15 +9,19 @@ const JOY = ['joy', 'happy', 'laugh', 'smile', 'celebrate', 'party', 'fun', 'exc
 
 export const JoyDreams: React.FC<JoyDreamsProps> = ({ dreams }) => {
     const stats = useMemo(() => {
-        if (dreams.length < 5) return null;
+        if (!dreams || dreams.length < 5) return null;
 
         const joyDreams = dreams.filter(d =>
-            JOY.some(j => d.dreamText.toLowerCase().includes(j))
+            d.dreamText && JOY.some(j => d.dreamText.toLowerCase().includes(j))
         );
+
+        const percentage = dreams.length > 0
+            ? Math.round((joyDreams.length / dreams.length) * 100)
+            : 0;
 
         return {
             count: joyDreams.length,
-            percentage: Math.round((joyDreams.length / dreams.length) * 100)
+            percentage
         };
     }, [dreams]);
 

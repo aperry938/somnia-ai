@@ -15,6 +15,7 @@ export const DayVsNightDreams: React.FC<DayVsNightDreamsProps> = ({ dreams }) =>
         let day = 0, night = 0;
 
         dreams.forEach(d => {
+            if (!d.dreamText) return;
             const text = d.dreamText.toLowerCase();
             if (DAY.some(w => text.includes(w))) day++;
             if (NIGHT.some(w => text.includes(w))) night++;

@@ -70,7 +70,7 @@ const extractWords = (dreams: Dream[]): Map<string, number> => {
     const wordCounts = new Map<string, number>();
 
     dreams.forEach(dream => {
-        const text = dream.dreamText.toLowerCase();
+        const text = (dream.dreamText || '').toLowerCase();
         const words: string[] = text.match(/[a-z]+/g) || [];
 
         words.forEach(word => {

@@ -12,7 +12,8 @@ export const NegationCount: React.FC<NegationCountProps> = ({ dreams }) => {
         let negations = 0;
 
         dreams.forEach(d => {
-            negations += (d.dreamText.match(/\b(not|n't|no|never|nothing|nobody|nowhere|none)\b/gi) || []).length;
+            const text = d.dreamText || '';
+            negations += (text.match(/\b(not|n't|no|never|nothing|nobody|nowhere|none)\b/gi) || []).length;
         });
 
         const perDream = negations / dreams.length;

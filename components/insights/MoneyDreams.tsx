@@ -12,7 +12,7 @@ export const MoneyDreams: React.FC<MoneyDreamsProps> = ({ dreams }) => {
         if (dreams.length < 5) return null;
 
         const moneyDreams = dreams.filter(d =>
-            MONEY.some(m => d.dreamText.toLowerCase().includes(m))
+            MONEY.some(m => (d.dreamText?.toLowerCase() ?? '').includes(m))
         );
 
         return {

@@ -11,9 +11,12 @@ export const SuccessDreams: React.FC<SuccessDreamsProps> = ({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
-        const successDreams = dreams.filter(d =>
-            SUCCESS.some(s => d.dreamText.toLowerCase().includes(s))
-        );
+        const successDreams = dreams.filter(d => {
+            const text = d.dreamText?.toLowerCase() ?? '';
+            return text && SUCCESS.some(s => text.includes(s));
+        });
+
+        if (successDreams.length === 0) return null;
 
         return {
             count: successDreams.length,

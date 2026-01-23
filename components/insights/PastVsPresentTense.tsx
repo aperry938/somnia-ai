@@ -12,8 +12,9 @@ export const PastVsPresentTense: React.FC<PastVsPresentTenseProps> = ({ dreams }
         let pastCount = 0, presentCount = 0;
 
         dreams.forEach(d => {
-            const past = (d.dreamText.match(/\b(was|were|had|did|went|saw|felt|came|got|made)\b/gi) || []).length;
-            const present = (d.dreamText.match(/\b(is|are|have|do|go|see|feel|come|get|make)\b/gi) || []).length;
+            const text = d.dreamText || '';
+            const past = (text.match(/\b(was|were|had|did|went|saw|felt|came|got|made)\b/gi) || []).length;
+            const present = (text.match(/\b(is|are|have|do|go|see|feel|come|get|make)\b/gi) || []).length;
             pastCount += past;
             presentCount += present;
         });

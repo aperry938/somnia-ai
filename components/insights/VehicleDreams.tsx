@@ -14,7 +14,7 @@ export const VehicleDreams: React.FC<VehicleDreamsProps> = ({ dreams }) => {
         const vehicleCounts: Record<string, number> = {};
 
         dreams.forEach(d => {
-            const text = d.dreamText.toLowerCase();
+            const text = (d.dreamText || '').toLowerCase();
             VEHICLES.forEach(v => {
                 if (text.includes(v)) {
                     vehicleCounts[v] = (vehicleCounts[v] || 0) + 1;

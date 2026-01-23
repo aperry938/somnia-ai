@@ -12,9 +12,10 @@ export const FirstPersonCount: React.FC<FirstPersonCountProps> = ({ dreams }) =>
         let iCount = 0, weCount = 0;
 
         dreams.forEach(d => {
-            const matches = d.dreamText.match(/\b(I|I'm|I've|I'd|I'll|me|my|mine)\b/gi);
+            const text = d.dreamText || '';
+            const matches = text.match(/\b(I|I'm|I've|I'd|I'll|me|my|mine)\b/gi);
             iCount += matches?.length || 0;
-            const weMatches = d.dreamText.match(/\b(we|we're|we've|we'd|us|our|ours)\b/gi);
+            const weMatches = text.match(/\b(we|we're|we've|we'd|us|our|ours)\b/gi);
             weCount += weMatches?.length || 0;
         });
 

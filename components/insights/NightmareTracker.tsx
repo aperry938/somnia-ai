@@ -12,7 +12,7 @@ export const NightmareTracker: React.FC<NightmareTrackerProps> = ({ dreams }) =>
         if (dreams.length < 5) return null;
 
         const nightmares = dreams.filter(d => {
-            const text = d.dreamText.toLowerCase();
+            const text = (d.dreamText || '').toLowerCase();
             return NIGHTMARE_KEYWORDS.some(kw => text.includes(kw));
         });
 

@@ -21,9 +21,9 @@ export const TagCloudInsight: React.FC<TagCloudInsightProps> = ({ dreams }) => {
             .map(([tag, count]) => ({ tag, count }));
     }, [dreams]);
 
-    if (tags.length === 0) return null;
+    if (tags.length === 0 || dreams.length < 3) return null;
 
-    const maxCount = Math.max(...tags.map(t => t.count));
+    const maxCount = tags[0]?.count || 1; // Already sorted descending, so first element is max
 
     return (
         <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-xl p-4">

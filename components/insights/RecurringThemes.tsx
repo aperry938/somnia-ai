@@ -29,7 +29,7 @@ export const RecurringThemes: React.FC<RecurringThemesProps> = ({ dreams }) => {
             const matchingDreams: string[] = [];
 
             dreams.forEach(dream => {
-                const text = dream.dreamText.toLowerCase();
+                const text = (dream.dreamText || '').toLowerCase();
                 if (keywords.some(kw => text.includes(kw))) {
                     matchingDreams.push(dream.title || 'Untitled');
                 }

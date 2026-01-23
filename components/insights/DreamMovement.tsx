@@ -24,7 +24,7 @@ export const DreamMovement: React.FC<DreamMovementProps> = ({ dreams }) => {
         Object.entries(MOVEMENT_KEYWORDS).forEach(([type, keywords]) => {
             let count = 0;
             dreams.forEach(d => {
-                const text = d.dreamText.toLowerCase();
+                const text = d.dreamText?.toLowerCase() ?? '';
                 if (keywords.some(kw => text.includes(kw))) count++;
             });
             if (count > 0) counts.push({ type, count });
@@ -35,7 +35,7 @@ export const DreamMovement: React.FC<DreamMovementProps> = ({ dreams }) => {
 
     if (movements.length === 0) return null;
 
-    const maxCount = Math.max(...movements.map(m => m.count));
+    const maxCount = Math.max(...movements.map(m => m.count), 1);
 
     return (
         <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-xl p-4">

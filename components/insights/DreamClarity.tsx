@@ -18,18 +18,28 @@ export const DreamClarity: React.FC<DreamClarityProps> = ({ dreams }) => {
         let vivid = 0, normal = 0, hazy = 0;
 
         dreams.forEach(d => {
-            const text = d.dreamText.toLowerCase();
+            const text = (d.dreamText || '').toLowerCase();
             if (CLARITY_LEVELS.vivid.some(kw => text.includes(kw))) vivid++;
             else if (CLARITY_LEVELS.hazy.some(kw => text.includes(kw))) hazy++;
             else normal++;
         });
 
         const total = dreams.length;
+        const vividPct = Math.round((vivid / total) * 100);
+        const hazyPct = Math.round((hazy / total) * 100);
+        // Ensure percentages sum to 100 by calculating normal as remainder
+        const normalPct = 100 - vividPct - hazyPct;
+
+        // Determine dominant: compare raw counts, not percentages
+        let dominant: 'Vivid' | 'Normal' | 'Hazy' = 'Normal';
+        if (vivid >= normal && vivid >= hazy) dominant = 'Vivid';
+        else if (hazy >= normal && hazy >= vivid) dominant = 'Hazy';
+
         return {
-            vivid: Math.round((vivid / total) * 100),
-            normal: Math.round((normal / total) * 100),
-            hazy: Math.round((hazy / total) * 100),
-            dominant: vivid > normal && vivid > hazy ? 'Vivid' : hazy > normal ? 'Hazy' : 'Normal'
+            vivid: vividPct,
+            normal: Math.max(0, normalPct), // Ensure non-negative due to rounding
+            hazy: hazyPct,
+            dominant
         };
     }, [dreams]);
 

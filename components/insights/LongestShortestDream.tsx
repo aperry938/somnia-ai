@@ -11,7 +11,7 @@ export const LongestShortestDream: React.FC<LongestShortestDreamProps> = ({ drea
 
         const withWords = dreams.map(d => ({
             ...d,
-            wordCount: d.dreamText.split(/\s+/).filter(w => w).length
+            wordCount: (d.dreamText || '').split(/\s+/).filter(w => w).length
         }));
 
         const sorted = [...withWords].sort((a, b) => b.wordCount - a.wordCount);

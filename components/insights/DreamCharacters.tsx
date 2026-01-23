@@ -25,7 +25,7 @@ export const DreamCharacters: React.FC<DreamCharactersProps> = ({ dreams }) => {
         Object.entries(CHARACTER_TYPES).forEach(([type, keywords]) => {
             let count = 0;
             dreams.forEach(d => {
-                const text = d.dreamText.toLowerCase();
+                const text = (d.dreamText || '').toLowerCase();
                 if (keywords.some(kw => text.includes(kw))) count++;
             });
             if (count > 0) counts.push({ type, count });
@@ -36,7 +36,7 @@ export const DreamCharacters: React.FC<DreamCharactersProps> = ({ dreams }) => {
 
     if (characters.length === 0) return null;
 
-    const maxCount = Math.max(...characters.map(c => c.count));
+    const maxCount = Math.max(...characters.map(c => c.count)) || 1;
 
     return (
         <div className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-xl p-4">

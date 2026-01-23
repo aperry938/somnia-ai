@@ -60,7 +60,7 @@ export const DreamWeather: React.FC<DreamWeatherProps> = ({ dreams }) => {
         Object.entries(WEATHER_KEYWORDS).forEach(([type, { keywords }]) => {
             let count = 0;
             dreams.forEach(d => {
-                const text = d.dreamText.toLowerCase();
+                const text = d.dreamText?.toLowerCase() ?? '';
                 if (keywords.some(kw => text.includes(kw))) count++;
             });
             if (count > 0) counts.push({ type, count });

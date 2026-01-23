@@ -12,7 +12,7 @@ export const ConflictDreams: React.FC<ConflictDreamsProps> = ({ dreams }) => {
         if (dreams.length < 5) return null;
 
         const conflictDreams = dreams.filter(d =>
-            CONFLICT.some(c => d.dreamText.toLowerCase().includes(c))
+            d.dreamText && CONFLICT.some(c => d.dreamText.toLowerCase().includes(c))
         );
 
         return {

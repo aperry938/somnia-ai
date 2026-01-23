@@ -12,7 +12,7 @@ export const PeacefulDreams: React.FC<PeacefulDreamsProps> = ({ dreams }) => {
         if (dreams.length < 5) return null;
 
         const peacefulDreams = dreams.filter(d =>
-            PEACEFUL.some(p => d.dreamText.toLowerCase().includes(p))
+            d.dreamText && PEACEFUL.some(p => d.dreamText.toLowerCase().includes(p))
         );
 
         return {

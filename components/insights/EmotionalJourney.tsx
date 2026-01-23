@@ -16,12 +16,15 @@ export const EmotionalJourney: React.FC<EmotionalJourneyProps> = ({ dreams }) =>
         if (dreams.length < 10) return null;
 
         const data = dreams.slice(0, 14).reverse().map((d, i) => {
-            const text = d.dreamText.toLowerCase();
+            const text = (d.dreamText || '').toLowerCase();
             let score = 0;
             EMOTION_CATEGORIES.positive.forEach(kw => { if (text.includes(kw)) score += 1; });
             EMOTION_CATEGORIES.negative.forEach(kw => { if (text.includes(kw)) score -= 1; });
             return { index: i, score, date: new Date(d.timestamp) };
         });
+
+        // Guard against division by zero (shouldn't happen but defensive)
+        if (data.length === 0) return null;
 
         const avgScore = data.reduce((s, d) => s + d.score, 0) / data.length;
         const lastScore = data[data.length - 1]?.score ?? 0;

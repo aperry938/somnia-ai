@@ -13,7 +13,8 @@ export const QuestionCount: React.FC<QuestionCountProps> = ({ dreams }) => {
         let dreamsWithQuestions = 0;
 
         dreams.forEach(d => {
-            const q = (d.dreamText.match(/\?/g) || []).length;
+            const text = d.dreamText || '';
+            const q = (text.match(/\?/g) || []).length;
             if (q > 0) dreamsWithQuestions++;
             totalQuestions += q;
         });
