@@ -7,7 +7,7 @@ interface TechnologyDreamsProps {
 
 const TECH = ['phone', 'computer', 'internet', 'app', 'robot', 'machine', 'screen', 'video', 'game', 'technology', 'digital', 'virtual'];
 
-export const TechnologyDreams: React.FC<TechnologyDreamsProps> = ({ dreams }) => {
+export const TechnologyDreams: React.FC<TechnologyDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -33,4 +33,4 @@ export const TechnologyDreams: React.FC<TechnologyDreamsProps> = ({ dreams }) =>
             </div>
         </div>
     );
-};
+});

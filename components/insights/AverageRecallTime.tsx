@@ -5,7 +5,7 @@ interface AverageRecallTimeProps {
     dreams: Dream[];
 }
 
-export const AverageRecallTime: React.FC<AverageRecallTimeProps> = ({ dreams }) => {
+export const AverageRecallTime: React.FC<AverageRecallTimeProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -66,4 +66,4 @@ export const AverageRecallTime: React.FC<AverageRecallTimeProps> = ({ dreams }) 
             </div>
         </div>
     );
-};
+});

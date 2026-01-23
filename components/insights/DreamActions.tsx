@@ -16,7 +16,7 @@ const ACTION_VERBS = {
     'Hiding': ['hide', 'hiding', 'hid', 'hidden', 'sneak', 'crouch']
 };
 
-export const DreamActions: React.FC<DreamActionsProps> = ({ dreams }) => {
+export const DreamActions: React.FC<DreamActionsProps> = React.memo(({ dreams }) => {
     const actions = useMemo(() => {
         if (dreams.length < 3) return [];
 
@@ -59,4 +59,4 @@ export const DreamActions: React.FC<DreamActionsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

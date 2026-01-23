@@ -7,7 +7,7 @@ interface RomanticDreamsProps {
 
 const ROMANTIC = ['love', 'kiss', 'romance', 'date', 'wedding', 'marry', 'partner', 'boyfriend', 'girlfriend', 'heart', 'passion'];
 
-export const RomanticDreams: React.FC<RomanticDreamsProps> = ({ dreams }) => {
+export const RomanticDreams: React.FC<RomanticDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -33,4 +33,4 @@ export const RomanticDreams: React.FC<RomanticDreamsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

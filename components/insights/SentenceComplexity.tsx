@@ -5,7 +5,7 @@ interface SentenceComplexityProps {
     dreams: Dream[];
 }
 
-export const SentenceComplexity: React.FC<SentenceComplexityProps> = ({ dreams }) => {
+export const SentenceComplexity: React.FC<SentenceComplexityProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -42,4 +42,4 @@ export const SentenceComplexity: React.FC<SentenceComplexityProps> = ({ dreams }
             </div>
         </div>
     );
-};
+});

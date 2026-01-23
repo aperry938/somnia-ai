@@ -5,7 +5,7 @@ interface PastVsPresentTenseProps {
     dreams: Dream[];
 }
 
-export const PastVsPresentTense: React.FC<PastVsPresentTenseProps> = ({ dreams }) => {
+export const PastVsPresentTense: React.FC<PastVsPresentTenseProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -40,4 +40,4 @@ export const PastVsPresentTense: React.FC<PastVsPresentTenseProps> = ({ dreams }
             </div>
         </div>
     );
-};
+});

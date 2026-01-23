@@ -12,7 +12,7 @@ const TIME_KEYWORDS: Record<string, { keywords: string[]; gradient: string }> = 
     'Night': { keywords: ['night', 'midnight', 'dark', 'moon', 'stars', 'nighttime', 'late'], gradient: 'from-indigo-600 to-purple-800' }
 };
 
-export const DreamTimeOfDay: React.FC<DreamTimeOfDayProps> = ({ dreams }) => {
+export const DreamTimeOfDay: React.FC<DreamTimeOfDayProps> = React.memo(({ dreams }) => {
     const times = useMemo(() => {
         if (dreams.length < 3) return [];
 
@@ -59,4 +59,4 @@ export const DreamTimeOfDay: React.FC<DreamTimeOfDayProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

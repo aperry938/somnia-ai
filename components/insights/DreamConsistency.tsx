@@ -5,7 +5,7 @@ interface DreamConsistencyProps {
     dreams: Dream[];
 }
 
-export const DreamConsistency: React.FC<DreamConsistencyProps> = ({ dreams }) => {
+export const DreamConsistency: React.FC<DreamConsistencyProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 7) return null;
 
@@ -54,4 +54,4 @@ export const DreamConsistency: React.FC<DreamConsistencyProps> = ({ dreams }) =>
             </p>
         </div>
     );
-};
+});

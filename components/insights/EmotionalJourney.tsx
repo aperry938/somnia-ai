@@ -11,7 +11,7 @@ const EMOTION_CATEGORIES = {
     neutral: ['normal', 'usual', 'ordinary', 'simple', 'plain']
 };
 
-export const EmotionalJourney: React.FC<EmotionalJourneyProps> = ({ dreams }) => {
+export const EmotionalJourney: React.FC<EmotionalJourneyProps> = React.memo(({ dreams }) => {
     const journey = useMemo(() => {
         if (dreams.length < 10) return null;
 
@@ -62,4 +62,4 @@ export const EmotionalJourney: React.FC<EmotionalJourneyProps> = ({ dreams }) =>
             </p>
         </div>
     );
-};
+});

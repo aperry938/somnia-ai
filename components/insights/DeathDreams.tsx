@@ -7,7 +7,7 @@ interface DeathDreamsProps {
 
 const DEATH = ['death', 'dead', 'die', 'dying', 'funeral', 'grave', 'cemetery', 'ghost', 'afterlife', 'heaven', 'hell'];
 
-export const DeathDreams: React.FC<DeathDreamsProps> = ({ dreams }) => {
+export const DeathDreams: React.FC<DeathDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -36,4 +36,4 @@ export const DeathDreams: React.FC<DeathDreamsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

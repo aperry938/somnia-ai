@@ -7,7 +7,7 @@ interface AngerDreamsProps {
 
 const ANGER = ['anger', 'angry', 'rage', 'furious', 'mad', 'hate', 'frustrat', 'annoyed', 'irritat', 'yell', 'scream'];
 
-export const AngerDreams: React.FC<AngerDreamsProps> = ({ dreams }) => {
+export const AngerDreams: React.FC<AngerDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (!dreams || dreams.length < 5) return null;
 
@@ -37,4 +37,4 @@ export const AngerDreams: React.FC<AngerDreamsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

@@ -7,7 +7,7 @@ interface TransformationDreamsProps {
 
 const TRANSFORM = ['transform', 'change', 'morph', 'become', 'turn into', 'evolve', 'grow', 'shrink', 'shapeshift', 'metamorphosis'];
 
-export const TransformationDreams: React.FC<TransformationDreamsProps> = ({ dreams }) => {
+export const TransformationDreams: React.FC<TransformationDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -36,4 +36,4 @@ export const TransformationDreams: React.FC<TransformationDreamsProps> = ({ drea
             </div>
         </div>
     );
-};
+});

@@ -7,7 +7,7 @@ interface MoneyDreamsProps {
 
 const MONEY = ['money', 'rich', 'wealth', 'cash', 'bank', 'dollar', 'gold', 'treasure', 'lottery', 'pay', 'buy', 'spend'];
 
-export const MoneyDreams: React.FC<MoneyDreamsProps> = ({ dreams }) => {
+export const MoneyDreams: React.FC<MoneyDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -33,4 +33,4 @@ export const MoneyDreams: React.FC<MoneyDreamsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

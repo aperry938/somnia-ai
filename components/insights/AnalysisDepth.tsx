@@ -5,7 +5,7 @@ interface AnalysisDepthProps {
     dreams: Dream[];
 }
 
-export const AnalysisDepth: React.FC<AnalysisDepthProps> = ({ dreams }) => {
+export const AnalysisDepth: React.FC<AnalysisDepthProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -56,4 +56,4 @@ export const AnalysisDepth: React.FC<AnalysisDepthProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

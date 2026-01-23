@@ -8,7 +8,7 @@ interface DreamLengthInsightsProps {
 /**
  * Analyze dream narrative lengths and show insights about journaling patterns.
  */
-export const DreamLengthInsights: React.FC<DreamLengthInsightsProps> = ({ dreams }) => {
+export const DreamLengthInsights: React.FC<DreamLengthInsightsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 3) return null;
 
@@ -84,4 +84,4 @@ export const DreamLengthInsights: React.FC<DreamLengthInsightsProps> = ({ dreams
             )}
         </div>
     );
-};
+});

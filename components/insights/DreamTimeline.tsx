@@ -9,7 +9,7 @@ interface DreamTimelineProps {
 /**
  * Vertical timeline view of recent dreams showing progression.
  */
-export const DreamTimeline: React.FC<DreamTimelineProps> = ({ dreams, onDreamClick }) => {
+export const DreamTimeline: React.FC<DreamTimelineProps> = React.memo(({ dreams, onDreamClick }) => {
     const timelineDreams = useMemo(() => {
         return dreams.slice(0, 10).map((dream, idx) => ({
             ...dream,
@@ -61,4 +61,4 @@ export const DreamTimeline: React.FC<DreamTimelineProps> = ({ dreams, onDreamCli
             </div>
         </div>
     );
-};
+});

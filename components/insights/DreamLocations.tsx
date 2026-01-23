@@ -64,7 +64,7 @@ const LOCATION_TYPES = {
     'Transport': ['car', 'train', 'airplane', 'bus', 'boat', 'driving', 'flying', 'road', 'highway']
 };
 
-export const DreamLocations: React.FC<DreamLocationsProps> = ({ dreams }) => {
+export const DreamLocations: React.FC<DreamLocationsProps> = React.memo(({ dreams }) => {
     const locations = useMemo(() => {
         if (dreams.length < 3) return [];
 
@@ -105,4 +105,4 @@ export const DreamLocations: React.FC<DreamLocationsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

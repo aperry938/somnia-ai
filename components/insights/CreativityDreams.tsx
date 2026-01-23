@@ -7,7 +7,7 @@ interface CreativityDreamsProps {
 
 const CREATIVITY = ['create', 'art', 'paint', 'draw', 'write', 'invent', 'design', 'imagine', 'build', 'compose', 'creative'];
 
-export const CreativityDreams: React.FC<CreativityDreamsProps> = ({ dreams }) => {
+export const CreativityDreams: React.FC<CreativityDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -33,4 +33,4 @@ export const CreativityDreams: React.FC<CreativityDreamsProps> = ({ dreams }) =>
             </div>
         </div>
     );
-};
+});

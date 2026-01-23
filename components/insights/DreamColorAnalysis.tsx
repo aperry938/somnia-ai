@@ -11,7 +11,7 @@ const COLORS: Record<string, string> = {
     pink: '#ec4899', brown: '#92400e', gray: '#6b7280', gold: '#fbbf24'
 };
 
-export const DreamColorAnalysis: React.FC<DreamColorAnalysisProps> = ({ dreams }) => {
+export const DreamColorAnalysis: React.FC<DreamColorAnalysisProps> = React.memo(({ dreams }) => {
     const colors = useMemo(() => {
         if (dreams.length < 5) return [];
 
@@ -48,4 +48,4 @@ export const DreamColorAnalysis: React.FC<DreamColorAnalysisProps> = ({ dreams }
             </div>
         </div>
     );
-};
+});

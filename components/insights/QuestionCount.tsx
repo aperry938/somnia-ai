@@ -5,7 +5,7 @@ interface QuestionCountProps {
     dreams: Dream[];
 }
 
-export const QuestionCount: React.FC<QuestionCountProps> = ({ dreams }) => {
+export const QuestionCount: React.FC<QuestionCountProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -40,4 +40,4 @@ export const QuestionCount: React.FC<QuestionCountProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

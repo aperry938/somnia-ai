@@ -7,7 +7,7 @@ interface DayOfWeekAnalysisProps {
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-export const DayOfWeekAnalysis: React.FC<DayOfWeekAnalysisProps> = ({ dreams }) => {
+export const DayOfWeekAnalysis: React.FC<DayOfWeekAnalysisProps> = React.memo(({ dreams }) => {
     const dayStats = useMemo(() => {
         if (dreams.length < 7) return null;
 
@@ -51,4 +51,4 @@ export const DayOfWeekAnalysis: React.FC<DayOfWeekAnalysisProps> = ({ dreams }) 
             </p>
         </div>
     );
-};
+});

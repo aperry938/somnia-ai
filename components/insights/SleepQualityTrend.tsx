@@ -5,7 +5,7 @@ interface SleepQualityTrendProps {
     dreams: Dream[];
 }
 
-export const SleepQualityTrend: React.FC<SleepQualityTrendProps> = ({ dreams }) => {
+export const SleepQualityTrend: React.FC<SleepQualityTrendProps> = React.memo(({ dreams }) => {
     const trend = useMemo(() => {
         const withQuality = dreams.filter(d => d.sleepQuality !== null && d.sleepQuality !== undefined);
         if (withQuality.length < 5) return null;
@@ -76,4 +76,4 @@ export const SleepQualityTrend: React.FC<SleepQualityTrendProps> = ({ dreams }) 
             <p className="text-[10px] text-day-text-secondary dark:text-night-text-secondary text-center mt-1">Last 14 entries</p>
         </div>
     );
-};
+});

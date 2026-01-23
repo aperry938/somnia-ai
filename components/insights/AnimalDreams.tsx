@@ -7,7 +7,7 @@ interface AnimalDreamsProps {
 
 const ANIMALS = ['dog', 'cat', 'bird', 'horse', 'snake', 'fish', 'wolf', 'bear', 'spider', 'insect', 'lion', 'tiger', 'elephant', 'mouse', 'rabbit'];
 
-export const AnimalDreams: React.FC<AnimalDreamsProps> = ({ dreams }) => {
+export const AnimalDreams: React.FC<AnimalDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -46,4 +46,4 @@ export const AnimalDreams: React.FC<AnimalDreamsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

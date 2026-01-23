@@ -7,7 +7,7 @@ interface MonthlyOverviewProps {
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-export const MonthlyOverview: React.FC<MonthlyOverviewProps> = ({ dreams }) => {
+export const MonthlyOverview: React.FC<MonthlyOverviewProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 10) return null;
 
@@ -59,4 +59,4 @@ export const MonthlyOverview: React.FC<MonthlyOverviewProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

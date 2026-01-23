@@ -8,7 +8,7 @@ interface SocialDreamsProps {
 const SOCIAL = ['friend', 'family', 'party', 'together', 'group', 'crowd', 'people', 'talk', 'conversation', 'meet', 'gathering'];
 const ALONE = ['alone', 'lonely', 'solo', 'myself', 'by myself', 'solitary', 'isolated'];
 
-export const SocialDreams: React.FC<SocialDreamsProps> = ({ dreams }) => {
+export const SocialDreams: React.FC<SocialDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -46,4 +46,4 @@ export const SocialDreams: React.FC<SocialDreamsProps> = ({ dreams }) => {
             <p className="text-xs text-center text-day-text-secondary dark:text-night-text-secondary mt-2">{stats.style}</p>
         </div>
     );
-};
+});

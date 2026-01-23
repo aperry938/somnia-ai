@@ -8,7 +8,7 @@ interface DayVsNightDreamsProps {
 const DAY = ['day', 'sun', 'sunlight', 'daylight', 'bright', 'morning', 'afternoon', 'sunny'];
 const NIGHT = ['night', 'moon', 'dark', 'darkness', 'midnight', 'evening', 'stars', 'shadow'];
 
-export const DayVsNightDreams: React.FC<DayVsNightDreamsProps> = ({ dreams }) => {
+export const DayVsNightDreams: React.FC<DayVsNightDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -45,4 +45,4 @@ export const DayVsNightDreams: React.FC<DayVsNightDreamsProps> = ({ dreams }) =>
             </div>
         </div>
     );
-};
+});

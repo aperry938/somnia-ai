@@ -7,7 +7,7 @@ interface FoodDreamsProps {
 
 const FOODS = ['food', 'eat', 'eating', 'drink', 'water', 'coffee', 'cake', 'bread', 'fruit', 'meat', 'restaurant', 'kitchen', 'cook', 'meal'];
 
-export const FoodDreams: React.FC<FoodDreamsProps> = ({ dreams }) => {
+export const FoodDreams: React.FC<FoodDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -33,4 +33,4 @@ export const FoodDreams: React.FC<FoodDreamsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

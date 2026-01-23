@@ -16,7 +16,7 @@ const COLOR_KEYWORDS: Record<string, { keywords: string[]; hex: string }> = {
     'Orange': { keywords: ['orange', 'sunset', 'amber', 'flame', 'copper'], hex: '#f97316' }
 };
 
-export const DreamColors: React.FC<DreamColorsProps> = ({ dreams }) => {
+export const DreamColors: React.FC<DreamColorsProps> = React.memo(({ dreams }) => {
     const colors = useMemo(() => {
         if (dreams.length < 3) return [];
 
@@ -56,4 +56,4 @@ export const DreamColors: React.FC<DreamColorsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

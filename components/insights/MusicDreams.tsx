@@ -7,7 +7,7 @@ interface MusicDreamsProps {
 
 const MUSIC = ['music', 'song', 'singing', 'dance', 'dancing', 'guitar', 'piano', 'drum', 'concert', 'melody', 'playing music'];
 
-export const MusicDreams: React.FC<MusicDreamsProps> = ({ dreams }) => {
+export const MusicDreams: React.FC<MusicDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -33,4 +33,4 @@ export const MusicDreams: React.FC<MusicDreamsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

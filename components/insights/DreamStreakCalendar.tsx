@@ -9,7 +9,7 @@ interface DreamStreakCalendarProps {
  * Visual streak calendar showing consecutive journaling days.
  * Similar to GitHub contribution graph but for dream journaling.
  */
-export const DreamStreakCalendar: React.FC<DreamStreakCalendarProps> = ({ dreams }) => {
+export const DreamStreakCalendar: React.FC<DreamStreakCalendarProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length === 0) return null;
 
@@ -123,4 +123,4 @@ export const DreamStreakCalendar: React.FC<DreamStreakCalendarProps> = ({ dreams
             </p>
         </div>
     );
-};
+});

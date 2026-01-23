@@ -7,7 +7,7 @@ interface ConflictDreamsProps {
 
 const CONFLICT = ['fight', 'argue', 'attack', 'war', 'battle', 'conflict', 'chase', 'run', 'escape', 'enemy', 'angry', 'yell', 'scream'];
 
-export const ConflictDreams: React.FC<ConflictDreamsProps> = ({ dreams }) => {
+export const ConflictDreams: React.FC<ConflictDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -33,4 +33,4 @@ export const ConflictDreams: React.FC<ConflictDreamsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

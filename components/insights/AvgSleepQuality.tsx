@@ -5,7 +5,7 @@ interface AvgSleepQualityProps {
     dreams: Dream[];
 }
 
-export const AvgSleepQuality: React.FC<AvgSleepQualityProps> = ({ dreams }) => {
+export const AvgSleepQuality: React.FC<AvgSleepQualityProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         const withQuality = dreams.filter(d => d.sleepQuality !== null && d.sleepQuality !== undefined);
         if (withQuality.length < 3) return null;
@@ -31,4 +31,4 @@ export const AvgSleepQuality: React.FC<AvgSleepQualityProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

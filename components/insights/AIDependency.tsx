@@ -5,7 +5,7 @@ interface AIDependencyProps {
     dreams: Dream[];
 }
 
-export const AIDependency: React.FC<AIDependencyProps> = ({ dreams }) => {
+export const AIDependency: React.FC<AIDependencyProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -49,4 +49,4 @@ export const AIDependency: React.FC<AIDependencyProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

@@ -7,7 +7,7 @@ interface StrangerDreamsProps {
 
 const STRANGERS = ['stranger', 'unknown', 'unfamiliar', 'someone', 'mysterious person', 'figure', 'silhouette', 'shadow person'];
 
-export const StrangerDreams: React.FC<StrangerDreamsProps> = ({ dreams }) => {
+export const StrangerDreams: React.FC<StrangerDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -33,4 +33,4 @@ export const StrangerDreams: React.FC<StrangerDreamsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

@@ -5,7 +5,7 @@ interface DreamGrowthProps {
     dreams: Dream[];
 }
 
-export const DreamGrowth: React.FC<DreamGrowthProps> = ({ dreams }) => {
+export const DreamGrowth: React.FC<DreamGrowthProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 10) return null;
 
@@ -52,4 +52,4 @@ export const DreamGrowth: React.FC<DreamGrowthProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

@@ -7,7 +7,7 @@ interface FamilyDreamsProps {
 
 const FAMILY = ['mother', 'father', 'mom', 'dad', 'sister', 'brother', 'parent', 'family', 'grandma', 'grandpa', 'aunt', 'uncle', 'cousin'];
 
-export const FamilyDreams: React.FC<FamilyDreamsProps> = ({ dreams }) => {
+export const FamilyDreams: React.FC<FamilyDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -33,4 +33,4 @@ export const FamilyDreams: React.FC<FamilyDreamsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

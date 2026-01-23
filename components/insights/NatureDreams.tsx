@@ -7,7 +7,7 @@ interface NatureDreamsProps {
 
 const NATURE = ['tree', 'forest', 'flower', 'plant', 'garden', 'grass', 'leaf', 'rain', 'sun', 'moon', 'star', 'cloud', 'wind', 'snow'];
 
-export const NatureDreams: React.FC<NatureDreamsProps> = ({ dreams }) => {
+export const NatureDreams: React.FC<NatureDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -33,4 +33,4 @@ export const NatureDreams: React.FC<NatureDreamsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

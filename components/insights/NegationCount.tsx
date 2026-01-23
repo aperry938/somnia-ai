@@ -5,7 +5,7 @@ interface NegationCountProps {
     dreams: Dream[];
 }
 
-export const NegationCount: React.FC<NegationCountProps> = ({ dreams }) => {
+export const NegationCount: React.FC<NegationCountProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -33,4 +33,4 @@ export const NegationCount: React.FC<NegationCountProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

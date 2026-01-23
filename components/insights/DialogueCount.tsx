@@ -5,7 +5,7 @@ interface DialogueCountProps {
     dreams: Dream[];
 }
 
-export const DialogueCount: React.FC<DialogueCountProps> = ({ dreams }) => {
+export const DialogueCount: React.FC<DialogueCountProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -37,4 +37,4 @@ export const DialogueCount: React.FC<DialogueCountProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

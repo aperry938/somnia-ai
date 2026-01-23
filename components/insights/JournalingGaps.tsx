@@ -5,7 +5,7 @@ interface JournalingGapsProps {
     dreams: Dream[];
 }
 
-export const JournalingGaps: React.FC<JournalingGapsProps> = ({ dreams }) => {
+export const JournalingGaps: React.FC<JournalingGapsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -45,4 +45,4 @@ export const JournalingGaps: React.FC<JournalingGapsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

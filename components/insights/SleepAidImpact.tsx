@@ -5,7 +5,7 @@ interface SleepAidImpactProps {
     dreams: Dream[];
 }
 
-export const SleepAidImpact: React.FC<SleepAidImpactProps> = ({ dreams }) => {
+export const SleepAidImpact: React.FC<SleepAidImpactProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         const withAids = dreams.filter(d => d.sleepAids && Object.values(d.sleepAids).some(v => v));
         const withoutAids = dreams.filter(d => !d.sleepAids || !Object.values(d.sleepAids).some(v => v));
@@ -60,4 +60,4 @@ export const SleepAidImpact: React.FC<SleepAidImpactProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

@@ -81,7 +81,7 @@ const ALL_MOODS: DreamMood[] = ['joyful', 'peaceful', 'anxious', 'sad', 'fearful
  * Visualizes emotional patterns across dreams over time.
  * Shows mood distribution and recent mood trend.
  */
-export const MoodTracker: React.FC<MoodTrackerProps> = ({ dreams }) => {
+export const MoodTracker: React.FC<MoodTrackerProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         const dreamsWithMood = dreams.filter(d => d.mood);
         if (dreamsWithMood.length < 3) return null;
@@ -203,4 +203,4 @@ export const MoodTracker: React.FC<MoodTrackerProps> = ({ dreams }) => {
             </p>
         </div>
     );
-};
+});

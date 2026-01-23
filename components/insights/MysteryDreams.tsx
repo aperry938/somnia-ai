@@ -7,7 +7,7 @@ interface MysteryDreamsProps {
 
 const MYSTERY = ['mystery', 'strange', 'unknown', 'secret', 'hidden', 'discover', 'puzzle', 'clue', 'search', 'lost', 'found'];
 
-export const MysteryDreams: React.FC<MysteryDreamsProps> = ({ dreams }) => {
+export const MysteryDreams: React.FC<MysteryDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -33,4 +33,4 @@ export const MysteryDreams: React.FC<MysteryDreamsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

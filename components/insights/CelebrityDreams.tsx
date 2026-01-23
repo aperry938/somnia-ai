@@ -7,7 +7,7 @@ interface CelebrityDreamsProps {
 
 const CELEBRITY = ['celebrity', 'famous', 'star', 'actor', 'singer', 'musician', 'president', 'politician', 'athlete', 'hero'];
 
-export const CelebrityDreams: React.FC<CelebrityDreamsProps> = ({ dreams }) => {
+export const CelebrityDreams: React.FC<CelebrityDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -33,4 +33,4 @@ export const CelebrityDreams: React.FC<CelebrityDreamsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

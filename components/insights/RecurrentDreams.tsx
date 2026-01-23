@@ -5,7 +5,7 @@ interface RecurrentDreamsProps {
     dreams: Dream[];
 }
 
-export const RecurrentDreams: React.FC<RecurrentDreamsProps> = ({ dreams }) => {
+export const RecurrentDreams: React.FC<RecurrentDreamsProps> = React.memo(({ dreams }) => {
     const recurrent = useMemo(() => {
         if (dreams.length < 10) return [];
 
@@ -66,4 +66,4 @@ export const RecurrentDreams: React.FC<RecurrentDreamsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

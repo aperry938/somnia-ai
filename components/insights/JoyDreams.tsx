@@ -7,7 +7,7 @@ interface JoyDreamsProps {
 
 const JOY = ['joy', 'happy', 'laugh', 'smile', 'celebrate', 'party', 'fun', 'exciting', 'wonderful', 'amazing', 'delight'];
 
-export const JoyDreams: React.FC<JoyDreamsProps> = ({ dreams }) => {
+export const JoyDreams: React.FC<JoyDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (!dreams || dreams.length < 5) return null;
 
@@ -37,4 +37,4 @@ export const JoyDreams: React.FC<JoyDreamsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

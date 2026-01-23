@@ -15,7 +15,7 @@ const MOVEMENT_KEYWORDS: Record<string, string[]> = {
     'Driving': ['drive', 'driving', 'drove', 'car', 'vehicle', 'road']
 };
 
-export const DreamMovement: React.FC<DreamMovementProps> = ({ dreams }) => {
+export const DreamMovement: React.FC<DreamMovementProps> = React.memo(({ dreams }) => {
     const movements = useMemo(() => {
         if (dreams.length < 3) return [];
 
@@ -53,4 +53,4 @@ export const DreamMovement: React.FC<DreamMovementProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

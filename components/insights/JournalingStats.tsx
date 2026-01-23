@@ -5,7 +5,7 @@ interface JournalingStatsProps {
     dreams: Dream[];
 }
 
-export const JournalingStats: React.FC<JournalingStatsProps> = ({ dreams }) => {
+export const JournalingStats: React.FC<JournalingStatsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length === 0) return null;
 
@@ -72,4 +72,4 @@ export const JournalingStats: React.FC<JournalingStatsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

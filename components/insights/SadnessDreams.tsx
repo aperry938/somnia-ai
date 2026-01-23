@@ -7,7 +7,7 @@ interface SadnessDreamsProps {
 
 const SADNESS = ['sad', 'cry', 'crying', 'tears', 'grief', 'mourn', 'loss', 'miss', 'lonely', 'depressed', 'heartbreak'];
 
-export const SadnessDreams: React.FC<SadnessDreamsProps> = ({ dreams }) => {
+export const SadnessDreams: React.FC<SadnessDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (!dreams || dreams.length < 5) return null;
 
@@ -37,4 +37,4 @@ export const SadnessDreams: React.FC<SadnessDreamsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

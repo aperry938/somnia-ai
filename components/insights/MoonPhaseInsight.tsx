@@ -24,7 +24,7 @@ const getMoonPhase = (date: Date): string => {
 
 const PHASES = ['New Moon', 'Waxing Crescent', 'First Quarter', 'Waxing Gibbous', 'Full Moon', 'Waning Gibbous', 'Last Quarter', 'Waning Crescent'];
 
-export const MoonPhaseInsight: React.FC<MoonPhaseInsightProps> = ({ dreams }) => {
+export const MoonPhaseInsight: React.FC<MoonPhaseInsightProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 10) return null;
 
@@ -75,4 +75,4 @@ export const MoonPhaseInsight: React.FC<MoonPhaseInsightProps> = ({ dreams }) =>
             </p>
         </div>
     );
-};
+});

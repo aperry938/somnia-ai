@@ -13,7 +13,7 @@ const getSeasonFromMonth = (month: number): number => {
     return 0; // Winter
 };
 
-export const SeasonalPattern: React.FC<SeasonalPatternProps> = ({ dreams }) => {
+export const SeasonalPattern: React.FC<SeasonalPatternProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 10) return null;
 
@@ -70,4 +70,4 @@ export const SeasonalPattern: React.FC<SeasonalPatternProps> = ({ dreams }) => {
             )}
         </div>
     );
-};
+});

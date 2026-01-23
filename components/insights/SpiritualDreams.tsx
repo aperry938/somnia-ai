@@ -7,7 +7,7 @@ interface SpiritualDreamsProps {
 
 const SPIRITUAL = ['god', 'spirit', 'soul', 'pray', 'angel', 'devil', 'meditation', 'enlighten', 'transcend', 'divine', 'sacred'];
 
-export const SpiritualDreams: React.FC<SpiritualDreamsProps> = ({ dreams }) => {
+export const SpiritualDreams: React.FC<SpiritualDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -33,4 +33,4 @@ export const SpiritualDreams: React.FC<SpiritualDreamsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

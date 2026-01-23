@@ -7,7 +7,7 @@ interface FriendDreamsProps {
 
 const FRIENDS = ['friend', 'buddy', 'pal', 'mate', 'companion', 'best friend', 'classmate', 'roommate', 'neighbor'];
 
-export const FriendDreams: React.FC<FriendDreamsProps> = ({ dreams }) => {
+export const FriendDreams: React.FC<FriendDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -33,4 +33,4 @@ export const FriendDreams: React.FC<FriendDreamsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

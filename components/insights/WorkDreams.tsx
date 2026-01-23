@@ -7,7 +7,7 @@ interface WorkDreamsProps {
 
 const WORK = ['work', 'job', 'office', 'boss', 'colleague', 'meeting', 'deadline', 'project', 'email', 'presentation', 'interview'];
 
-export const WorkDreams: React.FC<WorkDreamsProps> = ({ dreams }) => {
+export const WorkDreams: React.FC<WorkDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -33,4 +33,4 @@ export const WorkDreams: React.FC<WorkDreamsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

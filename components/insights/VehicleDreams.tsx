@@ -7,7 +7,7 @@ interface VehicleDreamsProps {
 
 const VEHICLES = ['car', 'plane', 'train', 'bus', 'boat', 'ship', 'bicycle', 'motorcycle', 'helicopter', 'spaceship'];
 
-export const VehicleDreams: React.FC<VehicleDreamsProps> = ({ dreams }) => {
+export const VehicleDreams: React.FC<VehicleDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -42,4 +42,4 @@ export const VehicleDreams: React.FC<VehicleDreamsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

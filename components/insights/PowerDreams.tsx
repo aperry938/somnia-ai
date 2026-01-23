@@ -7,7 +7,7 @@ interface PowerDreamsProps {
 
 const POWER = ['power', 'strength', 'strong', 'superhero', 'superpower', 'magic', 'telekinesis', 'invincible', 'force', 'ability'];
 
-export const PowerDreams: React.FC<PowerDreamsProps> = ({ dreams }) => {
+export const PowerDreams: React.FC<PowerDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -36,4 +36,4 @@ export const PowerDreams: React.FC<PowerDreamsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

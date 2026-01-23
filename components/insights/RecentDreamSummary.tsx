@@ -5,7 +5,7 @@ interface RecentDreamSummaryProps {
     dreams: Dream[];
 }
 
-export const RecentDreamSummary: React.FC<RecentDreamSummaryProps> = ({ dreams }) => {
+export const RecentDreamSummary: React.FC<RecentDreamSummaryProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 3) return null;
 
@@ -51,4 +51,4 @@ export const RecentDreamSummary: React.FC<RecentDreamSummaryProps> = ({ dreams }
             </div>
         </div>
     );
-};
+});

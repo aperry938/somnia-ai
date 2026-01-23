@@ -51,7 +51,7 @@ const ACHIEVEMENTS = [
     { id: 'ai_explorer', name: 'AI Explorer', condition: (d: Dream[]) => d.filter(x => x.aiAnalysis).length >= 10, iconType: 'sparkles' },
 ];
 
-export const AchievementsUnlocked: React.FC<AchievementsUnlockedProps> = ({ dreams }) => {
+export const AchievementsUnlocked: React.FC<AchievementsUnlockedProps> = React.memo(({ dreams }) => {
     const unlocked = useMemo(() => {
         return ACHIEVEMENTS.filter(a => a.condition(dreams));
     }, [dreams]);
@@ -74,4 +74,4 @@ export const AchievementsUnlocked: React.FC<AchievementsUnlockedProps> = ({ drea
             </p>
         </div>
     );
-};
+});

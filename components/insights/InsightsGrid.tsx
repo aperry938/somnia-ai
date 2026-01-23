@@ -37,7 +37,7 @@ const TemporalTab = lazy(() => import('./tabs/TemporalTab'));
 
 const TABS = ['Quick Stats', 'Emotions', 'Themes', 'People', 'Content', 'Settings', 'Temporal'] as const;
 
-export const InsightsGrid: React.FC<InsightsGridProps> = ({ dreams }) => {
+export const InsightsGrid: React.FC<InsightsGridProps> = React.memo(({ dreams }) => {
     const [activeTab, setActiveTab] = useState<typeof TABS[number]>('Quick Stats');
     const userIsPremium = isPremium();
 
@@ -123,4 +123,4 @@ export const InsightsGrid: React.FC<InsightsGridProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

@@ -7,7 +7,7 @@ interface SuccessDreamsProps {
 
 const SUCCESS = ['success', 'win', 'achieve', 'accomplish', 'victory', 'proud', 'triumph', 'champion', 'goal', 'finish'];
 
-export const SuccessDreams: React.FC<SuccessDreamsProps> = ({ dreams }) => {
+export const SuccessDreams: React.FC<SuccessDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -36,4 +36,4 @@ export const SuccessDreams: React.FC<SuccessDreamsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

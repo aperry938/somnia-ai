@@ -8,7 +8,7 @@ interface PositiveNegativeRatioProps {
 const POSITIVE_KEYWORDS = ['happy', 'joy', 'love', 'peace', 'calm', 'beautiful', 'wonderful', 'fun', 'exciting', 'amazing', 'success', 'win', 'laugh', 'smile', 'comfort'];
 const NEGATIVE_KEYWORDS = ['sad', 'angry', 'fear', 'scary', 'anxious', 'worried', 'nightmare', 'dark', 'death', 'chase', 'attack', 'fail', 'lose', 'cry', 'pain'];
 
-export const PositiveNegativeRatio: React.FC<PositiveNegativeRatioProps> = ({ dreams }) => {
+export const PositiveNegativeRatio: React.FC<PositiveNegativeRatioProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -57,4 +57,4 @@ export const PositiveNegativeRatio: React.FC<PositiveNegativeRatioProps> = ({ dr
             </div>
         </div>
     );
-};
+});

@@ -51,7 +51,7 @@ const ACHIEVEMENT_ICONS: Record<string, React.ReactNode> = {
     ),
 };
 
-export const AchievementsCard: React.FC<AchievementsCardProps> = ({ dreams }) => {
+export const AchievementsCard: React.FC<AchievementsCardProps> = React.memo(({ dreams }) => {
     const [selectedAchievement, setSelectedAchievement] = useState<AchievementWithStatus | null>(null);
 
     // Check for new achievements on each render
@@ -164,4 +164,4 @@ export const AchievementsCard: React.FC<AchievementsCardProps> = ({ dreams }) =>
             )}
         </>
     );
-};
+});

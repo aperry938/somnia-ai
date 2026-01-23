@@ -11,7 +11,7 @@ const CLARITY_LEVELS = {
     hazy: ['hazy', 'fuzzy', 'blurry', 'vague', 'unclear', 'foggy', 'fragments', 'barely remember']
 };
 
-export const DreamClarity: React.FC<DreamClarityProps> = ({ dreams }) => {
+export const DreamClarity: React.FC<DreamClarityProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -68,4 +68,4 @@ export const DreamClarity: React.FC<DreamClarityProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

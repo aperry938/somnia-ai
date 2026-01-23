@@ -7,7 +7,7 @@ interface HopeDreamsProps {
 
 const HOPE = ['hope', 'wish', 'dream', 'future', 'better', 'improve', 'goal', 'aspiration', 'optimistic', 'bright'];
 
-export const HopeDreams: React.FC<HopeDreamsProps> = ({ dreams }) => {
+export const HopeDreams: React.FC<HopeDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (!dreams || dreams.length < 5) return null;
 
@@ -37,4 +37,4 @@ export const HopeDreams: React.FC<HopeDreamsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

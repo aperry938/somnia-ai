@@ -7,7 +7,7 @@ interface TimeTravelDreamsProps {
 
 const TIME_KEYWORDS = ['future', 'past', 'yesterday', 'tomorrow', 'years ago', 'time travel', 'old', 'young', 'childhood', 'when I was'];
 
-export const TimeTravelDreams: React.FC<TimeTravelDreamsProps> = ({ dreams }) => {
+export const TimeTravelDreams: React.FC<TimeTravelDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -36,4 +36,4 @@ export const TimeTravelDreams: React.FC<TimeTravelDreamsProps> = ({ dreams }) =>
             </div>
         </div>
     );
-};
+});

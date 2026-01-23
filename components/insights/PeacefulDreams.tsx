@@ -7,7 +7,7 @@ interface PeacefulDreamsProps {
 
 const PEACEFUL = ['peace', 'calm', 'relax', 'serene', 'quiet', 'gentle', 'soft', 'warm', 'safe', 'comfort', 'beautiful', 'happy', 'joy'];
 
-export const PeacefulDreams: React.FC<PeacefulDreamsProps> = ({ dreams }) => {
+export const PeacefulDreams: React.FC<PeacefulDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -33,4 +33,4 @@ export const PeacefulDreams: React.FC<PeacefulDreamsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

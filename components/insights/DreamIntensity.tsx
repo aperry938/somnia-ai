@@ -11,7 +11,7 @@ const INTENSITY_KEYWORDS = {
     low: ['vague', 'hazy', 'unclear', 'faint', 'barely', 'slightly', 'dim', 'muted', 'fuzzy']
 };
 
-export const DreamIntensity: React.FC<DreamIntensityProps> = ({ dreams }) => {
+export const DreamIntensity: React.FC<DreamIntensityProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 3) return null;
 
@@ -69,4 +69,4 @@ export const DreamIntensity: React.FC<DreamIntensityProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

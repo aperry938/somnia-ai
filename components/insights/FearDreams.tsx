@@ -7,7 +7,7 @@ interface FearDreamsProps {
 
 const FEAR = ['fear', 'afraid', 'scary', 'scare', 'terrify', 'horror', 'monster', 'danger', 'threat', 'panic', 'nightmare'];
 
-export const FearDreams: React.FC<FearDreamsProps> = ({ dreams }) => {
+export const FearDreams: React.FC<FearDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (!dreams || dreams.length < 5) return null;
 
@@ -37,4 +37,4 @@ export const FearDreams: React.FC<FearDreamsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

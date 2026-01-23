@@ -34,7 +34,7 @@ const getPointColor = (valence: number, arousal: number): string => {
     return colors[quadrant];
 };
 
-export const TelemetryScatterPlot: React.FC<TelemetryScatterPlotProps> = ({ dreams, onDreamSelect }) => {
+export const TelemetryScatterPlot: React.FC<TelemetryScatterPlotProps> = React.memo(({ dreams, onDreamSelect }) => {
     const [hoveredDream, setHoveredDream] = useState<Dream | null>(null);
     const [selectedQuadrant, setSelectedQuadrant] = useState<keyof typeof QUADRANT_LABELS | null>(null);
 
@@ -311,4 +311,4 @@ export const TelemetryScatterPlot: React.FC<TelemetryScatterPlotProps> = ({ drea
             )}
         </div>
     );
-};
+});

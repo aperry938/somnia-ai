@@ -7,7 +7,7 @@ interface NightmareTrackerProps {
 
 const NIGHTMARE_KEYWORDS = ['nightmare', 'scary', 'terrifying', 'horror', 'afraid', 'fear', 'monster', 'chase', 'attacked', 'scream', 'panic', 'dark', 'trapped', 'evil', 'death'];
 
-export const NightmareTracker: React.FC<NightmareTrackerProps> = ({ dreams }) => {
+export const NightmareTracker: React.FC<NightmareTrackerProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -51,4 +51,4 @@ export const NightmareTracker: React.FC<NightmareTrackerProps> = ({ dreams }) =>
             )}
         </div>
     );
-};
+});

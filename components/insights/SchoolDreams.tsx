@@ -7,7 +7,7 @@ interface SchoolDreamsProps {
 
 const SCHOOL = ['school', 'class', 'teacher', 'student', 'exam', 'test', 'homework', 'university', 'college', 'grade', 'classroom'];
 
-export const SchoolDreams: React.FC<SchoolDreamsProps> = ({ dreams }) => {
+export const SchoolDreams: React.FC<SchoolDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -33,4 +33,4 @@ export const SchoolDreams: React.FC<SchoolDreamsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

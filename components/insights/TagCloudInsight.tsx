@@ -5,7 +5,7 @@ interface TagCloudInsightProps {
     dreams: Dream[];
 }
 
-export const TagCloudInsight: React.FC<TagCloudInsightProps> = ({ dreams }) => {
+export const TagCloudInsight: React.FC<TagCloudInsightProps> = React.memo(({ dreams }) => {
     const tags = useMemo(() => {
         const tagCounts: Record<string, number> = {};
 
@@ -45,4 +45,4 @@ export const TagCloudInsight: React.FC<TagCloudInsightProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

@@ -7,7 +7,7 @@ interface AnxietyDreamsProps {
 
 const ANXIETY = ['anxiety', 'anxious', 'worry', 'stress', 'nervous', 'panic', 'overwhelm', 'pressure', 'deadline', 'late'];
 
-export const AnxietyDreams: React.FC<AnxietyDreamsProps> = ({ dreams }) => {
+export const AnxietyDreams: React.FC<AnxietyDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (!dreams || dreams.length < 5) return null;
 
@@ -37,4 +37,4 @@ export const AnxietyDreams: React.FC<AnxietyDreamsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

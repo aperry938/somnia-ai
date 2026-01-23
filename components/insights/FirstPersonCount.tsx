@@ -5,7 +5,7 @@ interface FirstPersonCountProps {
     dreams: Dream[];
 }
 
-export const FirstPersonCount: React.FC<FirstPersonCountProps> = ({ dreams }) => {
+export const FirstPersonCount: React.FC<FirstPersonCountProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -40,4 +40,4 @@ export const FirstPersonCount: React.FC<FirstPersonCountProps> = ({ dreams }) =>
             </div>
         </div>
     );
-};
+});

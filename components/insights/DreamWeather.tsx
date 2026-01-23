@@ -51,7 +51,7 @@ const WEATHER_KEYWORDS: Record<string, { keywords: string[] }> = {
     'Night': { keywords: ['night', 'dark', 'moon', 'stars', 'midnight', 'evening'] }
 };
 
-export const DreamWeather: React.FC<DreamWeatherProps> = ({ dreams }) => {
+export const DreamWeather: React.FC<DreamWeatherProps> = React.memo(({ dreams }) => {
     const weather = useMemo(() => {
         if (dreams.length < 3) return [];
 
@@ -93,4 +93,4 @@ export const DreamWeather: React.FC<DreamWeatherProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

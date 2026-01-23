@@ -7,7 +7,7 @@ interface ConfusionDreamsProps {
 
 const CONFUSION = ['confuse', 'confused', 'confusion', 'lost', 'maze', 'puzzled', 'unclear', "don't understand", 'bewildered', 'disoriented'];
 
-export const ConfusionDreams: React.FC<ConfusionDreamsProps> = ({ dreams }) => {
+export const ConfusionDreams: React.FC<ConfusionDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -33,4 +33,4 @@ export const ConfusionDreams: React.FC<ConfusionDreamsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

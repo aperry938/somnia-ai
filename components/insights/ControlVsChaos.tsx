@@ -8,7 +8,7 @@ interface ControlVsChaosProps {
 const CONTROL_KEYWORDS = ['control', 'decide', 'choose', 'power', 'fly', 'lead', 'command', 'direct', 'lucid', 'aware'];
 const CHAOS_KEYWORDS = ['chaos', 'confused', 'lost', 'chase', 'escape', 'trapped', 'helpless', 'random', 'strange', 'weird'];
 
-export const ControlVsChaos: React.FC<ControlVsChaosProps> = ({ dreams }) => {
+export const ControlVsChaos: React.FC<ControlVsChaosProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -49,4 +49,4 @@ export const ControlVsChaos: React.FC<ControlVsChaosProps> = ({ dreams }) => {
             <p className="text-xs text-center text-day-text-secondary dark:text-night-text-secondary mt-2">{stats.style}</p>
         </div>
     );
-};
+});

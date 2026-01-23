@@ -5,7 +5,7 @@ interface FirstDreamLastDreamProps {
     dreams: Dream[];
 }
 
-export const FirstDreamLastDream: React.FC<FirstDreamLastDreamProps> = ({ dreams }) => {
+export const FirstDreamLastDream: React.FC<FirstDreamLastDreamProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 2) return null;
 
@@ -52,4 +52,4 @@ export const FirstDreamLastDream: React.FC<FirstDreamLastDreamProps> = ({ dreams
             </div>
         </div>
     );
-};
+});

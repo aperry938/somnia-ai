@@ -5,7 +5,7 @@ interface SleepQualityVsDreamsProps {
     dreams: Dream[];
 }
 
-export const SleepQualityVsDreams: React.FC<SleepQualityVsDreamsProps> = ({ dreams }) => {
+export const SleepQualityVsDreams: React.FC<SleepQualityVsDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         const withQuality = dreams.filter(d => d.sleepQuality !== null && d.sleepQuality !== undefined);
         if (withQuality.length < 5) return null;
@@ -58,4 +58,4 @@ export const SleepQualityVsDreams: React.FC<SleepQualityVsDreamsProps> = ({ drea
             <p className="text-xs text-center text-day-text-secondary dark:text-night-text-secondary mt-2">Avg words per dream</p>
         </div>
     );
-};
+});

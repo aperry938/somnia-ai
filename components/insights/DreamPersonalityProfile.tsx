@@ -14,7 +14,7 @@ const PERSONALITY_TRAITS = {
     'Healer': ['heal', 'comfort', 'peace', 'calm', 'restore', 'love', 'gentle', 'nurture']
 };
 
-export const DreamPersonalityProfile: React.FC<PersonalityProfileProps> = ({ dreams }) => {
+export const DreamPersonalityProfile: React.FC<PersonalityProfileProps> = React.memo(({ dreams }) => {
     const profile = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -77,4 +77,4 @@ export const DreamPersonalityProfile: React.FC<PersonalityProfileProps> = ({ dre
             </div>
         </div>
     );
-};
+});

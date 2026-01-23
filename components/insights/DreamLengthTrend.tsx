@@ -5,7 +5,7 @@ interface DreamLengthTrendProps {
     dreams: Dream[];
 }
 
-export const DreamLengthTrend: React.FC<DreamLengthTrendProps> = ({ dreams }) => {
+export const DreamLengthTrend: React.FC<DreamLengthTrendProps> = React.memo(({ dreams }) => {
     const trend = useMemo(() => {
         if (dreams.length < 10) return null;
 
@@ -40,4 +40,4 @@ export const DreamLengthTrend: React.FC<DreamLengthTrendProps> = ({ dreams }) =>
             </p>
         </div>
     );
-};
+});

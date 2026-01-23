@@ -5,7 +5,7 @@ interface UniqueWordsProps {
     dreams: Dream[];
 }
 
-export const UniqueWords: React.FC<UniqueWordsProps> = ({ dreams }) => {
+export const UniqueWords: React.FC<UniqueWordsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -42,4 +42,4 @@ export const UniqueWords: React.FC<UniqueWordsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

@@ -14,7 +14,7 @@ const SUPERNATURAL_KEYWORDS: Record<string, string[]> = {
     'Time': ['time travel', 'future', 'past', 'different era', 'time machine']
 };
 
-export const DreamSupernatural: React.FC<DreamSupernaturalProps> = ({ dreams }) => {
+export const DreamSupernatural: React.FC<DreamSupernaturalProps> = React.memo(({ dreams }) => {
     const supernatural = useMemo(() => {
         if (dreams.length < 3) return [];
 
@@ -46,4 +46,4 @@ export const DreamSupernatural: React.FC<DreamSupernaturalProps> = ({ dreams }) 
             </div>
         </div>
     );
-};
+});

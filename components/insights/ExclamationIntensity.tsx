@@ -5,7 +5,7 @@ interface ExclamationIntensityProps {
     dreams: Dream[];
 }
 
-export const ExclamationIntensity: React.FC<ExclamationIntensityProps> = ({ dreams }) => {
+export const ExclamationIntensity: React.FC<ExclamationIntensityProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -36,4 +36,4 @@ export const ExclamationIntensity: React.FC<ExclamationIntensityProps> = ({ drea
             </div>
         </div>
     );
-};
+});

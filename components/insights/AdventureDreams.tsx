@@ -7,7 +7,7 @@ interface AdventureDreamsProps {
 
 const ADVENTURE = ['adventure', 'explore', 'travel', 'journey', 'discover', 'quest', 'mission', 'expedition', 'treasure', 'hero'];
 
-export const AdventureDreams: React.FC<AdventureDreamsProps> = ({ dreams }) => {
+export const AdventureDreams: React.FC<AdventureDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -33,4 +33,4 @@ export const AdventureDreams: React.FC<AdventureDreamsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

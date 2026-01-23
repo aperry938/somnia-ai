@@ -5,7 +5,7 @@ interface WeekdayVsWeekendProps {
     dreams: Dream[];
 }
 
-export const WeekdayVsWeekend: React.FC<WeekdayVsWeekendProps> = ({ dreams }) => {
+export const WeekdayVsWeekend: React.FC<WeekdayVsWeekendProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 7) return null;
 
@@ -70,4 +70,4 @@ export const WeekdayVsWeekend: React.FC<WeekdayVsWeekendProps> = ({ dreams }) =>
             </p>
         </div>
     );
-};
+});

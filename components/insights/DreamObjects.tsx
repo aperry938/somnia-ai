@@ -16,7 +16,7 @@ const OBJECT_CATEGORIES: Record<string, string[]> = {
     'Mirrors': ['mirror', 'reflection', 'glass', 'looking glass']
 };
 
-export const DreamObjects: React.FC<DreamObjectsProps> = ({ dreams }) => {
+export const DreamObjects: React.FC<DreamObjectsProps> = React.memo(({ dreams }) => {
     const objects = useMemo(() => {
         if (dreams.length < 3) return [];
 
@@ -48,4 +48,4 @@ export const DreamObjects: React.FC<DreamObjectsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

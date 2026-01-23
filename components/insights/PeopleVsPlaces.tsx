@@ -8,7 +8,7 @@ interface PeopleVsPlacesProps {
 const PEOPLE_KEYWORDS = ['friend', 'family', 'mother', 'father', 'sister', 'brother', 'stranger', 'man', 'woman', 'child', 'person', 'people', 'group', 'crowd'];
 const PLACE_KEYWORDS = ['house', 'home', 'building', 'city', 'street', 'forest', 'ocean', 'mountain', 'room', 'school', 'work', 'office', 'beach', 'garden'];
 
-export const PeopleVsPlaces: React.FC<PeopleVsPlacesProps> = ({ dreams }) => {
+export const PeopleVsPlaces: React.FC<PeopleVsPlacesProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -48,4 +48,4 @@ export const PeopleVsPlaces: React.FC<PeopleVsPlacesProps> = ({ dreams }) => {
             </p>
         </div>
     );
-};
+});

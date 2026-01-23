@@ -9,7 +9,7 @@ interface SleepDurationChartProps {
  * Visualize sleep duration patterns from dream entry times.
  * Infers approximate bed/wake times from dream timestamps.
  */
-export const SleepDurationChart: React.FC<SleepDurationChartProps> = ({ dreams }) => {
+export const SleepDurationChart: React.FC<SleepDurationChartProps> = React.memo(({ dreams }) => {
     const data = useMemo(() => {
         if (dreams.length < 3) return null;
 
@@ -90,4 +90,4 @@ export const SleepDurationChart: React.FC<SleepDurationChartProps> = ({ dreams }
             </div>
         </div>
     );
-};
+});

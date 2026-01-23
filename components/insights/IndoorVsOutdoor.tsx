@@ -8,7 +8,7 @@ interface IndoorVsOutdoorProps {
 const INDOOR = ['room', 'house', 'building', 'office', 'home', 'apartment', 'kitchen', 'bedroom', 'bathroom', 'hallway', 'basement'];
 const OUTDOOR = ['outside', 'outdoor', 'sky', 'sun', 'field', 'forest', 'ocean', 'beach', 'mountain', 'street', 'road', 'park', 'garden'];
 
-export const IndoorVsOutdoor: React.FC<IndoorVsOutdoorProps> = ({ dreams }) => {
+export const IndoorVsOutdoor: React.FC<IndoorVsOutdoorProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -44,4 +44,4 @@ export const IndoorVsOutdoor: React.FC<IndoorVsOutdoorProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

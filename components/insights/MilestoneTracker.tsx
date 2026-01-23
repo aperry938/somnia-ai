@@ -51,7 +51,7 @@ const MILESTONES = [
     { count: 500, title: 'Dream Sage', description: '500 dreams mastered', iconType: 'crystal' }
 ];
 
-export const MilestoneTracker: React.FC<MilestoneTrackerProps> = ({ dreams }) => {
+export const MilestoneTracker: React.FC<MilestoneTrackerProps> = React.memo(({ dreams }) => {
     const count = dreams.length;
     const achieved = MILESTONES.filter(m => count >= m.count);
     const next = MILESTONES.find(m => count < m.count);
@@ -96,4 +96,4 @@ export const MilestoneTracker: React.FC<MilestoneTrackerProps> = ({ dreams }) =>
             )}
         </div>
     );
-};
+});

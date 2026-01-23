@@ -14,7 +14,7 @@ const RELATIONSHIP_KEYWORDS: Record<string, string[]> = {
     'Reunion': ['reunion', 'together again', 'found', 'reconnect', 'return', 'back']
 };
 
-export const DreamRelationships: React.FC<DreamRelationshipsProps> = ({ dreams }) => {
+export const DreamRelationships: React.FC<DreamRelationshipsProps> = React.memo(({ dreams }) => {
     const relationships = useMemo(() => {
         if (dreams.length < 3) return [];
 
@@ -52,4 +52,4 @@ export const DreamRelationships: React.FC<DreamRelationshipsProps> = ({ dreams }
             </div>
         </div>
     );
-};
+});

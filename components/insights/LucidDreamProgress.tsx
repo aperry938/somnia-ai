@@ -13,7 +13,7 @@ const LUCID_INDICATORS = [
 /**
  * Track progress towards lucid dreaming based on keyword detection.
  */
-export const LucidDreamProgress: React.FC<LucidProgressProps> = ({ dreams }) => {
+export const LucidDreamProgress: React.FC<LucidProgressProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length === 0) return null;
 
@@ -109,4 +109,4 @@ export const LucidDreamProgress: React.FC<LucidProgressProps> = ({ dreams }) => 
             )}
         </div>
     );
-};
+});

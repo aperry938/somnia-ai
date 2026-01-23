@@ -7,7 +7,7 @@ interface ChildhoodDreamsProps {
 
 const CHILDHOOD = ['childhood', 'child', 'kid', 'young', 'youth', 'school', 'playground', 'toy', 'memories', 'grow up'];
 
-export const ChildhoodDreams: React.FC<ChildhoodDreamsProps> = ({ dreams }) => {
+export const ChildhoodDreams: React.FC<ChildhoodDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -33,4 +33,4 @@ export const ChildhoodDreams: React.FC<ChildhoodDreamsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

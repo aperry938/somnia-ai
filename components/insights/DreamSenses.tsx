@@ -46,7 +46,7 @@ const SENSE_KEYWORDS: Record<string, { keywords: string[] }> = {
     'Taste': { keywords: ['taste', 'tasted', 'eat', 'eating', 'food', 'sweet', 'bitter', 'sour', 'delicious'] }
 };
 
-export const DreamSenses: React.FC<DreamSensesProps> = ({ dreams }) => {
+export const DreamSenses: React.FC<DreamSensesProps> = React.memo(({ dreams }) => {
     const senses = useMemo(() => {
         if (dreams.length < 3) return [];
 
@@ -89,4 +89,4 @@ export const DreamSenses: React.FC<DreamSensesProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

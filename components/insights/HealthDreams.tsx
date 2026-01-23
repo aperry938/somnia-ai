@@ -7,7 +7,7 @@ interface HealthDreamsProps {
 
 const HEALTH = ['health', 'sick', 'hospital', 'doctor', 'medicine', 'pain', 'injury', 'heal', 'illness', 'disease', 'body'];
 
-export const HealthDreams: React.FC<HealthDreamsProps> = ({ dreams }) => {
+export const HealthDreams: React.FC<HealthDreamsProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         if (dreams.length < 5) return null;
 
@@ -33,4 +33,4 @@ export const HealthDreams: React.FC<HealthDreamsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

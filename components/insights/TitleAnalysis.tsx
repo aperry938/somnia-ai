@@ -5,7 +5,7 @@ interface TitleAnalysisProps {
     dreams: Dream[];
 }
 
-export const TitleAnalysis: React.FC<TitleAnalysisProps> = ({ dreams }) => {
+export const TitleAnalysis: React.FC<TitleAnalysisProps> = React.memo(({ dreams }) => {
     const stats = useMemo(() => {
         const titled = dreams.filter(d => d.title && d.title.trim().length > 0);
         if (titled.length < 3) return null;
@@ -46,4 +46,4 @@ export const TitleAnalysis: React.FC<TitleAnalysisProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});

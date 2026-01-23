@@ -16,7 +16,7 @@ const DREAM_SYMBOLS: Record<string, { keywords: string[]; meaning: string }> = {
     'Baby': { keywords: ['baby', 'infant', 'child'], meaning: 'New beginnings, innocence' }
 };
 
-export const DreamSymbols: React.FC<DreamSymbolsProps> = ({ dreams }) => {
+export const DreamSymbols: React.FC<DreamSymbolsProps> = React.memo(({ dreams }) => {
     const symbols = useMemo(() => {
         if (dreams.length < 3) return [];
 
@@ -52,4 +52,4 @@ export const DreamSymbols: React.FC<DreamSymbolsProps> = ({ dreams }) => {
             </div>
         </div>
     );
-};
+});
