@@ -97,6 +97,6 @@ export default defineConfig(({ mode }) => {
     optimizeDeps: {
       include: ['react', 'react-dom'],
       exclude: ['capacitor-native-biometric', 'capacitor-secure-storage-plugin']
-    }
+    },
   };
 });
