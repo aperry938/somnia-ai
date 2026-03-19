@@ -6,6 +6,7 @@
 - Removed API key embedding from client bundle (vite.config.ts `define` block)
 - Fixed voiceIntentService to use `import.meta.env` instead of `process.env`
 - Removed CDN Tailwind from CSP `script-src` policy
+- Fixed 7 npm audit vulnerabilities (tar, rollup CVEs)
 
 ### Architecture
 - Decomposed monolithic AppContext (985 LOC) into focused contexts:
@@ -44,7 +45,17 @@
 - Fixed WCAG AA color contrast: all `dark:text-gray-400` → `dark:text-night-text-secondary`
 - Added `aria-live="polite"` to ProfilePage biometric stat displays for screen reader announcements
 
+### CI/CD
+- Added GitHub Actions workflow (`ci.yml`): lint, type-check, test, build on push/PR
+
+### Lint
+- Achieved zero ESLint warnings (was 11)
+- Removed dead re-exports from AIConsentModal
+- Fixed useMemo missing dependencies in SleepSessionContext
+- Suppressed intentional FastRefresh warning on AnimatedComponents (mixed exports by design)
+
 ### Build
 - Removed CDN Tailwind duplication from index.html (414 → 325 lines)
 - PostCSS pipeline is now sole Tailwind processor
 - Inline styles on `<html>`/`<body>` for pre-Vite background color rendering
+- Compressed favicon.png and logo.png (314KB → 107KB each)
