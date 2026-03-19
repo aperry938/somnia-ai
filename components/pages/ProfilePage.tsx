@@ -195,7 +195,7 @@ const ProfileInfoCard: React.FC = () => {
                 </div>
             ) : (
                 <div className="space-y-3">
-                    <div className="grid grid-cols-3 gap-3 text-center">
+                    <div className="grid grid-cols-3 gap-3 text-center" aria-live="polite" aria-atomic="true">
                         <div className="p-3 bg-white/30 dark:bg-black/20 rounded-lg">
                             <p className="text-xl font-bold">{biometrics.age || '--'}</p>
                             <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">Age</p>
