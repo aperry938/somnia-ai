@@ -11,6 +11,7 @@ import { SecurePaywallModal } from '../modals/SecurePaywallModal';
 import { LevelGuideModal } from '../modals/LevelGuideModal';
 import { getLevelTitle } from '../../constants/gamification';
 import { getNotificationPreferences, updateNotificationPreferences, NotificationPreferences } from '../../services/notificationPreferencesService';
+import { isPushSupported, getPushPermissionState, subscribeToPush, unsubscribeFromPush, getExistingSubscription } from '../../services/pushSubscriptionService';
 
 const APP_VERSION = '1.3.0';
 const ADMIN_TAP_COUNT = 7; // Taps required to unlock admin access
@@ -520,6 +521,39 @@ const NotificationsCard: React.FC = () => {
         }
     });
 
+    // Push notification state
+    const pushSupported = isPushSupported();
+    const [pushEnabled, setPushEnabled] = useState(false);
+    const [pushLoading, setPushLoading] = useState(false);
+    const [pushPermission, setPushPermission] = useState<NotificationPermission | 'unsupported'>(getPushPermissionState());
+
+    useEffect(() => {
+        if (!pushSupported) return;
+        let cancelled = false;
+        getExistingSubscription().then(sub => {
+            if (!cancelled) {
+                setPushEnabled(sub !== null);
+            }
+        });
+        return () => { cancelled = true; };
+    }, [pushSupported]);
+
+    const handleTogglePush = async () => {
+        setPushLoading(true);
+        try {
+            if (pushEnabled) {
+                const success = await unsubscribeFromPush();
+                if (success) setPushEnabled(false);
+            } else {
+                const subscription = await subscribeToPush();
+                setPushEnabled(subscription !== null);
+                setPushPermission(getPushPermissionState());
+            }
+        } finally {
+            setPushLoading(false);
+        }
+    };
+
     // Email notification preferences (Supabase-backed, authenticated users only)
     const [emailPrefs, setEmailPrefs] = useState<NotificationPreferences>({
         emailWeeklyDigest: false,
@@ -592,6 +626,48 @@ const NotificationsCard: React.FC = () => {
                     </div>
                 ))}
             </div>
+
+            {/* Push Notifications */}
+            {pushSupported && (
+                <div className="mt-5 pt-4 border-t border-day-border dark:border-night-border">
+                    <div className="flex items-center gap-2 mb-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-day-text-secondary dark:text-night-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                        <p className="text-sm font-medium text-day-text-secondary dark:text-night-text-secondary">Push Notifications</p>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="font-medium text-sm">Browser Push</p>
+                            <p className="text-sm text-day-text-secondary dark:text-night-text-secondary">
+                                {pushPermission === 'denied'
+                                    ? 'Blocked in browser settings'
+                                    : 'Receive alerts even when the app is closed'}
+                            </p>
+                        </div>
+                        <button
+                            onClick={handleTogglePush}
+                            disabled={pushLoading || pushPermission === 'denied'}
+                            role="switch"
+                            aria-checked={pushEnabled}
+                            aria-label="Toggle push notifications"
+                            className="relative flex items-center justify-center min-h-[44px] min-w-[48px] disabled:opacity-50"
+                        >
+                            {pushLoading ? (
+                                <div className="w-7 h-7 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" aria-hidden="true" />
+                            ) : (
+                                <span className={`relative w-12 h-7 rounded-full transition-colors duration-200 ${pushEnabled
+                                    ? 'bg-day-accent dark:bg-night-accent'
+                                    : 'bg-gray-300 dark:bg-gray-600'
+                                    }`}>
+                                    <span className={`absolute top-1 left-1 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-200 ${pushEnabled ? 'translate-x-5' : 'translate-x-0'
+                                        }`} />
+                                </span>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Email Notifications — authenticated users only */}
             {isAuthenticated && emailPrefsLoaded && (

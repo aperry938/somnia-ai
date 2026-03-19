@@ -255,6 +255,118 @@ const getAi = (): GoogleGenAI => {
     return aiInstance;
 };
 
+// ============================================================================
+// AI PROXY (SERVER-SIDE GEMINI KEY)
+// ============================================================================
+
+/** Proxy is available when Supabase URL is configured and user has a session */
+const USE_PROXY = !!import.meta.env.VITE_SUPABASE_URL;
+
+type ProxyOperation = 'analyze' | 'chat' | 'synthesize' | 'habits' | 'image_prompt' | 'title' | 'embedding';
+
+/**
+ * Get auth config for Supabase calls (same pattern as rateLimitService).
+ * Returns null when proxy cannot be used.
+ */
+function getProxyConfig(): { url: string; token: string } | null {
+    try {
+        const url = import.meta.env.VITE_SUPABASE_URL;
+        if (!url) return null;
+
+        const sessionStr = localStorage.getItem('somnia_supabase_session');
+        if (!sessionStr) return null;
+
+        const session = JSON.parse(sessionStr);
+        const token = session?.access_token;
+        if (!token) return null;
+
+        return { url, token };
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Call the server-side AI proxy edge function.
+ * Returns the raw Gemini REST API response body, or null if the proxy is
+ * unavailable (in which case the caller should fall back to direct SDK calls).
+ */
+async function callAiProxy(
+    operation: ProxyOperation,
+    model: string,
+    contents: unknown[],
+    config?: unknown,
+    timeout?: number,
+): Promise<unknown | null> {
+    const proxyConfig = getProxyConfig();
+    if (!proxyConfig) return null; // No auth — fall back to direct
+
+    try {
+        const controller = new AbortController();
+        const timeoutMs = timeout ?? DEFAULT_API_TIMEOUT;
+        const timer = setTimeout(() => controller.abort(), timeoutMs + 5000); // slightly longer than server timeout
+
+        const response = await fetch(`${proxyConfig.url}/functions/v1/ai-proxy`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${proxyConfig.token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ operation, model, contents, config, timeout }),
+            signal: controller.signal,
+        });
+
+        clearTimeout(timer);
+
+        if (response.status === 401) {
+            // Auth expired — fall back to direct
+            logger.warn('[AiProxy] Auth expired, falling back to direct Gemini call');
+            return null;
+        }
+
+        if (response.status === 429) {
+            const data = await response.json();
+            throw new RateLimitError(
+                data.error || 'AI rate limit exceeded',
+                data.resetIn ?? 60000,
+                data.category ?? operation,
+            );
+        }
+
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            logger.warn(`[AiProxy] Proxy returned ${response.status}, falling back`, data);
+            return null; // Fall back to direct
+        }
+
+        return await response.json();
+    } catch (error) {
+        // Propagate rate limit errors — they should not fall back
+        if (error instanceof RateLimitError) throw error;
+
+        // Network errors, timeouts, etc. — fall back to direct
+        logger.warn('[AiProxy] Proxy call failed, falling back to direct Gemini call', error);
+        return null;
+    }
+}
+
+/**
+ * Extract text from Gemini REST API response (proxy path).
+ * Works for both generateContent and embedContent responses.
+ */
+function extractTextFromProxyResponse(data: unknown): string {
+    // generateContent response shape: { candidates: [{ content: { parts: [{ text }] } }] }
+    const d = data as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
+    return d?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+}
+
+/**
+ * Extract embedding values from Gemini REST API embedContent response (proxy path).
+ */
+function extractEmbeddingFromProxyResponse(data: unknown): number[] | null {
+    const d = data as { embedding?: { values?: number[] } };
+    return d?.embedding?.values ?? null;
+}
 
 // Safety settings can be configured here if needed in the future
 
@@ -309,87 +421,100 @@ export const analyzeDream = async (dreamText: string, sleepAids?: SleepAids, bio
     }
 
     try {
-        const ai = getAi();
         const prompt = createAnalysisPrompt(sanitizedText, personality, sleepAids, biometrics);
-        const response: GenerateContentResponse = await withRetry(() => ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: [{ parts: [{ text: prompt }] }],
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        title: {
-                            type: Type.STRING,
-                            description: "A short, evocative, and poetic title for the dream (e.g., \"The Lion in the Hallway\")."
-                        },
-                        analysis: {
-                            type: Type.ARRAY,
-                            description: "An array of objects, each representing a thematic insight. Provide 2-3 insights.",
-                            items: {
-                                type: Type.OBJECT,
-                                properties: {
-                                    title: {
-                                        type: Type.STRING,
-                                        description: "A short heading like \"The Archetype of the Guardian\""
-                                    },
-                                    content: {
-                                        type: Type.STRING,
-                                        description: "A paragraph of deep analysis."
-                                    }
-                                },
-                                required: ['title', 'content']
-                            }
-                        },
-                        integration: {
+        const analysisContents = [{ parts: [{ text: prompt }] }];
+        const analysisConfig = {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                    title: {
+                        type: Type.STRING,
+                        description: "A short, evocative, and poetic title for the dream (e.g., \"The Lion in the Hallway\")."
+                    },
+                    analysis: {
+                        type: Type.ARRAY,
+                        description: "An array of objects, each representing a thematic insight. Provide 2-3 insights.",
+                        items: {
                             type: Type.OBJECT,
                             properties: {
                                 title: {
                                     type: Type.STRING,
-                                    description: "Should always be \"The Integration\""
+                                    description: "A short heading like \"The Archetype of the Guardian\""
                                 },
                                 content: {
                                     type: Type.STRING,
-                                    description: "A single, empowering, reflective question or a simple ritual for the user to integrate the dream's message."
+                                    description: "A paragraph of deep analysis."
                                 }
                             },
                             required: ['title', 'content']
-                        },
-                        imagePrompt: {
-                            type: Type.STRING,
-                            description: "A detailed, vivid image generation prompt (80-150 words) that captures the dream's key visual elements, mood, colors, and atmosphere. Write it in the style of Midjourney/DALL-E prompts with artistic direction (e.g., 'surreal dreamscape', 'ethereal lighting', 'muted earth tones'). Include specific objects, settings, and emotional qualities from the dream."
-                        },
-                        telemetry: {
-                            type: Type.OBJECT,
-                            description: "ML-extracted metadata for vector analytics",
-                            properties: {
-                                valence: {
-                                    type: Type.NUMBER,
-                                    description: "Emotional valence from -1.0 (negative/unpleasant) to 1.0 (positive/pleasant). Consider the overall emotional tone."
-                                },
-                                arousal: {
-                                    type: Type.NUMBER,
-                                    description: "Emotional arousal from 0.0 (calm/peaceful) to 1.0 (intense/excited). High for action, fear, excitement; low for peaceful, melancholic."
-                                },
-                                lucidity: {
-                                    type: Type.NUMBER,
-                                    description: "Probability (0-100) that this was a lucid dream. Look for: awareness of dreaming, intentional control, impossibility recognition."
-                                },
-                                tags: {
-                                    type: Type.ARRAY,
-                                    items: { type: Type.STRING },
-                                    description: "3-7 semantic tags. Format: 'Category: Value'. Categories: Archetype (Shadow, Hero, Anima, etc.), Symbol (Water, Fire, etc.), Theme (Transformation, Loss, etc.), Emotion (Fear, Joy, etc.), Setting (Home, Nature, etc.)"
-                                }
-                            },
-                            required: ['valence', 'arousal', 'lucidity', 'tags']
                         }
                     },
-                    required: ['title', 'analysis', 'integration', 'telemetry']
+                    integration: {
+                        type: Type.OBJECT,
+                        properties: {
+                            title: {
+                                type: Type.STRING,
+                                description: "Should always be \"The Integration\""
+                            },
+                            content: {
+                                type: Type.STRING,
+                                description: "A single, empowering, reflective question or a simple ritual for the user to integrate the dream's message."
+                            }
+                        },
+                        required: ['title', 'content']
+                    },
+                    imagePrompt: {
+                        type: Type.STRING,
+                        description: "A detailed, vivid image generation prompt (80-150 words) that captures the dream's key visual elements, mood, colors, and atmosphere. Write it in the style of Midjourney/DALL-E prompts with artistic direction (e.g., 'surreal dreamscape', 'ethereal lighting', 'muted earth tones'). Include specific objects, settings, and emotional qualities from the dream."
+                    },
+                    telemetry: {
+                        type: Type.OBJECT,
+                        description: "ML-extracted metadata for vector analytics",
+                        properties: {
+                            valence: {
+                                type: Type.NUMBER,
+                                description: "Emotional valence from -1.0 (negative/unpleasant) to 1.0 (positive/pleasant). Consider the overall emotional tone."
+                            },
+                            arousal: {
+                                type: Type.NUMBER,
+                                description: "Emotional arousal from 0.0 (calm/peaceful) to 1.0 (intense/excited). High for action, fear, excitement; low for peaceful, melancholic."
+                            },
+                            lucidity: {
+                                type: Type.NUMBER,
+                                description: "Probability (0-100) that this was a lucid dream. Look for: awareness of dreaming, intentional control, impossibility recognition."
+                            },
+                            tags: {
+                                type: Type.ARRAY,
+                                items: { type: Type.STRING },
+                                description: "3-7 semantic tags. Format: 'Category: Value'. Categories: Archetype (Shadow, Hero, Anima, etc.), Symbol (Water, Fire, etc.), Theme (Transformation, Loss, etc.), Emotion (Fear, Joy, etc.), Setting (Home, Nature, etc.)"
+                            }
+                        },
+                        required: ['valence', 'arousal', 'lucidity', 'tags']
+                    }
                 },
+                required: ['title', 'analysis', 'integration', 'telemetry']
             },
-        }), 3, 1000, DEFAULT_API_TIMEOUT, 'analysis');
+        };
 
-        const rawJson = response.text?.trim() ?? '';
+        let rawJson: string;
+
+        // Try proxy first, fall back to direct SDK
+        const proxyData = USE_PROXY
+            ? await callAiProxy('analyze', 'gemini-2.5-flash', analysisContents, analysisConfig)
+            : null;
+
+        if (proxyData) {
+            rawJson = extractTextFromProxyResponse(proxyData).trim();
+        } else {
+            const ai = getAi();
+            const response: GenerateContentResponse = await withRetry(() => ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: analysisContents,
+                config: analysisConfig,
+            }), 3, 1000, DEFAULT_API_TIMEOUT, 'analysis');
+            rawJson = response.text?.trim() ?? '';
+        }
         if (!rawJson) {
             throw new Error('AI returned empty response. Please try again.');
         }
@@ -480,7 +605,6 @@ export const generateImagePrompt = async (dreamText: string, style: DreamArtStyl
     }
 
     try {
-        const ai = getAi();
         const styleInfo = DREAM_ART_STYLES[style];
 
         const prompt = `You are a master prompt engineer for AI image generators like Midjourney, DALL-E, and Nano Banana.
@@ -503,12 +627,23 @@ REQUIREMENTS:
 
 OUTPUT ONLY THE IMAGE PROMPT, nothing else.`;
 
-        const response = await withRetry(() => ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: [{ parts: [{ text: prompt }] }],
-        }), 3, 1000, DEFAULT_API_TIMEOUT, 'image prompt');
+        const imageContents = [{ parts: [{ text: prompt }] }];
+        let result: string;
 
-        const result = response.text?.trim() ?? '';
+        const proxyData = USE_PROXY
+            ? await callAiProxy('image_prompt', 'gemini-2.5-flash', imageContents)
+            : null;
+
+        if (proxyData) {
+            result = extractTextFromProxyResponse(proxyData).trim();
+        } else {
+            const ai = getAi();
+            const response = await withRetry(() => ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: imageContents,
+            }), 3, 1000, DEFAULT_API_TIMEOUT, 'image prompt');
+            result = response.text?.trim() ?? '';
+        }
         if (!result) {
             throw new Error('Failed to generate image prompt');
         }
@@ -601,19 +736,29 @@ export const generateDreamTitle = async (dreamText: string): Promise<string> => 
     // 4. Create new request and track it
     const request = (async () => {
         try {
-            const ai = getAi();
             const prompt = `Generate a short, evocative title (3-6 words) for this dream:
 
 "${dreamText.slice(0, 500)}"
 
 Return ONLY the title, nothing else. No quotes, no explanation.`;
 
-            const response = await withRetry(() => ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: [{ parts: [{ text: prompt }] }],
-            }));
+            const titleContents = [{ parts: [{ text: prompt }] }];
+            let title: string;
 
-            const title = response.text?.trim() || 'Untitled Dream';
+            const proxyData = USE_PROXY
+                ? await callAiProxy('title', 'gemini-2.5-flash', titleContents)
+                : null;
+
+            if (proxyData) {
+                title = extractTextFromProxyResponse(proxyData).trim() || 'Untitled Dream';
+            } else {
+                const ai = getAi();
+                const response = await withRetry(() => ai.models.generateContent({
+                    model: 'gemini-2.5-flash',
+                    contents: titleContents,
+                }));
+                title = response.text?.trim() || 'Untitled Dream';
+            }
 
             // Cache the result with size limit to prevent memory issues
             dreamTitleCache.set(cacheKey, title);
@@ -703,13 +848,22 @@ export const getDreamChatResponse = async (dream: Dream, history: ChatMessage[])
     const chatHistory = [createDreamChatSystemPrompt(dream), ...cleanHistory];
 
     try {
-        const ai = getAi();
-        const response: GenerateContentResponse = await withRetry(() => ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: chatHistory,
-        }), 3, 1000, DEFAULT_API_TIMEOUT, 'chat');
+        let text: string;
 
-        const text = response.text ?? '';
+        const proxyData = USE_PROXY
+            ? await callAiProxy('chat', 'gemini-2.5-flash', chatHistory)
+            : null;
+
+        if (proxyData) {
+            text = extractTextFromProxyResponse(proxyData);
+        } else {
+            const ai = getAi();
+            const response: GenerateContentResponse = await withRetry(() => ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: chatHistory,
+            }), 3, 1000, DEFAULT_API_TIMEOUT, 'chat');
+            text = response.text ?? '';
+        }
 
         // Validate response size
         validateResponseSize(text);
@@ -763,35 +917,47 @@ export const synthesizeDreamThemes = async (dreams: Dream[]): Promise<DreamSynth
     }
 
     try {
-        const ai = getAi();
         const prompt = createSynthesisPrompt(limitedDreams);
-        // Use extended timeout for synthesis (complex operation)
-        const response: GenerateContentResponse = await withRetry(() => ai.models.generateContent({
-            model: 'gemini-2.5-pro', // Pro model for complex multi-dream synthesis
-            contents: [{ parts: [{ text: prompt }] }],
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        overallSummary: { type: Type.STRING, description: "A concise paragraph summarizing the entire dream landscape." },
-                        recurringThemes: {
-                            type: Type.ARRAY,
-                            items: {
-                                type: Type.OBJECT,
-                                properties: {
-                                    theme: { type: Type.STRING, description: "Title for the recurring theme (e.g., 'Journeys of Transformation')." },
-                                    description: { type: Type.STRING, description: "A deep interpretation of this theme's significance." },
-                                    exampleDreamIds: { type: Type.ARRAY, items: { type: Type.INTEGER } }
-                                }
+        const synthesisContents = [{ parts: [{ text: prompt }] }];
+        const synthesisConfig = {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                    overallSummary: { type: Type.STRING, description: "A concise paragraph summarizing the entire dream landscape." },
+                    recurringThemes: {
+                        type: Type.ARRAY,
+                        items: {
+                            type: Type.OBJECT,
+                            properties: {
+                                theme: { type: Type.STRING, description: "Title for the recurring theme (e.g., 'Journeys of Transformation')." },
+                                description: { type: Type.STRING, description: "A deep interpretation of this theme's significance." },
+                                exampleDreamIds: { type: Type.ARRAY, items: { type: Type.INTEGER } }
                             }
                         }
                     }
                 }
             }
-        }), 3, 1000, EXTENDED_API_TIMEOUT, 'synthesis');
+        };
 
-        const rawJson = response.text?.trim() ?? '';
+        let rawJson: string;
+
+        const proxyData = USE_PROXY
+            ? await callAiProxy('synthesize', 'gemini-2.5-pro', synthesisContents, synthesisConfig, EXTENDED_API_TIMEOUT)
+            : null;
+
+        if (proxyData) {
+            rawJson = extractTextFromProxyResponse(proxyData).trim();
+        } else {
+            const ai = getAi();
+            // Use extended timeout for synthesis (complex operation)
+            const response: GenerateContentResponse = await withRetry(() => ai.models.generateContent({
+                model: 'gemini-2.5-pro', // Pro model for complex multi-dream synthesis
+                contents: synthesisContents,
+                config: synthesisConfig,
+            }), 3, 1000, EXTENDED_API_TIMEOUT, 'synthesis');
+            rawJson = response.text?.trim() ?? '';
+        }
         if (!rawJson) {
             throw new Error('AI returned empty response. Please try again.');
         }
@@ -859,37 +1025,49 @@ export const analyzeSleepHabits = async (dreams: Dream[]): Promise<SleepHabitAna
     }
 
     try {
-        const ai = getAi();
         const prompt = createHabitAnalysisPrompt(limitedDreams);
-        const response: GenerateContentResponse = await withRetry(() => ai.models.generateContent({
-            model: 'gemini-2.5-pro', // Pro model for complex habit correlation analysis
-            contents: [{ parts: [{ text: prompt }] }],
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        positiveCorrelations: {
-                            type: Type.ARRAY,
-                            items: {
-                                type: Type.OBJECT,
-                                properties: { habit: { type: Type.STRING }, insight: { type: Type.STRING } }
-                            }
-                        },
-                        negativeCorrelations: {
-                            type: Type.ARRAY,
-                            items: {
-                                type: Type.OBJECT,
-                                properties: { habit: { type: Type.STRING }, insight: { type: Type.STRING } }
-                            }
-                        },
-                        recommendations: { type: Type.ARRAY, items: { type: Type.STRING } }
-                    }
+        const habitsContents = [{ parts: [{ text: prompt }] }];
+        const habitsConfig = {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                    positiveCorrelations: {
+                        type: Type.ARRAY,
+                        items: {
+                            type: Type.OBJECT,
+                            properties: { habit: { type: Type.STRING }, insight: { type: Type.STRING } }
+                        }
+                    },
+                    negativeCorrelations: {
+                        type: Type.ARRAY,
+                        items: {
+                            type: Type.OBJECT,
+                            properties: { habit: { type: Type.STRING }, insight: { type: Type.STRING } }
+                        }
+                    },
+                    recommendations: { type: Type.ARRAY, items: { type: Type.STRING } }
                 }
             }
-        }), 3, 1000, EXTENDED_API_TIMEOUT, 'habit analysis');
+        };
 
-        const rawJson = response.text?.trim() ?? '';
+        let rawJson: string;
+
+        const proxyData = USE_PROXY
+            ? await callAiProxy('habits', 'gemini-2.5-pro', habitsContents, habitsConfig, EXTENDED_API_TIMEOUT)
+            : null;
+
+        if (proxyData) {
+            rawJson = extractTextFromProxyResponse(proxyData).trim();
+        } else {
+            const ai = getAi();
+            const response: GenerateContentResponse = await withRetry(() => ai.models.generateContent({
+                model: 'gemini-2.5-pro', // Pro model for complex habit correlation analysis
+                contents: habitsContents,
+                config: habitsConfig,
+            }), 3, 1000, EXTENDED_API_TIMEOUT, 'habit analysis');
+            rawJson = response.text?.trim() ?? '';
+        }
         if (!rawJson) {
             throw new Error('AI returned empty response. Please try again.');
         }
@@ -965,20 +1143,30 @@ export const generateDreamEmbedding = async (text: string): Promise<number[]> =>
     }
 
     try {
-        const ai = getAi();
         // Truncate text to prevent token overflow
         const truncatedText = text.slice(0, MAX_DREAM_TEXT_LENGTH);
+        const embeddingContents = [{ parts: [{ text: truncatedText }] }];
 
-        const response = await withTimeout(
-            ai.models.embedContent({
-                model: 'text-embedding-004',
-                contents: [{ parts: [{ text: truncatedText }] }]
-            }),
-            DEFAULT_API_TIMEOUT,
-            'embedding'
-        );
+        let embedding: number[] | undefined;
 
-        const embedding = response.embeddings?.[0]?.values;
+        const proxyData = USE_PROXY
+            ? await callAiProxy('embedding', 'text-embedding-004', embeddingContents)
+            : null;
+
+        if (proxyData) {
+            embedding = extractEmbeddingFromProxyResponse(proxyData) ?? undefined;
+        } else {
+            const ai = getAi();
+            const response = await withTimeout(
+                ai.models.embedContent({
+                    model: 'text-embedding-004',
+                    contents: embeddingContents,
+                }),
+                DEFAULT_API_TIMEOUT,
+                'embedding'
+            );
+            embedding = response.embeddings?.[0]?.values;
+        }
         if (!embedding || embedding.length !== 768) {
             throw new Error('Invalid embedding response from API');
         }
@@ -1154,76 +1342,87 @@ The synthesis should:
 
     // 5. Run analysis with enhanced context
     try {
-        const ai = getAi();
         const basePrompt = createAnalysisPrompt(sanitizedText, personality, sleepAids, biometrics);
         const enhancedPrompt = basePrompt + contextString;
-
-        const response: GenerateContentResponse = await withRetry(() => ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: [{ parts: [{ text: enhancedPrompt }] }],
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        title: {
-                            type: Type.STRING,
-                            description: "A short, evocative, and poetic title for the dream."
-                        },
-                        analysis: {
-                            type: Type.ARRAY,
-                            description: "2-3 thematic insights. If similar past dreams were provided, include connections to them.",
-                            items: {
-                                type: Type.OBJECT,
-                                properties: {
-                                    title: { type: Type.STRING },
-                                    content: { type: Type.STRING }
-                                },
-                                required: ['title', 'content']
-                            }
-                        },
-                        integration: {
+        const memoryContents = [{ parts: [{ text: enhancedPrompt }] }];
+        const memoryConfig = {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                    title: {
+                        type: Type.STRING,
+                        description: "A short, evocative, and poetic title for the dream."
+                    },
+                    analysis: {
+                        type: Type.ARRAY,
+                        description: "2-3 thematic insights. If similar past dreams were provided, include connections to them.",
+                        items: {
                             type: Type.OBJECT,
                             properties: {
                                 title: { type: Type.STRING },
                                 content: { type: Type.STRING }
                             },
                             required: ['title', 'content']
-                        },
-                        imagePrompt: { type: Type.STRING },
-                        telemetry: {
-                            type: Type.OBJECT,
-                            properties: {
-                                valence: { type: Type.NUMBER },
-                                arousal: { type: Type.NUMBER },
-                                lucidity: { type: Type.NUMBER },
-                                tags: { type: Type.ARRAY, items: { type: Type.STRING } }
-                            },
-                            required: ['valence', 'arousal', 'lucidity', 'tags']
-                        },
-                        dreamConnections: {
-                            type: Type.ARRAY,
-                            description: "If similar past dreams were provided, generate poetic synthesis for each connection",
-                            items: {
-                                type: Type.OBJECT,
-                                properties: {
-                                    pastDreamTitle: { type: Type.STRING, description: "Title of the past dream" },
-                                    daysAgo: { type: Type.NUMBER, description: "How many days ago the past dream occurred" },
-                                    synthesis: {
-                                        type: Type.STRING,
-                                        description: "A poetic 1-2 sentence narrative synthesis in second person. Example: 'You're returning to the Ocean. But this time, you're not afraid.' NOT a percentage or technical description."
-                                    }
-                                },
-                                required: ['pastDreamTitle', 'synthesis']
-                            }
                         }
                     },
-                    required: ['title', 'analysis', 'integration', 'telemetry']
-                }
+                    integration: {
+                        type: Type.OBJECT,
+                        properties: {
+                            title: { type: Type.STRING },
+                            content: { type: Type.STRING }
+                        },
+                        required: ['title', 'content']
+                    },
+                    imagePrompt: { type: Type.STRING },
+                    telemetry: {
+                        type: Type.OBJECT,
+                        properties: {
+                            valence: { type: Type.NUMBER },
+                            arousal: { type: Type.NUMBER },
+                            lucidity: { type: Type.NUMBER },
+                            tags: { type: Type.ARRAY, items: { type: Type.STRING } }
+                        },
+                        required: ['valence', 'arousal', 'lucidity', 'tags']
+                    },
+                    dreamConnections: {
+                        type: Type.ARRAY,
+                        description: "If similar past dreams were provided, generate poetic synthesis for each connection",
+                        items: {
+                            type: Type.OBJECT,
+                            properties: {
+                                pastDreamTitle: { type: Type.STRING, description: "Title of the past dream" },
+                                daysAgo: { type: Type.NUMBER, description: "How many days ago the past dream occurred" },
+                                synthesis: {
+                                    type: Type.STRING,
+                                    description: "A poetic 1-2 sentence narrative synthesis in second person. Example: 'You're returning to the Ocean. But this time, you're not afraid.' NOT a percentage or technical description."
+                                }
+                            },
+                            required: ['pastDreamTitle', 'synthesis']
+                        }
+                    }
+                },
+                required: ['title', 'analysis', 'integration', 'telemetry']
             }
-        }), 3, 1000, DEFAULT_API_TIMEOUT, 'analysis with memory');
+        };
 
-        const rawJson = response.text?.trim() ?? '';
+        let rawJson: string;
+
+        const proxyData = USE_PROXY
+            ? await callAiProxy('analyze', 'gemini-2.5-flash', memoryContents, memoryConfig)
+            : null;
+
+        if (proxyData) {
+            rawJson = extractTextFromProxyResponse(proxyData).trim();
+        } else {
+            const ai = getAi();
+            const response: GenerateContentResponse = await withRetry(() => ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: memoryContents,
+                config: memoryConfig,
+            }), 3, 1000, DEFAULT_API_TIMEOUT, 'analysis with memory');
+            rawJson = response.text?.trim() ?? '';
+        }
         if (!rawJson) throw new Error('AI returned empty response.');
 
         // Validate response size

@@ -17,6 +17,7 @@ import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import { exportInsightsSummary, InsightsSummaryData } from '../../services/exportService';
 import { calculateUserStats } from '../../services/userStatsService';
 import { logger } from '../../services/logger';
+import { InsightsDashboardCustomizer, loadInsightsLayout, InsightsLayoutData } from '../insights/InsightsDashboardCustomizer';
 
 // Lazy load heavy insight components for better performance
 const WeeklyDigest = lazy(() => import('../insights/WeeklyDigest').then(m => ({ default: m.WeeklyDigest })));
@@ -67,6 +68,8 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
     const [isSyncOpen, setIsSyncOpen] = useState(false);
     const [isShareOpen, setIsShareOpen] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
+    const [isCustomizerOpen, setIsCustomizerOpen] = useState(false);
+    const [insightsLayout, setInsightsLayout] = useState<InsightsLayoutData>(() => loadInsightsLayout());
 
     // Memoize modal close handlers to prevent re-renders
     const handleCloseCompare = useCallback(() => setIsCompareOpen(false), []);
@@ -337,9 +340,20 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
         <>
             {/* Header with Share & Export Buttons */}
             <div className="flex items-center justify-between mb-4 max-w-2xl mx-auto">
-                <div className="w-24" /> {/* Spacer for centering (matches right side width) */}
+                <div className="w-36" /> {/* Spacer for centering (matches right side width with 3 buttons) */}
                 <h1 className="font-serif page-title text-4xl text-center">Insights</h1>
                 <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => { haptics.light(); setIsCustomizerOpen(true); }}
+                        className="w-12 h-12 rounded-full flex items-center justify-center bg-day-card-bg/50 dark:bg-night-card-bg/50 border border-day-border dark:border-night-border hover:bg-day-accent/10 dark:hover:bg-night-accent/10 transition-colors"
+                        aria-label="Customize dashboard"
+                        title="Customize dashboard layout"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </button>
                     <button
                         onClick={handleExportInsights}
                         disabled={isExporting || displayDreams.length === 0}
@@ -499,66 +513,94 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                                 </div>
                             )
                         )}
-                        <ErrorBoundary>
-                            <Suspense fallback={<InsightCardSkeleton />}>
-                                <WeeklyDigest dreams={displayDreams} />
-                            </Suspense>
-                        </ErrorBoundary>
-                        <ErrorBoundary>
-                            <Suspense fallback={<InsightCardSkeleton />}>
-                                <DreamCalendar dreams={displayDreams} />
-                            </Suspense>
-                        </ErrorBoundary>
-                        <ErrorBoundary>
-                            <Suspense fallback={<InsightCardSkeleton />}>
-                                <DreamWordCloud dreams={displayDreams} />
-                            </Suspense>
-                        </ErrorBoundary>
-                        <ErrorBoundary>
-                            <Suspense fallback={<InsightCardSkeleton />}>
-                                <DreamMoodTracker dreams={displayDreams} />
-                            </Suspense>
-                        </ErrorBoundary>
-                        <ErrorBoundary>
-                            <Suspense fallback={<InsightCardSkeleton />}>
-                                <DreamStreakCalendar dreams={displayDreams} />
-                            </Suspense>
-                        </ErrorBoundary>
-                        <ErrorBoundary>
-                            <Suspense fallback={<InsightCardSkeleton />}>
-                                <RecurringThemes dreams={displayDreams} />
-                            </Suspense>
-                        </ErrorBoundary>
-
-                        {/* Recurring Patterns */}
-                        {patterns.length > 0 && (
-                            <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">
-                                <h2 className="font-serif text-2xl mb-2" id="patterns-heading">Recurring Patterns</h2>
-                                <p className="text-day-text-secondary dark:text-night-text-secondary text-sm mb-4">
-                                    Themes across multiple dreams
-                                </p>
-                                <ul className="flex flex-wrap gap-2" role="list" aria-labelledby="patterns-heading">
-                                    {patterns.slice(0, 8).map(p => (
-                                        <li
-                                            key={p.pattern}
-                                            className="px-4 py-2.5 min-h-[44px] bg-day-accent/10 dark:bg-night-accent/10 rounded-full text-sm flex items-center gap-1.5"
-                                        >
-                                            <span className="font-medium text-day-accent dark:text-night-accent">
-                                                {formatPatternName(p.pattern)}
-                                            </span>
-                                            <span className="text-xs text-day-text-secondary dark:text-night-text-secondary" aria-label={`${p.occurrences} occurrences`}>
-                                                x{p.occurrences}
-                                            </span>
-                                        </li>
-                                    ))}
-                                </ul>
-                                {patterns.length > 8 && (
-                                    <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-3">
-                                        +{patterns.length - 8} more patterns
-                                    </p>
-                                )}
-                            </div>
-                        )}
+                        {/* Layout-driven insight cards */}
+                        {[...insightsLayout.cards]
+                            .sort((a, b) => a.order - b.order)
+                            .filter(c => c.visible)
+                            .map(card => {
+                                switch (card.id) {
+                                    case 'WeeklyDigest':
+                                        return (
+                                            <ErrorBoundary key={card.id}>
+                                                <Suspense fallback={<InsightCardSkeleton />}>
+                                                    <WeeklyDigest dreams={displayDreams} />
+                                                </Suspense>
+                                            </ErrorBoundary>
+                                        );
+                                    case 'DreamCalendar':
+                                        return (
+                                            <ErrorBoundary key={card.id}>
+                                                <Suspense fallback={<InsightCardSkeleton />}>
+                                                    <DreamCalendar dreams={displayDreams} />
+                                                </Suspense>
+                                            </ErrorBoundary>
+                                        );
+                                    case 'DreamWordCloud':
+                                        return (
+                                            <ErrorBoundary key={card.id}>
+                                                <Suspense fallback={<InsightCardSkeleton />}>
+                                                    <DreamWordCloud dreams={displayDreams} />
+                                                </Suspense>
+                                            </ErrorBoundary>
+                                        );
+                                    case 'DreamMoodTracker':
+                                        return (
+                                            <ErrorBoundary key={card.id}>
+                                                <Suspense fallback={<InsightCardSkeleton />}>
+                                                    <DreamMoodTracker dreams={displayDreams} />
+                                                </Suspense>
+                                            </ErrorBoundary>
+                                        );
+                                    case 'DreamStreakCalendar':
+                                        return (
+                                            <ErrorBoundary key={card.id}>
+                                                <Suspense fallback={<InsightCardSkeleton />}>
+                                                    <DreamStreakCalendar dreams={displayDreams} />
+                                                </Suspense>
+                                            </ErrorBoundary>
+                                        );
+                                    case 'RecurringThemes':
+                                        return (
+                                            <ErrorBoundary key={card.id}>
+                                                <Suspense fallback={<InsightCardSkeleton />}>
+                                                    <RecurringThemes dreams={displayDreams} />
+                                                </Suspense>
+                                            </ErrorBoundary>
+                                        );
+                                    case 'RecurringPatterns':
+                                        return patterns.length > 0 ? (
+                                            <div key={card.id} className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">
+                                                <h2 className="font-serif text-2xl mb-2" id="patterns-heading">Recurring Patterns</h2>
+                                                <p className="text-day-text-secondary dark:text-night-text-secondary text-sm mb-4">
+                                                    Themes across multiple dreams
+                                                </p>
+                                                <ul className="flex flex-wrap gap-2" role="list" aria-labelledby="patterns-heading">
+                                                    {patterns.slice(0, 8).map(p => (
+                                                        <li
+                                                            key={p.pattern}
+                                                            className="px-4 py-2.5 min-h-[44px] bg-day-accent/10 dark:bg-night-accent/10 rounded-full text-sm flex items-center gap-1.5"
+                                                        >
+                                                            <span className="font-medium text-day-accent dark:text-night-accent">
+                                                                {formatPatternName(p.pattern)}
+                                                            </span>
+                                                            <span className="text-xs text-day-text-secondary dark:text-night-text-secondary" aria-label={`${p.occurrences} occurrences`}>
+                                                                x{p.occurrences}
+                                                            </span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                                {patterns.length > 8 && (
+                                                    <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-3">
+                                                        +{patterns.length - 8} more patterns
+                                                    </p>
+                                                )}
+                                            </div>
+                                        ) : null;
+                                    default:
+                                        return null;
+                                }
+                            })
+                        }
 
                         {/* Compare Dreams */}
                         {displayDreams.length >= 2 && (
@@ -853,6 +895,13 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
                     </div>
                 </div>
             )}
+
+            {/* Insights Dashboard Customizer Modal */}
+            <InsightsDashboardCustomizer
+                isOpen={isCustomizerOpen}
+                onClose={() => setIsCustomizerOpen(false)}
+                onSave={setInsightsLayout}
+            />
         </>
     );
 };
