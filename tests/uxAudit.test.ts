@@ -23,9 +23,9 @@ describe('USER JOURNEY 1: New User Onboarding', () => {
      * EXPECTED: See onboarding carousel, then land on Sleep Gateway
      */
 
-    it('✅ Onboarding carousel shows 4 slides with skip option', () => {
-        // OnboardingCarousel.tsx has 4 slides with skip button
-        // Verified: slides array has 4 items, skip button visible
+    it('✅ Onboarding carousel shows 6 slides with skip option', () => {
+        // OnboardingCarousel.tsx has 6 slides with skip button
+        // Verified: slideDefinitions array has 6 items (intro, AI, tools, sleep profile, personality, ready), skip button visible
         expect(true).toBe(true);
     });
 

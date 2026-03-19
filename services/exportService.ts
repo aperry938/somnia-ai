@@ -30,6 +30,21 @@ import { Dream } from '../types';
 import { escapeHtml } from './validationService';
 import { logger } from './logger';
 
+/**
+ * Data shape for insights summary PDF export
+ */
+export interface InsightsSummaryData {
+    totalDreams: number;
+    currentStreak: number;
+    bestStreak: number;
+    avgSleepQuality: number;
+    level: number;
+    topThemes: string[];
+    topMoods: string[];
+    dreamFrequency: string;
+    dateRange: string;
+}
+
 const isNative = Capacitor.isNativePlatform();
 
 /**
@@ -556,4 +571,259 @@ export const importDreamsEncrypted = async (
         reader.onerror = () => reject(new Error("Failed to read file"));
         reader.readAsText(file);
     });
+};
+
+/**
+ * Generates printable HTML for an insights summary
+ */
+const generateInsightsHTML = (data: InsightsSummaryData): string => {
+    const themesHtml = data.topThemes.length > 0
+        ? data.topThemes.map(t => `<li>${escapeHtml(t)}</li>`).join('\n')
+        : '<li>No themes detected yet</li>';
+
+    const moodsHtml = data.topMoods.length > 0
+        ? data.topMoods.map(m => `<li>${escapeHtml(m)}</li>`).join('\n')
+        : '<li>No mood data yet</li>';
+
+    const qualityDisplay = data.avgSleepQuality > 0
+        ? `${data.avgSleepQuality.toFixed(1)} / 5`
+        : 'No ratings yet';
+
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Somnia Dream Insights</title>
+    <style>
+        @page {
+            margin: 1in;
+            size: letter;
+        }
+
+        body {
+            font-family: Georgia, 'Times New Roman', serif;
+            line-height: 1.6;
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            color: #1E293B;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 36px;
+            border-bottom: 2px solid #6366F1;
+            padding-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin: 0 0 6px;
+            color: #6366F1;
+        }
+
+        .header .date-range {
+            font-size: 14px;
+            color: #64748B;
+            margin: 0;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 16px 12px;
+            border: 1px solid #E2E8F0;
+            border-radius: 10px;
+        }
+
+        .stat-card .value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #6366F1;
+            display: block;
+        }
+
+        .stat-card .label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748B;
+            margin-top: 4px;
+        }
+
+        .section {
+            margin-bottom: 28px;
+        }
+
+        .section h2 {
+            font-size: 18px;
+            color: #0F172A;
+            border-bottom: 1px solid #E2E8F0;
+            padding-bottom: 6px;
+            margin-bottom: 12px;
+        }
+
+        .section ul {
+            padding-left: 20px;
+            margin: 0;
+        }
+
+        .section li {
+            margin-bottom: 6px;
+            color: #334155;
+        }
+
+        .frequency {
+            font-size: 15px;
+            color: #475569;
+            padding: 12px 16px;
+            background: #F8FAFC;
+            border-radius: 8px;
+            border-left: 3px solid #6366F1;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 16px;
+            border-top: 1px solid #E2E8F0;
+            color: #94A3B8;
+            font-size: 12px;
+        }
+
+        @media print {
+            body { padding: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Somnia Dream Insights</h1>
+        <p class="date-range">${escapeHtml(data.dateRange)}</p>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <span class="value">${data.totalDreams}</span>
+            <span class="label">Total Dreams</span>
+        </div>
+        <div class="stat-card">
+            <span class="value">${data.currentStreak}</span>
+            <span class="label">Current Streak</span>
+        </div>
+        <div class="stat-card">
+            <span class="value">${data.bestStreak}</span>
+            <span class="label">Best Streak</span>
+        </div>
+        <div class="stat-card">
+            <span class="value">${qualityDisplay}</span>
+            <span class="label">Avg Sleep Quality</span>
+        </div>
+        <div class="stat-card">
+            <span class="value">${data.level}</span>
+            <span class="label">Level</span>
+        </div>
+        <div class="stat-card">
+            <span class="value">${escapeHtml(data.dreamFrequency)}</span>
+            <span class="label">Frequency</span>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Top Themes</h2>
+        <ul>
+            ${themesHtml}
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Top Moods</h2>
+        <ul>
+            ${moodsHtml}
+        </ul>
+    </div>
+
+    <div class="footer">
+        <p>Generated by Somnia &mdash; somnia.ai</p>
+    </div>
+</body>
+</html>
+    `;
+};
+
+/**
+ * Generates a plain-text version of the insights summary for native sharing
+ */
+const generateInsightsPlainText = (data: InsightsSummaryData): string => {
+    const qualityDisplay = data.avgSleepQuality > 0
+        ? `${data.avgSleepQuality.toFixed(1)} / 5`
+        : 'No ratings yet';
+
+    const lines = [
+        'SOMNIA DREAM INSIGHTS',
+        data.dateRange,
+        '',
+        '--- STATS ---',
+        `Total Dreams: ${data.totalDreams}`,
+        `Current Streak: ${data.currentStreak}`,
+        `Best Streak: ${data.bestStreak}`,
+        `Avg Sleep Quality: ${qualityDisplay}`,
+        `Level: ${data.level}`,
+        `Frequency: ${data.dreamFrequency}`,
+        '',
+        '--- TOP THEMES ---',
+        ...(data.topThemes.length > 0
+            ? data.topThemes.map(t => `  - ${t}`)
+            : ['  No themes detected yet']),
+        '',
+        '--- TOP MOODS ---',
+        ...(data.topMoods.length > 0
+            ? data.topMoods.map(m => `  - ${m}`)
+            : ['  No mood data yet']),
+        '',
+        'Generated by Somnia - somnia.ai',
+    ];
+
+    return lines.join('\n');
+};
+
+/**
+ * Export insights summary - uses native sharing on mobile, print dialog on web
+ */
+export const exportInsightsSummary = async (data: InsightsSummaryData): Promise<void> => {
+    if (isNative) {
+        const text = generateInsightsPlainText(data);
+
+        try {
+            await Share.share({
+                title: 'Somnia Dream Insights',
+                text: text,
+                dialogTitle: 'Share Dream Insights',
+            });
+        } catch (e) {
+            logger.error('[ExportService] Share insights failed:', e);
+            throw new Error('Failed to share insights summary');
+        }
+    } else {
+        const html = generateInsightsHTML(data);
+        const printWindow = window.open('', '_blank');
+
+        if (printWindow) {
+            printWindow.document.write(html);
+            printWindow.document.close();
+
+            printWindow.onload = () => {
+                setTimeout(() => {
+                    printWindow.print();
+                }, 500);
+            };
+        }
+    }
 };

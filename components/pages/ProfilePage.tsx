@@ -374,6 +374,113 @@ const ThemePreferenceCard: React.FC = () => {
 };
 
 
+// Audio Settings Card
+const AudioSettingsCard: React.FC = () => {
+    const { volume, setVolume } = useAppContext();
+
+    return (
+        <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">
+            <h2 className="font-serif text-xl mb-2">Audio</h2>
+            <div>
+                <div className="flex justify-between text-sm mb-2">
+                    <span className="text-day-text-secondary dark:text-night-text-secondary">Default Volume</span>
+                    <span className="font-mono text-day-accent dark:text-night-accent">{Math.round(volume * 100)}%</span>
+                </div>
+                <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={volume}
+                    onChange={(e) => setVolume(parseFloat(e.target.value))}
+                    aria-label={`Default volume: ${Math.round(volume * 100)}%`}
+                    className="w-full h-11 accent-day-accent dark:accent-night-accent cursor-pointer"
+                />
+            </div>
+        </div>
+    );
+};
+
+// Analysis Personality Card
+const AnalysisPersonalityCard: React.FC = () => {
+    const { analysisPersonality, setAnalysisPersonality } = useAppContext();
+
+    const personalities = [
+        { value: 'oneironaut' as const, label: 'The Oneironaut', desc: 'Warm, psychologically-grounded dream exploration' },
+        { value: 'jungian' as const, label: 'The Analyst', desc: 'Evidence-based, structured dream analysis' },
+        { value: 'scientific' as const, label: 'The Mystic', desc: 'Mythological, archetypal interpretation' },
+    ];
+
+    return (
+        <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">
+            <h2 className="font-serif text-xl mb-2">AI Personality</h2>
+            <p className="text-day-text-secondary dark:text-night-text-secondary text-sm mb-4">
+                Choose how Somnia interprets your dreams
+            </p>
+            <div className="space-y-2">
+                {personalities.map(p => (
+                    <button
+                        key={p.value}
+                        onClick={() => setAnalysisPersonality(p.value)}
+                        aria-pressed={analysisPersonality === p.value}
+                        className={`w-full p-3 min-h-[52px] rounded-lg border-2 text-left transition-all ${
+                            analysisPersonality === p.value
+                                ? 'border-day-accent dark:border-night-accent bg-day-accent/10 dark:bg-night-accent/10'
+                                : 'border-day-border dark:border-night-border hover:border-day-accent/50 dark:hover:border-night-accent/50'
+                        }`}
+                    >
+                        <p className="font-medium text-sm">{p.label}</p>
+                        <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">{p.desc}</p>
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+// Storage Management Card
+const StorageCard: React.FC = () => {
+    const { showToast } = useToast();
+    const [storageSize, setStorageSize] = React.useState('');
+
+    React.useEffect(() => {
+        let bytes = 0;
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key?.startsWith('somnia_')) {
+                bytes += (localStorage.getItem(key) || '').length * 2;
+            }
+        }
+        if (bytes < 1024) setStorageSize(`${bytes} B`);
+        else if (bytes < 1024 * 1024) setStorageSize(`${(bytes / 1024).toFixed(1)} KB`);
+        else setStorageSize(`${(bytes / (1024 * 1024)).toFixed(2)} MB`);
+    }, []);
+
+    const handleClearCache = () => {
+        const cacheKeys = ['somnia_global_trends_cache', 'somnia_title_cache', 'somnia_embedding_cache'];
+        cacheKeys.forEach(key => localStorage.removeItem(key));
+        showToast('Cache cleared', 'success');
+    };
+
+    return (
+        <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">
+            <h2 className="font-serif text-xl mb-2">Storage</h2>
+            <div className="flex items-center justify-between mb-3">
+                <p className="text-day-text-secondary dark:text-night-text-secondary text-sm">App data: {storageSize}</p>
+            </div>
+            <button
+                onClick={handleClearCache}
+                className="w-full py-3 min-h-[48px] border border-day-border dark:border-night-border rounded-lg text-day-text-secondary dark:text-night-text-secondary font-medium flex items-center justify-center gap-2 hover:bg-white/10 dark:hover:bg-black/10 transition-colors"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Clear Cache
+            </button>
+        </div>
+    );
+};
+
 // Language Card
 const LanguageCard: React.FC = () => {
     return (
@@ -982,7 +1089,10 @@ export const ProfilePage: React.FC<{ onBack?: () => void; onNavigateTo?: (page: 
                 <ProfileInfoCard />
                 <MembershipCard onNavigateToTerms={onNavigateTo ? () => onNavigateTo('terms') : undefined} />
                 <ThemePreferenceCard />
+                <AudioSettingsCard />
+                <AnalysisPersonalityCard />
                 <LanguageCard />
+                <StorageCard />
                 <NotificationsCard />
                 <SyncWearableCard />
                 <DataManagementCard />

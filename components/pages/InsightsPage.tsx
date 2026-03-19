@@ -14,6 +14,9 @@ import { ShareAnalyticsModal } from '../modals/ShareAnalyticsModal';
 import { DEMO_DREAMS } from '../../constants/demoDreams';
 import haptics from '../../services/hapticsService';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
+import { exportInsightsSummary, InsightsSummaryData } from '../../services/exportService';
+import { calculateUserStats } from '../../services/userStatsService';
+import { logger } from '../../services/logger';
 
 // Lazy load heavy insight components for better performance
 const WeeklyDigest = lazy(() => import('../insights/WeeklyDigest').then(m => ({ default: m.WeeklyDigest })));
@@ -63,6 +66,7 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
     const [isCompareOpen, setIsCompareOpen] = useState(false);
     const [isSyncOpen, setIsSyncOpen] = useState(false);
     const [isShareOpen, setIsShareOpen] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
 
     // Memoize modal close handlers to prevent re-renders
     const handleCloseCompare = useCallback(() => setIsCompareOpen(false), []);
@@ -223,22 +227,145 @@ export const InsightsPage: React.FC<{ onDreamSelect: (id: number) => void }> = (
         }
     };
 
+    // Compute top themes from dream text using keyword matching (same logic as RecurringThemes)
+    const topThemes = useMemo((): string[] => {
+        const themeKeywords: Record<string, string[]> = {
+            'Chase': ['chase', 'chased', 'chasing', 'running', 'escape', 'fled', 'pursued'],
+            'Flying': ['fly', 'flying', 'flew', 'floating', 'soaring', 'wings', 'levitate'],
+            'Falling': ['fall', 'falling', 'fell', 'dropping', 'plummeting', 'cliff'],
+            'Water': ['water', 'ocean', 'sea', 'swimming', 'drowning', 'wave', 'river', 'lake'],
+            'Death': ['death', 'dead', 'dying', 'funeral', 'grave'],
+            'Teeth': ['teeth', 'tooth', 'falling out', 'crumbling', 'dental'],
+            'Test': ['exam', 'test', 'unprepared', 'school', 'class', 'failing'],
+            'Lost': ['lost', 'searching', 'maze', 'cannot find', 'wandering'],
+            'Animals': ['animal', 'dog', 'cat', 'snake', 'bird', 'wolf', 'bear', 'spider'],
+            'Naked': ['naked', 'nude', 'exposed', 'undressed'],
+        };
+        const counts: { theme: string; count: number }[] = [];
+        Object.entries(themeKeywords).forEach(([theme, keywords]) => {
+            let count = 0;
+            displayDreams.forEach(dream => {
+                const text = (dream.dreamText || '').toLowerCase();
+                if (keywords.some(kw => text.includes(kw))) count++;
+            });
+            if (count > 0) counts.push({ theme, count });
+        });
+        return counts.sort((a, b) => b.count - a.count).slice(0, 5).map(c => c.theme);
+    }, [displayDreams]);
+
+    // Compute top moods from dream text using keyword matching (same logic as DreamMoodTracker)
+    const topMoods = useMemo((): string[] => {
+        const moodKeywords: Record<string, string[]> = {
+            'Joyful': ['happy', 'joy', 'laugh', 'smile', 'excited', 'love', 'wonderful', 'amazing'],
+            'Anxious': ['anxious', 'worried', 'nervous', 'stress', 'panic', 'fear', 'scared'],
+            'Peaceful': ['calm', 'peace', 'serene', 'quiet', 'relax', 'gentle', 'soft'],
+            'Confused': ['confused', 'lost', 'strange', 'weird', 'bizarre', 'maze', 'searching'],
+            'Sad': ['sad', 'cry', 'tears', 'grief', 'loss', 'miss', 'lonely', 'alone'],
+            'Adventurous': ['adventure', 'explore', 'discover', 'journey', 'quest', 'flying', 'travel'],
+            'Nightmare': ['nightmare', 'monster', 'demon', 'death', 'horror', 'trapped', 'scream'],
+        };
+        const counts: Record<string, number> = {};
+        displayDreams.forEach(dream => {
+            const text = (dream.dreamText || '').toLowerCase();
+            Object.entries(moodKeywords).forEach(([mood, keywords]) => {
+                keywords.forEach(kw => {
+                    const regex = new RegExp(`\\b${kw}\\b`, 'gi');
+                    const matches = text.match(regex);
+                    if (matches) counts[mood] = (counts[mood] || 0) + matches.length;
+                });
+            });
+        });
+        return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([mood]) => mood);
+    }, [displayDreams]);
+
+    const handleExportInsights = useCallback(async () => {
+        haptics.medium();
+        setIsExporting(true);
+        try {
+            const stats = calculateUserStats(dreams);
+
+            // Calculate average sleep quality
+            const rated = displayDreams.filter(d => d.sleepQuality !== null && d.sleepQuality !== undefined);
+            const avgQuality = rated.length > 0
+                ? rated.reduce((sum, d) => sum + (d.sleepQuality ?? 0), 0) / rated.length
+                : 0;
+
+            // Calculate dream frequency (dreams per week)
+            let frequency = '0 per week';
+            if (displayDreams.length >= 2) {
+                const timestamps = displayDreams.map(d => new Date(d.timestamp).getTime()).sort((a, b) => a - b);
+                const spanMs = (timestamps[timestamps.length - 1] ?? 0) - (timestamps[0] ?? 0);
+                const spanWeeks = Math.max(spanMs / (7 * 24 * 60 * 60 * 1000), 1);
+                const rate = (displayDreams.length / spanWeeks).toFixed(1);
+                frequency = `${rate} per week`;
+            } else if (displayDreams.length === 1) {
+                frequency = '1 recorded';
+            }
+
+            // Build date range
+            const sorted = [...displayDreams].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+            const first = sorted[0];
+            const last = sorted[sorted.length - 1];
+            const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+            const dateRange = first && last
+                ? `${fmt(new Date(first.timestamp))} - ${fmt(new Date(last.timestamp))}`
+                : 'No dreams yet';
+
+            const summaryData: InsightsSummaryData = {
+                totalDreams: stats.totalDreams,
+                currentStreak: stats.currentStreak,
+                bestStreak: stats.bestStreak,
+                avgSleepQuality: avgQuality,
+                level: stats.level,
+                topThemes,
+                topMoods,
+                dreamFrequency: frequency,
+                dateRange,
+            };
+
+            await exportInsightsSummary(summaryData);
+            haptics.success();
+        } catch (e) {
+            logger.error('[InsightsPage] Export insights failed:', e);
+            haptics.error();
+        } finally {
+            setIsExporting(false);
+        }
+    }, [dreams, displayDreams, topThemes, topMoods]);
+
     return (
         <>
-            {/* Header with Share Button */}
+            {/* Header with Share & Export Buttons */}
             <div className="flex items-center justify-between mb-4 max-w-2xl mx-auto">
-                <div className="w-12" /> {/* Spacer for centering */}
+                <div className="w-24" /> {/* Spacer for centering (matches right side width) */}
                 <h1 className="font-serif page-title text-4xl text-center">Insights</h1>
-                <button
-                    onClick={() => { haptics.medium(); setIsShareOpen(true); }}
-                    className="w-12 h-12 rounded-full flex items-center justify-center bg-day-card-bg/50 dark:bg-night-card-bg/50 border border-day-border dark:border-night-border hover:bg-day-accent/10 dark:hover:bg-night-accent/10 transition-colors"
-                    aria-label="Share analytics"
-                    title="Share your analytics"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                    </svg>
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={handleExportInsights}
+                        disabled={isExporting || displayDreams.length === 0}
+                        className="w-12 h-12 rounded-full flex items-center justify-center bg-day-card-bg/50 dark:bg-night-card-bg/50 border border-day-border dark:border-night-border hover:bg-day-accent/10 dark:hover:bg-night-accent/10 transition-colors disabled:opacity-40"
+                        aria-label="Export insights as PDF"
+                        title="Export insights as PDF"
+                    >
+                        {isExporting ? (
+                            <div className="w-5 h-5 border-2 border-day-accent/30 dark:border-night-accent/30 border-t-day-accent dark:border-t-night-accent rounded-full animate-spin" />
+                        ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                        )}
+                    </button>
+                    <button
+                        onClick={() => { haptics.medium(); setIsShareOpen(true); }}
+                        className="w-12 h-12 rounded-full flex items-center justify-center bg-day-card-bg/50 dark:bg-night-card-bg/50 border border-day-border dark:border-night-border hover:bg-day-accent/10 dark:hover:bg-night-accent/10 transition-colors"
+                        aria-label="Share analytics"
+                        title="Share your analytics"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-day-accent dark:text-night-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                        </svg>
+                    </button>
+                </div>
             </div>
 
             {/* Tab Header */}

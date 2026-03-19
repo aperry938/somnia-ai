@@ -73,9 +73,73 @@ export default defineConfig(() => {
             if (id.includes('node_modules/@capacitor') || id.includes('node_modules/@capacitor-community')) {
               return 'vendor-capacitor-plugins';
             }
-            // Insights components (99+ components, only used on InsightsPage)
+            // Insights tab-based sub-chunks (lazy loaded per tab in InsightsGrid)
+            if (id.includes('/components/insights/tabs/QuickStatsTab') ||
+                id.includes('/components/insights/RecentDreamSummary') ||
+                id.includes('/components/insights/AvgSleepQuality') ||
+                id.includes('/components/insights/DreamGrowth') ||
+                id.includes('/components/insights/AchievementsUnlocked') ||
+                id.includes('/components/insights/TopTags') ||
+                id.includes('/components/insights/DreamConsistency') ||
+                id.includes('/components/insights/LongestShortestDream') ||
+                id.includes('/components/insights/FirstDreamLastDream') ||
+                id.includes('/components/insights/SleepQualityVsDreams') ||
+                id.includes('/components/insights/TelemetryScatterPlot')) {
+              return 'insights-quick';
+            }
+            if (id.includes('/components/insights/tabs/ContentTab') ||
+                id.includes('/components/insights/AnimalDreams') ||
+                id.includes('/components/insights/VehicleDreams') ||
+                id.includes('/components/insights/FoodDreams') ||
+                id.includes('/components/insights/MusicDreams') ||
+                id.includes('/components/insights/DreamColorAnalysis')) {
+              return 'insights-content';
+            }
+            if (id.includes('/components/insights/tabs/EmotionsTab') ||
+                id.includes('/components/insights/MoodTracker') ||
+                id.includes('/components/insights/JoyDreams') ||
+                id.includes('/components/insights/FearDreams') ||
+                id.includes('/components/insights/AngerDreams') ||
+                id.includes('/components/insights/SadnessDreams') ||
+                id.includes('/components/insights/AnxietyDreams') ||
+                id.includes('/components/insights/HopeDreams') ||
+                id.includes('/components/insights/PeacefulDreams') ||
+                id.includes('/components/insights/ConfusionDreams') ||
+                id.includes('/components/insights/SuccessDreams') ||
+                id.includes('/components/insights/ConflictDreams') ||
+                id.includes('/components/insights/RomanticDreams')) {
+              return 'insights-emotions';
+            }
+            if (id.includes('/components/insights/tabs/TemporalTab') ||
+                id.includes('/components/insights/MoonPhaseInsight') ||
+                id.includes('/components/insights/SeasonalPattern') ||
+                id.includes('/components/insights/DayOfWeekAnalysis') ||
+                id.includes('/components/insights/WeekdayVsWeekend') ||
+                id.includes('/components/insights/JournalingGaps') ||
+                id.includes('/components/insights/DreamLengthTrend')) {
+              return 'insights-temporal';
+            }
+            if (id.includes('/components/insights/tabs/ThemesTab') ||
+                id.includes('/components/insights/AdventureDreams') ||
+                id.includes('/components/insights/MysteryDreams') ||
+                id.includes('/components/insights/NatureDreams') ||
+                id.includes('/components/insights/TechnologyDreams') ||
+                id.includes('/components/insights/WorkDreams') ||
+                id.includes('/components/insights/SchoolDreams') ||
+                id.includes('/components/insights/PowerDreams') ||
+                id.includes('/components/insights/TransformationDreams') ||
+                id.includes('/components/insights/SpiritualDreams') ||
+                id.includes('/components/insights/CreativityDreams') ||
+                id.includes('/components/insights/MoneyDreams') ||
+                id.includes('/components/insights/HealthDreams') ||
+                id.includes('/components/insights/ChildhoodDreams') ||
+                id.includes('/components/insights/DeathDreams') ||
+                id.includes('/components/insights/TimeTravelDreams')) {
+              return 'insights-themes';
+            }
+            // Remaining insight components (People, Settings tabs, shared components)
             if (id.includes('/components/insights/')) {
-              return 'insights';
+              return 'insights-shared';
             }
             // Heavy modals - lazy loaded, group together for better caching
             if (id.includes('/components/modals/DreamChatModal') ||
