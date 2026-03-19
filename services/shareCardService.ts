@@ -1,5 +1,6 @@
 import { Dream, DreamMood } from '../types';
 import { MOOD_LABELS } from '../constants/uiIcons';
+import { shareNative } from './nativeShareService';
 import { logger } from './logger';
 
 export type ShareCardFormat = 'square' | 'vertical';
@@ -282,24 +283,16 @@ export function downloadShareCard(dataUrl: string, filename: string): void {
     link.click();
 }
 
-// Native share if available
+// Native share using Capacitor on mobile, Web Share API / download fallback on web
 export async function shareCard(dataUrl: string, title: string): Promise<boolean> {
     try {
-        // Convert data URL to blob
-        const response = await fetch(dataUrl);
-        const blob = await response.blob();
-        const file = new File([blob], `${title}.png`, { type: 'image/png' });
-
-        if (navigator.share && navigator.canShare?.({ files: [file] })) {
-            await navigator.share({
-                title: 'My Dream from Somnia',
-                text: title,
-                files: [file]
-            });
-            return true;
-        }
+        return await shareNative({
+            title: 'My Dream from Somnia',
+            text: title,
+            dataUrl,
+        });
     } catch (error) {
         logger.error('Share failed:', error);
+        return false;
     }
-    return false;
 }

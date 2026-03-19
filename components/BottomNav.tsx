@@ -4,6 +4,7 @@ import { Page } from '../types';
 import { useAppContext } from '../contexts/AppContext';
 import { isPremium } from '../services/secureSubscriptionService';
 import { useTheme } from '../hooks/useTheme';
+import { useTranslation } from '../contexts/I18nContext';
 import haptics from '../services/hapticsService';
 
 interface BottomNavProps {
@@ -39,6 +40,7 @@ const InsightsIcon = React.memo(() => (
 const BottomNavComponent: React.FC<BottomNavProps> = ({ currentPage, setCurrentPage }) => {
     const { getUnreadDreamCount, markDreamsAsSeen } = useAppContext();
     const { theme } = useTheme();
+    const { t } = useTranslation();
     const unreadCount = getUnreadDreamCount();
     const userIsPremium = isPremium();
 
@@ -54,11 +56,11 @@ const BottomNavComponent: React.FC<BottomNavProps> = ({ currentPage, setCurrentP
 
     // Memoize navItems to prevent recreation on each render
     const navItems = useMemo(() => [
-        { page: 'alarms' as Page, label: 'Alarms', icon: <AlarmsIcon /> },
-        { page: 'sleep' as Page, label: 'Sleep', icon: <SleepIcon /> },
-        { page: 'chronicle' as Page, label: 'Chronicle', icon: <ChronicleIcon />, badge: unreadCount > 0 ? unreadCount : undefined },
-        { page: 'insights' as Page, label: 'Insights', icon: <InsightsIcon />, isPro: !userIsPremium },
-    ], [unreadCount, userIsPremium]);
+        { page: 'alarms' as Page, label: t('nav.alarms'), icon: <AlarmsIcon /> },
+        { page: 'sleep' as Page, label: t('nav.sleep'), icon: <SleepIcon /> },
+        { page: 'chronicle' as Page, label: t('nav.chronicle'), icon: <ChronicleIcon />, badge: unreadCount > 0 ? unreadCount : undefined },
+        { page: 'insights' as Page, label: t('nav.insights'), icon: <InsightsIcon />, isPro: !userIsPremium },
+    ], [unreadCount, userIsPremium, t]);
 
     // Theme-specific styling - Sleep mode uses warm amber/orange tones (no blue light)
     const themeStyles = {

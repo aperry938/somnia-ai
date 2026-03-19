@@ -15,6 +15,7 @@
 
 import { DreamAnalysis } from '../types';
 import { logger } from './logger';
+import { supabase } from './authService';
 
 /**
  * Words that, when following a crisis phrase, indicate it's NOT a real crisis.
@@ -25,6 +26,8 @@ import { logger } from './logger';
  * - "hurt myself laughing" → "laughing" indicates it's about humor
  * - "end my life savings" → "savings" indicates it's about money
  * - "kill myself character" → "character" indicates gaming/fiction
+ * - "burden to everyone who helped" → might be metaphorical gratitude
+ * - "trapped with no escape route in the maze" → might be describing a dream scenario
  */
 const CONTEXT_NEGATORS = [
     // Actions that follow (indicates cutting/hurting something else)
@@ -35,6 +38,9 @@ const CONTEXT_NEGATORS = [
     'savings', 'insurance', 'policy', 'character', 'avatar',
     // Gaming/fiction context
     'in the game', 'in game', 'my character', 'the character',
+    // Metaphorical follow-ups
+    'who helped', 'who supported', 'who was there',
+    'route in the maze', 'route in the level', 'route in the dungeon',
 ];
 
 /**
@@ -83,15 +89,10 @@ function matchesCrisisPhrase(text: string, phrase: string): boolean {
 }
 
 /**
- * Crisis keywords that trigger immediate intervention.
- * These are checked against normalized (lowercase) dream text.
- *
- * Categories:
- * - Direct self-harm language
- * - Suicidal ideation phrases
- * - Severe distress indicators
+ * Critical crisis keywords — direct danger indicators.
+ * These represent the highest severity: explicit plans or methods.
  */
-export const CRISIS_KEYWORDS = [
+export const CRITICAL_KEYWORDS = [
     // Direct self-harm
     'kill myself',
     'killing myself',
@@ -100,9 +101,40 @@ export const CRISIS_KEYWORDS = [
     'take my own life',
     'taking my own life',
 
-    // Suicidal ideation
+    // Suicidal ideation — direct
     'suicide',
     'suicidal',
+
+    // Specific methods
+    'overdose',
+    'od on',
+    'jump off',
+    'jump from',
+    'hang myself',
+    'hanging myself',
+    'shoot myself',
+    'shooting myself',
+    'slit my wrists',
+    'slit my throat',
+    'pills to end',
+    'pills to die',
+    'drown myself',
+
+    // Imminent intent
+    'tonight is the night',
+    'this is goodbye',
+    'final goodbye',
+    'my last night',
+    'don\'t want to wake up',
+    'no point waking up',
+] as const;
+
+/**
+ * High crisis keywords — strong indicators of suicidal ideation or self-harm.
+ * Not as immediately dangerous as critical, but warrant full crisis response.
+ */
+export const HIGH_KEYWORDS = [
+    // Suicidal ideation — indirect
     'want to die',
     'wanna die',
     'wish i was dead',
@@ -122,11 +154,36 @@ export const CRISIS_KEYWORDS = [
     'self harm',
     'cut myself',
     'cutting myself',
+
+    // Planning indicators
+    'i have a plan',
+    'writing my note',
+    'writing a note',
+    'saying goodbye to everyone',
+    'given everything away',
+    'giving everything away',
+    'no one will miss me',
+    'burden to everyone',
+    'burden to my',
+    'everyone better off without me',
+    'world better without me',
+    'made my decision',
+    'decided to end',
+] as const;
+
+/**
+ * Combined primary keywords for backward compatibility.
+ * Includes both critical and high severity keywords.
+ */
+export const CRISIS_KEYWORDS = [
+    ...CRITICAL_KEYWORDS,
+    ...HIGH_KEYWORDS,
 ] as const;
 
 /**
  * Context phrases that may indicate crisis in combination with other words.
  * Used for secondary analysis when primary keywords aren't found.
+ * These are medium-severity — concerning but less explicit.
  */
 export const CRISIS_CONTEXT_PHRASES = [
     'can\'t go on',
@@ -136,6 +193,22 @@ export const CRISIS_CONTEXT_PHRASES = [
     'escape from everything',
     'permanent solution',
     'final escape',
+
+    // Watch indicators — distress patterns
+    'what\'s the point',
+    'what is the point',
+    'trapped with no escape',
+    'can\'t see a future',
+    'cannot see a future',
+    'drowning in pain',
+    'nothing left for me',
+    'invisible to everyone',
+    'completely alone',
+    'nobody cares',
+    'tired of living',
+    'tired of existing',
+    'empty inside',
+    'darkness consuming',
 ] as const;
 
 /**
@@ -172,6 +245,48 @@ export const CRISIS_RESOURCES = {
         instruction: 'Call 1-833-456-4566',
         available: '24/7',
     },
+    au: {
+        name: 'Lifeline Australia',
+        number: '13 11 14',
+        instruction: 'Call 13 11 14',
+        available: '24/7',
+    },
+    nz: {
+        name: 'Need to Talk?',
+        number: '1737',
+        instruction: 'Call or text 1737',
+        available: '24/7, free',
+    },
+    ie: {
+        name: 'Samaritans Ireland',
+        number: '116 123',
+        instruction: 'Call 116 123',
+        available: '24/7, free',
+    },
+    india: {
+        name: 'iCall',
+        number: '9152987821',
+        instruction: 'Call 9152987821',
+        available: 'Mon-Sat 8am-10pm IST',
+    },
+    de: {
+        name: 'Telefonseelsorge',
+        number: '0800 111 0 111',
+        instruction: 'Call 0800 111 0 111',
+        available: '24/7, free',
+    },
+    fr: {
+        name: 'SOS Amitié',
+        number: '09 72 39 40 50',
+        instruction: 'Call 09 72 39 40 50',
+        available: '24/7',
+    },
+    jp: {
+        name: 'TELL Lifeline',
+        number: '03-5774-0992',
+        instruction: 'Call 03-5774-0992',
+        available: '24/7',
+    },
 } as const;
 
 export type CrisisResource = typeof CRISIS_RESOURCES[keyof typeof CRISIS_RESOURCES];
@@ -184,6 +299,8 @@ export interface CrisisDetectionResult {
     detected: boolean;
     /** Confidence level if detected */
     confidence: 'high' | 'medium' | 'low' | null;
+    /** Severity level: critical (direct danger), high (strong indicators), medium (watch indicators) */
+    severity: 'critical' | 'high' | 'medium' | null;
     /** Which keywords/phrases triggered detection */
     triggers: string[];
 }
@@ -220,16 +337,17 @@ export const CRISIS_RESPONSE: DreamAnalysis = {
 /**
  * Detects crisis indicators in dream text.
  *
- * This function performs a multi-pass analysis:
- * 1. Primary check: Direct keyword matching at word boundaries (high confidence)
- * 2. Secondary check: Context phrase analysis at word boundaries (medium confidence)
+ * This function performs a multi-pass analysis with severity levels:
+ * 1. Critical check: Direct danger keywords (critical severity)
+ * 2. High check: Strong indicator keywords (high severity, or 2+ primary matches)
+ * 3. Medium check: Context phrase analysis (medium severity)
  *
  * Uses word boundary matching to prevent false positives like:
  * - "cutting myself a piece of cake" (not a crisis)
  * - "the villain wanted to kill myself character" (not a crisis)
  *
  * @param dreamText - The dream text to analyze
- * @returns CrisisDetectionResult with detection status and triggers
+ * @returns CrisisDetectionResult with detection status, severity, and triggers
  */
 export function detectCrisis(dreamText: string): CrisisDetectionResult {
     // Input validation - handle edge cases gracefully
@@ -237,6 +355,7 @@ export function detectCrisis(dreamText: string): CrisisDetectionResult {
         return {
             detected: false,
             confidence: null,
+            severity: null,
             triggers: [],
         };
     }
@@ -253,47 +372,70 @@ export function detectCrisis(dreamText: string): CrisisDetectionResult {
             return {
                 detected: false,
                 confidence: null,
+                severity: null,
                 triggers: [],
             };
         }
 
-        const triggers: string[] = [];
+        const criticalTriggers: string[] = [];
+        const highTriggers: string[] = [];
+        const mediumTriggers: string[] = [];
 
-        // Primary check: Direct keyword matching with context analysis
-        for (const keyword of CRISIS_KEYWORDS) {
+        // Pass 1: Critical keywords — direct danger
+        for (const keyword of CRITICAL_KEYWORDS) {
             if (matchesCrisisPhrase(normalized, keyword)) {
-                triggers.push(keyword);
+                criticalTriggers.push(keyword);
             }
         }
 
-        if (triggers.length > 0) {
-            logger.warn('[CrisisDetection] Primary triggers found:', triggers.length);
+        // Pass 2: High keywords — strong indicators
+        for (const keyword of HIGH_KEYWORDS) {
+            if (matchesCrisisPhrase(normalized, keyword)) {
+                highTriggers.push(keyword);
+            }
+        }
+
+        // If any critical or high triggers found, return immediately
+        const primaryTriggers = [...criticalTriggers, ...highTriggers];
+        if (primaryTriggers.length > 0) {
+            // Severity: critical if any critical keyword matched, else high
+            const severity = criticalTriggers.length > 0 ? 'critical' as const : 'high' as const;
+
+            logger.warn('[CrisisDetection] Primary triggers found:', {
+                severity,
+                critical: criticalTriggers.length,
+                high: highTriggers.length,
+            });
+
             return {
                 detected: true,
-                confidence: triggers.length > 1 ? 'high' : 'medium',
-                triggers,
+                confidence: primaryTriggers.length > 1 ? 'high' : 'medium',
+                severity,
+                triggers: primaryTriggers,
             };
         }
 
-        // Secondary check: Context phrases with context analysis
+        // Pass 3: Context phrases — medium severity (watch indicators)
         for (const phrase of CRISIS_CONTEXT_PHRASES) {
             if (matchesCrisisPhrase(normalized, phrase)) {
-                triggers.push(phrase);
+                mediumTriggers.push(phrase);
             }
         }
 
-        if (triggers.length > 0) {
-            logger.warn('[CrisisDetection] Secondary triggers found:', triggers.length);
+        if (mediumTriggers.length > 0) {
+            logger.warn('[CrisisDetection] Secondary triggers found:', mediumTriggers.length);
             return {
                 detected: true,
                 confidence: 'low',
-                triggers,
+                severity: 'medium',
+                triggers: mediumTriggers,
             };
         }
 
         return {
             detected: false,
             confidence: null,
+            severity: null,
             triggers: [],
         };
     } catch (error) {
@@ -303,6 +445,7 @@ export function detectCrisis(dreamText: string): CrisisDetectionResult {
         return {
             detected: false,
             confidence: null,
+            severity: null,
             triggers: [],
         };
     }
@@ -317,21 +460,52 @@ export function hasCrisisIndicators(dreamText: string): boolean {
 }
 
 /**
+ * Locale-to-resource key mapping.
+ * Maps navigator.language prefixes to CRISIS_RESOURCES keys.
+ */
+const LOCALE_RESOURCE_MAP: Record<string, keyof typeof CRISIS_RESOURCES> = {
+    'en-AU': 'au',
+    'en-NZ': 'nz',
+    'en-IE': 'ie',
+    'en-IN': 'india',
+    'hi': 'india',
+    'de': 'de',
+    'fr': 'fr',
+    'ja': 'jp',
+    'en-GB': 'uk',
+    'en-CA': 'canada',
+};
+
+/**
  * Get appropriate crisis resources based on detected locale.
- * Falls back to US resources if locale cannot be determined.
+ * Prioritizes local resources, then US, then international.
+ *
+ * Resolution order:
+ * 1. Exact locale match (e.g., "en-AU" → Australia)
+ * 2. Language prefix match (e.g., "de-AT" → Germany/German resources)
+ * 3. Falls back to US resources if no locale match
  */
 export function getCrisisResources(locale?: string): CrisisResource[] {
-    const resources: CrisisResource[] = [
-        CRISIS_RESOURCES.us,
-        CRISIS_RESOURCES.us_text,
-    ];
+    const resources: CrisisResource[] = [];
 
-    if (locale?.startsWith('en-GB')) {
-        resources.unshift(CRISIS_RESOURCES.uk);
-    } else if (locale?.startsWith('en-CA')) {
-        resources.unshift(CRISIS_RESOURCES.canada);
+    if (locale) {
+        // Try exact locale match first, then language prefix
+        const exactKey = LOCALE_RESOURCE_MAP[locale];
+        const langPrefix = locale.split('-')[0];
+        const prefixKey = langPrefix ? LOCALE_RESOURCE_MAP[langPrefix] : undefined;
+        const matchedKey = exactKey ?? prefixKey;
+
+        if (matchedKey) {
+            const resource = CRISIS_RESOURCES[matchedKey];
+            resources.push(resource);
+        }
     }
 
+    // Always include US resources
+    resources.push(CRISIS_RESOURCES.us);
+    resources.push(CRISIS_RESOURCES.us_text);
+
+    // Always include international as last resort
     resources.push(CRISIS_RESOURCES.international);
 
     return resources;
@@ -339,6 +513,7 @@ export function getCrisisResources(locale?: string): CrisisResource[] {
 
 /**
  * Format crisis resources for display in the app.
+ * Includes all regional resources.
  */
 export function formatCrisisResourcesForDisplay(): string {
     return `
@@ -348,9 +523,42 @@ If you're in crisis, please reach out:
 📱 Text HOME to 741741 (Crisis Text Line)
 🇬🇧 UK: Call 116 123 (Samaritans)
 🇨🇦 Canada: Call 1-833-456-4566
+🇦🇺 Australia: Call 13 11 14 (Lifeline)
+🇳🇿 New Zealand: Call or text 1737
+🇮🇪 Ireland: Call 116 123 (Samaritans)
+🇮🇳 India: Call 9152987821 (iCall)
+🇩🇪 Germany: Call 0800 111 0 111 (Telefonseelsorge)
+🇫🇷 France: Call 09 72 39 40 50 (SOS Amitié)
+🇯🇵 Japan: Call 03-5774-0992 (TELL Lifeline)
 
 🌍 International: iasp.info/resources/Crisis_Centres
 
 You are not alone. Help is available 24/7.
     `.trim();
+}
+
+/**
+ * Log crisis detection event to Supabase for safety monitoring.
+ * Fire-and-forget — never blocks the crisis response flow.
+ * Logs severity and trigger count only — NO dream text is stored.
+ */
+export async function logCrisisDetection(result: CrisisDetectionResult): Promise<void> {
+    try {
+        // Only log if Supabase is available and user is authenticated
+        if (!supabase) return;
+
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user?.id) return;
+
+        await supabase.from('crisis_detection_logs').insert({
+            user_id: session.user.id,
+            severity: result.severity,
+            trigger_count: result.triggers.length,
+            confidence: result.confidence,
+            detected_at: new Date().toISOString(),
+        });
+    } catch (error) {
+        // Fire-and-forget: never let logging failures affect the crisis response
+        logger.error('[CrisisDetection] Failed to log detection event:', error);
+    }
 }

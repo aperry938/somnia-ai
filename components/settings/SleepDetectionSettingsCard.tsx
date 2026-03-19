@@ -69,14 +69,14 @@ export const SleepDetectionSettingsCard: React.FC = () => {
                 if (Capacitor.isNativePlatform()) {
                     const granted = await requestSleepDetectionPermissions();
                     if (!granted) {
-                        showToast('Please enable notifications in Settings for Sleep Detection to work');
+                        showToast('Please enable notifications in Settings for Dream Reminder to work');
                         setIsScheduling(false);
                         return;
                     }
 
                     // Schedule the notification
                     await scheduleSleepDetectionNotification(settings.inactivityHours, settings.soundId);
-                    showToast('Sleep Detection enabled - we\'ll wake you after inactivity');
+                    showToast('Dream Reminder enabled - we\'ll remind you to record dreams after inactivity');
                 }
 
                 updateSettings({ enabled: true });
@@ -87,11 +87,11 @@ export const SleepDetectionSettingsCard: React.FC = () => {
                 }
 
                 updateSettings({ enabled: false });
-                showToast('Sleep Detection disabled');
+                showToast('Dream Reminder disabled');
             }
         } catch (error) {
             logger.error('[SleepDetection] Toggle error:', error);
-            showToast('Failed to update Sleep Detection');
+            showToast('Failed to update Dream Reminder');
         } finally {
             setIsScheduling(false);
         }
@@ -102,9 +102,9 @@ export const SleepDetectionSettingsCard: React.FC = () => {
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                     <div>
-                        <h3 className="font-serif text-lg">Sleep Detection</h3>
+                        <h3 className="font-serif text-lg">Dream Reminder</h3>
                         <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">
-                            Auto wake-up after detected sleep
+                            Remind me to record dreams after inactivity
                         </p>
                     </div>
                     {!userIsPremium && (
@@ -121,7 +121,7 @@ export const SleepDetectionSettingsCard: React.FC = () => {
                     onClick={() => userIsPremium && !isScheduling && handleToggle(!settings.enabled)}
                     role="switch"
                     aria-checked={userIsPremium && settings.enabled}
-                    aria-label="Enable sleep detection"
+                    aria-label="Enable dream reminder"
                     tabIndex={0}
                     onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && userIsPremium && !isScheduling) { e.preventDefault(); handleToggle(!settings.enabled); } }}
                 >

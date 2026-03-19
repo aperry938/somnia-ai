@@ -845,7 +845,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                             </div>
                         )}
 
-                        {/* Sleep Detection Settings */}
+                        {/* Dream Reminder Settings */}
                         <SleepDetectionSettingsCard />
 
                         {/* Lock Screen Widget Setup */}

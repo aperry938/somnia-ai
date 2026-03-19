@@ -22,7 +22,7 @@ export const TermsPage: React.FC<TermsPageProps> = ({ onBack }) => {
 
             <div className="prose dark:prose-invert max-w-none space-y-6 text-day-text-secondary dark:text-night-text-secondary">
                 <p className="text-lg">
-                    <strong>Last updated:</strong> January 9, 2026
+                    <strong>Last updated:</strong> March 19, 2026
                 </p>
 
                 <section>
@@ -73,13 +73,32 @@ export const TermsPage: React.FC<TermsPageProps> = ({ onBack }) => {
                     </ul>
                 </section>
 
+                <section className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                    <h2 className="font-serif text-2xl text-amber-800 dark:text-amber-200 mb-3">Audio & Health Safety</h2>
+                    <p className="mb-3">
+                        Somnia includes soundscapes and binaural beat audio features designed for relaxation.
+                        These are <strong>not medical devices</strong> and are not intended to diagnose, treat,
+                        cure, or prevent any condition.
+                    </p>
+                    <ul className="list-disc pl-6 space-y-1 text-sm">
+                        <li>Binaural beats require stereo headphones to produce their intended effect</li>
+                        <li>Binaural beats are <strong>not recommended</strong> for individuals with epilepsy, seizure disorders, or those who use a pacemaker</li>
+                        <li>Do not listen at high volumes for extended periods; keep volume at a comfortable level</li>
+                        <li>Do not use sleep sounds or binaural beats while driving or operating machinery</li>
+                        <li>Audio quality and experience may vary across devices; headphones are recommended</li>
+                        <li>If you experience discomfort, dizziness, or any adverse reaction, stop listening immediately and consult a healthcare provider</li>
+                    </ul>
+                </section>
+
                 <section>
                     <h2 className="font-serif text-2xl text-day-text-primary dark:text-night-text-primary mb-3">Subscriptions & Payments</h2>
-                    <p>Premium subscriptions are billed through your app store. Key points:</p>
+                    <p>Premium subscriptions are billed through the Apple App Store or Google Play Store. Key points:</p>
                     <ul className="list-disc pl-6 mt-2 space-y-1">
-                        <li>Subscriptions auto-renew unless cancelled before the renewal date</li>
-                        <li>Cancellation stops future billing but doesn't refund the current period</li>
-                        <li>Refunds are handled by your app store according to their policies</li>
+                        <li>Payment is charged to your App Store or Google Play account at confirmation of purchase</li>
+                        <li>Subscriptions automatically renew unless cancelled at least 24 hours before the end of the current billing period</li>
+                        <li>You can manage or cancel your subscription anytime in your device's subscription settings</li>
+                        <li>Cancellation stops future billing but does not refund the current period</li>
+                        <li>Refunds are handled by Apple or Google according to their respective refund policies</li>
                         <li>Free features are available to evaluate the service before purchase</li>
                     </ul>
                 </section>

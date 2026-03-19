@@ -432,12 +432,20 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
                         {isRestoring ? 'Restoring...' : 'Restore Purchases'}
                     </button>
 
+                    {/* Subscription Disclosure (Apple 3.1.2) */}
+                    <p className="text-xs text-center text-day-text-secondary dark:text-night-text-secondary mt-4 leading-relaxed">
+                        Payment will be charged to your App Store or Google Play account at confirmation of purchase.
+                        Subscription automatically renews unless cancelled at least 24 hours before the end of the current period.
+                        You can manage or cancel your subscription anytime in your device's subscription settings.
+                        Refunds are handled by Apple or Google according to their respective refund policies.
+                    </p>
+
                     {/* Security Badge */}
                     <div className="flex items-center justify-center gap-2 mt-3 text-xs text-day-text-secondary dark:text-night-text-secondary">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                         </svg>
-                        Secure payment via App Store • Cancel anytime
+                        Secure payment • Cancel anytime
                     </div>
                 </div>
             </div>

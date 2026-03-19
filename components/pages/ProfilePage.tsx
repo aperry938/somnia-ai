@@ -6,12 +6,13 @@ import { Biometrics, Page } from '../../types';
 import { useToast } from '../shared/Toast';
 import { calculateUserStats } from '../../services/userStatsService';
 import { useClock } from '../../hooks/useClock';
-import { isPremium, openSubscriptionManagement, isDevMode } from '../../services/secureSubscriptionService';
+import { isPremium, openSubscriptionManagement, isDevMode, isSuperuser } from '../../services/secureSubscriptionService';
 import { SecurePaywallModal } from '../modals/SecurePaywallModal';
 import { LevelGuideModal } from '../modals/LevelGuideModal';
 import { getLevelTitle } from '../../constants/gamification';
+import { getNotificationPreferences, updateNotificationPreferences, NotificationPreferences } from '../../services/notificationPreferencesService';
 
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.3.0';
 const ADMIN_TAP_COUNT = 7; // Taps required to unlock admin access
 
 // Profile Info Card - expanded biometrics
@@ -373,8 +374,29 @@ const ThemePreferenceCard: React.FC = () => {
 };
 
 
+// Language Card
+const LanguageCard: React.FC = () => {
+    return (
+        <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">
+            <h2 className="font-serif text-xl mb-2">Language</h2>
+            <div className="flex items-center justify-between">
+                <div>
+                    <p className="font-medium">English</p>
+                    <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">More languages coming soon</p>
+                </div>
+                <div className="text-day-text-secondary dark:text-night-text-secondary">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // Notifications Card
 const NotificationsCard: React.FC = () => {
+    const { isAuthenticated } = useAuth();
     const [settings, setSettings] = useState(() => {
         const defaultSettings = {
             dreamReminder: true,
@@ -391,10 +413,36 @@ const NotificationsCard: React.FC = () => {
         }
     });
 
+    // Email notification preferences (Supabase-backed, authenticated users only)
+    const [emailPrefs, setEmailPrefs] = useState<NotificationPreferences>({
+        emailWeeklyDigest: false,
+        emailStreakBreak: false,
+        emailAchievements: false,
+    });
+    const [emailPrefsLoaded, setEmailPrefsLoaded] = useState(false);
+
+    useEffect(() => {
+        if (!isAuthenticated) return;
+        let cancelled = false;
+        getNotificationPreferences().then(prefs => {
+            if (!cancelled) {
+                setEmailPrefs(prefs);
+                setEmailPrefsLoaded(true);
+            }
+        });
+        return () => { cancelled = true; };
+    }, [isAuthenticated]);
+
     const updateSetting = (key: string, value: boolean) => {
         const newSettings = { ...settings, [key]: value };
         setSettings(newSettings);
         localStorage.setItem('somnia_notification_settings', JSON.stringify(newSettings));
+    };
+
+    const updateEmailPref = (key: keyof NotificationPreferences, value: boolean) => {
+        const updated = { ...emailPrefs, [key]: value };
+        setEmailPrefs(updated);
+        updateNotificationPreferences({ [key]: value });
     };
 
     const toggleItems = [
@@ -402,6 +450,11 @@ const NotificationsCard: React.FC = () => {
         { key: 'sleepReminder', label: 'Sleep Reminder', desc: 'Bedtime notification' },
         { key: 'weeklyDigest', label: 'Weekly Digest', desc: 'Summary of your week' },
         { key: 'achievements', label: 'Achievements', desc: 'Level ups and milestones' },
+    ];
+
+    const emailToggleItems: { key: keyof NotificationPreferences; label: string; desc: string }[] = [
+        { key: 'emailWeeklyDigest', label: 'Weekly Dream Digest', desc: 'Email summary of your week' },
+        { key: 'emailStreakBreak', label: 'Streak Break Alert', desc: 'Email when your streak is at risk' },
     ];
 
     return (
@@ -432,6 +485,43 @@ const NotificationsCard: React.FC = () => {
                     </div>
                 ))}
             </div>
+
+            {/* Email Notifications — authenticated users only */}
+            {isAuthenticated && emailPrefsLoaded && (
+                <div className="mt-5 pt-4 border-t border-day-border dark:border-night-border">
+                    <div className="flex items-center gap-2 mb-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-day-text-secondary dark:text-night-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        <p className="text-sm font-medium text-day-text-secondary dark:text-night-text-secondary">Email Notifications</p>
+                    </div>
+                    <div className="space-y-3">
+                        {emailToggleItems.map(item => (
+                            <div key={item.key} className="flex items-center justify-between">
+                                <div>
+                                    <p className="font-medium text-sm">{item.label}</p>
+                                    <p className="text-sm text-day-text-secondary dark:text-night-text-secondary">{item.desc}</p>
+                                </div>
+                                <button
+                                    onClick={() => updateEmailPref(item.key, !emailPrefs[item.key])}
+                                    role="switch"
+                                    aria-checked={emailPrefs[item.key]}
+                                    aria-label={`Toggle ${item.label}`}
+                                    className="relative flex items-center justify-center min-h-[44px] min-w-[48px]"
+                                >
+                                    <span className={`relative w-12 h-7 rounded-full transition-colors duration-200 ${emailPrefs[item.key]
+                                        ? 'bg-day-accent dark:bg-night-accent'
+                                        : 'bg-gray-300 dark:bg-gray-600'
+                                        }`}>
+                                        <span className={`absolute top-1 left-1 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-200 ${emailPrefs[item.key] ? 'translate-x-5' : 'translate-x-0'
+                                            }`} />
+                                    </span>
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -787,6 +877,8 @@ export const ProfilePage: React.FC<{ onBack?: () => void; onNavigateTo?: (page: 
     const [versionTapCount, setVersionTapCount] = useState(0);
     const [showLevelModal, setShowLevelModal] = useState(false);
     const [adminUnlocked, setAdminUnlocked] = useState(() => {
+        if (isSuperuser()) return true;
+        if (!import.meta.env.DEV) return false;
         return localStorage.getItem('somnia_admin_unlocked') === 'true' || isDevMode();
     });
     const tapTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -801,6 +893,9 @@ export const ProfilePage: React.FC<{ onBack?: () => void; onNavigateTo?: (page: 
     }, []);
 
     const handleVersionTap = () => {
+        // Only allow admin unlock in dev builds
+        if (!import.meta.env.DEV) return;
+
         // Clear previous timeout
         if (tapTimeoutRef.current) {
             clearTimeout(tapTimeoutRef.current);
@@ -887,11 +982,39 @@ export const ProfilePage: React.FC<{ onBack?: () => void; onNavigateTo?: (page: 
                 <ProfileInfoCard />
                 <MembershipCard onNavigateToTerms={onNavigateTo ? () => onNavigateTo('terms') : undefined} />
                 <ThemePreferenceCard />
+                <LanguageCard />
                 <NotificationsCard />
                 <SyncWearableCard />
                 <DataManagementCard />
                 <AccountManagementCard />
                 <LegalCard onNavigateTo={onNavigateTo} />
+
+                {/* Support & Contact */}
+                <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl">
+                    <h2 className="font-serif text-xl mb-4">Support</h2>
+                    <div className="space-y-3">
+                        <a
+                            href="mailto:support@meridianlabs.us"
+                            className="w-full py-3 min-h-[48px] border border-day-border dark:border-night-border rounded-lg text-day-text-secondary dark:text-night-text-secondary font-medium flex items-center justify-center gap-2 hover:bg-white/10 dark:hover:bg-black/10 transition-colors"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                            Contact Support
+                        </a>
+                        <a
+                            href="https://meridianlabs.us"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full py-3 min-h-[48px] border border-day-border dark:border-night-border rounded-lg text-day-text-secondary dark:text-night-text-secondary font-medium flex items-center justify-center gap-2 hover:bg-white/10 dark:hover:bg-black/10 transition-colors"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                            </svg>
+                            meridianlabs.us
+                        </a>
+                    </div>
+                </div>
 
                 {/* Admin Access Card - visible once unlocked */}
                 {adminUnlocked && (

@@ -265,3 +265,115 @@ export const stopRateLimitCleanup = (): void => {
 if (typeof window !== 'undefined') {
     startRateLimitCleanup();
 }
+
+// ============================================================================
+// SERVER-SIDE RATE LIMITING & API COST TRACKING
+// ============================================================================
+
+/** Estimated cost per 1K tokens by model (USD) */
+export const MODEL_COSTS: Record<string, { input: number; output: number }> = {
+    'gemini-2.5-flash': { input: 0.00015, output: 0.0006 },
+    'gemini-2.5-pro': { input: 0.00125, output: 0.005 },
+    'text-embedding-004': { input: 0.000025, output: 0 },
+};
+
+/**
+ * Rough token estimation: ~4 characters per token
+ */
+export function estimateTokens(text: string): number {
+    return Math.ceil(text.length / 4);
+}
+
+/**
+ * Estimate cost in USD for a given model and token count
+ */
+export function estimateCost(model: string, inputTokens: number, outputTokens: number): number {
+    const costs = MODEL_COSTS[model] || { input: 0.00015, output: 0.0006 };
+    return (inputTokens / 1000) * costs.input + (outputTokens / 1000) * costs.output;
+}
+
+/**
+ * Get the Supabase URL and auth token for server-side rate limit calls.
+ * Returns null if not configured or user is not authenticated.
+ */
+function getSupabaseConfig(): { url: string; token: string } | null {
+    try {
+        const url = import.meta.env.VITE_SUPABASE_URL;
+        if (!url) return null;
+
+        // Get the current auth token from localStorage (set by authService)
+        const sessionStr = localStorage.getItem('somnia_supabase_session');
+        if (!sessionStr) return null;
+
+        const session = JSON.parse(sessionStr);
+        const token = session?.access_token;
+        if (!token) return null;
+
+        return { url, token };
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Log API usage to Supabase (fire-and-forget).
+ * Non-blocking — failures are silently ignored.
+ */
+export function logApiUsage(
+    category: string,
+    estimatedTokens: number,
+    model: string
+): void {
+    const config = getSupabaseConfig();
+    if (!config) return; // Not authenticated or not configured
+
+    // Fire-and-forget — don't await
+    fetch(`${config.url}/functions/v1/check-rate-limit`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${config.token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            category,
+            estimated_tokens: estimatedTokens,
+            model,
+            action: 'log',
+        }),
+    }).catch(() => {
+        // Silently ignore — this is fire-and-forget
+    });
+}
+
+/**
+ * Check server-side rate limit for authenticated users.
+ * Falls back to allowing the request on any error (fail-open).
+ *
+ * @returns true if allowed, false if rate limited
+ */
+export async function checkServerRateLimit(category: string): Promise<boolean> {
+    const config = getSupabaseConfig();
+    if (!config) return true; // Not authenticated — fall through to client-side check
+
+    try {
+        const response = await fetch(`${config.url}/functions/v1/check-rate-limit`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${config.token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ category, action: 'check' }),
+        });
+
+        if (response.status === 429) {
+            const data = await response.json();
+            logger.warn(`[ServerRateLimit] ${category} exceeded. Reset in ${Math.ceil((data.resetIn || 0) / 1000)}s`);
+            return false;
+        }
+
+        return true; // Allowed or error (fail-open)
+    } catch {
+        // Network error — fail open
+        return true;
+    }
+}

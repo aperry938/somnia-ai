@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { isPremium, isDevMode, setDevMode, isDevPremium, setDevPremium } from '../../services/secureSubscriptionService';
+import { isPremium, isDevMode, setDevMode, isDevPremium, setDevPremium, isSuperuser } from '../../services/secureSubscriptionService';
 import { getSyncQueue, getPendingCount } from '../../services/syncService';
 import { calculateUserStats } from '../../services/userStatsService';
 import { getErrorLogs, clearErrorLogs, exportErrorDebugInfo } from '../../services/errorService';
+import { fetchUsageSummary, type UsageSummary } from '../../services/adminAnalyticsService';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 // Analytics data types
 interface AnalyticsData {
@@ -63,6 +65,24 @@ export const AdminPage: React.FC<{ onBack?: () => void }> = ({ onBack: _onBack }
     const [currentTime, setCurrentTime] = useState(Date.now());
     const [errorLogs, setErrorLogs] = useState(() => getErrorLogs());
     const [showErrorLogs, setShowErrorLogs] = useState(false);
+    const [usageSummary, setUsageSummary] = useState<UsageSummary | null>(null);
+    const [usagePeriod, setUsagePeriod] = useState<'day' | 'week' | 'month'>('month');
+    const [usageLoading, setUsageLoading] = useState(false);
+
+    // Fetch API usage analytics
+    const loadUsageSummary = useCallback(async (period: 'day' | 'week' | 'month') => {
+        setUsageLoading(true);
+        try {
+            const summary = await fetchUsageSummary(period);
+            setUsageSummary(summary);
+        } finally {
+            setUsageLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        loadUsageSummary(usagePeriod);
+    }, [usagePeriod, loadUsageSummary]);
 
     // Update session duration every second
     useEffect(() => {
@@ -183,6 +203,15 @@ export const AdminPage: React.FC<{ onBack?: () => void }> = ({ onBack: _onBack }
         setErrorLogs([]);
     };
 
+    // Security gate: only accessible for superusers or in dev builds
+    if (!isSuperuser() && !import.meta.env.DEV) {
+        return (
+            <div className="max-w-2xl mx-auto pb-8 text-center py-20">
+                <p className="text-day-text-secondary dark:text-night-text-secondary">Access denied.</p>
+            </div>
+        );
+    }
+
     return (
         <div className="max-w-2xl mx-auto pb-8">
             {/* Header */}
@@ -225,6 +254,122 @@ export const AdminPage: React.FC<{ onBack?: () => void }> = ({ onBack: _onBack }
                     <StatCard label="Storage" value={analytics.storageUsed} />
                     <StatCard label="Session" value={formatDuration(analytics.sessionDuration)} />
                 </div>
+            </div>
+
+            {/* API Usage Analytics */}
+            <div className="bg-day-card-bg dark:bg-night-card-bg backdrop-blur-lg border border-day-border dark:border-night-border p-5 rounded-xl mb-4">
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="font-serif text-xl">API Usage Analytics</h2>
+                    <div className="flex gap-1">
+                        {(['day', 'week', 'month'] as const).map((p) => (
+                            <button
+                                key={p}
+                                onClick={() => setUsagePeriod(p)}
+                                aria-pressed={usagePeriod === p}
+                                className={`px-3 py-1.5 min-h-[36px] text-xs font-medium rounded-md transition-colors ${
+                                    usagePeriod === p
+                                        ? 'bg-day-accent dark:bg-night-accent text-white'
+                                        : 'bg-white/50 dark:bg-black/20 text-day-text-secondary dark:text-night-text-secondary hover:bg-white/70 dark:hover:bg-black/30'
+                                }`}
+                            >
+                                {p.charAt(0).toUpperCase() + p.slice(1)}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {usageLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                        <div className="w-6 h-6 border-2 border-day-accent/30 dark:border-night-accent/30 border-t-day-accent dark:border-t-night-accent rounded-full animate-spin" />
+                    </div>
+                ) : usageSummary ? (
+                    <>
+                        <div className="grid grid-cols-3 gap-3 mb-4">
+                            <StatCard label="Requests" value={usageSummary.totalRequests.toLocaleString()} />
+                            <StatCard label="Est. Cost" value={`$${usageSummary.estimatedCostUsd.toFixed(4)}`} />
+                            <StatCard label="Tokens" value={usageSummary.totalTokens.toLocaleString()} />
+                        </div>
+
+                        {usageSummary.stats.length > 0 && (
+                            <>
+                                {/* Pie Chart - Requests by Category */}
+                                <div className="mb-4">
+                                    <p className="text-xs text-day-text-secondary dark:text-night-text-secondary uppercase tracking-wider mb-2">Requests by Category</p>
+                                    <div className="h-48">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <PieChart>
+                                                <Pie
+                                                    data={usageSummary.stats.map(s => ({
+                                                        name: s.category,
+                                                        value: Number(s.request_count),
+                                                    }))}
+                                                    cx="50%"
+                                                    cy="50%"
+                                                    innerRadius={40}
+                                                    outerRadius={70}
+                                                    paddingAngle={2}
+                                                    dataKey="value"
+                                                    label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                                                >
+                                                    {usageSummary.stats.map((s) => {
+                                                        const colors: Record<string, string> = {
+                                                            analysis: '#818cf8',
+                                                            imagery: '#f97316',
+                                                            chat: '#22c55e',
+                                                            synthesis: '#a855f7',
+                                                            embedding: '#06b6d4',
+                                                        };
+                                                        return (
+                                                            <Cell
+                                                                key={s.category}
+                                                                fill={colors[s.category] || '#94a3b8'}
+                                                            />
+                                                        );
+                                                    })}
+                                                </Pie>
+                                                <Tooltip />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+
+                                {/* Stats Table */}
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-xs">
+                                        <thead>
+                                            <tr className="border-b border-day-border dark:border-night-border">
+                                                <th className="text-left py-2 px-1 text-day-text-secondary dark:text-night-text-secondary font-medium">Category</th>
+                                                <th className="text-left py-2 px-1 text-day-text-secondary dark:text-night-text-secondary font-medium">Model</th>
+                                                <th className="text-right py-2 px-1 text-day-text-secondary dark:text-night-text-secondary font-medium">Requests</th>
+                                                <th className="text-right py-2 px-1 text-day-text-secondary dark:text-night-text-secondary font-medium">Tokens</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {usageSummary.stats.map((stat, i) => (
+                                                <tr key={`${stat.category}-${stat.model}-${i}`} className="border-b border-day-border/30 dark:border-night-border/30">
+                                                    <td className="py-2 px-1 font-mono">{stat.category}</td>
+                                                    <td className="py-2 px-1 font-mono text-day-text-secondary dark:text-night-text-secondary">{stat.model || 'default'}</td>
+                                                    <td className="py-2 px-1 text-right">{Number(stat.request_count).toLocaleString()}</td>
+                                                    <td className="py-2 px-1 text-right">{Number(stat.total_tokens).toLocaleString()}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </>
+                        )}
+
+                        {usageSummary.stats.length === 0 && (
+                            <p className="text-sm text-day-text-secondary dark:text-night-text-secondary text-center py-4">
+                                No usage data for this period
+                            </p>
+                        )}
+                    </>
+                ) : (
+                    <p className="text-sm text-day-text-secondary dark:text-night-text-secondary text-center py-4">
+                        Unable to load usage data
+                    </p>
+                )}
             </div>
 
             {/* User Info */}

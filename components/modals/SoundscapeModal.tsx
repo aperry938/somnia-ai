@@ -604,10 +604,17 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                             />
                         </div>
 
-                        {/* Regulatory disclaimer for binaural beats */}
-                        {(sound.type === 'binaural' || sound.type === 'ramp') && (
+                        {/* Health & safety disclaimer */}
+                        {(sound.type === 'binaural' || sound.type === 'ramp') ? (
+                            <div className="mt-3 p-2.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                                <p className="text-xs text-amber-700 dark:text-amber-300 text-center leading-relaxed">
+                                    Headphones required for binaural effects. Not recommended for individuals with epilepsy or seizure disorders.
+                                    Keep volume at a comfortable level. This is not a medical device.
+                                </p>
+                            </div>
+                        ) : (
                             <p className="mt-3 text-xs text-center text-day-text-secondary dark:text-night-text-secondary opacity-70">
-                                Audio frequencies are for relaxation and entertainment only. Not intended to diagnose, treat, or cure any condition.
+                                Keep volume at a comfortable level. Audio quality may vary by device; headphones recommended.
                             </p>
                         )}
 

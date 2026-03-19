@@ -17,6 +17,7 @@
       "./node_modules/@types",
       "./types"
     ],
+    "resolveJsonModule": true,
     "moduleResolution": "bundler",
     "isolatedModules": true,
     "moduleDetection": "force",

@@ -1,7 +1,7 @@
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
 import { ChatMessage, Dream, DreamAnalysis, DreamSynthesis, SleepHabitAnalysis, SleepAids, Biometrics, AnalysisPersonality, SimilarDream } from '../types';
 import { canUseAiAnalysis, consumeAiCredit } from './secureSubscriptionService';
-import { checkRateLimit, RateLimitError } from './rateLimitService';
+import { checkRateLimit, RateLimitError, logApiUsage, estimateTokens } from './rateLimitService';
 import { logError } from './errorService';
 import { logger } from './logger';
 import {
@@ -439,6 +439,7 @@ export const analyzeDream = async (dreamText: string, sleepAids?: SleepAids, bio
 
         // Consume credit only after successful analysis
         consumeAiCredit();
+        logApiUsage('ai_analysis', estimateTokens(prompt + JSON.stringify(result)), 'gemini-2.5-flash');
 
         return result;
     } catch (error) {
@@ -455,6 +456,11 @@ export const generateImagePrompt = async (dreamText: string, style: DreamArtStyl
     // Input validation
     if (!dreamText || typeof dreamText !== 'string' || dreamText.trim().length === 0) {
         throw new Error('Dream text is required for image prompt generation.');
+    }
+
+    // Credit check - image generation requires premium or available credits
+    if (!canUseAiAnalysis()) {
+        throw new NoCreditsError();
     }
 
     // Sanitize and truncate dream text
@@ -509,6 +515,10 @@ OUTPUT ONLY THE IMAGE PROMPT, nothing else.`;
 
         // Validate response size
         validateResponseSize(result);
+
+        // Consume credit after successful generation
+        consumeAiCredit();
+        logApiUsage('ai_imagery', estimateTokens(sanitizedText + result), 'gemini-2.5-flash');
 
         return result;
     } catch (error) {
@@ -709,6 +719,8 @@ export const getDreamChatResponse = async (dream: Dream, history: ChatMessage[])
             throw new ContentFilterError();
         }
 
+        logApiUsage('ai_chat', estimateTokens(text), 'gemini-2.5-flash');
+
         return text;
     } catch (error) {
         logError(error instanceof Error ? error : new Error(String(error)), 'ai', { operation: 'getDreamChatResponse' });
@@ -807,6 +819,8 @@ export const synthesizeDreamThemes = async (dreams: Dream[]): Promise<DreamSynth
             throw new ContentFilterError();
         }
 
+        logApiUsage('ai_synthesis', estimateTokens(JSON.stringify(result)), 'gemini-2.5-pro');
+
         return result;
     } catch (error) {
         logError(error instanceof Error ? error : new Error(String(error)), 'ai', { operation: 'synthesizeDreamThemes' });
@@ -897,6 +911,8 @@ export const analyzeSleepHabits = async (dreams: Dream[]): Promise<SleepHabitAna
             throw new Error("AI returned incomplete analysis. Please try again.");
         }
 
+        logApiUsage('ai_analysis', estimateTokens(JSON.stringify(result)), 'gemini-2.5-pro');
+
         return result;
     } catch (error) {
         logError(error instanceof Error ? error : new Error(String(error)), 'ai', { operation: 'analyzeSleepHabits' });
@@ -920,6 +936,11 @@ export const generateDreamEmbedding = async (text: string): Promise<number[]> =>
     // Input validation
     if (!text || typeof text !== 'string' || text.trim().length === 0) {
         throw new Error('Text is required for embedding generation.');
+    }
+
+    // Defensive credit check - embeddings are a premium feature
+    if (!canUseAiAnalysis()) {
+        throw new NoCreditsError();
     }
 
     const cacheKey = getEmbeddingCacheKey(text);
@@ -977,6 +998,8 @@ export const generateDreamEmbedding = async (text: string): Promise<number[]> =>
             const firstKey = embeddingCache.keys().next().value;
             if (firstKey) embeddingCache.delete(firstKey);
         }
+
+        logApiUsage('ai_embedding', estimateTokens(truncatedText), 'text-embedding-004');
 
         return embedding;
     } catch (error) {

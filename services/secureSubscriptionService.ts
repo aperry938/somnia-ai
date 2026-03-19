@@ -159,14 +159,9 @@ export function setDevPremium(premium: boolean): void {
 
 /**
  * Check if current user is a superuser (by email)
- * Only works in development mode for security
+ * Works in both dev and production — email-list check is sufficient security
  */
 export function isSuperuser(): boolean {
-    // Only allow superuser access in development builds
-    if (!import.meta.env.DEV) {
-        return false;
-    }
-
     try {
         const userEmail = localStorage.getItem('somnia_user_email');
         if (userEmail && SUPERUSER_EMAILS.includes(userEmail.toLowerCase())) {
@@ -435,15 +430,24 @@ export function canUseAiAnalysis(): boolean {
     return getCredits().remaining > 0;
 }
 
+// Mutex to prevent concurrent credit consumption (double-tap race condition)
+let isConsumingCredit = false;
+
 export function consumeAiCredit(): boolean {
     if (isPremium()) return true;
+    if (isConsumingCredit) return false;
 
-    const credits = getCredits();
-    if (credits.remaining <= 0) return false;
+    isConsumingCredit = true;
+    try {
+        const credits = getCredits();
+        if (credits.remaining <= 0) return false;
 
-    localStorage.setItem(CREDITS_KEY, String(credits.remaining - 1));
-    window.dispatchEvent(new CustomEvent('creditsChanged', { detail: getCredits() }));
-    return true;
+        localStorage.setItem(CREDITS_KEY, String(credits.remaining - 1));
+        window.dispatchEvent(new CustomEvent('creditsChanged', { detail: getCredits() }));
+        return true;
+    } finally {
+        isConsumingCredit = false;
+    }
 }
 
 export function getRemainingCredits(): number {

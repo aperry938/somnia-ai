@@ -32,10 +32,10 @@
  * - Search results count badge
  * - Export menu items
  */
-import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef, Suspense, lazy } from 'react';
 import { motion } from 'framer-motion';
 import { useAppContext } from '../../contexts/AppContext';
-import { Dream as _Dream, DreamMood, SleepEntry as _SleepEntry, SleepAids } from '../../types';
+import { Dream, DreamMood, SleepEntry as _SleepEntry, SleepAids } from '../../types';
 import { exportDreamsAsJSON, exportDreamJournalToPDF, exportDreamsEncrypted, importDreamsEncrypted, isEncryptedBackup } from '../../services/exportService';
 import { validateSearchQuery } from '../../services/validationService';
 import { AchievementsCard } from '../insights/AchievementsCard';
@@ -49,6 +49,9 @@ import { SkeletonDreamCard } from '../shared/LoadingStates';
 import { PullToRefresh } from '../shared/PullToRefresh';
 import haptics from '../../services/hapticsService';
 import { processSyncQueue } from '../../services/syncService';
+import { ModalLoading } from '../shared/LoadingStates';
+
+const ShareDreamModal = lazy(() => import('../modals/ShareDreamModal').then(m => ({ default: m.ShareDreamModal })));
 
 // Pagination constants for memory management
 const INITIAL_PAGE_SIZE = 20;
@@ -79,6 +82,9 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
     const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
     const [passwordError, setPasswordError] = useState<string | undefined>(undefined);
     const [isExportImportLoading, setIsExportImportLoading] = useState(false);
+
+    // Share modal state
+    const [shareDream, setShareDream] = useState<Dream | null>(null);
 
     // Loading and error states for data
     const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -485,6 +491,7 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
                                                 onDreamClick={onDreamSelect}
                                                 onAddDream={(entryId) => setAddDreamToEntryId(entryId)}
                                                 onDeleteEntry={deleteSleepEntry}
+                                                onShareDream={setShareDream}
                                             />
                                         ))}
                                     </div>
@@ -659,6 +666,17 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
                 error={passwordError}
                 isLoading={isExportImportLoading}
             />
+
+            {/* Share Dream Modal */}
+            {shareDream && (
+                <Suspense fallback={<ModalLoading />}>
+                    <ShareDreamModal
+                        dream={shareDream}
+                        isOpen={!!shareDream}
+                        onClose={() => setShareDream(null)}
+                    />
+                </Suspense>
+            )}
         </div>
     );
 };

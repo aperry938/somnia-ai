@@ -76,10 +76,6 @@
 	<key>NSMotionUsageDescription</key>
 	<string>Somnia uses motion data to detect when you fall asleep and improve smart alarm timing.</string>
 
-	<!-- App Tracking Transparency (ATT) - Required for iOS 14.5+ -->
-	<key>NSUserTrackingUsageDescription</key>
-	<string>Somnia requests permission to track your activity across other apps and websites to provide personalized recommendations and improve your dream journal experience.</string>
-
 	<!-- App Transport Security (ATS) - Configure secure connections -->
 	<key>NSAppTransportSecurity</key>
 	<dict>

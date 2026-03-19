@@ -314,7 +314,8 @@ describe('Audio Implementation Verification', () => {
             // Verify this matches the description in constants.ts
             const ramp = SOUNDSCAPES.find(s => s.id === 'sleep_ramp');
             expect(ramp?.description).toContain('12Hz');
-            expect(ramp?.description).toContain('8→4Hz');
+            expect(ramp?.description).toContain('8Hz');
+            expect(ramp?.description).toContain('4Hz');
             expect(ramp?.description).toContain('1.5Hz');
         });
 

@@ -5,6 +5,7 @@ import { AppProvider } from './contexts/AppContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { ErrorBoundary } from './components/shared/ErrorBoundary';
 import { ToastProvider } from './components/shared/Toast';
+import { I18nProvider } from './contexts/I18nContext';
 import { initGlobalErrorHandlers } from './services/errorService';
 
 // Initialize global error handlers early
@@ -19,13 +20,15 @@ const root = ReactDOM.createRoot(rootElement);
 root.render(
     <React.StrictMode>
         <ErrorBoundary>
-            <AuthProvider>
-                <AppProvider>
-                    <ToastProvider>
-                        <App />
-                    </ToastProvider>
-                </AppProvider>
-            </AuthProvider>
+            <I18nProvider>
+                <AuthProvider>
+                    <AppProvider>
+                        <ToastProvider>
+                            <App />
+                        </ToastProvider>
+                    </AppProvider>
+                </AuthProvider>
+            </I18nProvider>
         </ErrorBoundary>
     </React.StrictMode>
 );
