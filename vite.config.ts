@@ -1,9 +1,8 @@
 import path from 'path';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, '.', '');
+export default defineConfig(() => {
   return {
     // For Capacitor: use root path (assets loaded from local filesystem)
     base: '/',
@@ -15,10 +14,7 @@ export default defineConfig(({ mode }) => {
       react(),
       // PWA removed - this is a native mobile app built with Capacitor
     ],
-    define: {
-      'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
-    },
+    // API keys accessed via import.meta.env.VITE_GEMINI_API_KEY (not embedded in bundle)
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

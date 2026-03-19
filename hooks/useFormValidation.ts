@@ -234,8 +234,8 @@ export const commonValidators = {
         error: value.length <= max ? undefined : `Must be at most ${max} characters`
     }),
     dreamTitle: (value: string) => ({
-        valid: value.length <= INPUT_LIMITS.title,
-        error: value.length <= INPUT_LIMITS.title ? undefined : `Title must be at most ${INPUT_LIMITS.title} characters`
+        valid: value.length <= INPUT_LIMITS.dreamTitle,
+        error: value.length <= INPUT_LIMITS.dreamTitle ? undefined : `Title must be at most ${INPUT_LIMITS.dreamTitle} characters`
     }),
     notes: (value: string) => {
         const sanitized = sanitizeTextLive(value);

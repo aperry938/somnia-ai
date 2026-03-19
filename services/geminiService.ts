@@ -399,10 +399,24 @@ export const analyzeDream = async (dreamText: string, sleepAids?: SleepAids, bio
 
         let result: DreamAnalysis;
         try {
-            result = JSON.parse(rawJson) as DreamAnalysis;
+            // Strip markdown code fences if present (AI sometimes wraps in ```json...```)
+            const cleaned = rawJson.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '');
+            result = JSON.parse(cleaned) as DreamAnalysis;
         } catch (parseError) {
-            logger.error("Failed to parse dream analysis JSON:", parseError, "Raw:", rawJson.slice(0, 200));
-            throw new Error("Failed to parse AI response. Please try again.");
+            logger.error("Failed to parse dream analysis JSON:", parseError, "Raw:", rawJson.slice(0, 500));
+
+            // Attempt partial recovery: extract title and create minimal analysis
+            const titleMatch = rawJson.match(/"title"\s*:\s*"([^"]+)"/);
+            if (titleMatch) {
+                logger.warn("Recovering partial analysis from malformed JSON");
+                result = {
+                    title: titleMatch[1],
+                    analysis: [{ title: 'Analysis', content: 'AI response was incomplete. Try analyzing again for a full interpretation.' }],
+                    integration: { title: 'Reflection', content: 'This dream may have deeper meaning — try re-analyzing for detailed insights.' },
+                } as DreamAnalysis;
+            } else {
+                throw new Error("Failed to parse AI response. Please try again.");
+            }
         }
 
         // Validate required fields

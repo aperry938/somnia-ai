@@ -130,7 +130,7 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({ onComple
                 <div className="mb-10" aria-hidden="true">
                     {slide.icon}
                 </div>
-                <h1 className="font-serif text-3xl mb-6 text-gray-500 dark:text-gray-400">{slide.title}</h1>
+                <h1 className="font-serif text-3xl mb-6 text-gray-500 dark:text-night-text-secondary">{slide.title}</h1>
                 <p className="text-day-text-secondary dark:text-night-text-primary/90 text-lg leading-loose">
                     {slide.description}
                 </p>

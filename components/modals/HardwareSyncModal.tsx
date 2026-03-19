@@ -1,12 +1,15 @@
 import React, { useEffect, useRef } from 'react';
 import { useBackButton } from '../../hooks/useBackButton';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
+import { useModalBodyLock } from '../../hooks/useModalBodyLock';
 
 interface HardwareSyncModalProps {
     onClose: () => void;
 }
 
 export const HardwareSyncModal: React.FC<HardwareSyncModalProps> = ({ onClose }) => {
+    useModalBodyLock();
+
     // Hardware back button support
     useBackButton(true, onClose);
 

@@ -132,7 +132,7 @@ export const ChroniclePage: React.FC<{ onDreamSelect: (id: number) => void }> = 
             return entryDreams.some(d =>
                 d.dreamText.toLowerCase().includes(search) ||
                 d.title?.toLowerCase().includes(search) ||
-                d.tags?.some(t => t.toLowerCase().includes(search))
+                d.tags?.some((t: string) => t.toLowerCase().includes(search))
             );
         });
     }, [sortedSleepEntries, debouncedSearch, dreams]);

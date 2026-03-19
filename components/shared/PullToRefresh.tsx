@@ -6,7 +6,7 @@
 import React from 'react';
 import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 
-interface PullToRefreshProps {
+interface PullToRefreshProps extends React.HTMLAttributes<HTMLDivElement> {
     /** Callback to execute on refresh - must return a Promise */
     onRefresh: () => Promise<void>;
     /** Content to render inside the scrollable container */
@@ -24,7 +24,8 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
     children,
     enabled = true,
     className = '',
-    threshold = 80
+    threshold = 80,
+    ...restProps
 }) => {
     const {
         pullDistance,
@@ -44,7 +45,7 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
     const indicatorTranslate = Math.min(pullDistance - 20, 50);
 
     return (
-        <div className={`relative overflow-hidden ${className}`}>
+        <div className={`relative overflow-hidden ${className}`} {...restProps}>
             {/* Pull indicator */}
             {(pullDistance > 0 || isRefreshing) && (
                 <div

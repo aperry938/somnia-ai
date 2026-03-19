@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { LEVEL_TITLES, getDreamsForLevel } from '../../constants/gamification';
 import { useBackButton } from '../../hooks/useBackButton';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
+import { useModalBodyLock } from '../../hooks/useModalBodyLock';
 
 interface LevelGuideModalProps {
     isOpen: boolean;
@@ -32,6 +33,8 @@ const LEVELS_DATA = Object.entries(LEVEL_TITLES).map(([level, title]) => ({
 }));
 
 export const LevelGuideModal: React.FC<LevelGuideModalProps> = ({ isOpen, onClose, currentLevel, totalDreams }) => {
+    useModalBodyLock();
+
     // Hardware back button support
     useBackButton(isOpen, onClose);
 

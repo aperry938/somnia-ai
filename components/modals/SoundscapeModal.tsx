@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-// Temporarily disable framer-motion to debug freeze issue
-// import { motion, PanInfo, useMotionValue, useTransform } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { backdropVariants, modalVariants } from '../shared/AnimatedComponents';
 import { Soundscape } from '../../types';
 import { playSleepSound, stopSleepSound, setLiveVolume, shouldPersistSleepSound, isSleepSoundPlaying } from '../../services/audioService';
 import { useAppContext } from '../../contexts/AppContext';
@@ -8,9 +8,7 @@ import haptics from '../../services/hapticsService';
 import { useBackButton } from '../../hooks/useBackButton';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { useToast } from '../shared/Toast';
-
-// Placeholder types for disabled framer-motion (reserved for future swipe-to-dismiss)
-// type PanInfo = { offset: { y: number }; velocity: { y: number } };
+import { useModalBodyLock } from '../../hooks/useModalBodyLock';
 
 interface SoundscapeModalProps {
     sound: Soundscape;
@@ -22,6 +20,8 @@ interface SoundscapeModalProps {
 }
 
 export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlaying, onPlay, onStop, onClose, onFallAsleep }) => {
+    useModalBodyLock();
+
     const { volume, setVolume, logSoundActivity, activeSleepSession: _activeSleepSession, ensureSleepSession, createSleepEntryForSession } = useAppContext();
     const { showToast } = useToast();
     const [duration, setDuration] = useState(30);
@@ -29,17 +29,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
     // Focus trap for accessibility
     const focusTrapRef = useFocusTrap(true);
 
-    // Swipe-to-dismiss disabled for now (framer-motion removed for debugging)
-    // const y = useMotionValue(0);
-    // const backdropOpacity = useTransform(y, [0, 200], [1, 0.3]);
-
-    // Swipe-to-dismiss handler (reserved for future use when framer-motion re-enabled)
-    // const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    //     if (info.offset.y > 100 || info.velocity.y > 500) {
-    //         haptics.medium();
-    //         handleClose();
-    //     }
-    // };
+    // Swipe-to-dismiss disabled (drag gestures + audio state cause freeze)
     const [beatFreq] = useState(sound.type === 'binaural' ? sound.params.diff || 5 : 5);
     const [isPreviewing, setIsPreviewing] = useState(false);
     const [timeRemaining, setTimeRemaining] = useState<number | null>(null); // Seconds remaining
@@ -420,18 +410,26 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
     const isInPlayingView = isPlaying || isReadyToPlay || isPaused;
 
     return (
-        <div
+        <motion.div
             className={`fixed inset-0 bg-day-bg-start/50 dark:bg-night-bg-start/50 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 z-50 sm:pb-4 ${isInPlayingView ? 'pb-[calc(2rem+var(--safe-area-inset-bottom))]' : 'pb-[calc(6.5rem+var(--safe-area-inset-bottom))]'}`}
             onClick={handleBackdropClick}
             role="dialog"
             aria-modal="true"
             aria-labelledby="soundscape-title"
+            variants={backdropVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
         >
-            <div
+            <motion.div
                 ref={focusTrapRef}
                 className="bg-day-card-bg dark:bg-night-card-bg border border-day-border dark:border-night-border rounded-t-2xl sm:rounded-2xl p-6 pb-[calc(1.5rem+var(--safe-area-inset-bottom))] sm:pb-6 w-full max-w-sm text-center relative"
                 onClick={(e) => e.stopPropagation()}
                 onTouchEnd={(e) => e.stopPropagation()}
+                variants={modalVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
             >
                 {/* Screen reader announcement for volume changes */}
                 <div className="sr-only" aria-live="polite" aria-atomic="true">
@@ -620,7 +618,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                             aria-pressed={isPreviewing}
                             className={`mt-3 w-full py-3 min-h-[48px] rounded-lg text-sm font-medium transition-all ${isPreviewing
                                 ? 'bg-green-500/20 text-green-600 dark:text-green-400 border border-green-500/30'
-                                : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-transparent'
+                                : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-night-text-secondary border border-transparent'
                                 }`}
                         >
                             {isPreviewing ? (
@@ -658,7 +656,7 @@ export const SoundscapeModal: React.FC<SoundscapeModalProps> = ({ sound, isPlayi
                         </div>
                     </>
                 )}
-            </div>
-        </div>
+            </motion.div>
+        </motion.div>
     );
 };

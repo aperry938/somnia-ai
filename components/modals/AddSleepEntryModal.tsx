@@ -6,22 +6,8 @@ import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { SleepAids } from '../../types';
 import haptics from '../../services/hapticsService';
 import { sanitizeText, INPUT_LIMITS } from '../../services/validationService';
-
-// Animation variants
-const backdropVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { duration: 0.2 } },
-};
-
-const modalVariants = {
-    hidden: { opacity: 0, scale: 0.95, y: 20 },
-    visible: {
-        opacity: 1,
-        scale: 1,
-        y: 0,
-        transition: { type: 'spring' as const, stiffness: 300, damping: 30 },
-    },
-};
+import { backdropVariants, modalVariants } from '../shared/AnimatedComponents';
+import { useModalBodyLock } from '../../hooks/useModalBodyLock';
 
 interface AddSleepEntryModalProps {
     onSave: (date: string, sleepQuality: number | null, notes?: string, sleepAids?: SleepAids) => number;
@@ -34,6 +20,8 @@ export const AddSleepEntryModal: React.FC<AddSleepEntryModalProps> = ({
     onSaveWithDream,
     onClose
 }) => {
+    useModalBodyLock();
+
     // Hardware back button support
     useBackButton(true, onClose);
 

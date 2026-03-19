@@ -138,7 +138,7 @@ export const TagInput: React.FC<TagInputProps> = ({
                     aria-label="Add tag"
                     aria-autocomplete="list"
                     aria-controls={showSuggestions && inputValue && filteredSuggestions.length > 0 ? 'tag-suggestions' : undefined}
-                    aria-expanded={showSuggestions && inputValue && filteredSuggestions.length > 0}
+                    aria-expanded={!!(showSuggestions && inputValue && filteredSuggestions.length > 0)}
                     aria-activedescendant={highlightedIndex >= 0 ? `suggestion-${highlightedIndex}` : undefined}
                     role="combobox"
                     disabled={disabled}

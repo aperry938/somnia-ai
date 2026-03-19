@@ -195,7 +195,7 @@ export const AdminPage: React.FC<{ onBack?: () => void }> = ({ onBack: _onBack }
                 </div>
                 <div className="flex items-center gap-2">
                     <span className={`px-2 py-1 rounded text-xs font-mono ${
-                        isPremium() ? 'bg-green-500/20 text-green-600 dark:text-green-400' : 'bg-gray-500/20 text-gray-600 dark:text-gray-400'
+                        isPremium() ? 'bg-green-500/20 text-green-600 dark:text-green-400' : 'bg-gray-500/20 text-gray-600 dark:text-night-text-secondary'
                     }`}>
                         {isPremium() ? 'PREMIUM' : 'FREE'}
                     </span>

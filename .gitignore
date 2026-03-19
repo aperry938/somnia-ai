@@ -44,3 +44,6 @@ test-results
 .LSOverride
 Icon
 
+
+# Local-only assets (not tracked)
+local-assets/

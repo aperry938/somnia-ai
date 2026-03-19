@@ -45,6 +45,7 @@ import { MOOD_ICONS, MOOD_LABELS } from '../../constants/uiIcons';
 import { validateDreamText, containsScriptInjection, INPUT_LIMITS, sanitizeTextLive } from '../../services/validationService';
 import { useBackButton } from '../../hooks/useBackButton';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
+import { useModalBodyLock } from '../../hooks/useModalBodyLock';
 import { logger } from '../../services/logger';
 
 const MOOD_OPTIONS: DreamMood[] = ['joyful', 'peaceful', 'neutral', 'confused', 'anxious', 'sad', 'fearful', 'nightmare'];
@@ -113,6 +114,8 @@ interface DreamScribeModalProps {
 }
 
 export const DreamScribeModal: React.FC<DreamScribeModalProps> = ({ onSave, onClose, initialText = '' }) => {
+    useModalBodyLock();
+
     const [step, setStep] = useState<ScribeStep>('record');
 
     // Focus trap for accessibility

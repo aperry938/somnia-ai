@@ -3,6 +3,7 @@ import { motion, PanInfo } from 'framer-motion';
 import haptics from '../../services/hapticsService';
 import { useBackButton } from '../../hooks/useBackButton';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
+import { useModalBodyLock } from '../../hooks/useModalBodyLock';
 
 interface ImageModalProps {
     src: string;
@@ -10,6 +11,8 @@ interface ImageModalProps {
 }
 
 export const ImageModal: React.FC<ImageModalProps> = ({ src, onClose }) => {
+    useModalBodyLock();
+
     // Handle hardware back button (Android) - always true since modal only renders when open
     useBackButton(true, onClose);
 

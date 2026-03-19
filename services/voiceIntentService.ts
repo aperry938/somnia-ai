@@ -12,8 +12,8 @@ let aiInstance: GoogleGenAI | null = null;
 
 const getAi = (): GoogleGenAI => {
     if (aiInstance) return aiInstance;
-    const API_KEY = process.env.API_KEY;
-    if (!API_KEY) throw new Error("API_KEY not set");
+    const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!API_KEY) throw new Error("VITE_GEMINI_API_KEY not set");
     aiInstance = new GoogleGenAI({ apiKey: API_KEY });
     return aiInstance;
 };

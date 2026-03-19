@@ -12,6 +12,7 @@ import {
 import { useBackButton } from '../../hooks/useBackButton';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { haptics } from '../../services/hapticsService';
+import { useModalBodyLock } from '../../hooks/useModalBodyLock';
 
 interface SecurePaywallModalProps {
     isOpen: boolean;
@@ -28,6 +29,8 @@ export const SecurePaywallModal: React.FC<SecurePaywallModalProps> = ({
     onNavigateToTerms,
     onNavigateToPrivacy
 }) => {
+    useModalBodyLock();
+
     const [selectedPlan, setSelectedPlan] = useState<'weekly' | 'monthly' | 'yearly'>('yearly');
     const [isProcessing, setIsProcessing] = useState(false);
     const [isRestoring, setIsRestoring] = useState(false);

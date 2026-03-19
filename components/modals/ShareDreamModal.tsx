@@ -13,6 +13,7 @@ import {
 } from '../../services/shareCardService';
 import haptics from '../../services/hapticsService';
 import { logger } from '../../services/logger';
+import { useModalBodyLock } from '../../hooks/useModalBodyLock';
 
 interface ShareDreamModalProps {
     dream: Dream;
@@ -62,6 +63,8 @@ const FORMATS: { id: ShareCardFormat; label: string; platforms: string }[] = [
 ];
 
 export const ShareDreamModal: React.FC<ShareDreamModalProps> = ({ dream, isOpen, onClose }) => {
+    useModalBodyLock();
+
     const [format, setFormat] = useState<ShareCardFormat>('square');
     const [theme, setTheme] = useState<ShareCardTheme>(() => getThemeForMood(dream.mood, dream.tags));
     const [contentType, setContentType] = useState<'dream-excerpt' | 'ai-insight'>('ai-insight');

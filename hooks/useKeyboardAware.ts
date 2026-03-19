@@ -6,6 +6,7 @@
  */
 import { useEffect, useCallback, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
+// @ts-expect-error — @capacitor/keyboard types may not be installed (native-only plugin)
 import { Keyboard } from '@capacitor/keyboard';
 
 interface UseKeyboardAwareOptions {
@@ -29,6 +30,8 @@ export function useKeyboardAware(options: UseKeyboardAwareOptions = {}) {
 
     const isNative = Capacitor.isNativePlatform();
     const keyboardHeightRef = useRef(0);
+    const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+    const focusTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
     // Scroll the focused element into view
     const scrollFocusedElementIntoView = useCallback(() => {
@@ -38,12 +41,10 @@ export function useKeyboardAware(options: UseKeyboardAwareOptions = {}) {
         }
 
         // Wait a bit for keyboard animation
-        setTimeout(() => {
+        clearTimeout(scrollTimeoutRef.current);
+        scrollTimeoutRef.current = setTimeout(() => {
             const rect = activeElement.getBoundingClientRect();
             const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
-            // keyboardHeightRef.current is set by native keyboard events, fallback to viewport difference
-            const _keyboardHeight = keyboardHeightRef.current || (window.innerHeight - viewportHeight);
-
             // Check if element is hidden by keyboard
             const elementBottom = rect.bottom;
             const visibleAreaBottom = viewportHeight - bottomOffset;
@@ -68,7 +69,7 @@ export function useKeyboardAware(options: UseKeyboardAwareOptions = {}) {
             // Native: Use Capacitor Keyboard plugin
             const setupNativeListeners = async () => {
                 try {
-                    keyboardShowListener = (await Keyboard.addListener('keyboardWillShow', (info) => {
+                    keyboardShowListener = (await Keyboard.addListener('keyboardWillShow', (info: { keyboardHeight: number }) => {
                         keyboardHeightRef.current = info.keyboardHeight;
                         scrollFocusedElementIntoView();
                     })).remove;
@@ -93,7 +94,8 @@ export function useKeyboardAware(options: UseKeyboardAwareOptions = {}) {
             const target = e.target as HTMLElement;
             if (['INPUT', 'TEXTAREA'].includes(target.tagName)) {
                 // Delay to allow keyboard to appear
-                setTimeout(scrollFocusedElementIntoView, 300);
+                clearTimeout(focusTimeoutRef.current);
+                focusTimeoutRef.current = setTimeout(scrollFocusedElementIntoView, 300);
             }
         };
 
@@ -101,6 +103,8 @@ export function useKeyboardAware(options: UseKeyboardAwareOptions = {}) {
         document.addEventListener('focusin', handleFocusIn);
 
         return () => {
+            clearTimeout(scrollTimeoutRef.current);
+            clearTimeout(focusTimeoutRef.current);
             keyboardShowListener?.();
             keyboardHideListener?.();
             window.visualViewport?.removeEventListener('resize', handleViewportResize);

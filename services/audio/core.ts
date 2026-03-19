@@ -1,0 +1,2398 @@
+import { Soundscape } from '../../types';
+import { logger } from '../logger';
+import { configureAudioSession, setAudioSessionActive, setupInterruptionHandling } from '../audioSessionService';
+import {
+    playAbyssalPressure,
+    playSiliconForest,
+    setPsychoacousticVolume,
+    stopPsychoacoustic,
+    playCyberDawnAlarm,
+    playSolarAlarm
+} from '../psychoacousticService';
+import { isPremium } from '../secureSubscriptionService';
+
+// ============================================================
+// TYPES
+// ============================================================
+
+/** Extended window type for webkit prefix support */
+interface WebkitWindow extends Window {
+    webkitAudioContext: typeof AudioContext;
+}
+
+/** Alarm configuration for the unified alarm system */
+interface AlarmConfig {
+    type: OscillatorType;
+    startFreq: number;
+    endFreq: number;
+    startGain: number;
+    endGain: number;
+    rampDuration: number;
+    pattern?: 'continuous' | 'pulse' | 'beep' | 'chime' | 'accelerate';
+    pulseInterval?: number;
+}
+
+/** Binaural node with attached oscillators for cleanup */
+interface BinauralMergerNode extends ChannelMergerNode {
+    oscillators: OscillatorNode[];
+    gains: GainNode[];
+    rampDurationSeconds?: number;
+}
+
+/** Noise source with attached synthesis nodes */
+interface SynthesisSourceNode extends AudioBufferSourceNode {
+    lfo?: OscillatorNode;
+    crackle?: AudioBufferSourceNode;
+}
+
+// ============================================================
+// CONSTANTS
+// ============================================================
+
+/** Duration for crescendo phase in seconds */
+const WAKE_DURATION = 60;
+
+/** Duration for sustained alarm in seconds (30 minutes) */
+const SUSTAIN_DURATION = 1800;
+
+/** Noise buffer duration in seconds */
+const NOISE_BUFFER_DURATION = 5;
+
+/** C Major Pentatonic Scale frequencies (Hz) */
+const PENTATONIC_SCALE = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25];
+
+/** Alarm sound configurations */
+const ALARM_CONFIGS: Record<string, AlarmConfig> = {
+    somnia: {
+        type: 'sine',
+        startFreq: 180,
+        endFreq: 500,
+        startGain: 0.08,      // 5x louder start (was 0.015)
+        endGain: 1.0,         // Maximum volume
+        rampDuration: 60,
+        pattern: 'continuous'
+    },
+    progressive: {
+        type: 'sine',
+        startFreq: 300,
+        endFreq: 800,
+        startGain: 0.08,      // 5x+ louder start (was 0.001)
+        endGain: 1.0,         // Maximum volume (was 0.5)
+        rampDuration: 60,     // Full 60s crescendo (was 30)
+        pattern: 'continuous'
+    },
+    gentle: {
+        type: 'sine',
+        startFreq: 220,
+        endFreq: 220,
+        startGain: 0.25,      // 5x louder start (was 0.05)
+        endGain: 1.0,         // Maximum volume
+        rampDuration: 60,
+        pattern: 'pulse',
+        pulseInterval: 2
+    },
+    chimes: {
+        type: 'triangle',
+        startFreq: 523,
+        endFreq: 784,
+        startGain: 0.08,      // 5x+ louder start (was 0.0001)
+        endGain: 1.0,         // Maximum volume (was 0.25)
+        rampDuration: 60,     // Full 60s crescendo (was 30)
+        pattern: 'continuous'
+    },
+    nature: {
+        type: 'sine',
+        startFreq: 800,
+        endFreq: 1200,
+        startGain: 0.08,      // 5x+ louder start (was 0.0001)
+        endGain: 1.0,         // Maximum volume (was 0.3)
+        rampDuration: 60,     // Full 60s crescendo (was 30)
+        pattern: 'continuous'
+    },
+    classic: {
+        type: 'square',
+        startFreq: 880,
+        endFreq: 880,
+        startGain: 0.25,      // 5x louder start (was 0.05)
+        endGain: 1.0,         // Maximum volume (was 0.9)
+        rampDuration: 60,
+        pattern: 'beep',
+        pulseInterval: 1
+    }
+};
+
+// ============================================================
+// MODULE STATE
+// ============================================================
+
+let audioContext: AudioContext | null = null;
+
+// Alarm Sound Nodes
+let alarmOscillator: OscillatorNode | null = null;
+let alarmGainNode: GainNode | null = null;
+
+// Sleep Sound Nodes
+let sleepSourceNode: AudioNode | null = null;
+let sleepGainNode: GainNode | null = null;
+let sleepTimeout: number | null = null;
+let sleepCompressor: DynamicsCompressorNode | null = null;
+
+// Synthesis intervals
+let sparkInterval: ReturnType<typeof setTimeout> | null = null;
+
+// Cleanup mutex to prevent race conditions during audio shutdown
+let isCleaningUp = false;
+
+// Additional LFOs for enhanced synthesis
+let additionalLFOs: OscillatorNode[] = [];
+
+// Phone call interruption handling
+let interruptionCleanup: (() => void) | null = null;
+let currentSleepSound: { sound: Soundscape; durationMinutes: number; volume: number } | null = null;
+let wasPlayingBeforeInterruption = false;
+
+// Flag to indicate sound should persist across page navigation (for "Fall Asleep Now" flow)
+// When true, stopSleepSound() will be ignored from page cleanup handlers
+let persistAcrossNavigation = false;
+
+// Track the last played sound for restart functionality
+let lastPlayedSound: { sound: Soundscape; volume: number } | null = null;
+// Track if sound ended naturally (timer expired) vs user stopped it
+let soundEndedNaturally = false;
+
+// Cross-fade configuration for smooth transitions between sounds
+const CROSSFADE_DURATION_MS = 2000;
+
+// Track pending cross-fade for cleanup
+let pendingCrossfadeNodes: {
+    gainNode: GainNode;
+    sourceNode: AudioNode;
+    compressor?: DynamicsCompressorNode;
+} | null = null;
+
+// NOTE: Intentionally NO visibilitychange handler here.
+// Sleep sounds MUST continue playing when the screen locks or app backgrounds.
+// iOS/Android background audio is handled via:
+// - iOS: AVAudioSession configuration in AudioSessionPlugin.swift
+// - Android: Foreground service in AlarmService.java
+// Killing audio on visibility change would break the core sleep sound functionality.
+
+// LRU Cache for decoded audio files
+const MAX_AUDIO_BUFFER_CACHE_SIZE = 10;
+const audioBufferCache: Map<string, AudioBuffer> = new Map();
+
+/**
+ * Adds an audio buffer to the cache with LRU eviction
+ */
+const cacheAudioBuffer = (key: string, buffer: AudioBuffer): void => {
+    // If key already exists, delete it first so it moves to the end (most recent)
+    if (audioBufferCache.has(key)) {
+        audioBufferCache.delete(key);
+    }
+    // Evict oldest entries if cache is full
+    while (audioBufferCache.size >= MAX_AUDIO_BUFFER_CACHE_SIZE) {
+        const oldestKey = audioBufferCache.keys().next().value;
+        if (oldestKey) {
+            audioBufferCache.delete(oldestKey);
+            logger.log('[AudioService] Evicted audio buffer from cache:', oldestKey);
+        }
+    }
+    audioBufferCache.set(key, buffer);
+};
+
+// ============================================================
+// AUDIO CONTEXT MANAGEMENT
+// ============================================================
+
+/** Timeout for AudioContext resume operations in milliseconds */
+const AUDIO_CONTEXT_RESUME_TIMEOUT_MS = 5000;
+
+/** Maximum retries for creating AudioContext (handles iOS audio session issues) */
+// const MAX_CONTEXT_CREATE_RETRIES = 2; // Reserved for future use
+
+/**
+ * Initializes the global AudioContext with retry logic.
+ * Must be called after a user interaction (click/touch) to resume from suspended state.
+ * Critical for alarm reliability - handles edge cases where context gets stuck.
+ */
+export const initAudioContext = async (): Promise<void> => {
+    // If context exists but is closed, we need to recreate it
+    if (audioContext && audioContext.state === 'closed') {
+        logger.warn('[AudioService] AudioContext was closed, recreating...');
+        audioContext = null;
+    }
+
+    if (!audioContext) {
+        const AudioContextClass = window.AudioContext || (window as unknown as WebkitWindow).webkitAudioContext;
+        try {
+            audioContext = new AudioContextClass();
+            logger.log('[AudioService] AudioContext created, state:', audioContext.state);
+        } catch (e) {
+            logger.error('[AudioService] Failed to create AudioContext:', e);
+            throw new Error('Failed to initialize audio system');
+        }
+    }
+
+    if (audioContext.state === 'suspended') {
+        await resumeAudioContextWithTimeout(audioContext);
+    }
+};
+
+/**
+ * Resumes AudioContext with timeout to prevent indefinite hangs.
+ * On iOS, resume() can hang if audio session is not properly configured.
+ */
+const resumeAudioContextWithTimeout = async (context: AudioContext): Promise<void> => {
+    if (context.state !== 'suspended') return;
+
+    try {
+        const resumePromise = context.resume();
+        const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('AudioContext resume timeout')), AUDIO_CONTEXT_RESUME_TIMEOUT_MS);
+        });
+
+        await Promise.race([resumePromise, timeoutPromise]);
+        logger.log('[AudioService] AudioContext resumed successfully, state:', context.state);
+    } catch (e) {
+        logger.warn('[AudioService] Failed to resume AudioContext:', e);
+        // On timeout, try to recover by recreating the context
+        if (e instanceof Error && e.message === 'AudioContext resume timeout') {
+            logger.warn('[AudioService] Attempting context recovery after timeout...');
+            // Don't throw - let the caller handle playback with potentially suspended context
+            // iOS may resume on actual audio playback attempt
+        }
+    }
+};
+
+/**
+ * Gets the global AudioContext, creating it if necessary.
+ * Handles recovery from closed state.
+ */
+const getAudioContext = (): AudioContext => {
+    // Handle closed context (can happen after device sleep/wake cycles)
+    if (audioContext && audioContext.state === 'closed') {
+        logger.warn('[AudioService] AudioContext was closed, recreating in getAudioContext...');
+        audioContext = null;
+    }
+
+    if (!audioContext) {
+        const AudioContextClass = window.AudioContext || (window as unknown as WebkitWindow).webkitAudioContext;
+        audioContext = new AudioContextClass();
+        logger.log('[AudioService] AudioContext created in getAudioContext, state:', audioContext.state);
+    }
+    return audioContext;
+};
+
+/**
+ * Ensures audio context is ready for playback with proper error handling.
+ * Implements timeout to prevent hanging on iOS audio session issues.
+ */
+const ensureContextReady = async (context: AudioContext): Promise<void> => {
+    // Handle closed context edge case
+    if (context.state === 'closed') {
+        throw new Error('AudioContext is closed and cannot be resumed');
+    }
+
+    if (context.state === 'suspended') {
+        await resumeAudioContextWithTimeout(context);
+    }
+
+    // Verify context is now in a usable state
+    if (context.state === 'suspended') {
+        logger.warn('[AudioService] Context still suspended after resume attempt - playback may be delayed');
+    }
+};
+
+// ============================================================
+// ALARM HELPERS
+// ============================================================
+
+/** Return type for prepareAlarmNodes - guarantees nodes are created */
+interface AlarmNodesReady {
+    context: AudioContext;
+    now: number;
+    oscillator: OscillatorNode;
+    gainNode: GainNode;
+}
+
+/**
+ * Prepares the audio context and nodes for alarm playback.
+ * Returns the created nodes directly to avoid non-null assertions.
+ */
+const prepareAlarmNodes = async (): Promise<AlarmNodesReady> => {
+    stopSleepSound();
+    const context = getAudioContext();
+    if (alarmOscillator) {
+        stopAlarmSound();
+    }
+    await ensureContextReady(context);
+
+    const oscillator = context.createOscillator();
+    const gainNode = context.createGain();
+    oscillator.connect(gainNode);
+    gainNode.connect(context.destination);
+
+    // Store in module-level vars for stop/cleanup
+    alarmOscillator = oscillator;
+    alarmGainNode = gainNode;
+
+    return { context, now: context.currentTime, oscillator, gainNode };
+};
+
+/**
+ * Creates a simple continuous alarm with exponential ramp
+ */
+const createContinuousAlarm = async (config: AlarmConfig): Promise<void> => {
+    const { now, oscillator, gainNode } = await prepareAlarmNodes();
+
+    oscillator.type = config.type;
+    oscillator.frequency.setValueAtTime(config.startFreq, now);
+    gainNode.gain.setValueAtTime(config.startGain, now);
+
+    gainNode.gain.exponentialRampToValueAtTime(config.endGain, now + config.rampDuration);
+    oscillator.frequency.exponentialRampToValueAtTime(config.endFreq, now + config.rampDuration);
+
+    oscillator.start(now);
+};
+
+/**
+ * Creates a pulsing alarm with crescendo then sustained pulses
+ * Reserved for future alarm pattern expansion
+ */
+// const createPulsingAlarm = async (config: AlarmConfig): Promise<void> => { ... };
+
+/**
+ * Creates a beeping alarm with crescendo then sustained beeps
+ */
+const createBeepingAlarm = async (config: AlarmConfig): Promise<void> => {
+    const { now, oscillator, gainNode } = await prepareAlarmNodes();
+    const interval = config.pulseInterval || 1;
+    const crescendoBeeps = config.rampDuration;
+    const sustainBeeps = SUSTAIN_DURATION - config.rampDuration;
+
+    oscillator.type = config.type;
+    oscillator.frequency.setValueAtTime(config.startFreq, now);
+
+    // Crescendo phase
+    for (let i = 0; i < crescendoBeeps; i++) {
+        const t = now + i * interval;
+        const progress = i / crescendoBeeps;
+        const volume = config.startGain + progress * (config.endGain - config.startGain);
+        gainNode.gain.setValueAtTime(volume, t);
+        gainNode.gain.setValueAtTime(0, t + 0.5);
+    }
+
+    // Sustain phase
+    for (let i = 0; i < sustainBeeps; i++) {
+        const t = now + config.rampDuration + i * interval;
+        gainNode.gain.setValueAtTime(config.endGain, t);
+        gainNode.gain.setValueAtTime(0, t + 0.5);
+    }
+
+    oscillator.start(now);
+};
+
+// ============================================================
+// ALARM FUNCTIONS
+// ============================================================
+
+/**
+ * Plays the Somnia alarm - our signature very slow growing alarm.
+ * Starts almost inaudible and very slowly builds over 60 seconds.
+ */
+export const playSomniaAlarm = async () => {
+    const config = ALARM_CONFIGS.somnia;
+    if (config) {
+        await createContinuousAlarm(config);
+    }
+    logger.log('[playSomniaAlarm] Started - 60s crescendo to full volume, then sustains');
+};
+
+/**
+ * Plays the progressive smart alarm.
+ * Starts with low volume and frequency, ramping up over 30 seconds.
+ */
+export const playProgressiveAlarm = async () => {
+    const config = ALARM_CONFIGS.progressive;
+    if (config) {
+        await createContinuousAlarm(config);
+    }
+};
+
+/**
+ * Plays an alarm sound by its ID.
+ * Dispatches to the correct alarm implementation based on user selection.
+ * @param soundId - The alarm sound ID from alarm setup
+ */
+export const playAlarmBySound = async (soundId: string = 'somnia') => {
+    logger.log('[playAlarmBySound] Requested soundId:', soundId);
+    switch (soundId) {
+        case 'somnia':
+            logger.log('[playAlarmBySound] Playing Somnia alarm');
+            await playSomniaAlarm();
+            break;
+        case 'progressive':
+            logger.log('[playAlarmBySound] Playing Progressive alarm');
+            await playProgressiveAlarm();
+            break;
+        case 'chimes':
+            logger.log('[playAlarmBySound] Playing Chimes alarm');
+            await playChimesAlarm();
+            break;
+        case 'nature':
+            logger.log('[playAlarmBySound] Playing Nature alarm');
+            await playNatureAlarm();
+            break;
+        case 'classic':
+            logger.log('[playAlarmBySound] Playing Classic alarm');
+            await playClassicAlarm();
+            break;
+        case 'prism':
+            logger.log('[playAlarmBySound] Playing Prism alarm');
+            await playPrismAlarm();
+            break;
+        case 'aether':
+            logger.log('[playAlarmBySound] Playing Aether alarm');
+            await playAetherAlarm();
+            break;
+        case 'cyber-dawn':
+            if (!isPremium()) {
+                logger.warn('[playAlarmBySound] Cyber-Dawn requires premium, falling back to Somnia');
+                await playSomniaAlarm();
+            } else {
+                logger.log('[playAlarmBySound] Playing Cyber-Dawn alarm');
+                await playCyberDawnAlarmWrapper();
+            }
+            break;
+        case 'solar-ascent':
+            if (!isPremium()) {
+                logger.warn('[playAlarmBySound] Solar Ascent requires premium, falling back to Somnia');
+                await playSomniaAlarm();
+            } else {
+                logger.log('[playAlarmBySound] Playing Solar Ascent alarm');
+                await playSolarAlarmWrapper();
+            }
+            break;
+        default:
+            logger.log('[playAlarmBySound] Unknown soundId, defaulting to Somnia:', soundId);
+            await playSomniaAlarm();
+    }
+};
+
+/**
+ * Gentle Rise alarm - soft gradual wake-up with crescendo
+ * Reserved for future alarm type expansion
+ */
+// const playGentleAlarm = async () => {
+//     const config = ALARM_CONFIGS.gentle;
+//     if (config) {
+//         await createPulsingAlarm(config);
+//     }
+//     logger.log('[playGentleAlarm] Started - 60s crescendo, then 30min sustain');
+// };
+
+/**
+ * Wind Chimes alarm - peaceful chime melody
+ */
+const playChimesAlarm = async () => {
+    const config = ALARM_CONFIGS.chimes;
+    if (config) {
+        await createContinuousAlarm(config);
+    }
+};
+
+/**
+ * Nature Dawn alarm - birds and morning sounds
+ */
+const playNatureAlarm = async () => {
+    const config = ALARM_CONFIGS.nature;
+    if (config) {
+        await createContinuousAlarm(config);
+    }
+};
+
+/**
+ * Classic Alarm - traditional alarm tone with crescendo
+ */
+const playClassicAlarm = async () => {
+    const config = ALARM_CONFIGS.classic;
+    if (config) {
+        await createBeepingAlarm(config);
+    }
+    logger.log('[playClassicAlarm] Started - 60s crescendo, then 30min sustain');
+};
+
+// ============================================================
+// PROCEDURAL ALARM SYSTEM ("SOMNIA WAKE ENGINE")
+// Uses spectral ramping to wake users without cortisol spikes
+// ============================================================
+
+// Track procedural alarm state for cleanup
+let proceduralAlarmStop: (() => void) | null = null;
+let proceduralGainNode: GainNode | null = null;
+
+/**
+ * PRISM Alarm - Ethereal glass chimes with crescendo
+ * Pentatonic chimes that crescendo over 60s then continue loud
+ * Bulletproof: 30 minutes of chimes scheduled
+ */
+const playPrismAlarm = async () => {
+    logger.log('[playPrismAlarm] Starting Prism alarm');
+    stopSleepSound();
+    const context = getAudioContext();
+    if (alarmOscillator) stopAlarmSound();
+    cleanupProceduralAlarm();
+
+    if (context.state === 'suspended') {
+        try {
+            await context.resume();
+        } catch (e) {
+            logger.warn('[playPrismAlarm] Failed to resume AudioContext:', e);
+        }
+    }
+
+    proceduralGainNode = context.createGain();
+    proceduralGainNode.connect(context.destination);
+
+    const now = context.currentTime;
+
+    // Master volume crescendo over 60s to MAXIMUM volume - 5x louder start
+    proceduralGainNode.gain.setValueAtTime(0.5, now);  // Start at 50% (was 20%)
+    proceduralGainNode.gain.linearRampToValueAtTime(1.0, now + WAKE_DURATION);
+
+    const baseOsc = context.createOscillator();
+    const baseGain = context.createGain();
+    baseOsc.type = 'sine';
+    baseGain.gain.setValueAtTime(0.6, now);  // Louder chimes (was 0.4)
+    baseOsc.connect(baseGain);
+    baseGain.connect(proceduralGainNode);
+
+    // Schedule 30 minutes of chimes (720 chimes at 2.5s each)
+    const prismNotes = PENTATONIC_SCALE;
+    for (let i = 0; i < 720; i++) {
+        const note = prismNotes[i % prismNotes.length] ?? 261.63;
+        const t = now + i * 2.5;
+        baseOsc.frequency.setValueAtTime(note, t);
+        // Chime envelope: LOUD attack, decay to moderate (not silent)
+        baseGain.gain.setValueAtTime(1.0, t);
+        baseGain.gain.exponentialRampToValueAtTime(0.35, t + 1.5);
+    }
+
+    baseOsc.start(now);
+    logger.log('[playPrismAlarm] Started - 60s crescendo, 720 chimes over 30min');
+
+    proceduralAlarmStop = () => {
+        logger.log('[playPrismAlarm] Stopping');
+        try { baseOsc.stop(); } catch { /* oscillator already stopped */ }
+    };
+};
+
+/**
+ * AETHER Alarm - Cinematic drone with filter sweep and crescendo
+ * Sawtooth at 110Hz->220Hz, crescendos then continues loud
+ * Bulletproof: Continuous drone plays indefinitely
+ */
+const playAetherAlarm = async () => {
+    logger.log('[playAetherAlarm] Starting Aether alarm');
+    stopSleepSound();
+    const context = getAudioContext();
+    if (alarmOscillator) stopAlarmSound();
+    cleanupProceduralAlarm();
+
+    if (context.state === 'suspended') {
+        try {
+            await context.resume();
+        } catch (e) {
+            logger.warn('[playAetherAlarm] Failed to resume AudioContext:', e);
+        }
+    }
+
+    proceduralGainNode = context.createGain();
+    proceduralGainNode.connect(context.destination);
+
+    const now = context.currentTime;
+
+    const osc = context.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(110, now);
+
+    // CRESCENDO: Sweep frequency 110->220Hz and volume to MAXIMUM over 60s - 5x louder start
+    osc.frequency.exponentialRampToValueAtTime(220, now + WAKE_DURATION);
+    proceduralGainNode.gain.setValueAtTime(0.25, now);  // Start at 25% (was 5%)
+    proceduralGainNode.gain.linearRampToValueAtTime(1.0, now + WAKE_DURATION);  // Max volume (was 0.9)
+
+    // SUSTAIN: After crescendo, continue at 220Hz and MAXIMUM volume indefinitely
+    // The oscillator keeps playing - no need to schedule more
+
+    osc.connect(proceduralGainNode);
+    osc.start(now);
+    logger.log('[playAetherAlarm] Started - 60s crescendo to 0.5 volume, then sustains');
+
+    proceduralAlarmStop = () => {
+        logger.log('[playAetherAlarm] Stopping');
+        try { osc.stop(); } catch { /* oscillator already stopped */ }
+    };
+};
+
+/**
+ * BAMBOO Alarm - Hollow wooden pulse that accelerates with crescendo
+ * Accelerating pulse pattern, crescendos over 60s then continues loud
+ * Bulletproof: 30 minutes of pulses scheduled
+ *
+ * Reserved for future alarm type expansion - currently using config-based alarms
+ */
+// const playBambooAlarm = async () => { ... };
+
+// Track psychoacoustic alarm state for cleanup
+let psychoacousticAlarmStop: (() => void) | null = null;
+
+/**
+ * CYBER-DAWN Alarm - FM Synthesis procedural birds
+ * Wrapper that integrates with the audio service cleanup system
+ */
+const playCyberDawnAlarmWrapper = async () => {
+    logger.log('[playCyberDawnAlarm] Starting Cyber-Dawn alarm');
+    stopSleepSound();
+    if (alarmOscillator) stopAlarmSound();
+    cleanupProceduralAlarm();
+    cleanupPsychoacousticAlarm();
+
+    const handle = playCyberDawnAlarm(1.0);  // Maximum volume for alarms
+    psychoacousticAlarmStop = handle.stop;
+    logger.log('[playCyberDawnAlarm] Started - FM synthesis birds awakening');
+};
+
+/**
+ * SOLAR ASCENT Alarm - Additive synthesis harmonic blooming
+ * Wrapper that integrates with the audio service cleanup system
+ */
+const playSolarAlarmWrapper = async () => {
+    logger.log('[playSolarAlarm] Starting Solar Ascent alarm');
+    stopSleepSound();
+    if (alarmOscillator) stopAlarmSound();
+    cleanupProceduralAlarm();
+    cleanupPsychoacousticAlarm();
+
+    const handle = playSolarAlarm(1.0);  // Maximum volume for alarms
+    psychoacousticAlarmStop = handle.stop;
+    logger.log('[playSolarAlarm] Started - Harmonic blooming sunrise');
+};
+
+/**
+ * Cleanup psychoacoustic alarm resources
+ */
+const cleanupPsychoacousticAlarm = () => {
+    if (psychoacousticAlarmStop) {
+        psychoacousticAlarmStop();
+        psychoacousticAlarmStop = null;
+    }
+};
+
+/**
+ * Cleanup procedural alarm resources
+ */
+const cleanupProceduralAlarm = () => {
+    logger.log('[cleanupProceduralAlarm] Called, proceduralAlarmStop exists:', !!proceduralAlarmStop);
+
+    if (proceduralAlarmStop) {
+        proceduralAlarmStop();
+        proceduralAlarmStop = null;
+    }
+
+    // Capture the node to clean up and clear the global immediately
+    // to prevent the timeout from cleaning up a NEWLY created node
+    if (proceduralGainNode && audioContext) {
+        const nodeToCleanup = proceduralGainNode;
+        proceduralGainNode = null;
+
+        const now = audioContext.currentTime;
+        try {
+            nodeToCleanup.gain.cancelScheduledValues(now);
+            nodeToCleanup.gain.linearRampToValueAtTime(0, now + 0.1);
+
+            setTimeout(() => {
+                try {
+                    nodeToCleanup.disconnect();
+                } catch (_e) {
+                    // Ignore errors if already disconnected
+                }
+            }, 200);
+        } catch (e) {
+            logger.warn('Error cleaning up procedural alarm:', e);
+        }
+    }
+}
+
+/**
+ * Stops the alarm sound immediately.
+ * Fades out volume over 0.5s to prevent clicking artifacts.
+ */
+export const stopAlarmSound = () => {
+    logger.log('[stopAlarmSound] Called at', new Date().toISOString());
+
+    // Stop regular oscillator-based alarms
+    if (alarmGainNode && alarmOscillator && audioContext) {
+        const now = audioContext.currentTime;
+        alarmGainNode.gain.cancelScheduledValues(now);
+        alarmGainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
+        try {
+            alarmOscillator.stop(now + 0.5);
+        } catch (e) {
+            logger.warn("Error stopping alarm oscillator, it might have already been stopped.", e);
+        }
+    }
+    alarmOscillator = null;
+    alarmGainNode = null;
+
+    // Stop procedural alarms (Prism, Aether, Bamboo)
+    cleanupProceduralAlarm();
+
+    // Stop psychoacoustic alarms (Cyber-Dawn, Solar Ascent)
+    cleanupPsychoacousticAlarm();
+};
+
+// Preview alarm state
+let previewOscillator: OscillatorNode | null = null;
+let previewGainNode: GainNode | null = null;
+let previewTimeout: ReturnType<typeof setTimeout> | null = null;
+let currentPreviewId: string | null = null; // Track which sound is previewing
+
+/**
+ * Plays the alarm sound as a preview, starting at 25% intensity.
+ * This gives users a better idea of what the alarm sounds like without
+ * waiting through the quiet beginning.
+ * User taps again to stop.
+ * @param soundId - The alarm sound to preview
+ */
+export const playAlarmPreview = async (soundId: string) => {
+    // Stop any current preview first
+    stopAlarmPreview();
+
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    if (ctx.state === 'suspended') {
+        try {
+            await ctx.resume();
+        } catch (e) {
+            logger.warn('[playAlarmPreview] Failed to resume AudioContext:', e);
+        }
+    }
+
+    // Track which sound is playing
+    currentPreviewId = soundId;
+
+    previewGainNode = ctx.createGain();
+    previewGainNode.connect(ctx.destination);
+
+    previewOscillator = ctx.createOscillator();
+    previewOscillator.connect(previewGainNode);
+
+    const now = ctx.currentTime;
+
+    // Previews start at 25% of crescendo (15s in) so user can hear it immediately
+    // Then continue crescendo for remaining 45s to full volume
+    switch (soundId) {
+        case 'somnia':
+            // Start at 25%: ~0.08 volume, ~260Hz, crescendo to 1.0/500Hz over 45s
+            previewOscillator.type = 'sine';
+            previewOscillator.frequency.setValueAtTime(260, now);
+            previewGainNode.gain.setValueAtTime(0.08, now);
+            previewGainNode.gain.exponentialRampToValueAtTime(1.0, now + 45);
+            previewOscillator.frequency.exponentialRampToValueAtTime(500, now + 45);
+            break;
+
+        case 'classic':
+            // Start at beep 15 (25% of 60), continue for remaining 45 beeps
+            previewOscillator.type = 'square';
+            previewOscillator.frequency.setValueAtTime(880, now);
+            for (let i = 0; i < 45; i++) {
+                const t = now + i;
+                const progress = (i + 15) / 60; // Start from beep 15
+                const volume = 0.05 + progress * 0.85;
+                previewGainNode.gain.setValueAtTime(volume, t);
+                previewGainNode.gain.setValueAtTime(0, t + 0.5);
+            }
+            break;
+
+        case 'prism': {
+            // Start master at 0.4 (25% of 0.2→1.0), crescendo to 1.0 over 45s - LOUDER
+            previewOscillator.type = 'sine';
+            const prismMasterGain = ctx.createGain();
+            prismMasterGain.gain.setValueAtTime(0.4, now);
+            prismMasterGain.gain.linearRampToValueAtTime(1.0, now + 45);
+            previewOscillator.disconnect();
+            previewOscillator.connect(previewGainNode);
+            previewGainNode.disconnect();
+            previewGainNode.connect(prismMasterGain);
+            prismMasterGain.connect(ctx.destination);
+            // Schedule 18 chimes (skip first 6) - LOUD chimes
+            const prismNotes = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25];
+            for (let i = 0; i < 18; i++) {
+                const note = prismNotes[(i + 6) % prismNotes.length] ?? 261.63;
+                const t = now + i * 2.5;
+                previewOscillator.frequency.setValueAtTime(note, t);
+                previewGainNode.gain.setValueAtTime(1.0, t);
+                previewGainNode.gain.exponentialRampToValueAtTime(0.35, t + 1.5);
+            }
+            break;
+        }
+
+        case 'aether':
+            // Start at 25%: ~138Hz, ~0.26 volume, crescendo to 220Hz/0.9 over 45s
+            previewOscillator.type = 'sawtooth';
+            previewOscillator.frequency.setValueAtTime(138, now);
+            previewGainNode.gain.setValueAtTime(0.26, now);
+            previewOscillator.frequency.exponentialRampToValueAtTime(220, now + 45);
+            previewGainNode.gain.linearRampToValueAtTime(0.9, now + 45);
+            break;
+
+        case 'cyber-dawn': {
+            // Use actual Cyber-Dawn alarm for preview (authentic sound)
+            // Don't use the simple oscillator - start the real alarm
+            previewOscillator.disconnect();
+            previewGainNode.disconnect();
+            previewOscillator = null as unknown as OscillatorNode;
+            previewGainNode = null as unknown as GainNode;
+
+            // Start the actual Cyber-Dawn alarm at preview volume
+            const cyberHandle = playCyberDawnAlarm(0.5);
+            psychoacousticAlarmStop = cyberHandle.stop;
+            currentPreviewId = soundId;
+            return; // Don't call start() on null oscillator
+        }
+
+        case 'solar-ascent': {
+            // Use actual Solar Ascent alarm for preview (authentic sound)
+            // Don't use the simple oscillator - start the real alarm
+            previewOscillator.disconnect();
+            previewGainNode.disconnect();
+            previewOscillator = null as unknown as OscillatorNode;
+            previewGainNode = null as unknown as GainNode;
+
+            // Start the actual Solar Ascent alarm at preview volume
+            const solarHandle = playSolarAlarm(0.5);
+            psychoacousticAlarmStop = solarHandle.stop;
+            currentPreviewId = soundId;
+            return; // Don't call start() on null oscillator
+        }
+
+        default:
+            // Fallback to classic at 25%
+            previewOscillator.type = 'square';
+            previewOscillator.frequency.setValueAtTime(880, now);
+            for (let i = 0; i < 45; i++) {
+                const t = now + i;
+                const progress = (i + 15) / 60;
+                const volume = 0.05 + progress * 0.85;
+                previewGainNode.gain.setValueAtTime(volume, t);
+                previewGainNode.gain.setValueAtTime(0, t + 0.5);
+            }
+            break;
+    }
+
+    previewOscillator.start(now);
+
+    // No auto-stop - user clicks again to stop
+};
+
+/**
+ * Check if a preview is currently playing
+ */
+export const isPreviewPlaying = (): boolean => {
+    return previewOscillator !== null;
+};
+
+/**
+ * Get the currently playing preview sound ID
+ */
+export const getCurrentPreviewId = (): string | null => {
+    return currentPreviewId;
+};
+
+/**
+ * Toggle alarm preview - starts if stopped, stops if same sound playing, switches if different
+ */
+export const toggleAlarmPreview = (soundId: string): boolean => {
+    if (isPreviewPlaying()) {
+        if (currentPreviewId === soundId) {
+            // Same sound - stop it
+            stopAlarmPreview();
+            return false;
+        } else {
+            // Different sound - stop old, start new
+            stopAlarmPreview();
+            playAlarmPreview(soundId);
+            return true;
+        }
+    } else {
+        // Nothing playing - start this one
+        playAlarmPreview(soundId);
+        return true;
+    }
+};
+
+/**
+ * Stops the alarm preview sound.
+ */
+export const stopAlarmPreview = () => {
+    if (previewTimeout) {
+        clearTimeout(previewTimeout);
+        previewTimeout = null;
+    }
+
+    // Stop regular oscillator-based previews
+    if (previewGainNode && previewOscillator && audioContext) {
+        const now = audioContext.currentTime;
+        previewGainNode.gain.cancelScheduledValues(now);
+        previewGainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
+        try {
+            previewOscillator.stop(now + 0.2);
+        } catch (_e) {
+            // Already stopped
+        }
+    }
+
+    // Stop psychoacoustic previews (Cyber-Dawn, Solar Ascent)
+    cleanupPsychoacousticAlarm();
+
+    previewOscillator = null;
+    previewGainNode = null;
+    currentPreviewId = null; // Clear tracking
+};
+
+
+// --- SLEEP SOUND FUNCTIONS ---
+
+/**
+ * PRODUCTION-GRADE NOISE GENERATION
+ * 
+ * Using "Dual-Mono Decorrelation" for stereo width:
+ * - Each channel gets unique buffer with different random seed
+ * - Creates "3D Space" surrounding the head vs flat skull sound
+ *
+ * Buffer duration: 5 seconds to prevent repetition fatigue
+ */
+
+/**
+ * Gaussian White Noise - "Soft Air"
+ * Uses Box-Muller Transform for creamy Gaussian distribution
+ * (Standard uniform random is too harsh/spiky)
+ */
+const createGaussianWhiteBuffer = (context: AudioContext): AudioBuffer => {
+    // Defensive check for valid sample rate (Android compatibility)
+    const sampleRate = context.sampleRate || 44100;
+    const bufferSize = Math.max(sampleRate * NOISE_BUFFER_DURATION, 1024);
+    // STEREO buffer for decorrelation
+    const buffer = context.createBuffer(2, bufferSize, sampleRate);
+
+    for (let channel = 0; channel < 2; channel++) {
+        const data = buffer.getChannelData(channel);
+        for (let i = 0; i < bufferSize; i++) {
+            // Box-Muller Transform: Converts uniform random to Gaussian
+            const u1 = Math.random();
+            const u2 = Math.random();
+            // Avoid log(0) by ensuring u1 > 0
+            const safeU1 = Math.max(u1, 0.0001);
+            const z0 = Math.sqrt(-2.0 * Math.log(safeU1)) * Math.cos(2.0 * Math.PI * u2);
+            data[i] = z0 * 0.15; // Scale for comfortable volume
+        }
+    }
+    return buffer;
+};
+
+/**
+ * Paul Kellett's Pink Noise - "Bio Base"
+ * Industry standard for smooth 1/f slope with ±0.05dB accuracy
+ */
+const createPinkBuffer = (context: AudioContext): AudioBuffer => {
+    // Defensive check for valid sample rate (Android compatibility)
+    const sampleRate = context.sampleRate || 44100;
+    const bufferSize = Math.max(sampleRate * NOISE_BUFFER_DURATION, 1024);
+    // STEREO buffer for decorrelation
+    const buffer = context.createBuffer(2, bufferSize, sampleRate);
+
+    for (let channel = 0; channel < 2; channel++) {
+        const data = buffer.getChannelData(channel);
+        let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+
+        for (let i = 0; i < bufferSize; i++) {
+            const white = Math.random() * 2 - 1;
+
+            b0 = 0.99886 * b0 + white * 0.0555179;
+            b1 = 0.99332 * b1 + white * 0.0750759;
+            b2 = 0.96900 * b2 + white * 0.1538520;
+            b3 = 0.86650 * b3 + white * 0.3104856;
+            b4 = 0.55000 * b4 + white * 0.5329522;
+            b5 = -0.7616 * b5 - white * 0.0168980;
+
+            data[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11;
+            b6 = white * 0.115926;
+        }
+    }
+    return buffer;
+};
+
+/**
+ * Leaky Brown Noise - "Deep Magma"
+ * Uses Leaky Integrator to prevent DC offset drift
+ * Formula: output = (lastOutput * 0.98) + (white * 0.02)
+ * The "leak" (division by 1.02) forces wave to center itself
+ */
+const createBrownBuffer = (context: AudioContext): AudioBuffer => {
+    // Defensive check for valid sample rate (Android compatibility)
+    const sampleRate = context.sampleRate || 44100;
+    const bufferSize = Math.max(sampleRate * NOISE_BUFFER_DURATION, 1024);
+    // STEREO buffer for decorrelation
+    const buffer = context.createBuffer(2, bufferSize, sampleRate);
+
+    for (let channel = 0; channel < 2; channel++) {
+        const data = buffer.getChannelData(channel);
+        let lastOut = 0.0;
+
+        for (let i = 0; i < bufferSize; i++) {
+            const white = Math.random() * 2 - 1;
+            // Leaky Integrator: 0.02 is slew rate, 1.02 is the leak
+            lastOut = (lastOut + (0.02 * white)) / 1.02;
+            data[i] = lastOut * 2.0; // Gain compensation (reduced from 3.5 to prevent digital clipping)
+        }
+    }
+    return buffer;
+};
+
+/**
+ * Creates a raw noise buffer (for backwards compatibility with mono synthesis chains)
+ */
+const createRawNoiseBuffer = (context: AudioContext, type: 'white' | 'pink' | 'brown'): AudioBuffer => {
+    // Defensive check for valid sample rate (Android compatibility)
+    const sampleRate = context.sampleRate || 44100;
+    const bufferSize = Math.max(sampleRate * 2, 1024); // Minimum 1024 samples
+    const buffer = context.createBuffer(1, bufferSize, sampleRate);
+    const output = buffer.getChannelData(0);
+
+    if (type === 'white') {
+        // Gaussian white noise for synthesis chains
+        for (let i = 0; i < bufferSize; i++) {
+            const u1 = Math.max(Math.random(), 0.0001);
+            const u2 = Math.random();
+            const z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+            output[i] = z0 * 0.15;
+        }
+    } else if (type === 'pink') {
+        // Paul Kellet's refined pink noise algorithm
+        let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+        for (let i = 0; i < bufferSize; i++) {
+            const white = Math.random() * 2 - 1;
+            b0 = 0.99886 * b0 + white * 0.0555179;
+            b1 = 0.99332 * b1 + white * 0.0750759;
+            b2 = 0.96900 * b2 + white * 0.1538520;
+            b3 = 0.86650 * b3 + white * 0.3104856;
+            b4 = 0.55000 * b4 + white * 0.5329522;
+            b5 = -0.7616 * b5 - white * 0.0168980;
+            output[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11;
+            b6 = white * 0.115926;
+        }
+    } else if (type === 'brown') {
+        // Leaky integrator brown noise
+        let lastOut = 0.0;
+        for (let i = 0; i < bufferSize; i++) {
+            const white = Math.random() * 2 - 1;
+            lastOut = (lastOut + (0.02 * white)) / 1.02;
+            output[i] = lastOut * 2.0; // Gain compensation (reduced from 3.5 to prevent digital clipping)
+        }
+    }
+
+    return buffer;
+};
+
+/**
+ * Creates a basic noise source node without EQ (for use in synthesis chains)
+ */
+const createNoiseNode = (context: AudioContext, type: 'white' | 'pink' | 'brown'): AudioBufferSourceNode => {
+    const buffer = createRawNoiseBuffer(context, type);
+    const noiseNode = context.createBufferSource();
+    noiseNode.buffer = buffer;
+    noiseNode.loop = true;
+    return noiseNode;
+};
+
+// Track EQ filter nodes for cleanup
+let somniaEqFilters: BiquadFilterNode[] = [];
+
+/**
+ * Creates "Somnia-Polish" EQ-shaped noise for premium sleep audio
+ *
+ * Type-specific psychoacoustic optimization:
+ * - WHITE: LPF @ 10kHz (removes digital harshness, "soft-air")
+ * - PINK: Notch @ 3500Hz (ear canal resonance - makes it feel surrounding vs inside skull)
+ * - BROWN: HPF @ 40Hz (protects speakers from DC/sub-bass) + aggressive LPF @ 250Hz (deep rumble)
+ *
+ * Plus universal warmth boost at 60Hz
+ */
+const createSomniaGreyNoise = (
+    context: AudioContext,
+    type: 'white' | 'pink' | 'brown',
+    outputNode: AudioNode
+): AudioBufferSourceNode => {
+    // Use stereo buffer for premium spatial feel
+    let buffer: AudioBuffer;
+    if (type === 'white') {
+        buffer = createGaussianWhiteBuffer(context);
+    } else if (type === 'pink') {
+        buffer = createPinkBuffer(context);
+    } else {
+        buffer = createBrownBuffer(context);
+    }
+
+    const noiseNode = context.createBufferSource();
+    noiseNode.buffer = buffer;
+    noiseNode.loop = true;
+
+    // Universal: 60 Hz Low Shelf Boost (+4dB) - Adds warmth/weight
+    const warmthBoost = context.createBiquadFilter();
+    warmthBoost.type = 'lowshelf';
+    warmthBoost.frequency.setValueAtTime(60, context.currentTime);
+    warmthBoost.gain.setValueAtTime(4, context.currentTime);
+
+    // Type-specific "Polish" filters
+    const polishFilter = context.createBiquadFilter();
+
+    if (type === 'white') {
+        // SOFT-AIR: Cut harsh digital bite above 10kHz
+        polishFilter.type = 'lowpass';
+        polishFilter.frequency.setValueAtTime(10000, context.currentTime);
+        polishFilter.Q.setValueAtTime(0.7, context.currentTime);
+
+        noiseNode.connect(warmthBoost);
+        warmthBoost.connect(polishFilter);
+        polishFilter.connect(outputNode);
+
+        somniaEqFilters = [warmthBoost, polishFilter];
+
+    } else if (type === 'pink') {
+        // EAR CANAL RESONANCE: Notch at 3500Hz makes it feel surrounding vs skull
+        polishFilter.type = 'notch';
+        polishFilter.frequency.setValueAtTime(3500, context.currentTime);
+        polishFilter.Q.setValueAtTime(1.0, context.currentTime);
+
+        noiseNode.connect(warmthBoost);
+        warmthBoost.connect(polishFilter);
+        polishFilter.connect(outputNode);
+
+        somniaEqFilters = [warmthBoost, polishFilter];
+
+    } else {
+        // BROWN: HPF @ 40Hz (protect speakers) + aggressive LPF @ 250Hz (deep rumble only)
+
+        // HPF @ 40Hz: Cut inaudible 1-30Hz sub-bass that rattles phone speakers
+        polishFilter.type = 'highpass';
+        polishFilter.frequency.setValueAtTime(40, context.currentTime);
+        polishFilter.Q.setValueAtTime(0.7, context.currentTime);
+
+        // LPF @ 250Hz: Aggressive cut for pure low-end rumble
+        const brownLPF = context.createBiquadFilter();
+        brownLPF.type = 'lowpass';
+        brownLPF.frequency.setValueAtTime(250, context.currentTime);
+        brownLPF.Q.setValueAtTime(0.707, context.currentTime);
+
+        noiseNode.connect(warmthBoost);
+        warmthBoost.connect(polishFilter);
+        polishFilter.connect(brownLPF);
+        brownLPF.connect(outputNode);
+
+        somniaEqFilters = [warmthBoost, polishFilter, brownLPF];
+    }
+
+    return noiseNode;
+};
+
+
+/**
+ * Creates optimized binaural beats using the scientifically superior 110 Hz carrier
+ *
+ * Why 110 Hz (Low A2):
+ * - Resonates in the chest/body (somatic entrainment)
+ * - Below the ear's hypersensitive 2-5 kHz range (Fletcher-Munson curve)
+ * - Feels "warm" and "grounding" like a sonic blanket
+ *
+ * Beat frequencies:
+ * - Deep Sleep (Delta): 2.5 Hz - Golden Mean for Slow Wave Sleep
+ * - REM/Creative (Theta): 6.0 Hz - Twilight frequency for lucid states
+ */
+const createBinauralNode = (context: AudioContext, baseFreq: number, diff: number): ChannelMergerNode => {
+    const oscLeft = context.createOscillator();
+    const oscRight = context.createOscillator();
+    const merger = context.createChannelMerger(2);
+
+    // Use pure sine waves for clean binaural beats
+    oscLeft.type = 'sine';
+    oscRight.type = 'sine';
+
+    // Left ear: base frequency - half difference
+    // Right ear: base frequency + half difference
+    // This creates the binaural beat at the "diff" frequency in the brain
+    oscLeft.frequency.value = baseFreq - diff / 2;
+    oscRight.frequency.value = baseFreq + diff / 2;
+
+    // Binaural beats volume - audible but not overwhelming
+    // (0.35 provides clear presence while master gain controls overall level)
+    const gainLeft = context.createGain();
+    const gainRight = context.createGain();
+    gainLeft.gain.value = 0.35;
+    gainRight.gain.value = 0.35;
+
+    oscLeft.connect(gainLeft);
+    oscRight.connect(gainRight);
+    gainLeft.connect(merger, 0, 0);
+    gainRight.connect(merger, 0, 1);
+
+    // Ghost Harmonics (for phone speaker audibility)
+    // Uses "Missing Fundamental" psychoacoustic effect: brain hears 220Hz and
+    // "fills in" the 110Hz fundamental, making binaural beats perceivable on phone speakers
+    const ghostLeft = context.createOscillator();
+    const ghostRight = context.createOscillator();
+    ghostLeft.type = 'sine';
+    ghostRight.type = 'sine';
+
+    // Ghost oscillators at one octave up (2x frequency)
+    ghostLeft.frequency.value = (baseFreq * 2) - diff / 2;
+    ghostRight.frequency.value = (baseFreq * 2) + diff / 2;
+
+    // Separate gains for each ghost channel to preserve binaural stereo separation
+    const ghostGainLeft = context.createGain();
+    const ghostGainRight = context.createGain();
+    ghostGainLeft.gain.value = 0.1; // Subtle (-20dB relative to main)
+    ghostGainRight.gain.value = 0.1;
+
+    ghostLeft.connect(ghostGainLeft);
+    ghostRight.connect(ghostGainRight);
+    ghostGainLeft.connect(merger, 0, 0); // Left ghost → Left channel only
+    ghostGainRight.connect(merger, 0, 1); // Right ghost → Right channel only
+
+    oscLeft.start();
+    oscRight.start();
+    ghostLeft.start();
+    ghostRight.start();
+
+    // Attach oscillators and gains to the merger node for cleanup and live updates
+    const binauralMerger = merger as BinauralMergerNode;
+    binauralMerger.oscillators = [oscLeft, oscRight, ghostLeft, ghostRight];
+    binauralMerger.gains = [gainLeft, gainRight, ghostGainLeft, ghostGainRight];
+
+    return binauralMerger;
+};
+
+/**
+ * Creates a Sleep Ramp binaural beat system with multi-stage frequency descent.
+ * 
+ * The ramp guides the brain from wakefulness to deep sleep:
+ * - Phase 1 (Alpha, 0-20%): 12Hz → 8Hz - Decompression, settling in
+ * - Phase 2 (Theta, 20-50%): 8Hz → 4Hz - Hypnagogic bridge, losing linear thought
+ * - Phase 3 (Delta, 50-100%): 4Hz → 1.5Hz - Deep sleep anchor
+ * 
+ * After the ramp completes, the frequency holds at 1.5Hz indefinitely.
+ * 
+ * @param context - AudioContext
+ * @param baseFreq - Carrier frequency (typically 110Hz for chest resonance)
+ * @param durationMinutes - Total duration of the ramp in minutes (0 = 30 min default)
+ * @returns ChannelMergerNode with attached oscillators for cleanup
+ */
+const createSleepRampNode = (
+    context: AudioContext,
+    baseFreq: number,
+    durationMinutes: number
+): ChannelMergerNode => {
+    const oscLeft = context.createOscillator();
+    const oscRight = context.createOscillator();
+    const merger = context.createChannelMerger(2);
+
+    oscLeft.type = 'sine';
+    oscRight.type = 'sine';
+
+    // Ramp duration: use provided duration or default to 30 minutes
+    // For very long sessions (8+ hours), cap ramp at 45 minutes
+    const rampMinutes = durationMinutes === 0 ? 30 : Math.min(durationMinutes, 45);
+    const rampSeconds = rampMinutes * 60;
+    const now = context.currentTime;
+
+    // === FREQUENCY RAMP SCHEDULE ===
+    // Binaural beat = difference between left and right oscillator frequencies
+    // Left ear: baseFreq - (beatFreq / 2)
+    // Right ear: baseFreq + (beatFreq / 2)
+
+    // Phase boundaries (percentage-based)
+    const phase1End = rampSeconds * 0.20;  // 20% - Alpha phase ends
+    const phase2End = rampSeconds * 0.50;  // 50% - Theta phase ends
+    const phase3End = rampSeconds;          // 100% - Delta phase ends
+
+    // Beat frequencies at each transition point
+    const alphaStart = 12;   // Starting frequency (relaxed alertness)
+    const alphaEnd = 8;      // End of alpha (transition)
+    const thetaEnd = 4;      // End of theta (hypnagogic)
+    const deltaEnd = 1.5;    // Final deep delta (hold here)
+
+    // Helper to set frequency pair for binaural beat
+    const setFrequencyPair = (time: number, beatFreq: number, method: 'set' | 'ramp') => {
+        const leftFreq = baseFreq - beatFreq / 2;
+        const rightFreq = baseFreq + beatFreq / 2;
+
+        if (method === 'set') {
+            oscLeft.frequency.setValueAtTime(leftFreq, time);
+            oscRight.frequency.setValueAtTime(rightFreq, time);
+        } else {
+            oscLeft.frequency.linearRampToValueAtTime(leftFreq, time);
+            oscRight.frequency.linearRampToValueAtTime(rightFreq, time);
+        }
+    };
+
+    // === SCHEDULE THE RAMP ===
+
+    // Start at Alpha (12Hz)
+    setFrequencyPair(now, alphaStart, 'set');
+
+    // Phase 1: Alpha 12Hz → 8Hz (0% to 20%)
+    setFrequencyPair(now + phase1End, alphaEnd, 'ramp');
+
+    // Phase 2: Theta 8Hz → 4Hz (20% to 50%)
+    setFrequencyPair(now + phase2End, thetaEnd, 'ramp');
+
+    // Phase 3: Delta 4Hz → 1.5Hz (50% to 100%)
+    setFrequencyPair(now + phase3End, deltaEnd, 'ramp');
+
+    // After ramp: Hold at 1.5Hz indefinitely (no further changes needed - audio API holds last value)
+
+    // Audible binaural gain (matches regular binaural beats)
+    const gainLeft = context.createGain();
+    const gainRight = context.createGain();
+    gainLeft.gain.setValueAtTime(0.35, now);
+    gainRight.gain.setValueAtTime(0.35, now);
+
+    oscLeft.connect(gainLeft);
+    oscRight.connect(gainRight);
+    gainLeft.connect(merger, 0, 0);
+    gainRight.connect(merger, 0, 1);
+
+    // Ghost Harmonics (for phone speaker audibility)
+    // Uses "Missing Fundamental" psychoacoustic effect
+    const ghostLeft = context.createOscillator();
+    const ghostRight = context.createOscillator();
+    ghostLeft.type = 'sine';
+    ghostRight.type = 'sine';
+
+    // Ghost oscillators at one octave up (2x frequency), with same ramp schedule
+    // Start at 2x base (220Hz for 110Hz carrier)
+    ghostLeft.frequency.setValueAtTime((baseFreq * 2) - alphaStart / 2, now);
+    ghostRight.frequency.setValueAtTime((baseFreq * 2) + alphaStart / 2, now);
+
+    // Ghost ramp: follows same phase schedule as main oscillators
+    // Phase 1: Alpha (12Hz → 8Hz beat diff at 2x carrier)
+    ghostLeft.frequency.linearRampToValueAtTime((baseFreq * 2) - alphaEnd / 2, now + phase1End);
+    ghostRight.frequency.linearRampToValueAtTime((baseFreq * 2) + alphaEnd / 2, now + phase1End);
+    // Phase 2: Theta (8Hz → 4Hz)
+    ghostLeft.frequency.linearRampToValueAtTime((baseFreq * 2) - thetaEnd / 2, now + phase2End);
+    ghostRight.frequency.linearRampToValueAtTime((baseFreq * 2) + thetaEnd / 2, now + phase2End);
+    // Phase 3: Delta (4Hz → 1.5Hz)
+    ghostLeft.frequency.linearRampToValueAtTime((baseFreq * 2) - deltaEnd / 2, now + phase3End);
+    ghostRight.frequency.linearRampToValueAtTime((baseFreq * 2) + deltaEnd / 2, now + phase3End);
+
+    // Separate gains for each ghost channel to preserve binaural stereo separation
+    const ghostGainLeft = context.createGain();
+    const ghostGainRight = context.createGain();
+    ghostGainLeft.gain.setValueAtTime(0.1, now); // Subtle (-20dB relative to main)
+    ghostGainRight.gain.setValueAtTime(0.1, now);
+
+    ghostLeft.connect(ghostGainLeft);
+    ghostRight.connect(ghostGainRight);
+    ghostGainLeft.connect(merger, 0, 0); // Left ghost → Left channel only
+    ghostGainRight.connect(merger, 0, 1); // Right ghost → Right channel only
+
+    oscLeft.start(now);
+    oscRight.start(now);
+    ghostLeft.start(now);
+    ghostRight.start(now);
+
+    // Attach oscillators for cleanup
+    const binauralMerger = merger as BinauralMergerNode;
+    binauralMerger.oscillators = [oscLeft, oscRight, ghostLeft, ghostRight];
+    binauralMerger.gains = [gainLeft, gainRight, ghostGainLeft, ghostGainRight];
+    binauralMerger.rampDurationSeconds = rampSeconds;
+
+    return binauralMerger;
+};
+
+/** Maximum number of retries for audio loading */
+const MAX_AUDIO_LOAD_RETRIES = 3;
+
+/** Timeout for audio fetch operations in milliseconds */
+const AUDIO_FETCH_TIMEOUT_MS = 15000;
+
+/**
+ * Fetches and decodes an audio buffer with retry logic and timeout handling.
+ * Critical for alarm reliability - must handle network failures gracefully.
+ *
+ * @param context - AudioContext to decode audio
+ * @param src - URL of audio file
+ * @param retryCount - Current retry attempt (internal use)
+ * @returns Decoded AudioBuffer
+ * @throws Error if all retries exhausted or decoding fails
+ */
+const getAudioBuffer = async (
+    context: AudioContext,
+    src: string,
+    retryCount: number = 0
+): Promise<AudioBuffer> => {
+    const cached = audioBufferCache.get(src);
+    if (cached) {
+        // Move to end of map to mark as recently used
+        audioBufferCache.delete(src);
+        audioBufferCache.set(src, cached);
+        return cached;
+    }
+
+    try {
+        // Create AbortController for fetch timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), AUDIO_FETCH_TIMEOUT_MS);
+
+        const response = await fetch(src, { signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+
+        // Validate arrayBuffer size (detect corrupted/empty downloads)
+        if (arrayBuffer.byteLength === 0) {
+            throw new Error('Audio file is empty (0 bytes)');
+        }
+
+        // Decode with error handling for codec issues
+        let audioBuffer: AudioBuffer;
+        try {
+            audioBuffer = await context.decodeAudioData(arrayBuffer);
+        } catch (decodeError) {
+            // Codec/format error - don't retry, likely unsupported format
+            logger.error(`[AudioService] Audio decode failed for ${src}:`, decodeError);
+            throw new Error(`Audio codec/format not supported: ${src}`);
+        }
+
+        cacheAudioBuffer(src, audioBuffer);
+        return audioBuffer;
+
+    } catch (error) {
+        const isAbortError = error instanceof Error && error.name === 'AbortError';
+        const isNetworkError = error instanceof TypeError && error.message.includes('fetch');
+
+        // Retry on network/timeout errors, but not on decode errors
+        if ((isAbortError || isNetworkError) && retryCount < MAX_AUDIO_LOAD_RETRIES) {
+            logger.warn(`[AudioService] Audio load retry ${retryCount + 1}/${MAX_AUDIO_LOAD_RETRIES} for ${src}`);
+            // Exponential backoff: 500ms, 1000ms, 2000ms
+            await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, retryCount)));
+            return getAudioBuffer(context, src, retryCount + 1);
+        }
+
+        // Log specific error type for debugging
+        if (isAbortError) {
+            logger.error(`[AudioService] Audio fetch timed out after ${AUDIO_FETCH_TIMEOUT_MS}ms: ${src}`);
+        } else if (isNetworkError) {
+            logger.error(`[AudioService] Network error loading audio: ${src}`);
+        }
+
+        throw error;
+    }
+};
+
+/**
+ * Plays a sleep soundscape (white noise, binaural beats, or audio file).
+ * Implements cross-fade when switching between sounds for smooth transitions.
+ *
+ * @param sound - The Soundscape configuration object
+ * @param durationMinutes - Duration to play in minutes (0 for infinite)
+ * @param volume - Volume level 0-1 (default 0.5)
+ * @param enableCrossfade - Whether to cross-fade from current sound (default true)
+ */
+export const playSleepSound = async (
+    sound: Soundscape,
+    durationMinutes: number,
+    volume: number = 0.5,
+    enableCrossfade: boolean = true
+) => {
+    stopAlarmSound(); // Ensure alarm is stopped
+
+    // Track current sound for resuming after phone call interruption
+    currentSleepSound = { sound, durationMinutes, volume };
+
+    // Store for restart functionality (persists even after sound stops)
+    lastPlayedSound = { sound, volume };
+    soundEndedNaturally = false; // Reset - sound is now playing
+
+    // Configure iOS audio session for background playback BEFORE starting audio
+    // This ensures sleep sounds continue playing when screen locks
+    await configureAudioSession({ mixWithOthers: true, duckOthers: true });
+
+    // Set up interruption handling (phone calls, Siri, etc.)
+    if (interruptionCleanup) {
+        interruptionCleanup();
+    }
+    interruptionCleanup = await setupInterruptionHandling(
+        // On interruption began (phone call started)
+        () => {
+            logger.log('[AudioService] Audio interrupted (phone call)');
+            wasPlayingBeforeInterruption = sleepSourceNode !== null;
+            // Audio will be paused by iOS automatically
+        },
+        // On interruption ended (phone call ended)
+        async (shouldResume: boolean) => {
+            logger.log('[AudioService] Interruption ended, shouldResume:', shouldResume);
+            if (shouldResume && wasPlayingBeforeInterruption && currentSleepSound) {
+                // Resume the sleep sound after phone call
+                logger.log('[AudioService] Resuming sleep sound after interruption');
+                await playSleepSound(
+                    currentSleepSound.sound,
+                    currentSleepSound.durationMinutes,
+                    currentSleepSound.volume,
+                    false // Don't cross-fade on resume
+                );
+            }
+            wasPlayingBeforeInterruption = false;
+        }
+    );
+
+    const context = getAudioContext();
+
+    if (context.state === 'suspended') {
+        try {
+            await context.resume();
+        } catch (e) {
+            logger.warn('[playSleepSound] Failed to resume AudioContext:', e);
+        }
+    }
+
+    // Cross-fade: If a sound is currently playing, fade it out while fading new sound in
+    const shouldCrossfade = enableCrossfade && isSleepSoundPlaying() && sleepGainNode && sleepSourceNode;
+
+    if (shouldCrossfade) {
+        // Store old nodes for cross-fade cleanup
+        pendingCrossfadeNodes = {
+            gainNode: sleepGainNode!,
+            sourceNode: sleepSourceNode!,
+            compressor: sleepCompressor ?? undefined
+        };
+
+        // Start fading out the old sound
+        const now = context.currentTime;
+        pendingCrossfadeNodes.gainNode.gain.cancelScheduledValues(now);
+        pendingCrossfadeNodes.gainNode.gain.linearRampToValueAtTime(0, now + (CROSSFADE_DURATION_MS / 1000));
+
+        // Schedule cleanup of old nodes after crossfade
+        const nodesToCleanup = pendingCrossfadeNodes;
+        setTimeout(() => {
+            try {
+                nodesToCleanup.gainNode.disconnect();
+                nodesToCleanup.sourceNode.disconnect();
+                if (nodesToCleanup.compressor) {
+                    nodesToCleanup.compressor.disconnect();
+                }
+            } catch (_e) { /* Already disconnected */ }
+            if (pendingCrossfadeNodes === nodesToCleanup) {
+                pendingCrossfadeNodes = null;
+            }
+        }, CROSSFADE_DURATION_MS + 100);
+
+        // Clear references so new sound creates fresh nodes
+        sleepGainNode = null;
+        sleepSourceNode = null;
+        sleepCompressor = null;
+
+        logger.log('[AudioService] Cross-fading to new sound:', sound.name);
+    } else {
+        stopSleepSound(); // Stop any currently playing sleep sound (immediate stop)
+    }
+
+    // Master Bus: Dynamics Compressor for professional sound
+    sleepCompressor = context.createDynamicsCompressor();
+    sleepCompressor.threshold.setValueAtTime(-20, context.currentTime);
+    sleepCompressor.knee.setValueAtTime(10, context.currentTime);
+    sleepCompressor.ratio.setValueAtTime(4, context.currentTime);
+    sleepCompressor.attack.setValueAtTime(0.003, context.currentTime);
+    sleepCompressor.release.setValueAtTime(0.25, context.currentTime);
+    sleepCompressor.connect(context.destination);
+
+    sleepGainNode = context.createGain();
+    // Full volume range enabled - compressor provides peak protection
+    // Users control in-app volume (0-100%), device volume buttons add more headroom
+    sleepGainNode.gain.linearRampToValueAtTime(volume, context.currentTime + 2); // Fade in to target volume
+    sleepGainNode.connect(sleepCompressor);
+
+    if (sound.type === 'noise') {
+        // Use Somnia-Grey EQ shaping for premium sleep audio quality
+        // This applies psychoacoustic optimization: +3dB@60Hz, -3dB@400Hz, -6dB@3500Hz
+        sleepSourceNode = createSomniaGreyNoise(context, sound.params.type, sleepGainNode);
+        (sleepSourceNode as AudioBufferSourceNode).start();
+    } else if (sound.type === 'binaural') {
+        sleepSourceNode = createBinauralNode(context, sound.params.base, sound.params.diff);
+        sleepSourceNode.connect(sleepGainNode);
+    } else if (sound.type === 'ramp') {
+        // Sleep Ramp: Multi-stage binaural descent (Alpha→Theta→Delta)
+        // Duration scales the ramp phases proportionally
+        sleepSourceNode = createSleepRampNode(context, sound.params.base, durationMinutes);
+        sleepSourceNode.connect(sleepGainNode);
+    } else if (sound.type === 'file') {
+        try {
+            const audioBuffer = await getAudioBuffer(context, sound.params.src);
+            const sourceNode = context.createBufferSource();
+            sourceNode.buffer = audioBuffer;
+            sourceNode.loop = true;
+            sleepSourceNode = sourceNode;
+            sleepSourceNode.connect(sleepGainNode);
+            (sleepSourceNode as AudioBufferSourceNode).start();
+        } catch (e) {
+            logger.error("Failed to load or play audio file, fallback to synthesis:", e);
+            if (sleepGainNode) {
+                sleepGainNode.disconnect();
+                sleepGainNode = null;
+            }
+            return;
+        }
+    } else if (sound.type === 'synthetic') {
+        // Advanced DSP synthesis for nature sounds (Somnia Audio Engine)
+        const type = sound.params.type;
+
+        if (type === 'ocean') {
+            // === NEBULA OCEAN RECIPE ===
+            // Pink noise base with dual LFO modulation
+            const noise = createNoiseNode(context, 'pink');
+            const filter = context.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(500, context.currentTime);
+            filter.Q.setValueAtTime(1, context.currentTime);
+
+            // Gain for volume modulation
+            const waveGain = context.createGain();
+            waveGain.gain.setValueAtTime(0.4, context.currentTime);
+
+            // LFO A (Gain): 0.1 Hz sine, modulates volume 0.1 to 0.7
+            const lfoA = context.createOscillator();
+            lfoA.type = 'sine';
+            lfoA.frequency.setValueAtTime(0.1, context.currentTime);
+            const lfoAGain = context.createGain();
+            lfoAGain.gain.setValueAtTime(0.3, context.currentTime); // +/- 0.3 around 0.4 = 0.1 to 0.7
+            lfoA.connect(lfoAGain);
+            lfoAGain.connect(waveGain.gain);
+            lfoA.start();
+
+            // LFO B (Timbre): 0.08 Hz sine, modulates filter 200-800Hz
+            const lfoB = context.createOscillator();
+            lfoB.type = 'sine';
+            lfoB.frequency.setValueAtTime(0.08, context.currentTime); // Different rate prevents loop fatigue
+            const lfoBGain = context.createGain();
+            lfoBGain.gain.setValueAtTime(300, context.currentTime); // +/- 300Hz around 500 = 200-800Hz
+            lfoB.connect(lfoBGain);
+            lfoBGain.connect(filter.frequency);
+            lfoB.start();
+
+            noise.connect(filter);
+            filter.connect(waveGain);
+            waveGain.connect(sleepGainNode);
+            noise.start();
+
+            // Track LFOs for cleanup
+            (noise as SynthesisSourceNode).lfo = lfoA;
+            additionalLFOs = [lfoA, lfoB];
+            sleepSourceNode = noise;
+
+        } else if (type === 'fireplace') {
+            // === PLASMA FIRE RECIPE ===
+            // Layer A: Brown noise rumble through lowpass
+            const rumble = createNoiseNode(context, 'brown');
+            const rumbleFilter = context.createBiquadFilter();
+            rumbleFilter.type = 'lowpass';
+            rumbleFilter.frequency.setValueAtTime(140, context.currentTime); // Deep rumble only
+            const rumbleGain = context.createGain();
+            rumbleGain.gain.setValueAtTime(0.5, context.currentTime);
+
+            rumble.connect(rumbleFilter);
+            rumbleFilter.connect(rumbleGain);
+            rumbleGain.connect(sleepGainNode);
+            rumble.start();
+
+            // Layer B: Spark/crackle generator using Lookahead Scheduler
+            // MEMORY FIX: Pre-allocate spark buffer ONCE (prevents garbage collection thrashing)
+            const sparkBuffer = context.createBuffer(1, Math.floor(context.sampleRate * 0.001), context.sampleRate);
+            const sparkData = sparkBuffer.getChannelData(0);
+            for (let i = 0; i < sparkData.length; i++) {
+                sparkData[i] = (Math.random() * 2 - 1);
+            }
+
+            // TIMING FIX: Lookahead Scheduler for background-safe audio scheduling
+            // This allows sparks to continue even when JS thread is throttled (screen locked)
+            const LOOKAHEAD = 0.1; // Schedule 100ms ahead
+            const CHECK_INTERVAL = 25; // JS checks every 25ms
+            let nextSparkTime = context.currentTime;
+
+            const scheduler = () => {
+                if (isCleaningUp || !sleepGainNode || !audioContext) return;
+
+                // Schedule all sparks falling within the lookahead window
+                while (nextSparkTime < audioContext.currentTime + LOOKAHEAD) {
+                    // Poisson-like distribution (random interval ~50ms average)
+                    const timeToNext = 0.02 + (Math.random() * 0.08);
+                    nextSparkTime += timeToNext;
+
+                    // ~3% chance to fire a spark
+                    if (Math.random() > 0.03) continue;
+
+                    // Create BufferSource (cheap) reusing pre-allocated buffer (expensive)
+                    const impulse = audioContext.createBufferSource();
+                    impulse.buffer = sparkBuffer;
+
+                    // High-Q bandpass filter for resonant "ping"
+                    const pingFilter = audioContext.createBiquadFilter();
+                    pingFilter.type = 'bandpass';
+                    pingFilter.frequency.setValueAtTime(400 + Math.random() * 200, nextSparkTime);
+                    pingFilter.Q.setValueAtTime(20, nextSparkTime);
+
+                    // Envelope for the ping
+                    const pingGain = audioContext.createGain();
+                    pingGain.gain.setValueAtTime(0, nextSparkTime);
+                    pingGain.gain.linearRampToValueAtTime(0.4 + Math.random() * 0.3, nextSparkTime + 0.005);
+                    pingGain.gain.exponentialRampToValueAtTime(0.001, nextSparkTime + 0.15);
+
+                    // Stereo panning for spatial realism
+                    const panner = audioContext.createStereoPanner();
+                    panner.pan.setValueAtTime((Math.random() * 2) - 1, nextSparkTime);
+
+                    impulse.connect(pingFilter);
+                    pingFilter.connect(pingGain);
+                    pingGain.connect(panner);
+                    panner.connect(sleepGainNode);
+
+                    impulse.start(nextSparkTime);
+                    impulse.stop(nextSparkTime + 0.2);
+                }
+
+                sparkInterval = setTimeout(scheduler, CHECK_INTERVAL);
+            };
+
+            // Start spark scheduler
+            scheduler();
+
+            sleepSourceNode = rumble;
+        }
+    } else if (sound.type === 'psychoacoustic') {
+        // Psychoacoustic Environments - Advanced DSP Synthesis from psychoacousticService
+        const psychoType = sound.params.type;
+
+        // Stop any regular audio setup - psychoacoustic uses its own audio context management
+        if (sleepGainNode) {
+            sleepGainNode.disconnect();
+            sleepGainNode = null;
+        }
+        if (sleepCompressor) {
+            sleepCompressor.disconnect();
+            sleepCompressor = null;
+        }
+
+        if (psychoType === 'abyssal_pressure') {
+            // Deep Sleep: Brown noise + 40Hz gamma pulse
+            const handle = playAbyssalPressure(volume);
+            // Store cleanup function for later
+            (window as unknown as { _psychoacousticStop?: () => void })._psychoacousticStop = handle.stop;
+            logger.log('[playSleepSound] Started Abyssal Pressure psychoacoustic environment');
+        } else if (psychoType === 'silicon_forest') {
+            // Anxiety Clearing: Comb-filtered metallic wind
+            const handle = playSiliconForest(volume);
+            (window as unknown as { _psychoacousticStop?: () => void })._psychoacousticStop = handle.stop;
+            logger.log('[playSleepSound] Started Silicon Forest psychoacoustic environment');
+        }
+    }
+
+    if (durationMinutes > 0) {
+        // Use a gentle 30-second fade out when the timer expires naturally
+        sleepTimeout = window.setTimeout(() => {
+            soundEndedNaturally = true; // Mark as natural end (timer expired)
+            stopSleepSound(30);
+        }, durationMinutes * 60 * 1000);
+    }
+};
+
+/**
+ * Stops the currently playing sleep sound.
+ * Fades out volume over specified duration (default 2s).
+ * Cleans up audio nodes and oscillators.
+ */
+export const stopSleepSound = (fadeDuration: number = 2) => {
+    // Set cleanup mutex to prevent race conditions with spark generation
+    isCleaningUp = true;
+
+    // Clear all intervals first
+    if (sleepTimeout) {
+        clearTimeout(sleepTimeout);
+        sleepTimeout = null;
+    }
+    if (sparkInterval) {
+        clearTimeout(sparkInterval);
+        sparkInterval = null;
+    }
+
+    // Stop psychoacoustic sounds
+    stopPsychoacoustic();
+    const psychoStop = (window as unknown as { _psychoacousticStop?: () => void })._psychoacousticStop;
+    if (psychoStop) {
+        psychoStop();
+        (window as unknown as { _psychoacousticStop?: () => void })._psychoacousticStop = undefined;
+    }
+
+    const context = audioContext;
+    if (sleepGainNode && context) {
+        // Capture references locally to avoid race condition with newly started sounds
+        const gainNodeToCleanup = sleepGainNode;
+        const compressorToCleanup = sleepCompressor;
+        const eqFiltersToCleanup = [...somniaEqFilters];
+
+        const now = context.currentTime;
+        gainNodeToCleanup.gain.cancelScheduledValues(now);
+        // Ramp down to near-zero first to avoid popping, then disconnect
+        gainNodeToCleanup.gain.linearRampToValueAtTime(0, now + fadeDuration);
+
+        // Disconnect after fade-out is complete
+        setTimeout(() => {
+            // Disconnect the captured nodes (not globals, which may have been reassigned)
+            try { gainNodeToCleanup.disconnect(); } catch (_e) { /* ignore */ }
+            if (compressorToCleanup) {
+                try { compressorToCleanup.disconnect(); } catch (_e) { /* ignore */ }
+            }
+            // Cleanup Somnia-Grey EQ filters
+            eqFiltersToCleanup.forEach(filter => {
+                try { filter.disconnect(); } catch (_e) { /* ignore */ }
+            });
+
+            // Only clear globals if they still reference the same nodes we cleaned up
+            // This prevents clearing state for a newly started sound
+            if (sleepGainNode === gainNodeToCleanup) {
+                sleepGainNode = null;
+            }
+            if (sleepCompressor === compressorToCleanup) {
+                sleepCompressor = null;
+            }
+            if (somniaEqFilters.length > 0 && somniaEqFilters[0] === eqFiltersToCleanup[0]) {
+                somniaEqFilters = [];
+            }
+        }, (fadeDuration * 1000) + 100);
+    }
+
+    // Cleanup additional LFOs
+    if (additionalLFOs.length > 0 && context) {
+        // Capture LFOs locally to avoid race condition with newly started sounds
+        const lfosToCleanup = [...additionalLFOs];
+        const stopTime = context.currentTime + fadeDuration;
+        lfosToCleanup.forEach(lfo => {
+            try { lfo.stop(stopTime); } catch (_e) { /* ignore */ }
+        });
+        setTimeout(() => {
+            lfosToCleanup.forEach(lfo => {
+                try { lfo.disconnect(); } catch (_e) { /* ignore */ }
+            });
+            // Only clear global if it still references the same LFOs
+            if (additionalLFOs.length > 0 && additionalLFOs[0] === lfosToCleanup[0]) {
+                additionalLFOs = [];
+            }
+        }, (fadeDuration * 1000) + 100);
+    }
+
+    if (sleepSourceNode && context) {
+        const stopTime = context.currentTime + fadeDuration;
+        const currentNode = sleepSourceNode; // Capture for closure
+
+        // Stop buffer/oscillator source nodes
+        if (currentNode instanceof AudioBufferSourceNode || currentNode instanceof OscillatorNode) {
+            try { currentNode.stop(stopTime); } catch { /* ignore */ }
+        }
+
+        // Stop binaural beat oscillators
+        const binauralNode = currentNode as Partial<BinauralMergerNode>;
+        if (binauralNode.oscillators) {
+            binauralNode.oscillators.forEach((osc: OscillatorNode) => {
+                try { osc.stop(stopTime); } catch { /* ignore */ }
+            });
+        }
+
+        // Stop synthesis extras (LFO, Crackle)
+        const synthNode = currentNode as Partial<SynthesisSourceNode>;
+        if (synthNode.lfo) {
+            try { synthNode.lfo.stop(stopTime); } catch { /* ignore */ }
+        }
+        if (synthNode.crackle) {
+            try { synthNode.crackle.stop(stopTime); } catch { /* ignore */ }
+        }
+
+        // Disconnect after fade completes
+        setTimeout(() => {
+            if (currentNode) {
+                currentNode.disconnect();
+
+                // Disconnect binaural oscillators
+                if (binauralNode.oscillators) {
+                    binauralNode.oscillators.forEach(osc => {
+                        try { osc.disconnect(); } catch { /* ignore */ }
+                    });
+                }
+
+                // Disconnect binaural gain nodes (prevents memory leaks)
+                if (binauralNode.gains) {
+                    binauralNode.gains.forEach(gain => {
+                        try { gain.disconnect(); } catch { /* ignore */ }
+                    });
+                }
+
+                // Disconnect synthesis extras
+                if (synthNode.lfo) synthNode.lfo.disconnect();
+                if (synthNode.crackle) synthNode.crackle.disconnect();
+            }
+        }, (fadeDuration * 1000) + 100);
+
+        sleepSourceNode = null;
+    }
+
+    // Reset cleanup mutex after all operations complete
+    setTimeout(() => {
+        isCleaningUp = false;
+
+        // Only clear state if no new sound has started in the meantime
+        // This prevents delayed cleanup from killing newly started sounds
+        if (!isSleepSoundPlaying()) {
+            // Clear interruption handling
+            if (interruptionCleanup) {
+                interruptionCleanup();
+                interruptionCleanup = null;
+            }
+            currentSleepSound = null;
+            wasPlayingBeforeInterruption = false;
+            // Only clear persistence if user explicitly stopped (not natural timer end)
+            // This allows the "ended" indicator to show restart options
+            if (!soundEndedNaturally) {
+                persistAcrossNavigation = false;
+            }
+            // Deactivate iOS audio session after audio stops (be a good citizen)
+            setAudioSessionActive(false);
+        }
+    }, (fadeDuration * 1000) + 200);
+};
+
+
+
+/**
+ * Adjusts the volume of the currently playing sleep sound in real-time.
+ *
+ * @param volume - Target volume level (0-1)
+ */
+export const setLiveVolume = (volume: number) => {
+    // Full volume range enabled - compressor provides peak protection
+    // (Matches playSleepSound design - trust the dynamics compressor)
+    if (sleepGainNode && audioContext) {
+        // Smooth transition to new volume
+        sleepGainNode.gain.setTargetAtTime(volume, audioContext.currentTime, 0.1);
+    }
+    // Also update psychoacoustic volume if active
+    setPsychoacousticVolume(volume);
+};
+
+/**
+ * Updates the binaural beat frequency in real-time.
+ * Only works if a binaural beat is currently playing.
+ *
+ * @param baseFreq - Base frequency in Hz
+ * @param diff - Beat frequency difference in Hz
+ */
+export const setLiveBeatFrequency = (baseFreq: number, diff: number) => {
+    const binauralNode = sleepSourceNode as Partial<BinauralMergerNode> | null;
+    if (binauralNode && audioContext && binauralNode.oscillators) {
+        const oscillators = binauralNode.oscillators;
+        const now = audioContext.currentTime;
+
+        // Update main oscillators (indices 0 and 1)
+        if (oscillators?.length >= 2) {
+            oscillators[0]?.frequency.setTargetAtTime(baseFreq - diff / 2, now, 0.1);
+            oscillators[1]?.frequency.setTargetAtTime(baseFreq + diff / 2, now, 0.1);
+        }
+
+        // Update ghost oscillators if present (indices 2 and 3)
+        if (oscillators?.length >= 4) {
+            oscillators[2]?.frequency.setTargetAtTime((baseFreq * 2) - diff / 2, now, 0.1);
+            oscillators[3]?.frequency.setTargetAtTime((baseFreq * 2) + diff / 2, now, 0.1);
+        }
+    }
+};
+
+/**
+ * Check if a sleep sound is currently playing
+ */
+export const isSleepSoundPlaying = (): boolean => {
+    // Check for regular audio source nodes
+    if (sleepSourceNode !== null && sleepGainNode !== null) {
+        return true;
+    }
+    // Check for psychoacoustic sounds (Theta Waves, Abyssal Pressure, Silicon Forest)
+    // These use window._psychoacousticStop instead of sleepSourceNode
+    const psychoStop = (window as unknown as { _psychoacousticStop?: () => void })._psychoacousticStop;
+    if (psychoStop !== undefined) {
+        return true;
+    }
+    return false;
+};
+
+// --- BREATHING CUE FUNCTIONS ---
+
+/**
+ * Plays a subtle breath cue sound (band-passed white noise).
+ * 
+ * @param direction - 'in' (higher pitch) or 'out' (lower pitch)
+ * @param duration - Length of the breath in seconds
+ */
+export const playBreathSound = (direction: 'in' | 'out', duration: number) => {
+    const context = getAudioContext();
+    if (!context) return;
+
+    const gain = context.createGain();
+    gain.connect(context.destination);
+
+    const bufferSize = context.sampleRate * duration;
+    const buffer = context.createBuffer(1, bufferSize, context.sampleRate);
+    const output = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
+
+    const whiteNoise = context.createBufferSource();
+    whiteNoise.buffer = buffer;
+
+    const bandpass = context.createBiquadFilter();
+    bandpass.type = 'bandpass';
+    bandpass.frequency.value = direction === 'in' ? 1500 : 800;
+    bandpass.Q.value = 1.5;
+
+    whiteNoise.connect(bandpass).connect(gain);
+
+    const now = context.currentTime;
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.15, now + 0.5); // Fade in cue
+    gain.gain.linearRampToValueAtTime(0, now + duration); // Fade out over duration
+
+    whiteNoise.start(now);
+    whiteNoise.stop(now + duration);
+}
+
+// --- ALERTNESS BOOST FUNCTIONS (Wake-Up Flow) ---
+
+// Active alertness nodes (including ghost harmonics for phone speaker audibility)
+let alertnessNodes: {
+    oscLeft: OscillatorNode;
+    oscRight: OscillatorNode;
+    gainNode: GainNode;
+    ghostLeft?: OscillatorNode;
+    ghostRight?: OscillatorNode;
+    ghostGainLeft?: GainNode;
+    ghostGainRight?: GainNode;
+} | null = null;
+
+/**
+ * Plays 12Hz Beta binaural beats for alertness during wake-up
+ * 
+ * 12Hz Beta is optimal for:
+ * - Gentle alertness without stress
+ * - Cognitive readiness
+ * - Smooth transition from sleep to wakefulness
+ * 
+ * Uses same 110Hz carrier as sleep sounds for consistency
+ */
+export const playAlertnessBoost = (volume: number = 0.25) => {
+    const context = getAudioContext();
+    if (!context || alertnessNodes) return; // Already playing
+
+    const baseFreq = 110; // Same comfortable carrier
+    const betaDiff = 12;  // 12Hz for gentle alertness
+
+    const oscLeft = context.createOscillator();
+    const oscRight = context.createOscillator();
+    const merger = context.createChannelMerger(2);
+    const gainNode = context.createGain();
+
+    oscLeft.type = 'sine';
+    oscRight.type = 'sine';
+    oscLeft.frequency.value = baseFreq - betaDiff / 2;
+    oscRight.frequency.value = baseFreq + betaDiff / 2;
+
+    const now = context.currentTime;
+    gainNode.gain.setValueAtTime(0, now);
+    gainNode.gain.linearRampToValueAtTime(volume, now + 2); // Gentle fade in
+
+    oscLeft.connect(merger, 0, 0);
+    oscRight.connect(merger, 0, 1);
+
+    // Ghost Harmonics (for phone speaker audibility)
+    // Uses "Missing Fundamental" psychoacoustic effect for 110Hz carrier
+    const ghostLeft = context.createOscillator();
+    const ghostRight = context.createOscillator();
+    ghostLeft.type = 'sine';
+    ghostRight.type = 'sine';
+    ghostLeft.frequency.value = (baseFreq * 2) - betaDiff / 2; // ~214Hz
+    ghostRight.frequency.value = (baseFreq * 2) + betaDiff / 2; // ~226Hz
+
+    // Separate gains for each ghost channel to preserve binaural stereo separation
+    const ghostGainLeft = context.createGain();
+    const ghostGainRight = context.createGain();
+    ghostGainLeft.gain.setValueAtTime(0, now);
+    ghostGainRight.gain.setValueAtTime(0, now);
+    ghostGainLeft.gain.linearRampToValueAtTime(0.1, now + 2); // Subtle (-20dB)
+    ghostGainRight.gain.linearRampToValueAtTime(0.1, now + 2);
+
+    ghostLeft.connect(ghostGainLeft);
+    ghostRight.connect(ghostGainRight);
+    ghostGainLeft.connect(merger, 0, 0); // Left ghost → Left channel only
+    ghostGainRight.connect(merger, 0, 1); // Right ghost → Right channel only
+
+    merger.connect(gainNode);
+    gainNode.connect(context.destination);
+
+    oscLeft.start();
+    oscRight.start();
+    ghostLeft.start();
+    ghostRight.start();
+
+    alertnessNodes = { oscLeft, oscRight, gainNode, ghostLeft, ghostRight, ghostGainLeft, ghostGainRight };
+};
+
+/**
+ * Stops alertness boost with gentle fade out
+ */
+export const stopAlertnessBoost = () => {
+    if (!alertnessNodes || !audioContext) return;
+
+    const { oscLeft, oscRight, gainNode, ghostLeft, ghostRight, ghostGainLeft, ghostGainRight } = alertnessNodes;
+    const now = audioContext.currentTime;
+
+    gainNode.gain.linearRampToValueAtTime(0, now + 1);
+    if (ghostGainLeft) {
+        ghostGainLeft.gain.linearRampToValueAtTime(0, now + 1);
+    }
+    if (ghostGainRight) {
+        ghostGainRight.gain.linearRampToValueAtTime(0, now + 1);
+    }
+
+    setTimeout(() => {
+        try {
+            oscLeft.stop();
+            oscRight.stop();
+            oscLeft.disconnect();
+            oscRight.disconnect();
+            gainNode.disconnect();
+            // Stop ghost oscillators and gains
+            if (ghostLeft) { ghostLeft.stop(); ghostLeft.disconnect(); }
+            if (ghostRight) { ghostRight.stop(); ghostRight.disconnect(); }
+            if (ghostGainLeft) { ghostGainLeft.disconnect(); }
+            if (ghostGainRight) { ghostGainRight.disconnect(); }
+        } catch (_e) {
+            // Already stopped
+        }
+        alertnessNodes = null;
+    }, 1100);
+};
+
+/**
+ * Check if alertness boost is playing
+ */
+export const isAlertnessBoostPlaying = (): boolean => {
+    return alertnessNodes !== null;
+};
+
+/**
+ * Adjust alertness boost volume in real-time
+ */
+export const setAlertnessVolume = (volume: number) => {
+    if (alertnessNodes && audioContext) {
+        alertnessNodes.gainNode.gain.setTargetAtTime(volume, audioContext.currentTime, 0.1);
+    }
+};
+
+// --- NAVIGATION PERSISTENCE FUNCTIONS ---
+
+/**
+ * Mark sleep sound to persist across page navigation.
+ * Used by "Fall Asleep Now" flow to keep sound playing when user navigates away.
+ * Sound will still stop when its timer expires.
+ */
+export const setSleepSoundPersist = (persist: boolean) => {
+    persistAcrossNavigation = persist;
+    logger.log('[AudioService] Sleep sound persistence:', persist);
+};
+
+/**
+ * Check if sleep sound should persist across navigation
+ */
+export const shouldPersistSleepSound = (): boolean => {
+    return persistAcrossNavigation;
+};
+
+/**
+ * Stops sleep sound only if it's not marked for persistence.
+ * Use this in page cleanup handlers to allow sound to continue
+ * playing when user navigates away after clicking "Fall Asleep Now".
+ *
+ * @returns true if sound was stopped, false if sound was preserved
+ */
+export const stopSleepSoundIfNotPersisting = (fadeDuration: number = 2): boolean => {
+    if (persistAcrossNavigation) {
+        logger.log('[AudioService] Sleep sound preserved (user falling asleep)');
+        return false;
+    }
+    stopSleepSound(fadeDuration);
+    return true;
+};
+
+/**
+ * Get information about the currently playing sleep sound (for Now Playing indicators)
+ */
+export const getCurrentSleepSoundName = (): string | null => {
+    if (!currentSleepSound || !isSleepSoundPlaying()) {
+        return null;
+    }
+    return currentSleepSound.sound.name;
+};
+
+/**
+ * Get the current volume of the playing sleep sound
+ */
+export const getCurrentSleepSoundVolume = (): number => {
+    return currentSleepSound?.volume ?? 0.5;
+};
+
+/**
+ * Get the full soundscape object currently playing
+ */
+export const getCurrentSleepSoundscape = (): { sound: Soundscape; volume: number } | null => {
+    if (!currentSleepSound || !isSleepSoundPlaying()) {
+        return null;
+    }
+    return {
+        sound: currentSleepSound.sound,
+        volume: currentSleepSound.volume
+    };
+};
+
+/**
+ * Check if sound ended naturally (timer expired) vs user stopped it
+ */
+export const didSoundEndNaturally = (): boolean => {
+    return soundEndedNaturally && !isSleepSoundPlaying();
+};
+
+/**
+ * Get the last played sound (for restart functionality)
+ * Available even after sound stops
+ */
+export const getLastPlayedSound = (): { sound: Soundscape; volume: number } | null => {
+    return lastPlayedSound;
+};
+
+/**
+ * Check if there's a recent sound session that can be restarted
+ * Returns true if sound ended naturally and user hasn't started a new session
+ */
+export const canRestartSound = (): boolean => {
+    return lastPlayedSound !== null && !isSleepSoundPlaying();
+};
+
+/**
+ * Restart the last played sound with a new duration
+ */
+export const restartLastSound = async (durationMinutes: number): Promise<boolean> => {
+    if (!lastPlayedSound) {
+        logger.warn('[AudioService] No sound to restart');
+        return false;
+    }
+
+    logger.log('[AudioService] Restarting sound:', lastPlayedSound.sound.name, 'for', durationMinutes, 'minutes');
+    await playSleepSound(lastPlayedSound.sound, durationMinutes, lastPlayedSound.volume);
+    return true;
+};
+
+/**
+ * Extend the currently playing sound by adding more time
+ * If sound has stopped, restarts it with the specified duration
+ */
+export const extendSleepSound = async (additionalMinutes: number): Promise<boolean> => {
+    if (isSleepSoundPlaying() && currentSleepSound) {
+        // Sound is still playing - clear old timeout and set new one
+        if (sleepTimeout) {
+            clearTimeout(sleepTimeout);
+            sleepTimeout = null;
+        }
+
+        // Set new timeout with additional time
+        sleepTimeout = window.setTimeout(() => {
+            soundEndedNaturally = true;
+            stopSleepSound(30);
+        }, additionalMinutes * 60 * 1000);
+
+        logger.log('[AudioService] Extended sound by', additionalMinutes, 'minutes');
+        return true;
+    } else if (lastPlayedSound) {
+        // Sound stopped - restart it with the specified duration
+        return restartLastSound(additionalMinutes);
+    }
+
+    return false;
+};
+
+/**
+ * Clear the "ended naturally" state (call when user explicitly dismisses)
+ */
+export const clearSoundEndedState = () => {
+    soundEndedNaturally = false;
+    // Don't clear lastPlayedSound - user might still want to restart
+};
+
+// ============================================================
+// CLEANUP / DISPOSE
+// ============================================================
+
+/**
+ * Disposes of the AudioContext and cleans up all audio resources.
+ * Call this on app unmount to properly release browser audio resources.
+ *
+ * This prevents:
+ * - Memory leaks from unclosed AudioContexts
+ * - Browser limits on concurrent AudioContexts (typically 6)
+ * - Orphaned audio nodes consuming resources
+ */
+export const disposeAudioService = async (): Promise<void> => {
+    logger.log('[AudioService] Disposing audio service...');
+
+    // Stop all active sounds
+    stopAlarmSound();
+    stopSleepSound();
+    stopAlertnessBoost();
+    stopAlarmPreview();
+
+    // Clear the audio buffer cache
+    audioBufferCache.clear();
+
+    // Close the AudioContext
+    if (audioContext && audioContext.state !== 'closed') {
+        try {
+            await audioContext.close();
+            logger.log('[AudioService] AudioContext closed successfully');
+        } catch (e) {
+            logger.warn('[AudioService] Error closing AudioContext:', e);
+        }
+    }
+    audioContext = null;
+
+    // Clean up interruption handling
+    if (interruptionCleanup) {
+        interruptionCleanup();
+        interruptionCleanup = null;
+    }
+
+    logger.log('[AudioService] Audio service disposed');
+};

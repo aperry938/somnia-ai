@@ -58,10 +58,12 @@ Somnia.ai is a comprehensive wellness application designed to transform our rela
 |-------|------------|
 | **Frontend** | React 19 + TypeScript |
 | **Build Tool** | Vite 6 |
-| **Styling** | Tailwind CSS (CDN) |
+| **Styling** | Tailwind CSS 4 (PostCSS) |
 | **AI Integration** | Google Gemini API (gemini-2.5-flash, gemini-2.5-pro) |
 | **Audio** | Web Audio API (programmatic synthesis) |
-| **Data** | LocalStorage (no backend required) |
+| **Mobile** | Capacitor 8 (iOS + Android) |
+| **Data** | LocalStorage + Supabase (optional sync) |
+| **Monetization** | RevenueCat |
 
 ---
 

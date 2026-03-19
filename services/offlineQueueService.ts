@@ -428,6 +428,11 @@ export function initializeOfflineQueue(
         }, 2000);
     };
 
+    // Remove old listener if re-initializing
+    if (visibilityHandler) {
+        document.removeEventListener('visibilitychange', visibilityHandler);
+    }
+
     // Handle visibility change - process queue when app is foregrounded
     visibilityHandler = () => {
         if (document.visibilityState === 'visible' && navigator.onLine) {

@@ -4,6 +4,9 @@ import { useBackButton } from '../../hooks/useBackButton';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { setAIConsent } from '../../services/aiConsentService';
 
+import { backdropVariants, modalVariants } from '../shared/AnimatedComponents';
+import { useModalBodyLock } from '../../hooks/useModalBodyLock';
+
 // Re-export for backward compatibility
 export { hasAIConsent, setAIConsent } from '../../services/aiConsentService';
 
@@ -11,22 +14,6 @@ interface AIConsentModalProps {
     onConsent: () => void;
     onDecline: () => void;
 }
-
-// Animation variants with 'as const' to preserve literal types for Framer Motion
-const backdropVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { duration: 0.2 } },
-} as const;
-
-const modalVariants = {
-    hidden: { opacity: 0, scale: 0.95, y: 20 },
-    visible: {
-        opacity: 1,
-        scale: 1,
-        y: 0,
-        transition: { type: 'spring' as const, stiffness: 300, damping: 30 },
-    },
-};
 
 const iconVariants = {
     hidden: { scale: 0, rotate: -180 },
@@ -38,6 +25,8 @@ const iconVariants = {
 };
 
 export const AIConsentModal: React.FC<AIConsentModalProps> = ({ onConsent, onDecline }) => {
+    useModalBodyLock();
+
     // Hardware back button support
     useBackButton(true, onDecline);
 

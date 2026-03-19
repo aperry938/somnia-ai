@@ -3,6 +3,7 @@ import React, { useEffect, useRef } from 'react';
 import { LucidDreamTechnique } from '../../constants/lucidDreaming';
 import { useBackButton } from '../../hooks/useBackButton';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
+import { useModalBodyLock } from '../../hooks/useModalBodyLock';
 
 interface TechniqueInfoModalProps {
     technique: LucidDreamTechnique | null;
@@ -49,6 +50,8 @@ const TECHNIQUE_DETAILS: Record<string, { tips: string[]; timing: string; durati
 };
 
 export const TechniqueInfoModal: React.FC<TechniqueInfoModalProps> = ({ technique, onClose }) => {
+    useModalBodyLock();
+
     // Hardware back button support
     useBackButton(!!technique, onClose);
 

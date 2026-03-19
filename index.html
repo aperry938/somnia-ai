@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="bg-day-bg-start dark:bg-night-bg-start">
+<html lang="en" style="background-color: #0F172A">
 
 <head>
     <meta charset="UTF-8">
@@ -22,7 +22,7 @@
     <!-- Content Security Policy - Restricts resource loading for XSS protection -->
     <meta http-equiv="Content-Security-Policy" content="
         default-src 'self';
-        script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com;
+        script-src 'self' 'unsafe-inline';
         style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
         font-src 'self' https://fonts.gstatic.com;
         img-src 'self' data: blob: https:;
@@ -38,7 +38,6 @@
     <link rel="manifest" href="/manifest.json">
     <title>Somnia.ai | Intelligent Alarm & Dream Journal</title>
 
-    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <!-- Preload critical fonts for better LCP -->
@@ -46,93 +45,6 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&family=Quattrocento:wght@400;700&display=swap"
         rel="stylesheet">
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        serif: ['Quattrocento', 'serif'],
-                    },
-                    colors: {
-                        'day-bg-start': '#F0F4F8',
-                        'day-bg-end': '#D9E2EC',
-                        'day-text-primary': '#1E293B',
-                        'day-text-secondary': '#475569',
-                        'day-accent': '#6366F1',
-                        'day-card-bg': 'rgba(255, 255, 255, 0.65)',
-                        'day-border': 'rgba(0, 0, 0, 0.08)',
-                        'night-bg-start': '#0F172A',
-                        'night-bg-end': '#1E293B',
-                        'night-text-primary': '#E2E8F0',
-                        'night-text-secondary': '#94A3B8',
-                        'night-accent': '#818CF8', // Indigo - matches day mode aesthetic, Sleep Mode uses amber for blue light reduction
-                        'night-card-bg': 'rgba(30, 41, 59, 0.65)',
-                        'night-border': 'rgba(255, 255, 255, 0.1)',
-                        // Sleep Mode: Zero blue light, warm amber tones for melatonin preservation
-                        'sleep-bg-start': '#1A0A00',
-                        'sleep-bg-end': '#2D1810',
-                        'sleep-text-primary': '#FFD4B8',
-                        'sleep-text-secondary': '#C4A68A',
-                        'sleep-accent': '#FF6B35',
-                        'sleep-card-bg': 'rgba(45, 24, 16, 0.65)',
-                        'sleep-border': 'rgba(255, 107, 53, 0.2)',
-                    },
-                    keyframes: {
-                        fadeIn: {
-                            '0%': { opacity: '0', transform: 'translateY(10px)' },
-                            '100%': { opacity: '1', transform: 'translateY(0)' },
-                        },
-                        inhale: {
-                            'from': { transform: 'scale(0.8)', opacity: '0.7' },
-                            'to': { transform: 'scale(1.6)', opacity: '1' }
-                        },
-                        exhale: {
-                            'from': { transform: 'scale(1.6)', opacity: '1' },
-                            'to': { transform: 'scale(0.8)', opacity: '0.7' }
-                        },
-                        'box-breathing-path': {
-                            '0%': { strokeDashoffset: '480' },
-                            '25%': { strokeDashoffset: '360' },
-                            '50%': { strokeDashoffset: '240' },
-                            '75%': { strokeDashoffset: '120' },
-                            '100%': { strokeDashoffset: '0' }
-                        },
-                        'soundwave-1': {
-                            '0%, 100%': { transform: 'scaleY(0.4)' },
-                            '50%': { transform: 'scaleY(1)' }
-                        },
-                        'soundwave-2': {
-                            '0%, 100%': { transform: 'scaleY(0.7)' },
-                            '50%': { transform: 'scaleY(0.3)' }
-                        },
-                        'soundwave-3': {
-                            '0%, 100%': { transform: 'scaleY(0.55)' },
-                            '50%': { transform: 'scaleY(0.85)' }
-                        },
-                        'pulse-slow': {
-                            '0%, 100%': { opacity: '1' },
-                            '50%': { opacity: '0.7' }
-                        }
-                    },
-                    animation: {
-                        fadeIn: 'fadeIn 0.5s ease-in-out',
-                        'inhale-4s': 'inhale 4s linear forwards',
-                        'inhale-5s': 'inhale 5.5s linear forwards',
-                        'exhale-8s': 'exhale 8s linear forwards',
-                        'exhale-4s': 'exhale 4s linear forwards',
-                        'exhale-5s': 'exhale 5.5s linear forwards',
-                        'box-breathing-16s': 'box-breathing-path 16s linear infinite',
-                        'soundwave-1': 'soundwave-1 0.8s ease-in-out infinite',
-                        'soundwave-2': 'soundwave-2 0.6s ease-in-out infinite',
-                        'soundwave-3': 'soundwave-3 0.9s ease-in-out infinite',
-                        'pulse-slow': 'pulse-slow 2s ease-in-out infinite'
-                    }
-                }
-            }
-        }
-    </script>
     <style>
         /* Circadian Deep Night - even darker than regular night */
         html[data-circadian-phase="night"].dark {
@@ -406,7 +318,7 @@
     </style>
 </head>
 
-<body class="antialiased font-sans safe-area-top bg-day-bg-start dark:bg-night-bg-start">
+<body class="antialiased font-sans safe-area-top" style="background-color: #0F172A">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
 </body>

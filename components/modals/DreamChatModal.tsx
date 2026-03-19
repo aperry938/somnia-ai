@@ -9,6 +9,7 @@ import haptics from '../../services/hapticsService';
 import { sanitizeText, INPUT_LIMITS, containsScriptInjection } from '../../services/validationService';
 import { useToast } from '../shared/Toast';
 import { hasCrisisIndicators } from '../../services/crisisDetectionService';
+import { useModalBodyLock } from '../../hooks/useModalBodyLock';
 
 interface DreamChatModalProps {
     dream: Dream;
@@ -16,6 +17,8 @@ interface DreamChatModalProps {
 }
 
 export const DreamChatModal: React.FC<DreamChatModalProps> = ({ dream, onClose }) => {
+    useModalBodyLock();
+
     const { updateDream } = useAppContext();
     const [history, setHistory] = useState<ChatMessage[]>(dream.chatHistory || []);
     const [input, setInput] = useState('');

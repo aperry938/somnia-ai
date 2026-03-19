@@ -3,6 +3,7 @@ import React, { useEffect, useRef } from 'react';
 import { REALITY_CHECKS } from '../../constants/lucidDreaming';
 import { useBackButton } from '../../hooks/useBackButton';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
+import { useModalBodyLock } from '../../hooks/useModalBodyLock';
 
 interface RealityCheckInfoModalProps {
     isOpen: boolean;
@@ -10,6 +11,8 @@ interface RealityCheckInfoModalProps {
 }
 
 export const RealityCheckInfoModal: React.FC<RealityCheckInfoModalProps> = ({ isOpen, onClose }) => {
+    useModalBodyLock();
+
     // Hardware back button support
     useBackButton(isOpen, onClose);
 

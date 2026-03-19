@@ -12,6 +12,7 @@ import {
 } from '../../services/shareAnalyticsService';
 import haptics from '../../services/hapticsService';
 import { logger } from '../../services/logger';
+import { useModalBodyLock } from '../../hooks/useModalBodyLock';
 
 interface ShareAnalyticsModalProps {
     dreams: Dream[];
@@ -86,6 +87,8 @@ const FORMATS: { id: ShareCardFormat; label: string; platforms: string }[] = [
 ];
 
 export const ShareAnalyticsModal: React.FC<ShareAnalyticsModalProps> = ({ dreams, isOpen, onClose }) => {
+    useModalBodyLock();
+
     const [cardType, setCardType] = useState<AnalyticsCardType>('weekly-wrap');
     const [format, setFormat] = useState<ShareCardFormat>('square');
     const [theme, setTheme] = useState<ShareCardTheme>('cosmic');

@@ -11,22 +11,8 @@ import haptics from '../../services/hapticsService';
 import { useBackButton } from '../../hooks/useBackButton';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { sanitizeTextLive, INPUT_LIMITS } from '../../services/validationService';
-
-// Animation variants
-const backdropVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { duration: 0.2 } },
-};
-
-const modalVariants = {
-    hidden: { opacity: 0, scale: 0.95, y: 20 },
-    visible: {
-        opacity: 1,
-        scale: 1,
-        y: 0,
-        transition: { type: 'spring' as const, stiffness: 300, damping: 30 },
-    },
-};
+import { backdropVariants, modalVariants } from '../shared/AnimatedComponents';
+import { useModalBodyLock } from '../../hooks/useModalBodyLock';
 
 interface ManualSleepLogModalProps {
     onComplete: (sleepAids: SleepAids) => void;
@@ -63,6 +49,8 @@ const PRESET_ACTIVITIES: Array<{
 const DURATION_OPTIONS = [5, 10, 15, 20, 30, 45, 60];
 
 export const ManualSleepLogModal: React.FC<ManualSleepLogModalProps> = ({ onComplete, onSkip }) => {
+    useModalBodyLock();
+
     const [activities, setActivities] = useState<ManualSleepActivity[]>([]);
     const [dayRating, setDayRating] = useState<number | null>(null);
     const [dayNotes, setDayNotes] = useState('');

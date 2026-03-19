@@ -218,7 +218,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
 
     // Voice Journaling Integration
     const { isListening, startListening, stopListening, isSupported } = useSpeechRecognition((transcript) => {
-        setEditedText(prev => (prev ? prev.trim() + ' ' : '') + transcript);
+        setEditedText((prev: string) => (prev ? prev.trim() + ' ' : '') + transcript);
     });
 
     // Cleanup speech recognition on unmount
@@ -593,7 +593,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                     <>
                         <p className="text-lg leading-relaxed whitespace-pre-wrap">{dream.dreamText}</p>
                         <p className="text-xs text-day-text-secondary dark:text-night-text-secondary mt-3">
-                            {dream.dreamText.split(/\s+/).filter(w => w.length > 0).length} words • {dream.dreamText.length} characters
+                            {dream.dreamText.split(/\s+/).filter((w: string) => w.length > 0).length} words • {dream.dreamText.length} characters
                         </p>
                     </>
                 )}
@@ -736,7 +736,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                             <p className="text-xs italic text-day-text-secondary dark:text-night-text-secondary mb-2">
                                 AI-generated interpretation for reflection purposes only. Not psychological or medical advice.
                             </p>
-                            {dream.aiAnalysis.analysis.map((item, i) => (
+                            {dream.aiAnalysis.analysis.map((item: { title: string; content: string }, i: number) => (
                                 <AccordionItem key={i} title={item.title} content={item.content} isOpenDefault={i === 0} />
                             ))}
                             <AccordionItem title={dream.aiAnalysis.integration.title} content={dream.aiAnalysis.integration.content} />
@@ -966,7 +966,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
             {dream?.tags && dream.tags.length > 0 && (() => {
                 const relatedDreams = dreams.filter(d =>
                     d.id !== dream.id &&
-                    d.tags?.some(t => dream.tags?.includes(t))
+                    d.tags?.some((t: string) => dream.tags?.includes(t))
                 ).slice(0, 3);
 
                 if (relatedDreams.length === 0) return null;
@@ -976,7 +976,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                         <h3 id="related-dreams-heading" className="font-serif text-lg mb-3">Related Dreams</h3>
                         <ul className="space-y-2" role="list">
                             {relatedDreams.map(rd => {
-                                const sharedTags = rd.tags?.filter(t => dream.tags?.includes(t)) || [];
+                                const sharedTags = rd.tags?.filter((t: string) => dream.tags?.includes(t)) || [];
                                 return (
                                     <li key={rd.id}>
                                         <button
@@ -993,7 +993,7 @@ export const DreamDetailPage: React.FC<{ dreamId: number | null; onBack: () => v
                                             <p className="font-medium truncate">{rd.title || 'Untitled'}</p>
                                             <p className="text-xs text-day-text-secondary dark:text-night-text-secondary">
                                                 {new Date(rd.timestamp).toLocaleDateString()} •
-                                                {sharedTags.map(t => ` #${t}`).join('')}
+                                                {sharedTags.map((t: string) => ` #${t}`).join('')}
                                             </p>
                                         </button>
                                     </li>

@@ -4,29 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useBackButton } from '../../hooks/useBackButton';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import haptics from '../../services/hapticsService';
-
-// Animation variants
-const backdropVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { duration: 0.2 } },
-    exit: { opacity: 0, transition: { duration: 0.15 } },
-};
-
-const modalVariants = {
-    hidden: { opacity: 0, scale: 0.95, y: 20 },
-    visible: {
-        opacity: 1,
-        scale: 1,
-        y: 0,
-        transition: { type: 'spring' as const, stiffness: 300, damping: 30 },
-    },
-    exit: {
-        opacity: 0,
-        scale: 0.95,
-        y: 20,
-        transition: { duration: 0.15 },
-    },
-};
+import { backdropVariants, modalVariants } from '../shared/AnimatedComponents';
+import { useModalBodyLock } from '../../hooks/useModalBodyLock';
 
 interface PasswordInputModalProps {
     isOpen: boolean;
@@ -49,6 +28,8 @@ export const PasswordInputModal: React.FC<PasswordInputModalProps> = ({
     error,
     isLoading = false
 }) => {
+    useModalBodyLock();
+
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);

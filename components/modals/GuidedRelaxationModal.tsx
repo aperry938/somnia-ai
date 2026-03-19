@@ -8,6 +8,7 @@ import { useToast } from '../shared/Toast';
 import haptics from '../../services/hapticsService';
 import { useBackButton } from '../../hooks/useBackButton';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
+import { useModalBodyLock } from '../../hooks/useModalBodyLock';
 import { App as CapacitorApp } from '@capacitor/app';
 
 const CircleVisualizer = React.memo<{ animationClass: string; animKey: number; isAnimating: boolean }>(({ animationClass, animKey, isAnimating }) => (
@@ -119,6 +120,8 @@ const triggerHaptic = (duration: number) => {
 };
 
 export const GuidedRelaxationModal: React.FC<{ relaxation: GuidedRelaxation, onClose: () => void }> = ({ relaxation, onClose }) => {
+    useModalBodyLock();
+
     const [sessionState, setSessionState] = useState<'ready' | 'starting' | 'running' | 'paused'>('ready');
     const [stepIndex, setStepIndex] = useState(0);
     const resonanceRef = useRef<ResonanceBreathingState | null>(null);

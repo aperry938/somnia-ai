@@ -9,6 +9,7 @@ import { startHapticAlarmRamp, stopHapticAlarmRamp, triggerWakePattern } from '.
 import { stopAlarm as stopNativeAlarm } from '../../services/nativeAlarmService';
 import { sanitizeTextLive, INPUT_LIMITS } from '../../services/validationService';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
+import { useModalBodyLock } from '../../hooks/useModalBodyLock';
 import { logger } from '../../services/logger';
 
 // Minimum distance (px) to trigger a swipe action
@@ -134,6 +135,8 @@ type WakeStep = 'alarm' | 'snooze' | 'dream' | 'boost';
 const SNOOZE_DURATION = 5 * 60; // 5 minutes in seconds
 
 export const AlarmRingModal: React.FC<AlarmRingModalProps> = ({ alarm, onRecordDream, onSnooze, onAwake, onFinalize, onCaptureWakeMetrics, onSnoozeReRing }) => {
+    useModalBodyLock();
+
     // For reminder alarms, skip straight to dismiss - no dream prompts
     const isSleepAlarm = alarm.purpose !== 'reminder';
 

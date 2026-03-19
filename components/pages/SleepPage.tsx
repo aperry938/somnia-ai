@@ -649,7 +649,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                                             PRO
                                                         </span>
                                                         <div className="flex justify-center items-center h-12 w-12 mx-auto">{sound.icon}</div>
-                                                        <p className="mt-2 font-medium text-gray-500 dark:text-gray-400">{sound.name}</p>
+                                                        <p className="mt-2 font-medium text-gray-500 dark:text-night-text-secondary">{sound.name}</p>
                                                     </div>
                                                 </PremiumBadge>
                                             );
@@ -716,7 +716,7 @@ export const SleepPage: React.FC<{ onNavigateToAlarms?: () => void }> = ({ onNav
                                                         </span>
                                                         <div className="flex flex-col items-center text-center">
                                                             <div className="text-gray-400 dark:text-gray-500 w-12 h-12 flex items-center justify-center">{item.icon}</div>
-                                                            <h3 className="font-serif text-xl mt-2 text-gray-500 dark:text-gray-400">{item.name}</h3>
+                                                            <h3 className="font-serif text-xl mt-2 text-gray-500 dark:text-night-text-secondary">{item.name}</h3>
                                                             <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">{item.description}</p>
                                                         </div>
                                                     </div>

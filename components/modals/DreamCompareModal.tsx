@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Dream } from '../../types';
 import { useBackButton } from '../../hooks/useBackButton';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
+import { useModalBodyLock } from '../../hooks/useModalBodyLock';
 import haptics from '../../services/hapticsService';
 
 interface DreamCompareModalProps {
@@ -90,6 +91,8 @@ const DreamCard: React.FC<DreamCardProps> = React.memo(({ dream, dreams, side, o
 DreamCard.displayName = 'DreamCard';
 
 export const DreamCompareModal: React.FC<DreamCompareModalProps> = ({ dreams, onClose }) => {
+    useModalBodyLock();
+
     const [leftDreamId, setLeftDreamId] = useState<number | null>(dreams[0]?.id || null);
     const [rightDreamId, setRightDreamId] = useState<number | null>(dreams[1]?.id || null);
 

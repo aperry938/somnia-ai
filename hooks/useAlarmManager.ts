@@ -219,8 +219,12 @@ export const useAlarmManager = () => {
                     const alarmDate = new Date();
                     alarmDate.setHours(ah ?? 0, am ?? 0, 0, 0);
 
-                    // If alarm is tomorrow (e.g. alarm 7am, now 11pm), naive check assumes today
-                    // Simple check: Is current time within [Alarm - Window, Alarm)?
+                    // If alarm time already passed today, it's tomorrow's alarm
+                    if (alarmDate.getTime() < now.getTime()) {
+                        alarmDate.setDate(alarmDate.getDate() + 1);
+                    }
+
+                    // Is current time within [Alarm - Window, Alarm)?
                     const windowMins = alarm.smartWindow || 30;
                     const diffMs = alarmDate.getTime() - now.getTime();
                     const diffMins = diffMs / 60000;

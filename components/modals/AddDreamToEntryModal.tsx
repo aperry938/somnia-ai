@@ -7,22 +7,8 @@ import { DreamMood } from '../../types';
 import haptics from '../../services/hapticsService';
 import { MOOD_ICONS, MOOD_LABELS } from '../../constants/uiIcons';
 import { validateDreamText, INPUT_LIMITS } from '../../services/validationService';
-
-// Animation variants with 'as const' to preserve literal types for Framer Motion
-const backdropVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { duration: 0.2 } },
-} as const;
-
-const modalVariants = {
-    hidden: { opacity: 0, scale: 0.95, y: 20 },
-    visible: {
-        opacity: 1,
-        scale: 1,
-        y: 0,
-        transition: { type: 'spring' as const, stiffness: 300, damping: 30 },
-    },
-};
+import { backdropVariants, modalVariants } from '../shared/AnimatedComponents';
+import { useModalBodyLock } from '../../hooks/useModalBodyLock';
 
 const MOOD_OPTIONS: DreamMood[] = ['joyful', 'peaceful', 'neutral', 'confused', 'anxious', 'sad', 'fearful', 'nightmare'];
 
@@ -39,6 +25,8 @@ export const AddDreamToEntryModal: React.FC<AddDreamToEntryModalProps> = ({
     onSave,
     onClose
 }) => {
+    useModalBodyLock();
+
     const [dreamText, setDreamText] = useState('');
     const [mood, setMood] = useState<DreamMood | null>(null);
     const [validationError, setValidationError] = useState<string | null>(null);
