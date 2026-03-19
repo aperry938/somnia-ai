@@ -459,7 +459,7 @@ export const SleepSessionProvider: React.FC<{
         startSleepSession, ensureSleepSession, updateSleepSessionData,
         logSoundActivity, logBreathingActivity, saveWakeData,
         finalizeSleepSession, createSleepEntryForSession, clearSleepSession,
-        setPendingSleepData,
+        setActiveSleepAid, clearActiveSleepAids, setPendingSleepData,
         sleepEntries, addSleepEntry, updateSleepEntry, deleteSleepEntry, getSleepEntryById,
         addDream, addDreamToSleepEntry,
     ]);

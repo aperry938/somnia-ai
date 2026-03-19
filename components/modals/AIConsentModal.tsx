@@ -7,8 +7,6 @@ import { setAIConsent } from '../../services/aiConsentService';
 import { backdropVariants, modalVariants } from '../shared/AnimatedComponents';
 import { useModalBodyLock } from '../../hooks/useModalBodyLock';
 
-// Re-export for backward compatibility
-export { hasAIConsent, setAIConsent } from '../../services/aiConsentService';
 
 interface AIConsentModalProps {
     onConsent: () => void;

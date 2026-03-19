@@ -4,7 +4,7 @@
 
 ![Somnia.ai Screenshot](https://raw.githubusercontent.com/aperry938/somnia-ai-wellness-app/main/somnia_promo.png) 
 
-**Live Demo:** [https://aperry938.github.io/somnia-ai-wellness-app/](https://aperry938.github.io/somnia-ai-wellness-app/)
+**Live Demo:** [https://aperry938.github.io/somnia-ai/](https://aperry938.github.io/somnia-ai/)
 
 ---
 

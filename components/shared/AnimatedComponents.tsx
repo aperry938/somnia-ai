@@ -1,5 +1,6 @@
 // components/shared/AnimatedComponents.tsx
-// Reusable animated components for premium UX polish
+// Reusable animated components and animation variants for premium UX polish
+/* eslint-disable react-refresh/only-export-components */
 
 import React, { forwardRef } from 'react';
 import { motion, AnimatePresence, HTMLMotionProps, Variants } from 'framer-motion';
