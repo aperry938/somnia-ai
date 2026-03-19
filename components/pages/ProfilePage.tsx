@@ -13,7 +13,7 @@ import { getLevelTitle } from '../../constants/gamification';
 import { getNotificationPreferences, updateNotificationPreferences, NotificationPreferences } from '../../services/notificationPreferencesService';
 import { isPushSupported, getPushPermissionState, subscribeToPush, unsubscribeFromPush, getExistingSubscription } from '../../services/pushSubscriptionService';
 
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.4.0';
 const ADMIN_TAP_COUNT = 7; // Taps required to unlock admin access
 
 // Profile Info Card - expanded biometrics

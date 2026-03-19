@@ -1,5 +1,59 @@
 # Changelog
 
+## [1.4.0] - 2026-03-19
+
+### Server-Side Gemini Proxy (SA1)
+- New `ai-proxy` Supabase Edge Function proxies all AI calls with server-side API key
+- Client falls back to direct SDK if proxy unavailable (local dev works unchanged)
+- Server-side rate limiting + usage logging per user per operation
+- API key no longer required in client bundle for production
+
+### Web Push Notifications (SA2)
+- Push service worker (`sw-push.js`) for server-initiated notifications
+- Push subscription service with VAPID key management
+- `push_subscriptions` Supabase table with RLS
+- `send-push` edge function for triggering notifications
+- Push toggle in ProfilePage NotificationsCard with permission state handling
+
+### Custom Insights Dashboard (SA3)
+- InsightsDashboardCustomizer modal with per-card toggle + reorder buttons
+- Layout persisted to `somnia_insights_layout` localStorage
+- Reconciles saved layouts with newly added cards
+- Gear icon in InsightsPage header opens customizer
+
+### Predictive Analytics (SA4)
+- Local mood prediction from 14-day dream patterns (no API calls)
+- Day-of-week analysis, sleep quality trends, mood frequency tracking
+- PredictiveInsightCard with confidence meter, contributing factors, recommendations
+- Added to QuickStats tab in InsightsPage
+
+### IndexedDB Migration (SA5)
+- Dreams stored in IndexedDB (`somnia-db`) instead of localStorage
+- Indexes on timestamp and mood for efficient queries
+- One-time migration from localStorage on first load
+- localStorage fallback for browsers without IDB support
+- Write-through: every dream change persists to IDB immediately
+
+### Enhanced Onboarding
+- Expanded from 4 slides to 6 with sleep profile + AI personality picker
+- Sleep profile: goal selector, bedtime picker, sleep challenges checklist
+- AI personality: Oneironaut (Supportive), Analyst (Clinical), Mystic (Mystical)
+- All fields optional, selections saved to localStorage + biometrics context
+
+### Settings Improvements
+- Audio settings card: default volume slider
+- AI personality card: change dream analysis style in settings
+- Storage management card: cache size display + clear button
+
+### Insights Export
+- Export button on InsightsPage generates printable HTML summary
+- Includes stats, themes, moods, dream frequency, date range
+- Native share on mobile, print window on web
+
+### Performance
+- Insights chunk split from single 155KB → 6 tab-based chunks (5-86KB each)
+- Each tab lazy-loads its own chunk via React.lazy
+
 ## [1.3.0] - 2026-03-19
 
 ### Store Compliance (Phase 1)
