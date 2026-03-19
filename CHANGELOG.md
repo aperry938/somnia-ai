@@ -37,8 +37,12 @@
 - Fixed TagInput `aria-expanded` boolean coercion
 - Cleaned up unused imports (AnimatePresence, useCallback, loadEnv)
 
+### iOS
+- Fixed `UIRequiredDeviceCapabilities` from `armv7` (32-bit, deprecated) to `arm64`
+
 ### Accessibility
 - Fixed WCAG AA color contrast: all `dark:text-gray-400` → `dark:text-night-text-secondary`
+- Added `aria-live="polite"` to ProfilePage biometric stat displays for screen reader announcements
 
 ### Build
 - Removed CDN Tailwind duplication from index.html (414 → 325 lines)
